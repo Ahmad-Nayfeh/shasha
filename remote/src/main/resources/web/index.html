@@ -40,6 +40,7 @@ input{font:inherit}
 img{display:block}
 svg.i{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .ltr{direction:ltr;unicode-bidi:isolate}
+[dir=auto]:not(input){text-align:right}
 .muted{color:var(--muted)}
 .num{font-variant-numeric:tabular-nums}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -59,8 +60,13 @@ svg.i{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-widt
 .dot{width:9px;height:9px;border-radius:50%;background:var(--faint);flex:none;transition:background .3s,box-shadow .3s}
 .dot.on{background:var(--primary);box-shadow:0 0 0 4px rgba(46,196,182,.16)}
 .dot.off{background:var(--error);box-shadow:0 0 0 4px rgba(255,107,107,.16);animation:pulse 1.4s ease-in-out infinite}
-.offline{display:flex;align-items:center;gap:10px;margin:12px 16px 0;padding:10px 14px;border-radius:14px;
+.dot.warn{background:var(--amber);box-shadow:0 0 0 4px rgba(255,181,71,.16)}
+.offline{display:flex;align-items:flex-start;gap:10px;margin:12px max(var(--gutter),calc((100% - 528px) / 2)) 0;padding:11px 14px;border-radius:14px;
   background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.25);color:#FFC7C7;font-size:14px;animation:drop .35s var(--ease)}
+.offline svg.i{margin-top:1px}
+.offline .t{flex:1;min-width:0}
+.offline b{display:block;font-size:14.5px}
+.offline .t span{display:block;font-size:13px;line-height:1.6;color:#E6B3B3}
 
 /* ---------- layout ---------- */
 main{max-width:560px;margin:0 auto;padding:16px var(--gutter) calc(var(--tabbar) + var(--mini) + var(--sb) + 28px)}
@@ -107,7 +113,7 @@ main{max-width:560px;margin:0 auto;padding:16px var(--gutter) calc(var(--tabbar)
 .input{flex:1;min-width:0;height:52px;border-radius:15px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text);
   padding:0 16px;font-size:16px;outline:none;transition:border-color .2s,box-shadow .2s,background .2s;-webkit-appearance:none;appearance:none}
 .input:focus{border-color:rgba(46,196,182,.8);box-shadow:0 0 0 4px rgba(46,196,182,.14);background:#202a37}
-.input::placeholder{color:var(--faint)}
+.input::placeholder{color:var(--muted)}
 .input.url{direction:ltr;text-align:left}
 .input.url::placeholder{text-align:right;direction:rtl}
 .input.url:placeholder-shown{text-align:right}
@@ -155,14 +161,14 @@ main{max-width:560px;margin:0 auto;padding:16px var(--gutter) calc(var(--tabbar)
 .bar{height:6px;border-radius:6px;background:rgba(234,240,246,.1);overflow:hidden}
 .bar>span{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--primary),var(--primary-2));transition:width .6s linear}
 .times{display:flex;justify-content:space-between;margin-top:7px;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:600}
-.controls{display:flex;align-items:center;justify-content:center;gap:clamp(6px,3.2vw,16px);margin-top:14px}
-.ctl{position:relative;width:clamp(46px,13.5vw,56px);height:clamp(46px,13.5vw,56px);border-radius:50%;display:grid;place-items:center;
+.controls{display:flex;align-items:center;justify-content:center;gap:clamp(6px,2.6vw,16px);margin-top:14px}
+.ctl{position:relative;flex:none;width:clamp(40px,13.5vw,56px);height:clamp(40px,13.5vw,56px);border-radius:50%;display:grid;place-items:center;
   background:var(--surface-2);color:var(--text);transition:transform .16s var(--ease),background .2s}
 .ctl:active{transform:scale(.88);background:var(--surface-3)}
 .ctl svg.i{width:62%;height:62%;stroke-width:1.8}
 .ctl.fwd svg.i{transform:scaleX(-1)}
 .ctl b{position:absolute;left:50%;top:53.5%;transform:translate(-50%,-50%);font-size:clamp(9.5px,2.7vw,11px);font-weight:800;letter-spacing:-.3px;font-family:system-ui,-apple-system,Roboto,sans-serif}
-.ctl.big{width:clamp(62px,18vw,74px);height:clamp(62px,18vw,74px);background:var(--primary);color:var(--on-primary);
+.ctl.big{width:clamp(54px,18vw,74px);height:clamp(54px,18vw,74px);background:var(--primary);color:var(--on-primary);
   box-shadow:0 10px 28px rgba(46,196,182,.35)}
 .ctl.big:active{background:var(--primary-2)}
 .ctl.big svg.i{position:absolute;width:44%;height:44%;transition:opacity .22s,transform .3s var(--spring)}
@@ -179,6 +185,11 @@ main{max-width:560px;margin:0 auto;padding:16px var(--gutter) calc(var(--tabbar)
 .np-empty .mark{width:74px;height:74px;margin-bottom:8px;opacity:.9;animation:float 4s ease-in-out infinite}
 .np-empty b{font-size:17px}
 .np-empty span{font-size:14px;color:var(--muted);max-width:280px}
+.np-empty .big{width:64px;height:64px;border-radius:22px;display:grid;place-items:center;margin-bottom:8px;background:rgba(255,107,107,.12);color:var(--error)}
+.np-empty .big svg.i{width:30px;height:30px}
+.np-empty .btn{margin-top:10px}
+#np-body,.mini>*{transition:opacity .3s}
+#np.stale #np-body,.mini.stale>*{opacity:.5}
 .np-sk .thumb{animation:none}
 .sk{background:linear-gradient(90deg,#1A212C 25%,#243041 37%,#1A212C 63%);background-size:400% 100%;animation:shimmer 1.3s ease infinite;border-radius:10px}
 
@@ -216,9 +227,18 @@ details.tip .tip-b{padding:0 14px 14px;font-size:13.5px;color:var(--muted);line-
 .res .kind{display:inline-flex;align-items:center;gap:4px;margin-top:5px;font-size:12px;font-weight:700;color:var(--primary)}
 .res .kind svg.i{width:14px;height:14px}
 .res.sent{animation:sent .7s var(--ease)}
+.res.busy,.ptile.busy{pointer-events:none}
+.res.busy .rt::before{content:"";position:absolute;inset:0;z-index:1;background:rgba(5,8,12,.62)}
+.res.busy .rt::after,.ptile.busy .av::after{content:"";position:absolute;z-index:2;top:50%;left:50%;width:22px;height:22px;margin:-11px 0 0 -11px;
+  border-radius:50%;border:2.5px solid;border-color:#fff transparent #fff transparent;animation:spin .8s linear infinite}
+.ptile.busy .av{position:relative;color:transparent}
+.ptile.busy .av::after{border-color:var(--on-primary) transparent}
+.ptile.kid.busy .av::after{border-color:#3A2800 transparent}
 .empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:34px 16px;color:var(--muted)}
 .empty .big{width:64px;height:64px;border-radius:22px;display:grid;place-items:center;background:var(--surface-2);color:var(--faint);margin-bottom:6px}
 .empty .big svg.i{width:30px;height:30px}
+.empty .big.bad{background:rgba(255,107,107,.12);color:var(--error)}
+.empty .btn{margin-top:8px}
 .empty b{color:var(--text);font-size:16px}
 .empty span{font-size:14px;max-width:300px;line-height:1.65}
 .locked{text-align:center;padding:30px 20px}
@@ -262,6 +282,11 @@ details.tip .tip-b{padding:0 14px 14px;font-size:13.5px;color:var(--muted);line-
 .phead .t span{font-size:12.5px;color:var(--muted)}
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px var(--gutter) 4px;margin:0 calc(-1 * var(--gutter)) 12px;scroll-padding-inline:var(--gutter)}
 .chips::-webkit-scrollbar{display:none}
+/* The five parent tabs always all show: two rows (3 + 2) instead of a scroller that hides two of them */
+#ptabs{flex-wrap:wrap;overflow:visible;margin-inline:0;padding-inline:0}
+#ptabs .chip{flex:1 1 auto;justify-content:center}
+@media (max-width:420px){#ptabs{gap:6px}#ptabs .chip{padding:0 11px;gap:6px;font-size:13.5px}#ptabs .chip svg.i{width:16px;height:16px}}
+@media (max-width:340px){#ptabs .chip svg.i{display:none}}
 .chip{flex:none;display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 15px;border-radius:999px;background:var(--surface);
   border:1px solid var(--line-2);color:var(--muted);font-weight:800;font-size:14px;transition:background .25s,color .25s,border-color .25s,transform .15s var(--ease)}
 .chip:active{transform:scale(.95)}
@@ -301,7 +326,7 @@ details.tip .tip-b{padding:0 14px 14px;font-size:13.5px;color:var(--muted);line-
 .row:first-child{border-top:0;padding-top:2px}
 .row .t{flex:1;min-width:0}
 .row b{display:block;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row .t span{display:block;font-size:12px;color:var(--faint);direction:ltr;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t span{display:block;font-size:12px;color:var(--muted);direction:ltr;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row.gone{animation:gone .3s var(--ease) forwards}
 .ava{position:relative;width:42px;height:42px;border-radius:50%;flex:none;overflow:hidden;background:var(--surface-2);display:grid;place-items:center;color:var(--muted);font-weight:800}
 .ava img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -364,6 +389,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
   background:var(--surface);border-radius:28px 28px 0 0;border:1px solid var(--line-2);border-bottom:0;box-shadow:0 -24px 60px rgba(0,0,0,.55);
   animation:sheetIn .42s var(--ease);max-height:92vh;overflow:auto}
 .sheet.out{animation:sheetOut .28s var(--ease) forwards}
+.sheet:focus{outline:none}
 .scrim.out{animation:fadeOut .28s forwards}
 .grab{width:42px;height:5px;border-radius:3px;background:var(--line-2);margin:0 auto 18px}
 .sheet h3{font-size:19px;font-weight:800;text-align:center}
@@ -375,6 +401,8 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
 .state.sending{background:rgba(46,196,182,.1)}
 .state.sending::before{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid rgba(46,196,182,.18);border-top-color:var(--primary);animation:spin .9s linear infinite}
 .state.sending svg.i{color:var(--primary);width:38px;height:38px;animation:pulse 1.2s ease-in-out infinite}
+.state.ask{background:rgba(255,181,71,.12);color:var(--amber)}
+.state.ask svg.i{width:38px;height:38px}
 .state.ok{background:var(--primary);color:var(--on-primary);animation:pop .5s var(--spring);box-shadow:0 0 0 10px rgba(46,196,182,.12),0 14px 36px rgba(46,196,182,.35)}
 .state.bad{background:var(--error);color:#2A0808;animation:pop .5s var(--spring);box-shadow:0 0 0 10px rgba(255,107,107,.12)}
 .state svg.draw{width:46px;height:46px;stroke-width:3}
@@ -458,9 +486,9 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
   <a class="brand" href="#screen" aria-label="شاشة"><svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="شاشة" viewBox="0 0 1265.96 441.48"><defs><linearGradient id="lMScreen" gradientUnits="userSpaceOnUse" x1="0" y1="160.43" x2="0" y2="410.43"><stop offset="0" stop-color="#48DCCD"/><stop offset="1" stop-color="#1FAE9F"/></linearGradient><linearGradient id="lMDots" gradientUnits="userSpaceOnUse" x1="0" y1="27" x2="0" y2="136.43"><stop offset="0" stop-color="#FFC56B"/><stop offset="1" stop-color="#FFA92E"/></linearGradient><linearGradient id="lWAccent" gradientUnits="userSpaceOnUse" x1="0" y1="191.29" x2="0" y2="289.55"><stop offset="0" stop-color="#FFC56B"/><stop offset="1" stop-color="#FFA92E"/></linearGradient></defs><path fill="url(#lMScreen)" fill-rule="evenodd" d="M953.96,160.43H1163.96A75,75 0 0 1 1238.96,235.43V335.43A75,75 0 0 1 1163.96,410.43H953.96A75,75 0 0 1 878.96,335.43V235.43A75,75 0 0 1 953.96,160.43ZM1018.11,254.01A17,17 0 0 1 1043.23,239.08L1101.03,270.49A17,17 0 0 1 1101.03,300.36L1043.23,331.77A17,17 0 0 1 1018.11,316.84Z"/><path fill="url(#lMDots)" d="M1117.96,109.43A27,27 0 1 1 1063.96,109.43A27,27 0 1 1 1117.96,109.43ZM1053.96,109.43A27,27 0 1 1 999.96,109.43A27,27 0 1 1 1053.96,109.43ZM1085.96,54A27,27 0 1 1 1031.96,54A27,27 0 1 1 1085.96,54Z"/><path fill="#EAF0F6" d="M195.92 410.43Q165.18 410.09 150.99 395.39Q136.8 380.7 136.8 355.02V353.33H134.77Q132.07 365.16 128.52 373.26Q124.97 381.37 119.57 386.27Q114.16 391.17 106.73 393.36Q99.3 395.56 89.16 395.56Q64.84 395.56 52.68 382.55Q40.51 369.55 40.51 345.9Q40.51 318.2 55.89 300.8Q71.26 283.4 97.27 270.56L135.11 251.64V233.06H175.65V341.51Q175.65 351.64 180.21 355.7Q184.77 359.75 195.92 359.75H206.05V400.29ZM100.31 344.89Q119.91 344.89 127.51 341.17Q135.11 337.45 135.11 327.66V287.11L110.11 298.94Q100.99 303.33 94.4 306.71Q87.81 310.09 83.25 313.64Q78.69 317.18 76.49 320.9Q74.3 324.61 74.3 329.34Q74.3 337.79 79.87 341.34Q85.45 344.89 100.31 344.89ZM195.92 369.89 206.05 359.75H206.39Q222.61 359.75 230.55 355.86Q238.49 351.98 243.22 342.18L256.39 314.82L289.84 331.03L278.01 355.7Q286.12 359.41 294.57 361.95Q303.01 364.48 311.8 364.48Q326.32 364.48 332.74 358.23Q339.16 351.98 339.16 336.1V314.82H376.32V336.1Q376.32 350.29 381.22 356.71Q386.12 363.13 394.57 363.13H397.95Q405.04 363.13 409.43 357.89Q413.82 352.66 413.82 341.17Q413.82 336.44 412.81 329.18Q411.8 321.91 410.11 311.44L407.07 294.21L443.89 288.13L446.59 305.36Q448.28 315.16 448.96 323.77Q449.64 332.39 449.64 341.17Q449.64 379.01 436.63 396.74Q423.62 414.48 396.26 414.48Q372.27 414.48 360.11 402.99Q347.95 391.51 343.55 367.52H341.53Q338.82 391.84 329.53 403.16Q320.24 414.48 305.04 414.48Q295.24 414.48 285.61 410.93Q275.99 407.39 260.45 398.26L253.35 394.21Q242.88 404.34 229.53 407.39Q216.19 410.43 195.92 410.43ZM547.27 410.43Q513.15 410.43 496.59 394.21Q480.04 377.99 480.04 341.51V160.43H520.58V334.75Q520.58 349.95 526.66 354.85Q532.74 359.75 547.61 359.75H557.74V400.29L547.61 410.43ZM547.61 369.89 557.74 359.75H558.08Q574.3 359.75 582.24 355.86Q590.18 351.98 594.91 342.18L608.08 314.82L641.53 331.03L629.7 355.7Q637.81 359.41 646.26 361.95Q654.7 364.48 663.49 364.48Q678.01 364.48 684.43 358.23Q690.85 351.98 690.85 336.1V314.82H728.01V336.1Q728.01 350.29 732.91 356.71Q737.81 363.13 746.26 363.13H749.64Q756.73 363.13 761.12 357.89Q765.51 352.66 765.51 341.17Q765.51 336.44 764.5 329.18Q763.49 321.91 761.8 311.44L758.76 294.21L795.58 288.13L798.28 305.36Q799.97 315.16 800.65 323.77Q801.32 332.39 801.32 341.17Q801.32 379.01 788.32 396.74Q775.31 414.48 747.95 414.48Q723.96 414.48 711.8 402.99Q699.64 391.51 695.24 367.52H693.22Q690.51 391.84 681.22 403.16Q671.93 414.48 656.73 414.48Q646.93 414.48 637.3 410.93Q627.68 407.39 612.14 398.26L605.04 394.21Q594.57 404.34 581.22 407.39Q567.88 410.43 547.61 410.43ZM182,183.4A24.24,24.24 0 1 1 133.52,183.4A24.24,24.24 0 1 1 182,183.4ZM124.54,183.4A24.24,24.24 0 1 1 76.05,183.4A24.24,24.24 0 1 1 124.54,183.4ZM410.72,265.3A24.24,24.24 0 1 1 362.23,265.3A24.24,24.24 0 1 1 410.72,265.3ZM353.25,265.3A24.24,24.24 0 1 1 304.77,265.3A24.24,24.24 0 1 1 353.25,265.3ZM381.99,215.54A24.24,24.24 0 1 1 333.5,215.54A24.24,24.24 0 1 1 381.99,215.54Z"/><path fill="url(#lWAccent)" d="M762.41,265.3A24.24,24.24 0 1 1 713.92,265.3A24.24,24.24 0 1 1 762.41,265.3ZM704.94,265.3A24.24,24.24 0 1 1 656.46,265.3A24.24,24.24 0 1 1 704.94,265.3ZM733.68,215.54A24.24,24.24 0 1 1 685.19,215.54A24.24,24.24 0 1 1 733.68,215.54Z"/></svg></a>
   <span class="grow"></span>
   <span class="dot" id="conn" role="status" aria-label="الاتصال"></span>
-  <a class="who" id="who" href="#profiles" hidden><span class="av xs" id="who-av"></span><span class="name" id="who-name"></span></a>
+  <a class="who" id="who" href="#profiles" hidden><span class="av xs" id="who-av"></span><span class="name" id="who-name" dir="auto"></span></a>
 </header>
-<div class="offline" id="offline" hidden><svg class="i"><use href="#i-wifi"/></svg><span>تعذّر الوصول إلى الشاشة. تأكد أن الجوال على شبكة Wi-Fi نفسها… نحاول من جديد.</span></div>
+<div class="offline" id="offline" role="alert" hidden><svg class="i"><use href="#i-wifi"/></svg><div class="t"><b>تعذّر الوصول إلى الشاشة</b><span id="offline-msg"></span></div></div>
 
 <main>
   <!-- ===== الشاشة ===== -->
@@ -479,8 +507,8 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
       </div>
       <div id="np-body" hidden>
         <div class="thumb"><img id="np-img" alt=""><span class="tag live" id="np-live" hidden>مباشر</span><span class="tag lock" id="np-lock" hidden><svg class="i"><use href="#i-lock"/></svg>مقفول</span></div>
-        <h3 class="np-title" id="np-title"></h3>
-        <p class="np-ch" id="np-ch"></p>
+        <h3 class="np-title" id="np-title" dir="auto"></h3>
+        <p class="np-ch" id="np-ch" dir="auto"></p>
         <div class="prog" id="np-prog" dir="ltr">
           <div class="bar"><span id="np-bar"></span></div>
           <div class="times"><span id="np-pos">0:00</span><span id="np-dur">0:00</span></div>
@@ -495,8 +523,14 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
       </div>
       <div class="np-empty" id="np-empty" hidden>
         <svg class="mark"><use href="#mark"/></svg>
-        <b>لا شيء يُعرض الآن</b>
-        <span>أرسل رابطاً من يوتيوب أو ابحث عن فيديو، وسيبدأ على الشاشة فوراً.</span>
+        <b id="np-empty-t">لا شيء يُعرض الآن</b>
+        <span id="np-empty-s"></span>
+      </div>
+      <div class="np-empty" id="np-error" role="alert" hidden>
+        <div class="big"><svg class="i"><use href="#i-alert"/></svg></div>
+        <b>تعذّر معرفة ما يُعرض على الشاشة</b>
+        <span id="np-error-msg"></span>
+        <button class="btn sm" type="button" id="np-retry">إعادة المحاولة</button>
       </div>
       <div class="meta" id="np-meta" style="margin-top:14px" hidden></div>
     </article>
@@ -523,7 +557,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     <div id="search-on">
       <div class="search-top">
         <form class="field" id="search-form" autocomplete="off" novalidate role="search">
-          <div class="input-wrap"><svg class="i"><use href="#i-search"/></svg><input class="input" id="search-q" type="search" enterkeyhint="search" placeholder="ابحث في يوتيوب" aria-label="بحث" dir="auto"></div>
+          <div class="input-wrap"><svg class="i"><use href="#i-search"/></svg><input class="input" id="search-q" type="search" enterkeyhint="search" placeholder="ابحث في يوتيوب" aria-label="بحث" dir="auto" maxlength="200"></div>
           <button class="btn primary" type="submit">بحث</button>
         </form>
       </div>
@@ -596,8 +630,9 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
       </div>
 
       <div class="ptab" id="ptab-allow" hidden>
-        <div class="chips" id="kid-chips"></div>
-        <div id="allow-body">
+        <div class="chips" id="kid-chips" hidden></div>
+        <div id="allow-wait"></div>
+        <div id="allow-body" hidden>
           <article class="card">
             <div class="card-h"><span class="badge-ico kid"><svg class="i"><use href="#i-plus"/></svg></span><h2>إضافة إلى قائمة السماح</h2></div>
             <form class="field" id="allow-form" autocomplete="off" novalidate>
@@ -663,7 +698,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
 
 <div class="mini" id="mini" hidden>
   <img id="mini-img" alt="">
-  <a class="t" href="#screen" style="color:inherit;text-decoration:none"><b id="mini-title"></b><span id="mini-ch"></span></a>
+  <a class="t" href="#screen" style="color:inherit;text-decoration:none"><b id="mini-title" dir="auto"></b><span id="mini-ch" dir="auto"></span></a>
   <button class="ctl big" type="button" data-toggle aria-label="تشغيل أو إيقاف مؤقت"><svg class="i ip"><use href="#i-play"/></svg><svg class="i ipa"><use href="#i-pause"/></svg></button>
   <div class="mini-bar" dir="ltr"><span id="mini-bar"></span></div>
 </div>
@@ -695,25 +730,38 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     set(area, k, v) { try { v == null ? window[area].removeItem(k) : window[area].setItem(k, v); } catch (e) {} },
   };
 
-  // ---------- pairing token ----------
-  const params = new URLSearchParams(location.search);
-  const TOKEN = params.get('t') || store.get('localStorage', 'shasha.token') || '';
+  // ---------- pairing token & shared link ----------
+  // "Share → screen" appends the link to /?t=…&v= as it is, so everything after v= (or url=) is the link,
+  // its own ?…&… included. ask=1 comes from the unpaired page, which had to add the remembered token
+  // itself: such a link may come from any page that knows the TV's address, so it waits for a yes.
+  const shareAt = location.search.search(/[?&](?:v|url)=/);
+  const head = new URLSearchParams(shareAt < 0 ? location.search : location.search.slice(0, shareAt));
+  const TOKEN = head.get('t') || store.get('localStorage', 'shasha.token') || '';
   if (TOKEN) {
     store.set('localStorage', 'shasha.token', TOKEN);
     // Home-screen icon (every request needs the token, even this one).
     document.head.append(h('link', { rel: 'apple-touch-icon', href: '/icon.png?t=' + encodeURIComponent(TOKEN) }));
   }
-  const shared = params.get('v') || params.get('url');
-  if (shared) {
+  const shared = shareAt < 0 ? '' : sharedLink(location.search.slice(shareAt + 1).replace(/^(?:v|url)=/, ''));
+  const askFirst = head.has('ask');
+  if (shareAt >= 0 || askFirst) {
     // Keep ?t= (so a bookmark keeps working) but drop the link so a reload does not send it again.
-    params.delete('v'); params.delete('url');
-    history.replaceState(null, '', location.pathname + '?' + params.toString() + location.hash);
+    head.delete('ask');
+    const rest = head.toString();
+    history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
+  }
+  function sharedLink(raw) {
+    // Encoded by the sharing app (https%3A%2F%2F…): a single parameter, up to the next &.
+    const first = raw.split('&')[0];
+    if (!/[:/]/.test(first) && /%[0-9a-f]{2}/i.test(first)) { try { return decodeURIComponent(first); } catch (e) {} }
+    return raw;
   }
 
   const S = {
-    status: null, statusAt: 0, profiles: [], online: null, fatal: false,
+    status: null, statusAt: 0, statusError: null, online: null, fatal: false, failures: 0,
+    profiles: [], profilesLoaded: false, profilesError: null,
     parent: store.get('sessionStorage', 'shasha.parent'), view: 'screen', ptab: 'time',
-    allowProfile: null, subs: [], failures: 0,
+    allowProfile: null, allowShown: null, subs: [], subsLoaded: false, subsError: null,
   };
 
   // ---------- helpers ----------
@@ -782,6 +830,18 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     if (it.type === 'playlist') return 'https://www.youtube.com/playlist?list=' + id;
     return 'https://www.youtube.com/watch?v=' + id;
   }
+  // A name or title inside an Arabic sentence keeps its own direction: without the isolate (FSI…PDI) an
+  // English title such as "10 Facts About Black Holes!" comes out as "!Facts About Black Holes 10".
+  const iso = s => '\u2068' + s + '\u2069';
+  const quote = s => '«' + iso(s) + '»';
+  // Texts from the TV: isolate what they quote, unless the TV already did.
+  const isoQuotes = msg => String(msg).replace(/«([^«»\u2068\u2069]+)»/g, (m, inner) => quote(inner));
+  function errorState(msg, retry, style) {
+    const btn = h('button', { class: 'btn sm', type: 'button', text: 'إعادة المحاولة' });
+    btn.addEventListener('click', () => busy(btn, retry));
+    return h('div', { class: 'empty', role: 'alert', style },
+      h('div', { class: 'big bad' }, ic('alert')), h('b', { text: 'تعذّر التحميل' }), h('span', { text: isoQuotes(msg) }), btn);
+  }
   function normalizeLink(text) {
     text = String(text || '').trim();
     const m = text.match(/https?:\/\/[^\s<>"']+/i);
@@ -797,24 +857,26 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     const box = $('#toasts');
     while (box.children.length > 1) box.firstChild.remove();
     const t = h('div', { class: 'toast ' + (kind || ''), role: kind === 'err' ? 'alert' : 'status' },
-      ic(kind === 'err' ? 'alert' : kind === 'ok' ? 'check' : 'tv'), h('span', { text: msg }));
+      ic(kind === 'err' ? 'alert' : kind === 'ok' ? 'check' : 'tv'), h('span', { text: isoQuotes(msg) }));
     box.append(t);
     const life = kind === 'err' ? 4200 : 2600;
     setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, life);
   }
   function showResult(r) { if (r) toast(r.message, r.ok ? 'ok' : 'err'); return r; }
 
-  let sheetClose = null;
+  let sheetClose = null, sheetSeq = 0;
   function openSheet(build) {
     closeSheet(true);
+    const back = document.activeElement;
     const scrim = h('div', { class: 'scrim' });
-    const sheet = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true' }, h('div', { class: 'grab' }));
+    const sheet = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', tabindex: '-1' }, h('div', { class: 'grab' }));
     let done;
     const result = new Promise(res => { done = res; });
     const close = (value, instant) => {
       if (sheetClose !== close) return;
       sheetClose = null;
       done(value);
+      if (sheet.contains(document.activeElement) && back && back.isConnected && back.focus) back.focus({ preventScroll: true });
       if (instant) { scrim.remove(); sheet.remove(); return; }
       scrim.classList.add('out'); sheet.classList.add('out');
       setTimeout(() => { scrim.remove(); sheet.remove(); }, 280);
@@ -822,7 +884,12 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     sheetClose = close;
     scrim.addEventListener('click', () => close(null));
     build(sheet, close);
+    const title = sheet.querySelector('h3');
+    if (title) { title.id = 'sheet-title-' + ++sheetSeq; sheet.setAttribute('aria-labelledby', title.id); }
     document.body.append(scrim, sheet);
+    // Focus moves into the dialog (read out through its title): its field, else the sheet itself. A button
+    // would show the focus ring on sheets that open by themselves (share → screen), with no tap before.
+    setTimeout(() => { if (sheetClose === close) (sheet.querySelector('input') || sheet).focus({ preventScroll: true }); }, 60);
     return result;
   }
   function closeSheet(instant) { if (sheetClose) sheetClose(null, instant); }
@@ -838,7 +905,6 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
           h('button', { class: 'btn primary', type: 'submit', text: 'تأكيد' })));
       form.addEventListener('submit', e => { e.preventDefault(); if (input.value) close(input.value); else input.focus(); });
       sheet.append(h('h3', { text: title }), subtitle ? h('p', { class: 's', text: subtitle }) : null, form);
-      setTimeout(() => input.focus(), 60);
     });
   }
   function confirmSheet(title, text, okLabel, danger) {
@@ -864,7 +930,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
       res = await fetch(path, { method, headers, body, cache: 'no-store', credentials: 'omit', redirect: 'error' });
     } catch (e) {
       setOnline(false);
-      throw new ApiError(0, 'network', 'تعذّر الوصول إلى الشاشة. تأكد أن الجوال على شبكة Wi-Fi نفسها.');
+      throw new ApiError(0, 'network', 'تعذّر الوصول إلى الشاشة. تأكد أن «شاشة» يعمل على التلفاز وأن الجوال على شبكة Wi-Fi نفسها.');
     }
     setOnline(true);
     if (opts.raw && res.ok) return res;
@@ -879,19 +945,39 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     }
     return data;
   }
-  async function busy(btn, fn) {
-    if (btn) btn.classList.add('busy');
+  // el (a button, a result row, a profile tile) shows a spinner and ignores taps until the TV answers.
+  async function busy(el, fn) {
+    if (el) {
+      if (el.classList.contains('busy')) return null;
+      el.classList.add('busy'); el.setAttribute('aria-busy', 'true');
+    }
     try { return await fn(); }
     catch (e) { if (!(e instanceof ApiError && (e.code === 'pairing' || e.code === 'parent_session'))) toast(e.message, 'err'); return null; }
-    finally { if (btn) btn.classList.remove('busy'); }
+    finally { if (el) { el.classList.remove('busy'); el.removeAttribute('aria-busy'); } }
   }
   function setOnline(on) {
     S.failures = on ? 0 : S.failures + 1;
     if (S.online === on && on) return;
+    const back = on && S.online === false;
+    if (!on && S.online !== false) freezeClock(); // from now on the TV may well have stopped: no more guessing ahead
     S.online = on;
-    $('#conn').className = 'dot ' + (on ? 'on' : 'off');
-    $('#conn').setAttribute('aria-label', on ? 'متصل بالشاشة' : 'غير متصل');
-    $('#offline').hidden = on || S.failures < 2;
+    renderConn();
+    const banner = $('#offline'), show = !on && S.failures >= 2;
+    if (show && banner.hidden) {
+      // Set when shown, so screen readers announce it (role=alert).
+      $('#offline-msg').textContent = 'تأكد أن «شاشة» يعمل على التلفاز وأن الجوال على شبكة Wi-Fi نفسها. إن تغيّر عنوان التلفاز فامسح رمز QR من جديد.';
+    }
+    banner.hidden = !show;
+    $('#np').classList.toggle('stale', !on);
+    $('#mini').classList.toggle('stale', !on);
+    if (back && S.profilesError) loadProfiles();
+  }
+  function renderConn() {
+    const [cls, label] = S.online === false ? ['off', 'غير متصل بالشاشة']
+      : S.statusError ? ['warn', 'الشاشة لا تجيب']
+      : S.online ? ['on', 'متصل بالشاشة'] : ['', 'الاتصال'];
+    $('#conn').className = 'dot ' + cls;
+    $('#conn').setAttribute('aria-label', label);
   }
   function showFatal() {
     S.fatal = true;
@@ -906,22 +992,37 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     clearTimeout(pollTimer);
     if (S.fatal || document.hidden || polling) return;
     polling = true;
-    try { applyStatus(await api('/api/status')); } catch (e) {} finally { polling = false; }
+    try { applyStatus(await api('/api/status')); } catch (e) { statusFailed(e); } finally { polling = false; }
     if (!S.fatal && !document.hidden) pollTimer = setTimeout(poll, 2000);
   }
+  function statusFailed(e) {
+    if (!(e instanceof ApiError)) console.error(e);
+    else if (e.code === 'pairing' || e.status === 0) return; // the QR screen / the offline banner explain it
+    // The TV answered, but not with its state (the app is starting, or it refused): say so, instead of a
+    // skeleton that never ends or a card frozen in the past.
+    S.statusError = e instanceof ApiError ? e.message : 'تعذّر عرض حالة الشاشة.';
+    renderConn();
+    renderNowPlaying();
+  }
+  $('#np-retry').addEventListener('click', e => busy(e.currentTarget, poll));
   document.addEventListener('visibilitychange', () => { if (document.hidden) clearTimeout(pollTimer); else poll(); });
 
   function currentPos() {
     const np = S.status && S.status.nowPlaying;
     if (!np) return 0;
     let pos = np.positionSeconds;
-    if (np.isPlaying && !np.isLive) pos += (performance.now() - S.statusAt) / 1000;
+    if (np.isPlaying && !np.isLive && S.online !== false) pos += (performance.now() - S.statusAt) / 1000;
     return np.durationSeconds ? Math.min(pos, np.durationSeconds) : pos;
+  }
+  function freezeClock() {
+    const np = S.status && S.status.nowPlaying;
+    if (np) { np.positionSeconds = currentPos(); S.statusAt = performance.now(); }
   }
 
   function applyStatus(st) {
     const prevKey = S.status && (S.status.profileName + S.status.profileKind);
-    S.status = st; S.statusAt = performance.now();
+    S.status = st; S.statusAt = performance.now(); S.statusError = null;
+    renderConn();
     const kid = st.profileKind === 'CHILD';
     document.body.classList.toggle('kid', kid);
     const who = $('#who');
@@ -940,15 +1041,29 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
   }
 
   function renderNowPlaying() {
-    const st = S.status, np = st && st.nowPlaying;
-    $('#np-loading').hidden = true;
+    const err = S.statusError, st = err ? null : S.status, np = st && st.nowPlaying;
+    $('#np-loading').hidden = !!(S.status || err);
+    $('#np-error').hidden = !err;
+    if (err) $('#np-error-msg').textContent = isoQuotes(err);
     $('#np-body').hidden = !np;
-    $('#np-empty').hidden = !!np;
+    $('#np-empty').hidden = !st || !!np;
+    if (st && !np) {
+      const locked = st.sessionState === 'TIME_UP' || st.sessionState === 'OUTSIDE_SCHEDULE';
+      $('#np-empty-t').textContent = locked ? 'الشاشة مقفولة الآن' : 'لا شيء يُعرض الآن';
+      $('#np-empty-s').textContent = st.sessionState === 'TIME_UP' ? 'انتهى وقت المشاهدة اليوم، فلن يبدأ شيء حتى يفتح الأب الوقت.'
+        : st.sessionState === 'OUTSIDE_SCHEDULE' ? 'هذا خارج أوقات المشاهدة المسموحة، فلن يبدأ شيء الآن.'
+        : st.profileKind === 'CHILD' ? 'أرسل رابطاً مما في قائمة السماح، وسيبدأ على الشاشة فوراً.'
+        : st.canSearch ? 'أرسل رابطاً من يوتيوب أو ابحث عن فيديو، وسيبدأ على الشاشة فوراً.'
+        : 'أرسل رابطاً من يوتيوب، وسيبدأ على الشاشة فوراً.';
+    }
     $('#btn-stop').hidden = !np;
     $('#btn-stop').disabled = !!(st && st.videoLocked); // a locked video can only be left with the parent PIN
     const playing = !!(np && np.isPlaying);
     $('#np').classList.toggle('playing', playing);
     $('#mini').classList.toggle('playing', playing);
+    $$('[data-toggle]').forEach(b => b.setAttribute('aria-label', playing ? 'إيقاف مؤقت' : 'تشغيل'));
+    $('#np').classList.toggle('stale', S.online === false);
+    $('#mini').classList.toggle('stale', S.online === false);
     if (np) {
       setImg($('#np-img'), np.thumbnailUrl);
       $('#np-title').textContent = np.title;
@@ -998,7 +1113,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
   }
 
   function renderMini() {
-    const np = S.status && S.status.nowPlaying;
+    const np = !S.statusError && S.status && S.status.nowPlaying;
     const show = !!np && S.view !== 'screen';
     $('#mini').hidden = !show;
     document.body.classList.toggle('has-mini', show);
@@ -1018,7 +1133,8 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
 
   // ---------- playback ----------
   async function control(action, seconds) {
-    const np = S.status && S.status.nowPlaying;
+    const st = S.status, np = !S.statusError && st && st.nowPlaying;
+    const before = np && { positionSeconds: currentPos(), isPlaying: np.isPlaying };
     vibrate(8);
     if (np) {
       if (action === 'TOGGLE') { np.positionSeconds = currentPos(); S.statusAt = performance.now(); np.isPlaying = !np.isPlaying; renderNowPlaying(); }
@@ -1028,10 +1144,17 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
         S.statusAt = performance.now(); tick();
       }
     }
+    let done = false;
     try {
       const r = await api('/api/control', { json: { action, seconds: seconds || 0 } });
+      done = r.ok;
       if (!r.ok || action === 'STOP') showResult(r);
     } catch (e) { if (e.code !== 'pairing') toast(e.message, 'err'); }
+    // The TV did not do it: take back the guess shown above (unless a newer state replaced it meanwhile).
+    if (!done && before && S.status === st) {
+      np.positionSeconds = before.positionSeconds; np.isPlaying = before.isPlaying; S.statusAt = performance.now();
+      renderNowPlaying();
+    }
     poll();
   }
   $$('[data-seek]').forEach(b => b.addEventListener('click', () => control('SEEK_BY', Number(b.dataset.seek))));
@@ -1084,7 +1207,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
         p.setAttribute('d', ok ? 'm5.5 12.5 4.2 4.2 8.8-9' : 'M7 7l10 10M17 7 7 17');
         s.append(p); circle.replaceChildren(s);
         title.textContent = ok ? 'أُرسل إلى الشاشة' : 'لم يُشغَّل على الشاشة';
-        sub.textContent = message;
+        sub.textContent = isoQuotes(message);
         btn.disabled = false;
         vibrate(ok ? [12, 60, 12] : 40);
       };
@@ -1092,6 +1215,19 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     api('/api/play', { json: { url } })
       .then(r => { setState(r.ok, r.message); setTimeout(poll, 400); })
       .catch(e => { if (e.code !== 'pairing') setState(false, e.message); });
+  }
+  // A link that arrived without the pairing token (see ask=1 above) is sent only after a yes.
+  async function confirmShared(raw) {
+    const yes = await openSheet((sheet, close) => {
+      sheet.append(h('div', { class: 'state ask' }, ic('share')),
+        h('h3', { text: 'إرسال هذا الرابط إلى الشاشة؟' }),
+        h('p', { class: 's', text: 'وصل الرابط دون رمز الاقتران، فلن يُرسل وحده. أرسله فقط إن كنت أنت من شاركه.' }),
+        h('div', { class: 'sent-url', text: normalizeLink(raw) }),
+        h('div', { class: 'acts' },
+          h('button', { class: 'btn ghost', type: 'button', onclick: () => close(false), text: 'إلغاء' }),
+          h('button', { class: 'btn primary', type: 'button', onclick: () => close(true), text: 'أرسل' })));
+    });
+    if (yes === true) autoSend(raw);
   }
 
   // ---------- search ----------
@@ -1108,13 +1244,13 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
       const items = await api('/api/search', { json: { q } });
       renderResults(items, q);
     } catch (err) {
-      box.replaceChildren(h('div', { class: 'empty' }, h('div', { class: 'big' }, ic('alert')), h('b', { text: 'تعذّر البحث' }), h('span', { text: err.message })));
+      box.replaceChildren(h('div', { class: 'empty', role: 'alert' }, h('div', { class: 'big bad' }, ic('alert')), h('b', { text: 'تعذّر البحث' }), h('span', { text: isoQuotes(err.message) })));
     }
   });
   function renderResults(items, q) {
     const box = $('#results');
     if (!items.length) {
-      box.replaceChildren(h('div', { class: 'empty' }, h('div', { class: 'big' }, ic('search')), h('b', { text: 'لا نتائج' }), h('span', { text: 'لم نجد شيئاً عن «' + q + '». جرّب كلمات أخرى.' })));
+      box.replaceChildren(h('div', { class: 'empty' }, h('div', { class: 'big' }, ic('search')), h('b', { text: 'لا نتائج' }), h('span', { text: 'لم نجد شيئاً عن ' + quote(q) + '. جرّب كلمات أخرى.' })));
       return;
     }
     box.replaceChildren(...items.map((it, i) => {
@@ -1126,9 +1262,9 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
         : it.type === 'playlist' ? h('span', { class: 'kind' }, ic('list'), 'قائمة تشغيل') : null;
       const row = h('button', { class: 'res ' + it.type, type: 'button', style: 'animation-delay:' + Math.min(i, 10) * 35 + 'ms',
         'aria-label': 'شغّل على الشاشة: ' + it.title },
-        thumb, h('span', { class: 'rx' }, h('b', { text: it.title }), it.subtitle ? h('span', { class: 'sub', text: it.subtitle }) : null, kind));
+        thumb, h('span', { class: 'rx' }, h('b', { dir: 'auto', text: it.title }), it.subtitle ? h('span', { class: 'sub', dir: 'auto', text: it.subtitle }) : null, kind));
       row.addEventListener('click', async () => {
-        const r = await play(itemUrl(it));
+        const r = await play(itemUrl(it), row);
         if (r && r.ok) { row.classList.remove('sent'); void row.offsetWidth; row.classList.add('sent'); }
       });
       return row;
@@ -1137,31 +1273,40 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
 
   // ---------- profiles ----------
   async function loadProfiles() {
-    try { S.profiles = await api('/api/profiles'); } catch (e) { return; }
+    try {
+      S.profiles = await api('/api/profiles');
+      S.profilesLoaded = true; S.profilesError = null;
+    } catch (e) {
+      if (e.code === 'pairing') return;
+      S.profilesError = e.message;
+    }
     renderProfiles();
     if (S.view === 'parent' && S.parent) { if (S.ptab === 'time') renderQuotas(); if (S.ptab === 'allow') loadAllow(); }
   }
   function renderProfiles() {
     const grid = $('#pgrid');
+    if (S.profilesError) { grid.replaceChildren(errorState(S.profilesError, loadProfiles, 'grid-column:1/-1')); return; }
+    if (!S.profilesLoaded) { grid.replaceChildren(...[0, 1].map(() => h('div', { class: 'sk', style: 'height:172px;border-radius:22px' }))); return; }
     grid.replaceChildren(...S.profiles.map((p, i) => {
       const kid = p.kind === 'CHILD';
       const tile = h('button', { class: 'ptile' + (kid ? ' kid' : '') + (p.isCurrent ? ' cur' : ''), type: 'button', style: 'animation-delay:' + i * 45 + 'ms' },
         p.isCurrent ? h('span', { class: 'now' }, ic('check'), 'الآن') : null,
-        avatar(p), h('b', { text: p.name }),
+        avatar(p), h('b', { dir: 'auto', text: p.name }),
         h('span', { class: 'k' }, ic(kid ? 'star' : p.needsPin ? 'lock' : 'user'), kid ? 'طفل' : 'كبار'));
-      tile.addEventListener('click', () => switchTo(p));
+      tile.addEventListener('click', () => switchTo(p, tile));
       return tile;
     }));
     if (!S.profiles.length) grid.replaceChildren(h('div', { class: 'empty', style: 'grid-column:1/-1' }, h('div', { class: 'big' }, ic('users')), h('b', { text: 'لا توجد ملفات' })));
   }
-  async function switchTo(p) {
-    if (p.isCurrent) { toast('«' + p.name + '» هو الملف المفتوح الآن.', ''); return; }
+  async function switchTo(p, tile) {
+    if (tile.classList.contains('busy')) return;
+    if (p.isCurrent) { toast(quote(p.name) + ' هو الملف المفتوح الآن.', ''); return; }
     let pin = null;
     if (p.needsPin) {
-      pin = await pinSheet('رمز PIN', 'للانتقال إلى ملف «' + p.name + '».');
+      pin = await pinSheet('رمز PIN', 'للانتقال إلى ملف ' + quote(p.name) + '.');
       if (!pin) return;
     }
-    const r = await busy(null, () => api('/api/profile', { json: { id: p.id, pin } }));
+    const r = await busy(tile, () => api('/api/profile', { json: { id: p.id, pin } }));
     if (r) { showResult(r); if (r.ok) { await loadProfiles(); poll(); } }
   }
 
@@ -1214,7 +1359,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     $$('.ptab').forEach(p => { p.hidden = p.id !== 'ptab-' + t; });
     if (t === 'time') { renderTimeNow(); renderQuotas(); loadProfiles(); }
     if (t === 'video') renderVideoState();
-    if (t === 'allow') { if (S.profiles.length) loadAllow(); else loadProfiles(); }
+    if (t === 'allow') { loadAllow(); if (!S.profilesLoaded || S.profilesError) loadProfiles(); }
     if (t === 'subs') loadSubs();
   }
 
@@ -1230,7 +1375,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     const st = S.status, box = $('#time-now');
     if (!st) { box.replaceChildren(h('span', { class: 'muted', text: '…' })); return; }
     const cur = S.profiles.find(p => p.isCurrent) || { name: st.profileName, kind: st.profileKind };
-    box.replaceChildren(avatar(cur, 'sm'), h('div', { class: 't' }, h('b', { text: st.profileName }), h('span', { text: 'على الشاشة الآن' })), statePill(st));
+    box.replaceChildren(avatar(cur, 'sm'), h('div', { class: 't' }, h('b', { dir: 'auto', text: st.profileName }), h('span', { text: 'على الشاشة الآن' })), statePill(st));
   }
   $$('#unlock-btns [data-extra]').forEach(b => b.addEventListener('click', async () => {
     const extra = b.dataset.extra === 'rest' ? null : Number(b.dataset.extra);
@@ -1239,18 +1384,20 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
   }));
   function renderQuotas() {
     const box = $('#quota-list');
-    if (!S.profiles.length) { box.replaceChildren(h('div', { class: 'sk', style: 'height:92px' })); return; }
+    if (S.profilesError) { box.replaceChildren(errorState(S.profilesError, loadProfiles)); return; }
+    if (!S.profilesLoaded) { box.replaceChildren(h('div', { class: 'sk', style: 'height:92px' })); return; }
     box.replaceChildren(...S.profiles.map(p => {
       let cur = p.dailyQuotaMinutes == null ? 60 : p.dailyQuotaMinutes;
-      const out = h('output', { class: 'num' });
-      const sw = h('input', { type: 'checkbox', role: 'switch', 'aria-label': 'بلا حد' });
+      const who = '«' + p.name + '»'; // spoken labels: several rows carry the same controls
+      const out = h('output', { class: 'num', 'aria-label': 'الحصة اليومية لملف ' + who });
+      const sw = h('input', { type: 'checkbox', role: 'switch', 'aria-label': 'بلا حد لملف ' + who });
       sw.checked = p.dailyQuotaMinutes == null;
-      const save = h('button', { class: 'btn primary sm', type: 'button' }, ic('check'), 'حفظ');
+      const save = h('button', { class: 'btn primary sm', type: 'button', 'aria-label': 'حفظ حصة ' + who }, ic('check'), 'حفظ');
       const now = h('span');
       const step = d => { cur = Math.max(0, Math.min(1440, cur + d)); vibrate(5); sync(); };
       const stepper = h('div', { class: 'stepper', dir: 'ltr' },
-        h('button', { type: 'button', 'aria-label': 'أقل 15 دقيقة', onclick: () => step(-15) }, ic('minus')), out,
-        h('button', { type: 'button', 'aria-label': 'أكثر 15 دقيقة', onclick: () => step(15) }, ic('plus')));
+        h('button', { type: 'button', 'aria-label': 'أقل 15 دقيقة لملف ' + who, onclick: () => step(-15) }, ic('minus')), out,
+        h('button', { type: 'button', 'aria-label': 'أكثر 15 دقيقة لملف ' + who, onclick: () => step(15) }, ic('plus')));
       const sync = () => {
         const unlimited = sw.checked;
         out.textContent = mins(cur);
@@ -1266,7 +1413,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
       });
       sync();
       return h('div', { class: 'qrow' },
-        h('div', { class: 'qhead' }, avatar(p, 'sm'), h('div', { class: 't' }, h('b', { text: p.name }), now), h('label', { class: 'switch' }, 'بلا حد', sw)),
+        h('div', { class: 'qhead' }, avatar(p, 'sm'), h('div', { class: 't' }, h('b', { dir: 'auto', text: p.name }), now), h('label', { class: 'switch' }, 'بلا حد', sw)),
         h('div', { class: 'qctl' }, stepper, save));
     }));
   }
@@ -1277,7 +1424,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     const locked = !!(st && st.videoLocked);
     box.replaceChildren(
       np ? h('div', { class: 'now-line' }, h('div', { class: 'ava sq', style: 'width:72px;height:42px' }, img(np.thumbnailUrl)),
-        h('div', { class: 't' }, h('b', { text: np.title }), h('span', { text: np.channelName || '' })))
+        h('div', { class: 't' }, h('b', { dir: 'auto', text: np.title }), h('span', { dir: 'auto', text: np.channelName || '' })))
         : h('div', { class: 'now-line' }, h('div', { class: 't' }, h('b', { text: 'لا شيء يُعرض الآن' }), h('span', { text: 'لا يوجد فيديو على الشاشة.' }))),
       h('div', { class: 'meta', style: 'margin-bottom:14px' }, locked ? h('span', { class: 'pill warn' }, ic('lock'), 'مقفول حتى ينتهي') : h('span', { class: 'pill ok' }, ic('unlock'), 'غير مقفول')));
     $('#unlock-video').disabled = !locked;
@@ -1289,21 +1436,41 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
 
   // allowlist
   async function loadAllow() {
-    const kids = S.profiles.filter(p => p.kind === 'CHILD');
-    $('#allow-none').hidden = kids.length > 0;
-    $('#allow-body').hidden = kids.length === 0;
-    $('#kid-chips').hidden = kids.length === 0;
+    // Nothing (no form, no "0" counts) until the profiles are known: an empty list would be a lie.
+    const ready = S.profilesLoaded && !S.profilesError;
+    const kids = ready ? S.profiles.filter(p => p.kind === 'CHILD') : [];
+    $('#allow-wait').hidden = ready;
+    if (!ready) $('#allow-wait').replaceChildren(S.profilesError
+      ? h('article', { class: 'card' }, errorState(S.profilesError, loadProfiles))
+      : h('div', { class: 'sk', style: 'height:150px;border-radius:22px' }));
+    $('#allow-none').hidden = !ready || kids.length > 0;
+    $('#allow-body').hidden = !kids.length;
+    $('#kid-chips').hidden = !kids.length;
     if (!kids.length) return;
     if (!kids.some(k => k.id === S.allowProfile)) S.allowProfile = (kids.find(k => k.isCurrent) || kids[0]).id;
     $('#kid-chips').replaceChildren(...kids.map(k => {
-      const c = h('button', { class: 'chip kid' + (k.id === S.allowProfile ? ' on' : ''), type: 'button' }, avatar(k, 'xs'), k.name);
+      const c = h('button', { class: 'chip kid' + (k.id === S.allowProfile ? ' on' : ''), type: 'button' }, avatar(k, 'xs'), h('span', { dir: 'auto', text: k.name }));
       c.addEventListener('click', () => { S.allowProfile = k.id; loadAllow(); });
       return c;
     }));
     const id = S.allowProfile;
+    if (S.allowShown !== id) { // never show one child's list under another child's name
+      for (const [list, count] of [['#allow-ch', '#allow-ch-n'], ['#allow-pl', '#allow-pl-n']]) {
+        $(count).textContent = '…';
+        $(list).replaceChildren(h('div', { class: 'sk', style: 'height:44px;margin:4px 0' }));
+      }
+    }
     let al;
-    try { al = await api('/api/parent/allowlist?profileId=' + encodeURIComponent(id), { parent: true }); } catch (e) { if (e.code !== 'parent_session') toast(e.message, 'err'); return; }
+    try { al = await api('/api/parent/allowlist?profileId=' + encodeURIComponent(id), { parent: true }); } catch (e) {
+      if (e.code === 'parent_session' || e.code === 'pairing' || id !== S.allowProfile) return;
+      S.allowShown = null;
+      $('#allow-ch-n').textContent = '–'; $('#allow-pl-n').textContent = '–';
+      $('#allow-ch').replaceChildren(errorState(e.message, loadAllow));
+      $('#allow-pl').replaceChildren();
+      return;
+    }
     if (id !== S.allowProfile) return;
+    S.allowShown = id;
     renderAllowList('#allow-ch', '#allow-ch-n', al.channels, 'user', 'لا قنوات بعد. أضف رابط قناة من الأعلى.');
     renderAllowList('#allow-pl', '#allow-pl-n', al.playlists, 'list', 'لا قوائم تشغيل بعد.');
   }
@@ -1314,10 +1481,10 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     box.replaceChildren(...list.map((e, i) => {
       const row = h('div', { class: 'row', style: 'animation-delay:' + Math.min(i, 12) * 30 + 'ms' },
         h('span', { class: 'ava' + (icon === 'list' ? ' sq' : '') }, ic(icon)),
-        h('div', { class: 't' }, h('b', { text: e.title }), h('span', { text: e.id })));
+        h('div', { class: 't' }, h('b', { dir: 'auto', text: e.title }), h('span', { text: e.id })));
       const del = h('button', { class: 'icon-btn del', type: 'button', 'aria-label': 'إزالة ' + e.title }, ic('trash'));
       del.addEventListener('click', async () => {
-        if (!await confirmSheet('إزالة من قائمة السماح؟', '«' + e.title + '» لن يظهر بعد الآن في ملف الطفل.', 'إزالة', true)) return;
+        if (!await confirmSheet('إزالة من قائمة السماح؟', quote(e.title) + ' لن يظهر بعد الآن في ملف الطفل.', 'إزالة', true)) return;
         const r = await busy(null, () => api('/api/parent/allowlist/remove', { parent: true, json: { profileId: S.allowProfile, id: e.id } }));
         if (r) { showResult(r); if (r.ok) { row.classList.add('gone'); setTimeout(loadAllow, 280); } }
       });
@@ -1335,11 +1502,24 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
 
   // subscriptions
   async function loadSubs() {
-    try { S.subs = await api('/api/parent/subscriptions', { parent: true }); } catch (e) { if (e.code !== 'parent_session') toast(e.message, 'err'); return; }
+    if (!S.subsLoaded) renderSubs();
+    try {
+      S.subs = await api('/api/parent/subscriptions', { parent: true });
+      S.subsLoaded = true; S.subsError = null;
+    } catch (e) {
+      if (e.code === 'parent_session' || e.code === 'pairing') return;
+      S.subsError = e.message;
+    }
     renderSubs();
   }
   function renderSubs() {
     const box = $('#subs-list'), f = $('#subs-filter').value.trim().toLowerCase();
+    if (S.subsError || !S.subsLoaded) {
+      $('#subs-n').textContent = S.subsError ? '–' : '…';
+      $('#subs-filter-wrap').hidden = true;
+      box.replaceChildren(S.subsError ? errorState(S.subsError, loadSubs) : h('div', { class: 'sk', style: 'height:44px;margin:4px 0' }));
+      return;
+    }
     $('#subs-n').textContent = S.subs.length;
     $('#subs-filter-wrap').hidden = S.subs.length < 8;
     const list = f ? S.subs.filter(s => s.name.toLowerCase().includes(f)) : S.subs;
@@ -1352,10 +1532,10 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
       // The letter stays underneath: it shows until the picture loads, and if it never does.
       const ava = h('span', { class: 'ava', 'aria-hidden': 'true' }, letter, s.avatarUrl ? img(s.avatarUrl) : null);
       const row = h('div', { class: 'row', style: 'animation-delay:' + Math.min(i, 12) * 25 + 'ms' }, ava,
-        h('div', { class: 't' }, h('b', { text: s.name }), h('span', { text: s.channelId })));
+        h('div', { class: 't' }, h('b', { dir: 'auto', text: s.name }), h('span', { text: s.channelId })));
       const del = h('button', { class: 'icon-btn del', type: 'button', 'aria-label': 'إلغاء الاشتراك في ' + s.name }, ic('trash'));
       del.addEventListener('click', async () => {
-        if (!await confirmSheet('إلغاء الاشتراك؟', 'ستختفي فيديوهات «' + s.name + '» من الصفحة الرئيسية.', 'إلغاء الاشتراك', true)) return;
+        if (!await confirmSheet('إلغاء الاشتراك؟', 'ستختفي فيديوهات ' + quote(s.name) + ' من الصفحة الرئيسية.', 'إلغاء الاشتراك', true)) return;
         const r = await busy(null, () => api('/api/parent/subscriptions/remove', { parent: true, json: { channelId: s.channelId } }));
         if (r) { showResult(r); if (r.ok) { row.classList.add('gone'); setTimeout(loadSubs, 280); } }
       });
@@ -1404,7 +1584,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     const file = e.target.files[0];
     e.target.value = '';
     if (!file) return;
-    if (!await confirmSheet('استعادة النسخة؟', 'ستُستبدل كل الإعدادات الحالية على الشاشة بما في «' + file.name + '».', 'استعادة', true)) return;
+    if (!await confirmSheet('استعادة النسخة؟', 'ستُستبدل كل الإعدادات الحالية على الشاشة بما في ' + quote(file.name) + '.', 'استعادة', true)) return;
     const r = await upload('/api/parent/backup', file, 10, $('#backup-btn'));
     if (r) { showResult(r); if (r.ok) { loadProfiles(); poll(); } }
   });
@@ -1428,7 +1608,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     $$('.tab').forEach(t => { const on = t.dataset.view === v; t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
     renderMini();
     if (changed) window.scrollTo(0, 0);
-    if (v === 'profiles') loadProfiles();
+    if (v === 'profiles') { renderProfiles(); loadProfiles(); }
     if (v === 'parent') renderParent();
   }
   window.addEventListener('hashchange', route);
@@ -1438,7 +1618,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
   route();
   poll();
   loadProfiles();
-  if (shared) autoSend(shared);
+  if (shared) (askFirst ? confirmShared : autoSend)(shared);
 })();
 </script>
 </body>

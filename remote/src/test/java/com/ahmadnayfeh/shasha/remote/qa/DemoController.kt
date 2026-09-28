@@ -36,6 +36,8 @@ internal class DemoController(private val log: (String) -> Unit) : RemoteControl
     private val catalog = listOf(
         Video("oc3anD0c5a1", "رحلة إلى أعماق المحيط الهادئ | وثائقي كامل", "UCdocs00000000000000000a", "عالم الوثائقيات", 2710, DemoArt.ocean),
         Video("bl4ckH0le01", "كيف تعمل الثقوب السوداء؟ شرح مبسّط", "UCscience000000000000000b", "علوم بالعربي", 872, DemoArt.space),
+        // Most real titles and channel names are English or mixed: the page must keep their word order.
+        Video("f4ctsBH10en", "10 Facts About Black Holes!", "UCspaceExplained00000000", "Space Explained (English)", 612, DemoArt.space),
         Video("d3s3rtL1fe1", "أسرار الصحراء العربية: الحياة بين الكثبان", "UCtravel00000000000000000", "رحّالة", 1685, DemoArt.desert),
         Video("k4bs4R3c1p1", "طبخ الكبسة خطوة بخطوة", "UCkitchen0000000000000000", "مطبخ سلمى", 768, DemoArt.food),
         Video("c0d3L3ss0n1", "تعلّم البرمجة من الصفر — الدرس الأول", "UCcode0000000000000000000", "دروس البرمجة بالعربي", 3737, DemoArt.code),

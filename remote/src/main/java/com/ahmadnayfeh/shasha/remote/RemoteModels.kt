@@ -59,7 +59,10 @@ data class RemoteItem(
     val isLive: Boolean = false,
 )
 
-/** Answer to an action. [message] is Arabic and shown to the user as-is, success or not. */
+/**
+ * Answer to an action. [message] is Arabic and shown to the user as-is, success or not. Wrap a title or
+ * name inside it in FSI…PDI (U+2068 … U+2069) so an English title keeps its order in the Arabic sentence.
+ */
 @Serializable
 data class RemoteResult(val ok: Boolean, val message: String) {
     companion object {

@@ -66,8 +66,19 @@ class RoutesTest {
 
     @Test
     fun search_emptyQuery_is400() = remoteTest { h ->
-        assertThat(client.call("POST", "/api/search", """{"q":"   "}""").status).isEqualTo(HttpStatusCode.BadRequest)
+        val res = client.call("POST", "/api/search", """{"q":"   "}""")
+        assertThat(res.status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(res.json().str("message")).isEqualTo(ServerMessages.EMPTY_QUERY)
         assertThat(h.controller.calls).isEmpty()
+    }
+
+    @Test
+    fun search_tooLongQuery_is400_withItsOwnMessage() = remoteTest { h ->
+        assertThat(client.call("POST", "/api/search", """{"q":"${"ب".repeat(200)}"}""").status).isEqualTo(HttpStatusCode.OK)
+        val res = client.call("POST", "/api/search", """{"q":"${"ب".repeat(201)}"}""")
+        assertThat(res.status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(res.json().str("message")).isEqualTo(ServerMessages.QUERY_TOO_LONG)
+        assertThat(h.controller.calls).containsExactly("status", "search(${"ب".repeat(200)})").inOrder()
     }
 
     @Test
@@ -96,8 +107,21 @@ class RoutesTest {
             assertThat(client.call("POST", "/api/control", body).status).isEqualTo(HttpStatusCode.OK)
         }
         assertThat(h.controller.calls).containsExactly(
-            "control(PLAY,0)", "control(PAUSE,0)", "control(TOGGLE,0)", "control(SEEK_BY,-10)", "control(SEEK_BY,30)", "control(STOP,0)",
+            "control(PLAY,0)", "control(PAUSE,0)", "control(TOGGLE,0)", "control(SEEK_BY,-10)", "control(SEEK_BY,30)",
+            "status", "control(STOP,0)", // STOP first checks the playback lock
         ).inOrder()
+    }
+
+    @Test
+    fun control_stop_isRefused_whileTheVideoIsLocked_otherCommandsAreNot() = remoteTest { h ->
+        h.controller.status = h.controller.status.copy(videoLocked = true, profileKind = RemoteProfileKind.CHILD, canSearch = false)
+        val stop = client.call("POST", "/api/control", """{"action":"STOP"}""")
+        assertThat(stop.status).isEqualTo(HttpStatusCode.Forbidden)
+        assertThat(stop.json().str("code")).isEqualTo("rejected")
+        assertThat(stop.json().str("message")).isEqualTo(ServerMessages.VIDEO_LOCKED)
+        assertThat(client.call("POST", "/api/control", """{"action":"PAUSE"}""").status).isEqualTo(HttpStatusCode.OK)
+        assertThat(client.call("POST", "/api/control", """{"action":"SEEK_BY","seconds":-10}""").status).isEqualTo(HttpStatusCode.OK)
+        assertThat(h.controller.calls).containsExactly("status", "control(PAUSE,0)", "control(SEEK_BY,-10)").inOrder()
     }
 
     @Test

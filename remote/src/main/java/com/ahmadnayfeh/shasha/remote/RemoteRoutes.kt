@@ -40,6 +40,7 @@ internal const val PARENT_SESSION_HEADER = "X-Parent-Session"
 @Serializable internal data class ChannelRequest(val channelId: String)
 
 private const val MAX_TEXT = 2048
+private const val MAX_QUERY = 200
 private const val MAX_MINUTES = 24 * 60
 private const val MAX_SEEK_SECONDS = 24 * 60 * 60
 
@@ -47,6 +48,7 @@ internal fun Application.remoteModule(
     controller: RemoteController,
     tokenProvider: () -> String,
     sessions: ParentSessions,
+    pinGate: PinGate,
     pages: RemotePages = RemotePages.fromClasspath(),
     onError: (Throwable) -> Unit = {},
 ) {
@@ -97,7 +99,8 @@ internal fun Application.remoteModule(
             get("/status") { call.respondJson(controller.status()) }
             post("/search") {
                 val q = call.receiveJson<SearchRequest>().q.trim()
-                if (q.isEmpty() || q.length > 200) throw badRequest(ServerMessages.EMPTY_QUERY)
+                if (q.isEmpty()) throw badRequest(ServerMessages.EMPTY_QUERY)
+                if (q.length > MAX_QUERY) throw badRequest(ServerMessages.QUERY_TOO_LONG)
                 // Defence in depth: the child profile has no search at all, whatever the controller does.
                 if (!controller.status().canSearch) throw rejected(ServerMessages.SEARCH_DISABLED)
                 call.respondJson(controller.search(q))
@@ -113,6 +116,8 @@ internal fun Application.remoteModule(
                 if (cmd.action == PlaybackAction.SEEK_BY && (cmd.seconds == 0 || kotlin.math.abs(cmd.seconds) > MAX_SEEK_SECONDS)) {
                     throw badRequest()
                 }
+                // Defence in depth for SPEC §4: a locked video is left with the parent's PIN, never with STOP.
+                if (cmd.action == PlaybackAction.STOP && controller.status().videoLocked) throw rejected(ServerMessages.VIDEO_LOCKED)
                 call.respondJson(controller.control(cmd))
             }
             get("/profiles") { call.respondJson(controller.profiles()) }
@@ -121,7 +126,13 @@ internal fun Application.remoteModule(
                 requireText(req.id)
                 val pin = req.pin?.takeIf { it.isNotEmpty() }
                 if (pin != null && pin.length > 32) throw badRequest()
-                call.respondJson(controller.switchProfile(req.id, pin))
+                val result = if (pin == null) {
+                    controller.switchProfile(req.id, null)
+                } else {
+                    // A switch can succeed without checking the PIN (e.g. to the current profile): never a reset.
+                    pinGate.check(isWrong = { !it.ok }, isVerified = { false }) { controller.switchProfile(req.id, pin) }
+                }
+                call.respondJson(result)
             }
 
             route("/parent") {
@@ -129,7 +140,11 @@ internal fun Application.remoteModule(
                     val pin = call.receiveJson<LoginRequest>().pin
                     if (pin.isEmpty()) throw badRequest(ServerMessages.EMPTY_PIN)
                     if (pin.length > 32) throw badRequest()
-                    when (val result = controller.parentLogin(pin)) {
+                    val result = pinGate.check(
+                        isWrong = { it !is ParentLoginResult.Success },
+                        isVerified = { it is ParentLoginResult.Success },
+                    ) { controller.parentLogin(pin) }
+                    when (result) {
                         ParentLoginResult.Success ->
                             call.respondJson(LoginResponse(ok = true, session = sessions.create(), message = ServerMessages.PARENT_WELCOME))
                         is ParentLoginResult.WrongPin -> throw ApiException(

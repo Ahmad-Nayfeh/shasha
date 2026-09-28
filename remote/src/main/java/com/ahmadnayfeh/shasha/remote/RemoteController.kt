@@ -8,7 +8,9 @@ package com.ahmadnayfeh.shasha.remote
  * thread themselves for anything that touches the player or the UI.
  *
  * To refuse a request with an Arabic explanation, return [RemoteResult.error] or, from methods that
- * return data, throw [RemoteRejection]. Any other exception becomes a generic HTTP 500.
+ * return data, throw [RemoteRejection]. Any other exception becomes a generic HTTP 500. In those Arabic
+ * texts, wrap every title or name in FSI…PDI (U+2068 … U+2069), e.g. "«\u2068$title\u2069»": an
+ * English title inside an Arabic sentence otherwise comes out in the wrong order on the phone.
  */
 interface RemoteController {
     suspend fun status(): RemoteStatus
@@ -19,10 +21,22 @@ interface RemoteController {
     /** Any YouTube link (video, playlist, channel), already trimmed. Must pass the PolicyEngine. */
     suspend fun playLink(url: String): RemoteResult
 
+    /**
+     * Refuse STOP ([RemoteResult.error]) while the playback lock of SPEC §4 is on: a locked video is left
+     * only with the parent's PIN. The server also refuses STOP by itself whenever [status] reports
+     * videoLocked, so keep that flag exact.
+     */
     suspend fun control(cmd: PlaybackCommand): RemoteResult
 
     suspend fun profiles(): List<RemoteProfile>
 
+    /**
+     * [pin] is null when the page sent none. When the switch needs a PIN, check it through the same shared
+     * PinAttemptLimiter as [parentLogin] and the TV's PIN pad (one limiter per PIN), and refuse a wrong
+     * PIN, or any attempt while the limiter is locked, with [RemoteResult.error]. The server brakes
+     * guessing on top of that: every non-ok answer to a call with a PIN counts as a wrong PIN, and after
+     * a few of them it answers 429 without calling this at all.
+     */
     suspend fun switchProfile(id: String, pin: String?): RemoteResult
 
     /** Checks the parent PIN through the shared PinAttemptLimiter. The server creates the session. */

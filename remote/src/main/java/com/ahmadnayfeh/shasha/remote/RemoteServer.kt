@@ -38,6 +38,8 @@ class RemoteServer internal constructor(
     var onError: (Throwable) -> Unit = {}
 
     private val sessions = ParentSessions(nowMillis)
+    // Unlike sessions it survives stop/start: restarting the server must not hand out fresh PIN guesses.
+    private val pinGate = PinGate(nowMillis)
     private val pages by lazy { RemotePages.fromClasspath() }
     private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
 
@@ -67,7 +69,7 @@ class RemoteServer internal constructor(
             if (e is CancellationException) return@CoroutineExceptionHandler
             if (attempt.started) runCatching { onError(e) } else attempt.failure = e
         }
-        val module: Application.() -> Unit = { remoteModule(controller, tokenProvider, sessions, pages) { onError(it) } }
+        val module: Application.() -> Unit = { remoteModule(controller, tokenProvider, sessions, pinGate, pages) { onError(it) } }
         val config = serverConfig(applicationEnvironment()) {
             parentCoroutineContext = engineFailures
             module(module)

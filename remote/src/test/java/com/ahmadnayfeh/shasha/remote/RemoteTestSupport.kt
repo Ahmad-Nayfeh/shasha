@@ -51,13 +51,14 @@ val PARENT_ROUTES = listOf(
 internal class Harness(val controller: FakeController = FakeController()) {
     var now = 0L
     val sessions = ParentSessions({ now })
+    val pinGate = PinGate { now }
     var token = TOKEN
     /** What the server passed to onError (unexpected controller exceptions). */
     val errors = CopyOnWriteArrayList<Throwable>()
 }
 
 internal fun remoteTest(harness: Harness = Harness(), block: suspend ApplicationTestBuilder.(Harness) -> Unit) = testApplication {
-    application { remoteModule(harness.controller, { harness.token }, harness.sessions, onError = harness.errors::add) }
+    application { remoteModule(harness.controller, { harness.token }, harness.sessions, harness.pinGate, onError = harness.errors::add) }
     block(harness)
 }
 
