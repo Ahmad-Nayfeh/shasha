@@ -1,0 +1,6 @@
+# Windows cmd needs CRLF line endings or labels/goto can break.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+# Keep the Unix scripts LF.
+*.sh text eol=lf
+gradlew text eol=lf

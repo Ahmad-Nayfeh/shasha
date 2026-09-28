@@ -14,6 +14,8 @@ chcp 65001 >nul
 
 set "PKG=com.ahmadnayfeh.shasha"
 set "ACTIVITY=com.ahmadnayfeh.shasha/.MainActivity"
+rem The app starts its guard itself; this script only reports whether it is running.
+set "GUARD=com.ahmadnayfeh.shasha/.lock.GuardService"
 set "YT_PKG=com.google.android.youtube.tv"
 rem SYSTEM_ALERT_WINDOW: the guard draws over other apps. GET_USAGE_STATS: it sees which app is
 rem in front. REQUEST_INSTALL_PACKAGES: the in-app updater may open the system installer.
@@ -30,6 +32,7 @@ set "EXITCODE=0"
 set "OPS_OK=1"
 set "OPS_FAILED=0"
 set "YOUTUBE_STATUS=not installed / غير مثبّت"
+set "GUARD_STATUS=not running now / لا تعمل الآن"
 
 rem ---------------------------------------------------------------- arguments
 :parse
@@ -41,7 +44,7 @@ set "ARG=%~1"
 if "%ARG:~0,1%"=="-" goto bad_usage
 if /i "%~x1"==".apk" (
   if defined APK goto bad_usage
-  set "APK=%~1"
+  set "APK=%~f1"
 ) else (
   if defined TV goto bad_usage
   set "TV=%~1"
@@ -53,13 +56,19 @@ goto parse
 if not defined TV (
   set "INTERACTIVE=1"
   call :usage_text
-  echo.
+  echo(
   set /p "TV=TV IP address / عنوان IP للشاشة: "
 )
 if not defined TV goto bad_usage
 set "TV=%TV:"=%"
 set "TV=%TV: =%"
 if not defined TV goto bad_usage
+rem Only digits, dots and ":port" pass, so TV and SERIAL are safe unquoted from here on
+rem (anything else, like & or >, would be parsed as cmd syntax).
+for /f "tokens=1* delims=0123456789.:" %%a in ("x%TV%") do if not "%%a%%b"=="x" goto bad_tv
+>"%TMPOUT%" echo(%TV%
+rem /i: findstr can miss matches with several case-sensitive search strings of different lengths.
+findstr /r /i /x /c:"[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*" /c:"[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*:[0-9][0-9]*" "%TMPOUT%" >nul || goto bad_tv
 set "SERIAL=%TV%"
 if "%TV::=%"=="%TV%" set "SERIAL=%TV%:5555"
 
@@ -75,7 +84,7 @@ if not defined ADB goto no_adb
 set "ADB_VERSION="
 for /f "usebackq delims=" %%v in ("%TMPOUT%") do if not defined ADB_VERSION set "ADB_VERSION=%%v"
 echo(    "%ADB%"
-echo(    %ADB_VERSION%
+for /f "delims=" %%v in ("%ADB_VERSION%") do echo(    %%v
 
 if "%UNDO%"=="1" goto undo
 
@@ -89,10 +98,12 @@ call :warn "No APK given and no shasha-*.apk next to this script or in the curre
 goto fail
 
 :apk_chosen
-if not exist "%APK%" (
-  call :warn "APK not found: %APK%" "ملف APK غير موجود."
-  goto fail
-)
+rem The path is user input: it is only ever used inside quotes, never passed through call.
+if exist "%APK%" goto apk_found
+call :warn "APK not found:" "ملف APK غير موجود:"
+echo(    "%APK%"
+goto fail
+:apk_found
 echo(    APK: "%APK%"
 
 call :connect
@@ -140,13 +151,14 @@ for %%o in (%OPS%) do call :appops_set %%o allow
 if "%OPS_FAILED%"=="1" goto fail
 
 rem ---------------------------------------------------------------- official YouTube app
-"%ADB%" -s %SERIAL% shell pm list packages %YT_PKG% <nul >"%TMPOUT%" 2>nul
-findstr /l /x /c:"package:%YT_PKG%" "%TMPOUT%" >nul || goto youtube_absent
-"%ADB%" -s %SERIAL% shell pm list packages -d %YT_PKG% <nul >"%TMPOUT%" 2>nul
-findstr /l /x /c:"package:%YT_PKG%" "%TMPOUT%" >nul && goto youtube_already_disabled
+call :find_package all %YT_PKG%
+if "%FOUND%"=="0" goto youtube_absent
+call :find_package disabled %YT_PKG%
+if "%FOUND%"=="1" goto youtube_already_disabled
 call :say "Disable the official YouTube app on the TV? It can be re-enabled any time." "هل تريد تعطيل تطبيق يوتيوب الرسمي على الشاشة؟ يمكن إعادته في أي وقت."
+rem set /p, not choice: a plain Enter must mean No.
 set "ANSWER="
-set /p "ANSWER=    Disable YouTube? [y/N] "
+set /p "ANSWER=Disable YouTube? [y/N] "
 if not defined ANSWER goto youtube_keep
 set "ANSWER=%ANSWER:"=%"
 if /i "%ANSWER%"=="y" goto youtube_disable
@@ -182,23 +194,35 @@ rem ---------------------------------------------------------------- start, veri
 :start_app
 call :say "Starting Shasha ..." "تشغيل التطبيق ..."
 "%ADB%" -s %SERIAL% shell am start -n %ACTIVITY% <nul >"%TMPOUT%" 2>&1
-findstr /l /b /c:"Error" "%TMPOUT%" >nul && call :warn "Could not start the app; open it from the TV home screen." "تعذّر تشغيل التطبيق؛ افتحه يدوياً من الشاشة الرئيسية."
+findstr /l /b /c:"Error" "%TMPOUT%" >nul && goto start_failed
+rem About 3 seconds for the app to start its guard before it is checked.
+ping -n 4 127.0.0.1 >nul
+goto verification
+:start_failed
+type "%TMPOUT%"
+call :warn "Could not start the app; open it from the TV home screen." "تعذّر تشغيل التطبيق؛ افتحه يدوياً من الشاشة الرئيسية."
 
+:verification
 call :say "Verification" "التحقق"
 set "OPS_OK=1"
 for %%o in (%OPS%) do call :check_op %%o allow
+"%ADB%" -s %SERIAL% shell dumpsys activity services %GUARD% <nul >"%TMPOUT%" 2>&1
+findstr /l /c:"ServiceRecord{" "%TMPOUT%" >nul && set "GUARD_STATUS=running / تعمل"
+echo(    Guard service / خدمة الحارس: %GUARD_STATUS%
 set "OPS_TEXT=granted / ممنوحة"
 if "%OPS_OK%"=="0" set "OPS_TEXT=INCOMPLETE / ناقصة"
 
 call :say "Summary" "الملخص"
 echo(    TV / الشاشة:              %SERIAL%
-echo(    APK / الملف:               "%APK%"
+for %%a in ("%APK%") do echo(    APK / الملف:               %%~nxa
 echo(    Permissions / الصلاحيات:   %OPS_TEXT%
+echo(    Guard / الحارس:            %GUARD_STATUS%
 echo(    YouTube / يوتيوب الرسمي:  %YOUTUBE_STATUS%
 echo(    Undo / للتراجع:            "%SELF%" --undo %SERIAL%
 echo(
-call :info "To double-check, open Shasha, Settings, Protection status on the TV."
-call :info "للتأكد: افتح تطبيق شاشة، ثم الإعدادات، ثم حالة الحماية."
+call :info "The app starts its guard when protection is needed. To double-check, open"
+call :info "Shasha, Settings, Protection status on the TV."
+call :info "التطبيق يشغّل الحارس عند الحاجة. للتأكد: افتح تطبيق شاشة، ثم الإعدادات، ثم حالة الحماية."
 if "%OPS_OK%"=="0" goto fail
 goto finish
 
@@ -207,8 +231,8 @@ rem ---------------------------------------------------------------- undo
 if defined APK call :warn "--undo ignores the APK argument." "خيار --undo يتجاهل ملف APK."
 call :connect
 if errorlevel 1 goto fail
-"%ADB%" -s %SERIAL% shell pm list packages %YT_PKG% <nul >"%TMPOUT%" 2>nul
-findstr /l /x /c:"package:%YT_PKG%" "%TMPOUT%" >nul || goto undo_ops
+call :find_package all %YT_PKG%
+if "%FOUND%"=="0" goto undo_ops
 call :say "Re-enabling the official YouTube app ..." "إعادة تفعيل تطبيق يوتيوب الرسمي ..."
 "%ADB%" -s %SERIAL% shell pm enable %YT_PKG% <nul
 if errorlevel 1 (
@@ -219,8 +243,8 @@ set "YOUTUBE_STATUS=enabled / مفعّل"
 
 :undo_ops
 set "OPS_TEXT=app not installed / التطبيق غير مثبّت"
-"%ADB%" -s %SERIAL% shell pm list packages %PKG% <nul >"%TMPOUT%" 2>nul
-findstr /l /x /c:"package:%PKG%" "%TMPOUT%" >nul || goto undo_summary
+call :find_package all %PKG%
+if "%FOUND%"=="0" goto undo_summary
 call :say "Resetting Shasha's permissions to default ..." "إرجاع صلاحيات شاشة إلى الوضع الافتراضي ..."
 for %%o in (%OPS%) do call :appops_set %%o default
 if "%OPS_FAILED%"=="1" goto fail
@@ -249,6 +273,11 @@ call :info "  https://dl.google.com/android/repository/platform-tools-latest-win
 call :info "  https://developer.android.com/tools/releases/platform-tools"
 goto fail
 
+:bad_tv
+call :warn "Not an IP address like 192.168.1.50 or 192.168.1.50:5555:" "ليس عنوان IP مثل 192.168.1.50. تجده في إعدادات الشاشة، الشبكة والإنترنت:"
+echo(    "%TV%"
+goto fail
+
 :usage
 call :usage_text
 goto finish
@@ -264,15 +293,15 @@ set "EXITCODE=1"
 :finish
 if exist "%TMPOUT%" del /q "%TMPOUT%" >nul 2>&1
 if "%INTERACTIVE%"=="1" (
-  echo.
+  echo(
   pause
 )
-if defined OLDCP chcp %OLDCP% >nul
+if defined OLDCP if not "%OLDCP%"=="0" chcp %OLDCP% >nul 2>&1
 exit /b %EXITCODE%
 
 rem ================================================================ subroutines
-rem Messages passed to say/warn/info: no double quotes, angle brackets, pipes, ampersands,
-rem carets or percent signs (they would be parsed as syntax).
+rem Messages passed to say/warn/info are fixed text: no double quotes, parentheses, angle
+rem brackets, pipes, ampersands, carets or percent signs (call would parse them as syntax).
 
 :say
 echo(
@@ -352,6 +381,17 @@ call :info "- Still stuck: run the command below, then try again. / إن است�
 echo(        "%ADB%" kill-server
 exit /b 1
 
+rem %1 = all or disabled, %2 = package. Sets FOUND=1 if "pm list packages" prints exactly
+rem package:%2 (pm matches substrings: youtube.tv also lists youtube.tvkids). for /f, not
+rem findstr /x: adb shell output ends lines with LF only.
+:find_package
+set "FOUND=0"
+set "PM_FLAG="
+if "%~1"=="disabled" set "PM_FLAG=-d"
+"%ADB%" -s %SERIAL% shell pm list packages %PM_FLAG% %~2 <nul >"%TMPOUT%" 2>nul
+for /f "usebackq delims=" %%l in ("%TMPOUT%") do if "%%l"=="package:%~2" set "FOUND=1"
+exit /b 0
+
 rem %1 = op, %2 = allow or default
 :appops_set
 "%ADB%" -s %SERIAL% shell appops set %PKG% %1 %2 <nul
@@ -363,15 +403,16 @@ if errorlevel 1 (
 echo(    %1: %2
 exit /b 0
 
-rem %1 = op, %2 = expected mode (allow or default). Clears OPS_OK when it does not match.
+rem %1 = op, %2 = expected mode, allow or default. Clears OPS_OK when it does not match.
+rem Matches "OP: mode" anywhere in a line, like "Uid mode: OP: allow".
 :check_op
 "%ADB%" -s %SERIAL% shell appops get %PKG% %1 <nul >"%TMPOUT%" 2>&1
 if "%2"=="allow" goto check_op_allow
-findstr /l /i /b /c:"%1: allow" /c:"%1: ignore" /c:"%1: deny" "%TMPOUT%" >nul && goto check_op_bad
+findstr /l /i /c:"%1: allow" /c:"%1: ignore" /c:"%1: deny" "%TMPOUT%" >nul && goto check_op_bad
 echo(    [OK] %1: default
 exit /b 0
 :check_op_allow
-findstr /l /b /c:"%1: allow" "%TMPOUT%" >nul || goto check_op_bad
+findstr /l /c:"%1: allow" "%TMPOUT%" >nul || goto check_op_bad
 echo(    [OK] %1: allow
 exit /b 0
 :check_op_bad

@@ -9,6 +9,8 @@ set -euo pipefail
 readonly PKG=com.ahmadnayfeh.shasha
 readonly ACTIVITY="$PKG/.MainActivity"
 readonly YT_PKG=com.google.android.youtube.tv
+# The app starts its guard itself; this script only reports whether it is running.
+readonly GUARD="$PKG/.lock.GuardService"
 # SYSTEM_ALERT_WINDOW: the guard draws over other apps. GET_USAGE_STATS: it sees which app is in
 # front. REQUEST_INSTALL_PACKAGES: the in-app updater may open the system installer.
 OPS=(SYSTEM_ALERT_WINDOW GET_USAGE_STATS REQUEST_INSTALL_PACKAGES)
@@ -210,6 +212,18 @@ start_app() {
   out=$(tv_shell am start -n "$ACTIVITY" 2>&1 || true)
   if grep -q '^Error' <<< "$out"; then
     warn "Could not start $ACTIVITY: $out" "تعذّر تشغيل التطبيق؛ افتحه يدوياً من الشاشة الرئيسية."
+  else
+    sleep 3 # let the app start its guard before it is checked
+  fi
+}
+
+guard_status() {
+  local out
+  out=$(tv_shell dumpsys activity services "$GUARD" 2>&1 || true)
+  if grep -q 'ServiceRecord{' <<< "$out"; then
+    echo "running / تعمل"
+  else
+    echo "not running now / لا تعمل الآن"
   fi
 }
 
@@ -246,17 +260,21 @@ setup() {
   start_app
 
   say "Verification" "التحقق"
-  local ops_ok=true
+  local ops_ok=true guard
   check_ops allow || ops_ok=false
+  guard=$(guard_status)
+  info "Guard service / خدمة الحارس: $guard"
 
   say "Summary" "الملخص"
   info "TV / الشاشة:              $SERIAL" \
     "APK / الملف:               $(basename "$APK")" \
     "Permissions / الصلاحيات:   $([ "$ops_ok" = true ] && echo "granted / ممنوحة" || echo "INCOMPLETE / ناقصة")" \
+    "Guard / الحارس:            $guard" \
     "YouTube / يوتيوب الرسمي:  $YOUTUBE_STATUS" \
     "Undo / للتراجع:            $0 --undo $SERIAL"
-  info "" "To double-check, open Shasha > Settings > Protection status on the TV." \
-    "للتأكد: افتح تطبيق شاشة > الإعدادات > حالة الحماية."
+  info "" "The app starts its guard when protection is needed. To double-check, open" \
+    "Shasha > Settings > Protection status on the TV." \
+    "التطبيق يشغّل الحارس عند الحاجة. للتأكد: افتح تطبيق شاشة > الإعدادات > حالة الحماية."
   [ "$ops_ok" = true ] || exit 1
 }
 
@@ -308,6 +326,10 @@ for arg in "$@"; do
   esac
 done
 [ -n "$TV" ] || { usage >&2; exit 2; }
+if ! [[ "$TV" =~ ^[0-9]+(\.[0-9]+){3}(:[0-9]+)?$ ]]; then
+  die "\"$TV\" is not an IP address like 192.168.1.50 (or 192.168.1.50:5555)." \
+    "\"$TV\" ليس عنوان IP مثل 192.168.1.50. تجده في إعدادات الشاشة > الشبكة والإنترنت."
+fi
 case "$TV" in
   *:*) SERIAL=$TV ;;
   *) SERIAL="$TV:5555" ;;

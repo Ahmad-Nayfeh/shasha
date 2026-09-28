@@ -1,12 +1,13 @@
 # إنذار مبكر: «يوتيوب غيّر شيئاً».
-# يشغّل اختبارات وحدة :youtube على يوتيوب الحقيقي فقط (RealNetwork*: فيديو عادي، بث مباشر، فيديو
-# «للأطفال»، فيديو محذوف، بحث، قناة، قائمة تشغيل، RSS، وملف MPD المولَّد) مرتين أسبوعياً، ويدوياً من
-# تبويب Actions، وعلى كل PR يغيّر وحدة :youtube أو إصدارات المكتبات (مثل PR من Dependabot لرفع
-# NewPipeExtractor).
-# إذا فشل التشغيل صار أحمر وأرسل GitHub بريداً إلى صاحب المستودع: غالباً تغيّر شيء في يوتيوب قبل أن
-# يظهر على الشاشة. اتبع MAINTENANCE.md (رفع إصدار NewPipeExtractor ثم البناء).
-# تنبيه: خوادم GitHub عناوين مراكز بيانات، ويوتيوب أشد معها («Sign in to confirm you're not a bot»
-# أو 403). اقرأ سطور REAL-RESULT في ملخص التشغيل وأعد التشغيل قبل الاستنتاج؛ الحكم الأخير للشاشة.
+# يشغّل اختبارات :youtube الحقيقية فقط (RealNetwork*: فيديو عادي، بث مباشر، فيديو «للأطفال»، فيديو محذوف،
+# بحث، قناة، قائمة تشغيل، RSS، ملف MPD) على يوتيوب نفسه: مرتين أسبوعياً، ويدوياً من تبويب Actions، وعلى كل
+# PR يغيّر :youtube أو إصدارات المكتبات (مثل PR من Dependabot لرفع NewPipeExtractor).
+# إذا فشل صار التشغيل أحمر وأرسل GitHub بريداً: غالباً تغيّر شيء في يوتيوب قبل أن يظهر على الشاشة.
+# اقرأ سطور REAL-RESULT في ملخص التشغيل ثم اتبع MAINTENANCE.md (رفع إصدار NewPipeExtractor ثم البناء).
+# خوادم GitHub عناوين مراكز بيانات ويوتيوب أشد معها (403 أو «Sign in to confirm you're not a bot»):
+# أعد التشغيل قبل الاستنتاج؛ الحكم الأخير للشاشة.
+# بريد الفشل يصل لمن عدّل سطر cron آخر مرة أو لمن أعاد تفعيل الـ workflow. إن لم يصلك:
+# Actions > YouTube canary > «…» > Disable workflow ثم Enable workflow.
 
 name: YouTube canary
 
@@ -29,6 +30,12 @@ concurrency:
 env:
   ANDROID_PLATFORM: platforms;android-37.0
   ANDROID_BUILD_TOOLS: 37.0.0
+
+# An explicit `bash` runs steps with -eo pipefail (the implicit default is only -e): without it
+# `./gradlew | tee` below would take tee's exit code and the canary could never fail.
+defaults:
+  run:
+    shell: bash
 
 jobs:
   real-network:
@@ -63,8 +70,8 @@ jobs:
       - name: Run real-network :youtube tests
         run: |
           for attempt in 1 2; do
-            if ./gradlew --stacktrace :youtube:testDebugUnitTest --tests '*RealNetwork*' -Dyoutube.realNetwork=true 2>&1 |
-              tee "$RUNNER_TEMP/canary.log"; then
+            if ./gradlew --stacktrace :youtube:testDebugUnitTest --tests '*RealNetwork*' \
+              -Dyoutube.realNetwork=true 2>&1 | tee "$RUNNER_TEMP/canary.log"; then
               exit 0
             fi
             if [ "$attempt" = 1 ]; then
@@ -72,22 +79,24 @@ jobs:
               sleep 90
             fi
           done
-          echo "::error title=YouTube changed something?::Failed twice. Read REAL-RESULT in the summary, then MAINTENANCE.md."
+          echo "::error title=YouTube changed something?::Failed twice." \
+            "Read REAL-RESULT in the run summary, then MAINTENANCE.md."
           exit 1
 
       - name: Summary
         if: always()
         run: |
+          log="$RUNNER_TEMP/canary.log"
           {
             echo "### REAL-RESULT"
             echo
-            if [ -f "$RUNNER_TEMP/canary.log" ] && grep -q 'REAL-RESULT' "$RUNNER_TEMP/canary.log"; then
-              grep -h 'REAL-RESULT' "$RUNNER_TEMP/canary.log" | sed -E 's/^[[:space:]]*/- /'
+            if [ -f "$log" ] && grep -q 'REAL-RESULT' "$log"; then
+              grep -h 'REAL-RESULT' "$log" | sed -E 's/^[[:space:]]*/- /'
             else
               echo "(no REAL-RESULT lines: the tests did not get that far)"
             fi
             echo
-            extractor=$(sed -nE 's/^newpipeExtractor[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' gradle/libs.versions.toml)
+            extractor=$(sed -nE 's/^newpipeExtractor *= *"([^"]+)".*/\1/p' gradle/libs.versions.toml)
             echo "NewPipeExtractor: \`${extractor:-unknown}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 

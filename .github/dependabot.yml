@@ -2,10 +2,13 @@
 #
 # NewPipeExtractor (com.github.TeamNewPipe:NewPipeExtractor, published only on JitPack) always gets
 # its OWN pull request: it is the part that breaks when YouTube changes something, and the part a
-# fix arrives in. Never merge it blindly and never auto-merge it. Test it first as MAINTENANCE.md
-# says: android.yml (unit tests + R8 release build) and youtube-canary.yml (tests against the real
-# YouTube) run on the PR by themselves and must both be green; then try it on the TV.
-# JitPack lists every release twice (v0.26.6 and 0.26.6); both are the same code.
+# fix arrives in. Never merge it blindly and never auto-merge it: test EVERY NewPipeExtractor PR as
+# MAINTENANCE.md says before merging. android.yml (unit tests + R8 release build) and
+# youtube-canary.yml (tests against the real YouTube) run on the PR by themselves and must both be
+# green. Then try it on the TV: Actions > Android > Run workflow > pick the PR's dependabot/...
+# branch. A manual run gets the signing secrets, so its APK installs over the app on the TV.
+# JitPack lists every release twice (v0.26.6 and 0.26.6): the same code. A PR that only adds or
+# drops the "v" changes nothing; close it.
 
 version: 2
 
@@ -39,7 +42,7 @@ updates:
         patterns:
           - 'org.jetbrains.kotlin*'
           - 'com.google.devtools.ksp*'
-      android-gradle-plugin:
+      android-tools:
         patterns:
           - 'com.android.*'
       others:
