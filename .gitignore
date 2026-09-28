@@ -1,0 +1,27 @@
+# Gradle / Android
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+output-metadata.json
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.kotlin/
+
+# Signing: the keystore lives only in GitHub Secrets (and your own safe place)
+*.jks
+*.keystore
+keystore.properties
+
+# OS
+.DS_Store
+Thumbs.db
