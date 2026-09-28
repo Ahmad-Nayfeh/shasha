@@ -20,7 +20,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.io.readByteArray
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import java.io.IOException
@@ -100,9 +99,7 @@ internal suspend inline fun <reified T> ApplicationCall.receiveJson(maxBytes: Lo
     val text = receiveBytesLimited(maxBytes).decodeToString()
     return try {
         RemoteJson.decodeFromString(serializer<T>(), text)
-    } catch (e: SerializationException) {
-        throw badRequest()
-    } catch (e: IllegalArgumentException) {
+    } catch (e: IllegalArgumentException) { // SerializationException included
         throw badRequest()
     }
 }

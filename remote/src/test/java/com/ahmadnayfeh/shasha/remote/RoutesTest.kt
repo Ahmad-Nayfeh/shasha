@@ -288,6 +288,15 @@ class RoutesTest {
     }
 
     @Test
+    fun controllerTimeout_isA500Json_notASilentCancellation() = remoteTest { h ->
+        h.controller.failure = kotlinx.coroutines.CancellationException("controller gave up")
+        val res = client.call("GET", "/api/status")
+        assertThat(res.status).isEqualTo(HttpStatusCode.InternalServerError)
+        assertThat(res.json().str("code")).isEqualTo("server_error")
+        assertThat(h.errors).hasSize(1)
+    }
+
+    @Test
     fun controllerCrash_onEveryRoute_isA500Json() = remoteTest { h ->
         val session = client.login()
         h.controller.failure = RuntimeException("boom")

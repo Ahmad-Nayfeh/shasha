@@ -19,6 +19,8 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.serialization.Serializable
 import java.time.LocalDate
 
@@ -74,7 +76,10 @@ internal fun Application.remoteModule(
         try {
             proceed()
         } catch (e: CancellationException) {
-            throw e
+            // The phone went away: nothing to answer. A cancellation from inside the controller (e.g. its
+            // own withTimeout) while the call is still alive is a failure like any other.
+            if (!currentCoroutineContext().isActive) throw e
+            call.respondFailure(e, onError)
         } catch (e: Throwable) {
             call.respondFailure(e, onError)
         }
