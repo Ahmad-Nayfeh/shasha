@@ -38,7 +38,6 @@ import com.ahmadnayfeh.shasha.data.asSourceException
 import com.ahmadnayfeh.shasha.player.PlaybackController
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoaderWithText
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
-import com.ahmadnayfeh.shasha.youtube.StreamDetails
 import com.ahmadnayfeh.shasha.youtube.playback.YouTubeMediaSourceFactory
 
 /**
@@ -71,19 +70,20 @@ fun PlayerScreen(videoId: String, onBack: () -> Unit, onCheckUpdates: () -> Unit
                 onCheckUpdates = onCheckUpdates,
                 onBack = onBack,
             )
-            is PlayerViewModel.Load.Ready -> VideoPlayer(state.stream, vm, container.mediaSourceFactory, onExit = onBack)
+            is PlayerViewModel.Load.Ready -> VideoPlayer(state, vm, container.mediaSourceFactory, onExit = onBack)
         }
     }
 }
 
 /**
  * Owns the ExoPlayer for as long as this screen is started: created on ON_START, released on ON_STOP
- * (Home pressed, screen covered) and when leaving the screen.
+ * (Home pressed, screen covered) and when leaving the screen. Stale URLs (hours later) are replaced by
+ * a fresh extraction first, and playback continues where it was.
  */
 @OptIn(UnstableApi::class)
 @Composable
 private fun VideoPlayer(
-    stream: StreamDetails,
+    ready: PlayerViewModel.Load.Ready,
     vm: PlayerViewModel,
     factory: YouTubeMediaSourceFactory,
     onExit: () -> Unit,
@@ -92,10 +92,14 @@ private fun VideoPlayer(
     val lifecycleOwner = LocalLifecycleOwner.current
     var controller by remember { mutableStateOf<PlaybackController?>(null) }
 
-    DisposableEffect(lifecycleOwner, stream) {
+    DisposableEffect(lifecycleOwner, ready) {
         fun start() {
             if (controller != null) return
-            val created = PlaybackController(context, factory, stream, onError = vm::fail)
+            if (!vm.canStart(ready)) return // a fresh extraction replaces this one; its player starts then
+            lateinit var created: PlaybackController
+            created = PlaybackController(context, factory, ready.stream) { error ->
+                vm.onPlaybackError(ready, error, created.resumeState())
+            }
             try {
                 created.start(vm.resume)
                 controller = created

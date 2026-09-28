@@ -104,13 +104,26 @@ internal object ErrorMapper {
 
     fun technicalName(t: Throwable): String = when (t) {
         is HttpStatusException -> "HTTP ${t.code}"
-        else -> t.javaClass.simpleName.ifEmpty { t.javaClass.name }
+        else -> t.className()
     }
 
     private fun Throwable.causeChain(): Sequence<Throwable> {
         val seen = HashSet<Throwable>()
         return generateSequence(this) { it.cause }.takeWhile { seen.add(it) }
     }
+}
+
+/**
+ * The exception's class name without package or enclosing class ("NothingFoundException" for
+ * SearchExtractor$NothingFoundException), for the error screen. Built from the binary name so it does
+ * not depend on inner-class metadata a shrinker may drop; the names themselves survive R8 thanks to the
+ * `-keepnames` rule in consumer-rules.pro.
+ */
+internal fun Throwable.className(): String {
+    val binary = javaClass.name.substringAfterLast('.')
+    val innermost = binary.substringAfterLast('$')
+    // Anonymous classes ("Outer$1") have no name of their own.
+    return if (innermost.isEmpty() || innermost.all(Char::isDigit)) binary else innermost
 }
 
 /** An HTTP status we treat as a failure (used by our own requests and by the playback layer). */

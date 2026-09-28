@@ -248,7 +248,7 @@ private fun readyLabel(summary: StreamSummary): String {
     val best = summary.bestHeight
     return when {
         summary.isLive -> stringResource(R.string.diag_status_ready_live)
-        best != null -> stringResource(R.string.diag_status_ready, best)
+        best != null -> stringResource(R.string.diag_status_ready, best.toString())
         else -> stringResource(R.string.diag_status_ready_plain)
     }
 }
@@ -339,8 +339,8 @@ private fun Preview(item: DiagnosticItem) {
                 }
                 Spacer(Modifier.height(10.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    status.summary.bestHeight?.let { Fact(stringResource(R.string.diag_fact_best_quality, it)) }
-                    Fact(stringResource(R.string.diag_fact_subtitles, status.summary.subtitleCount))
+                    status.summary.bestHeight?.let { Fact(stringResource(R.string.diag_fact_best_quality, it.toString())) }
+                    Fact(stringResource(R.string.diag_fact_subtitles, status.summary.subtitleCount.toString()))
                     Fact(stringResource(R.string.diag_fact_elapsed, seconds(status.elapsedMs)))
                 }
             }

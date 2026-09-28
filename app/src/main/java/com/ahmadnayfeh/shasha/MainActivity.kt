@@ -3,7 +3,6 @@ package com.ahmadnayfeh.shasha
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.os.Bundle
-import android.os.SystemClock
 import android.view.View
 import android.view.animation.AccelerateInterpolator
 import androidx.activity.ComponentActivity
@@ -21,6 +20,8 @@ class MainActivity : ComponentActivity() {
         splash.setOnExitAnimationListener { provider ->
             // Let the logo animation finish (the first frame is often ready before it ends), then the
             // logo grows slightly and fades into the first screen instead of disappearing abruptly.
+            // The start is wall-clock time (SplashScreenView.getIconAnimationStart() is an Instant; 0
+            // before API 31), so compare it with currentTimeMillis, not uptime.
             val animationEnd = provider.iconAnimationStartMillis + provider.iconAnimationDurationMillis
             val view: View = provider.view
             AnimatorSet().apply {
@@ -29,7 +30,7 @@ class MainActivity : ComponentActivity() {
                     ObjectAnimator.ofFloat(view, View.SCALE_X, 1f, 1.08f),
                     ObjectAnimator.ofFloat(view, View.SCALE_Y, 1f, 1.08f),
                 )
-                startDelay = (animationEnd - SystemClock.uptimeMillis()).coerceIn(0L, MAX_LOGO_WAIT_MS)
+                startDelay = (animationEnd - System.currentTimeMillis()).coerceIn(0L, MAX_LOGO_WAIT_MS)
                 duration = 320L
                 interpolator = AccelerateInterpolator()
                 doOnEnd { provider.remove() }

@@ -12,6 +12,9 @@ import com.ahmadnayfeh.shasha.youtube.newpipe.ItemMapper.epochMs
 import com.ahmadnayfeh.shasha.youtube.newpipe.ItemMapper.isLive
 import com.ahmadnayfeh.shasha.youtube.newpipe.ItemMapper.nonNegativeOrNull
 import com.ahmadnayfeh.shasha.youtube.newpipe.ItemMapper.positiveOrNull
+import com.ahmadnayfeh.shasha.youtube.playback.LOW_QUALITY_MAX_HEIGHT
+import com.ahmadnayfeh.shasha.youtube.playback.heightOrResolution
+import com.ahmadnayfeh.shasha.youtube.playback.lowQualityOnly
 import org.schabi.newpipe.extractor.stream.Description
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.SubtitlesStream
@@ -28,16 +31,7 @@ internal object StreamMapper {
         val adaptive = info.videoOnlyStreams.orEmpty()
         val muxed = info.videoStreams.orEmpty()
 
-        checkPlayable(
-            StreamSummary(
-                isLive = isLive,
-                hasHls = !info.hlsUrl.isNullOrEmpty(),
-                hasDash = !info.dashMpdUrl.isNullOrEmpty(),
-                adaptiveHeights = adaptive.map { it.heightOrParsed() },
-                muxedHeights = muxed.map { it.heightOrParsed() },
-                hasAudio = info.audioStreams.orEmpty().isNotEmpty(),
-            ),
-        )?.let { throw it }
+        checkPlayable(summaryOf(info))?.let { throw it }
 
         val channelId = YouTubeLinkParser.channelIdFromUrl(info.uploaderUrl)
             ?: throw SourceException(
@@ -76,21 +70,30 @@ internal object StreamMapper {
         val hasAudio: Boolean,
     )
 
+    internal fun summaryOf(info: StreamInfo) = StreamSummary(
+        isLive = info.streamType.isLive(),
+        hasHls = !info.hlsUrl.isNullOrBlank(),
+        hasDash = !info.dashMpdUrl.isNullOrBlank(),
+        adaptiveHeights = info.videoOnlyStreams.orEmpty().map { it.heightOrResolution() },
+        muxedHeights = info.videoStreams.orEmpty().filter { !it.content.isNullOrBlank() }.map { it.heightOrResolution() },
+        hasAudio = info.audioStreams.orEmpty().any { !it.content.isNullOrBlank() },
+    )
+
     /**
-     * Null when playable. Only ≤360p muxed streams and no adaptive ladder at all is the signature of a
-     * broken extraction (e.g. "made for kids" videos in v0.26.x), not a video that simply tops out at 360p.
+     * Null when playable. The same rules as the PlaybackPlanner, which plays VOD as adaptive video + audio,
+     * else HLS, else muxed progressive above 360p:
+     * - video without any audio is a broken extraction unless HLS (which carries sound) can replace it;
+     *   muxed streams do not count as its audio source (the player never mixes them in);
+     * - only ≤360p muxed streams, with no adaptive ladder and no HLS, is the signature of a broken
+     *   extraction (e.g. "made for kids" videos in v0.26.x), not a video that simply tops out at 360p.
      */
     internal fun checkPlayable(s: StreamSummary): SourceException? = when {
         s.isLive -> if (s.hasHls || s.hasDash) null else broken("NoLiveManifest", "Live stream without HLS or DASH manifest")
-        s.adaptiveHeights.isNotEmpty() ->
-            if (s.hasAudio || s.muxedHeights.isNotEmpty() || s.hasHls) null
-            else broken("NoAudioStreams", "Video-only streams but no audio stream")
+        s.adaptiveHeights.isNotEmpty() && s.hasAudio -> null
         s.hasHls -> null
+        s.adaptiveHeights.isNotEmpty() -> broken("NoAudioStreams", "Video-only streams but no audio stream")
         s.muxedHeights.isEmpty() -> broken("NoPlayableStreams", "No video stream at all")
-        s.muxedHeights.max() <= 360 -> SourceException(
-            SourceErrorKind.LOW_QUALITY_ONLY, "MuxedOnly360p",
-            "Only muxed streams up to ${s.muxedHeights.max()}p and no adaptive streams", null,
-        )
+        s.muxedHeights.max() <= LOW_QUALITY_MAX_HEIGHT -> lowQualityOnly(s.muxedHeights.max())
         else -> null
     }
 
@@ -100,7 +103,7 @@ internal object StreamMapper {
     private fun videoTracks(streams: List<VideoStream>): List<VideoTrack> = streams
         .map { vs ->
             VideoTrack(
-                height = vs.heightOrParsed(),
+                height = vs.heightOrResolution(),
                 fps = vs.fps.takeIf { it > 0 } ?: fpsFromResolution(vs.getResolution()) ?: 30,
                 codec = vs.codec?.takeIf { it.isNotBlank() } ?: vs.format?.name ?: "unknown",
                 bitrate = vs.bitrate.coerceAtLeast(0),
@@ -127,9 +130,6 @@ internal object StreamMapper {
             else -> code
         }
     }
-
-    private fun VideoStream.heightOrParsed(): Int =
-        height.takeIf { it > 0 } ?: getResolution().substringBefore('p').toIntOrNull() ?: 0
 
     private fun fpsFromResolution(resolution: String?): Int? =
         resolution?.substringAfter('p', "")?.toIntOrNull()?.takeIf { it > 0 }

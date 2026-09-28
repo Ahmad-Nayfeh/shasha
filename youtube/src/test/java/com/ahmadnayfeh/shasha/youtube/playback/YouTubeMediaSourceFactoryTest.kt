@@ -69,8 +69,10 @@ class YouTubeMediaSourceFactoryTest {
 
     @Test
     fun otherShapes() {
-        assertThat(factory.create(details(info(videoOnly = emptyList())), 1080, null))
+        assertThat(factory.create(details(info(videoOnly = emptyList(), muxed = listOf(muxed(22, 720)))), 1080, null))
             .isInstanceOf(ProgressiveMediaSource::class.java)
+        assertThat(factory.create(details(info(videoOnly = emptyList(), hls = "https://manifest.googlevideo.com/hls_variant.m3u8")), 1080, null))
+            .isInstanceOf(HlsMediaSource::class.java)
         val live = factory.create(details(info(type = StreamType.LIVE_STREAM, hls = "https://manifest.googlevideo.com/hls.m3u8")), 1080, null)
         assertThat(live).isInstanceOf(HlsMediaSource::class.java)
         assertThat(live.mediaItem.liveConfiguration.targetOffsetMs).isEqualTo(10_000)
@@ -86,6 +88,11 @@ class YouTubeMediaSourceFactoryTest {
             factory.create(details(info(videoOnly = emptyList(), muxed = emptyList())), 1080, null)
         }
         assertThat(e.kind).isEqualTo(SourceErrorKind.EXTRACTION_BROKEN)
+        // Muxed 360p alone: the error screen, never a silent 360p video.
+        val lowQuality = assertThrows(SourceException::class.java) {
+            factory.create(details(info(videoOnly = emptyList(), muxed = listOf(muxed(18, 360)))), 1080, null)
+        }
+        assertThat(lowQuality.kind).isEqualTo(SourceErrorKind.LOW_QUALITY_ONLY)
     }
 
     @Test

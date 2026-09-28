@@ -145,16 +145,21 @@ class PlaybackController(
         player.prepare()
     }
 
-    /** Stops and frees the decoder. Returns where to continue next time. */
-    fun release(): ResumeState {
+    /** Where playback is now and the choices made: what a new player continues from. */
+    fun resumeState(): ResumeState {
         val s = _state.value
-        val resume = ResumeState(
+        return ResumeState(
             positionMs = if (player.isCurrentMediaItemLive) 0 else player.currentPosition.coerceAtLeast(0),
             playWhenReady = player.playWhenReady && player.playbackState != Player.STATE_ENDED,
             quality = s.quality,
             speed = s.speed,
             subtitleLanguage = s.subtitleLanguage,
         )
+    }
+
+    /** Stops and frees the decoder. Returns where to continue next time. */
+    fun release(): ResumeState {
+        val resume = resumeState()
         if (!released) {
             released = true
             player.removeListener(listener)

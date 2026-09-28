@@ -35,6 +35,7 @@ class StreamMapperTest {
 
     @Test
     fun hlsForVodMeansNotOnlyMuxed() {
+        // The planner plays the HLS manifest (the whole ladder) instead of the 360p muxed file.
         assertThat(StreamMapper.checkPlayable(vod(muxed = listOf(360), hls = true))).isNull()
     }
 
@@ -44,6 +45,16 @@ class StreamMapperTest {
         val noAudio = StreamMapper.checkPlayable(vod(adaptive = listOf(1080), audio = false))
         assertThat(noAudio?.kind).isEqualTo(SourceErrorKind.EXTRACTION_BROKEN)
         assertThat(noAudio?.technicalName).isEqualTo("NoAudioStreams")
+    }
+
+    @Test
+    fun videoWithoutAudioIsBrokenEvenNextToMuxedStreams() {
+        // ANDROID always adds muxed itag 18, but the player never takes the sound from it: a mute picture.
+        val error = StreamMapper.checkPlayable(vod(adaptive = listOf(1080, 720), muxed = listOf(360), audio = false))
+        assertThat(error?.kind).isEqualTo(SourceErrorKind.EXTRACTION_BROKEN)
+        assertThat(error?.technicalName).isEqualTo("NoAudioStreams")
+        // HLS carries sound: the planner plays it instead.
+        assertThat(StreamMapper.checkPlayable(vod(adaptive = listOf(1080), muxed = listOf(360), audio = false, hls = true))).isNull()
     }
 
     @Test

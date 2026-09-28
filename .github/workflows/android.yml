@@ -98,10 +98,13 @@ jobs:
         with:
           cache-provider: basic
 
+      # :app:verifyRoborazziDebug runs all of :app's unit tests with the screenshot tests in verify mode:
+      # a screen that no longer matches its PNG in app/src/test/screenshots/ fails the build (a plain
+      # testDebugUnitTest only renders them). After an intended UI change: ./gradlew :app:recordRoborazziDebug
       - name: Run unit tests
         run: >-
           ./gradlew --stacktrace --continue
-          :policy:test :youtube:testDebugUnitTest :remote:testDebugUnitTest :app:testDebugUnitTest
+          :policy:test :youtube:testDebugUnitTest :remote:testDebugUnitTest :app:verifyRoborazziDebug
 
       - name: Upload test reports
         if: failure()
@@ -111,6 +114,7 @@ jobs:
           path: |
             */build/reports/tests/
             */build/test-results/
+            app/build/outputs/roborazzi/
           retention-days: 7
           if-no-files-found: ignore
 
@@ -213,6 +217,33 @@ jobs:
             # No key: the release build still has to pass (R8), the debug APK is what gets uploaded.
             ./gradlew --stacktrace :app:assembleRelease :app:assembleDebug
           fi
+
+      # The error screen shows the failing exception's class name (SourceException.technicalName). R8
+      # would rename them ("l50" instead of ContentNotAvailableException); youtube/consumer-rules.pro
+      # keeps them. Fail here if that rule ever stops working.
+      - name: Check that R8 kept exception names
+        run: |
+          mapping=app/build/outputs/mapping/release/mapping.txt
+          if ! grep -q '^org\.schabi\.newpipe\.extractor\.exceptions\.ContentNotAvailableException -> ' "$mapping"; then
+            echo "::error::$mapping is missing or has an unexpected format"
+            exit 1
+          fi
+          renamed=$(grep -E '^(org\.schabi\.newpipe\.extractor\.exceptions\.|com\.ahmadnayfeh\.shasha\.)[A-Za-z0-9_.$]*(Exception|Error) -> ' "$mapping" |
+            awk '$1 ":" != $3 { print $1 " -> " $3 }')
+          if [ -n "$renamed" ]; then
+            echo "::error title=Exception names obfuscated::The error screen would show these renamed:" \
+              "${renamed//$'\n'/, }. Check -keepnames in youtube/consumer-rules.pro."
+            exit 1
+          fi
+
+      # For decoding stack traces of this exact build (retrace). Not part of the Release.
+      - name: Upload R8 mapping
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: r8-mapping-${{ steps.prep.outputs.version_code }}
+          path: app/build/outputs/mapping/release/mapping.txt
+          retention-days: 90
+          if-no-files-found: error
 
       - name: Verify and name APK
         id: apk

@@ -14,6 +14,8 @@ import androidx.media3.exoplayer.hls.playlist.HlsMediaPlaylist
 import androidx.media3.exoplayer.hls.playlist.HlsMultivariantPlaylist
 import androidx.media3.exoplayer.hls.playlist.HlsPlaylistParser
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
+import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
+import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
 import com.ahmadnayfeh.shasha.youtube.newpipe.NewPipeVideoSource
 import com.google.common.truth.Truth.assertThat
@@ -28,6 +30,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.schabi.newpipe.extractor.ServiceList
+import org.schabi.newpipe.extractor.stream.StreamInfo
 import java.io.ByteArrayOutputStream
 import java.time.Duration
 
@@ -136,6 +140,65 @@ class RealNetworkPlaybackTest {
     }
 
     /**
+     * The SPEC's phase-1 question: does a "made for kids" video play? NPE v0.26.5 extracts only ANDROID's
+     * muxed itag 18 (360p) for it, so the app shows LOW_QUALITY_ONLY. This also asks googlevideo for the
+     * first bytes of that file, as the player would (POST, range, ANDROID User-Agent) and as a plain GET,
+     * to tell "360p only" (bytes arrive) from "does not work" (refused).
+     */
+    @Test
+    fun kidsVideoMuxedFileIsRequestedLikeThePlayerWould() = runBlocking {
+        val id = "it3OtbTxQk0"
+        val verdict = try {
+            NewPipeVideoSource(client).stream(id)
+            null
+        } catch (e: SourceException) {
+            e
+        }
+        val info = StreamInfo.getInfo(ServiceList.YouTube, "https://www.youtube.com/watch?v=$id")
+        val muxed = info.videoStreams.filter { it.isUrl && !it.isVideoOnly() }
+        val answers = muxed.map { stream ->
+            val asPlayer = firstBytesStatus(GoogleVideoQuirks.PROGRESSIVE, stream.content)
+            val plainGet = firstBytesStatus(GoogleVideoQuirks.LIVE, stream.content)
+            "itag ${stream.id} ${stream.getResolution()} c=${Uri.parse(stream.content).getQueryParameter("c")}: " +
+                "POST+range $asPlayer, GET $plainGet"
+        }
+        println(
+            "REAL-RESULT | kids $id bytes | app: ${verdict?.let { "${it.kind} ${it.technicalName}" } ?: "PLAYABLE"}; " +
+                "${info.videoOnlyStreams.size} video-only, ${info.audioStreams.size} audio, muxed: $answers",
+        )
+        if (verdict == null) {
+            assertThat(info.videoOnlyStreams).isNotEmpty() // a real ladder came back: the app plays it
+        } else {
+            assertThat(verdict.kind).isAnyOf(SourceErrorKind.LOW_QUALITY_ONLY, SourceErrorKind.BLOCKED_403)
+        }
+    }
+
+    /** The VOD fallback when adaptive video is unusable: YouTube's HLS manifest must list HD with sound. */
+    @Test
+    fun vodHlsManifestLoads() {
+        val hlsUrl = details.playback.info.hlsUrl
+        assumeTrue("no HLS manifest for this VOD", !hlsUrl.isNullOrBlank())
+        val dataSource = YouTubeHttpDataSource.Factory(client, GoogleVideoQuirks.LIVE).createDataSource()
+        val master = HlsPlaylistParser().parse(Uri.parse(hlsUrl), readAll(dataSource, DataSpec(Uri.parse(hlsUrl))).inputStream())
+            as HlsMultivariantPlaylist
+        val heights = master.variants.map { minOf(it.format.width, it.format.height) }.filter { it > 0 }.distinct().sorted()
+        val variant = master.variants.filter { minOf(it.format.width, it.format.height) in 1..1080 }
+            .maxByOrNull { it.format.height }?.url ?: master.variants.first().url
+        val media = HlsPlaylistParser().parse(variant, readAll(dataSource, DataSpec(variant)).inputStream()) as HlsMediaPlaylist
+        val first = media.segments.first()
+        val segmentUri = Uri.parse(UriUtil.resolve(variant.toString(), first.url))
+        val segmentStatus = firstBytesStatus(GoogleVideoQuirks.LIVE, segmentUri.toString(), position = first.byteRangeOffset)
+        println(
+            "REAL-RESULT | playback dQw4w9WgXcQ VOD HLS | ${master.variants.size} variants, qualities $heights, " +
+                "${master.audios.size} audio renditions, muxed audio=${master.variants.any { it.format.codecs?.contains("mp4a") == true }}; " +
+                "variant ${media.segments.size} segments; first segment $segmentStatus",
+        )
+        assertThat(master.variants).isNotEmpty()
+        assertThat(heights.max()).isAtLeast(720)
+        assertThat(media.segments).isNotEmpty()
+    }
+
+    /**
      * Live: the playlists must load. Segments are only reported: from this build machine every live
      * segment request answered 403 (HLS and DASH, GET or POST, any User-Agent), while VOD works from
      * the same address; this has to be checked on the TV.
@@ -172,6 +235,18 @@ class RealNetworkPlaybackTest {
     }
 
     private fun factoryClassification(e: Throwable) = PlaybackErrorClassifier.classify(e).let { "${it.kind} ${it.technicalName}" }
+
+    /** "HTTP 206 (65536 B)" or "HTTP 403": the answer to a request for the first 64 KB. */
+    private fun firstBytesStatus(quirks: GoogleVideoQuirks, url: String, position: Long = 0): String {
+        val dataSource = YouTubeHttpDataSource.Factory(client, quirks).createDataSource()
+        val spec = DataSpec.Builder().setUri(url).setPosition(position).setLength(64L * 1024).build()
+        return try {
+            val bytes = readAll(dataSource, spec)
+            "HTTP ${statuses.last()} (${bytes.size} B)"
+        } catch (e: HttpDataSource.InvalidResponseCodeException) {
+            "HTTP ${e.responseCode}"
+        }
+    }
 
     private fun readAll(dataSource: HttpDataSource, spec: DataSpec): ByteArray {
         dataSource.open(spec)

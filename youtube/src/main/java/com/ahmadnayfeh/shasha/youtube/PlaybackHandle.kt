@@ -1,5 +1,6 @@
 package com.ahmadnayfeh.shasha.youtube
 
+import com.ahmadnayfeh.shasha.youtube.playback.StreamExpiry
 import org.schabi.newpipe.extractor.stream.StreamInfo
 
 /**
@@ -12,4 +13,11 @@ import org.schabi.newpipe.extractor.stream.StreamInfo
 class PlaybackHandle internal constructor(
     internal val info: StreamInfo,
     internal val fallback: Any? = null,
-)
+) {
+    /**
+     * When the stream URLs stop working (epoch ms, from googlevideo's `expire` parameter, about 6 h after
+     * extraction), or null when the URLs do not say. After it, googlevideo answers HTTP 403: extract again
+     * (a new handle) before starting a player close to this time.
+     */
+    val expiresAtEpochMs: Long? by lazy(LazyThreadSafetyMode.PUBLICATION) { StreamExpiry.of(info) }
+}

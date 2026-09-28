@@ -530,7 +530,7 @@ private fun ControlsRow(
 
 @Composable
 private fun qualityValue(state: PlayerUiState): String = when (val q = state.quality) {
-    QualityChoice.Auto -> state.currentHeight?.let { stringResource(R.string.player_quality_auto_playing, it) }
+    QualityChoice.Auto -> state.currentHeight?.let { stringResource(R.string.player_quality_auto_playing, it.toString()) }
         ?: stringResource(R.string.player_quality_auto)
     is QualityChoice.Fixed -> "${q.height}p"
 }

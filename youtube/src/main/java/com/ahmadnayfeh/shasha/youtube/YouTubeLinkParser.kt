@@ -18,14 +18,17 @@ internal object YouTubeLinkParser {
     private val HANDLE = Regex("^@[^\\s/?#@]{1,100}$")
     private val CHANNEL_ID_IN_URL = Regex("/channel/(UC[A-Za-z0-9_-]{22})(?:[/?#]|$)")
     private val URL_IN_TEXT = Regex(
-        // The look-behind stops "notyoutube.com" from matching as "youtube.com".
-        "(?i)(?<![a-z0-9.-])(?:https?://)?(?:[a-z0-9-]+\\.)*(?:youtube\\.com|youtu\\.be|youtube-nocookie\\.com)(?:[/?#][^\\s<>\"']*)?",
+        // The look-behind stops "notyoutube.com" from matching as "youtube.com". A URL ends at any space,
+        // NBSP included (\p{Z}), and at invisible format characters (\p{Cf}): Arabic chat apps wrap links
+        // in direction marks (U+200E/U+200F, U+202A-U+202E, U+2066-U+2069).
+        "(?i)(?<![a-z0-9.-])(?:https?://)?(?:[a-z0-9-]+\\.)*(?:youtube\\.com|youtu\\.be|youtube-nocookie\\.com)" +
+            "(?:[/?#][^\\s\\p{Z}\\p{Cf}<>\"']*)?",
     )
-    private val TRAILING_PUNCTUATION = charArrayOf('.', ',', ')', ']', '}', '!', ';', ':', '»', '…', '،', '؟')
+    private val TRAILING_PUNCTUATION = charArrayOf('.', ',', ')', ']', '}', '!', ';', ':', '»', '…', '،', '؛', '؟')
     private val VIDEO_PATHS = setOf("shorts", "live", "embed", "v", "e")
 
     fun parse(text: String): YouTubeLink? {
-        val trimmed = text.trim()
+        val trimmed = text.trim { it.isWhitespace() || Character.getType(it) == Character.FORMAT.toInt() }
         if (trimmed.isEmpty()) return null
         URL_IN_TEXT.find(trimmed)?.let { match ->
             parseUrl(match.value.trimEnd(*TRAILING_PUNCTUATION))?.let { return it }

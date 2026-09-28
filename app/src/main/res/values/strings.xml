@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The app is Arabic only (SPEC): every UI string lives here, Western digits for numbers. -->
+<!-- The app is Arabic only (SPEC): every UI string lives here, Western digits for numbers.
+     Numbers are passed as ready-made text (%1$s + n.toString()), never %d: with an Arabic system
+     language, %d would print Arabic-Indic digits (١٠٨٠). -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="ar">
     <string name="app_name" translatable="false">شاشة</string>
 
@@ -59,11 +61,11 @@
     <string name="diag_about_sponsorblock">فيه مقطع رعاية معروف لاختبار التخطي (في مرحلة لاحقة).</string>
     <string name="diag_status_waiting">في الانتظار</string>
     <string name="diag_status_checking">جارٍ الفحص…</string>
-    <string name="diag_status_ready">يعمل · حتى %1$dp</string>
+    <string name="diag_status_ready">يعمل · حتى %1$sp</string>
     <string name="diag_status_ready_plain">يعمل</string>
     <string name="diag_status_ready_live">يعمل · بث مباشر</string>
-    <string name="diag_fact_best_quality">أعلى جودة %1$dp</string>
-    <string name="diag_fact_subtitles">ترجمات: %1$d</string>
+    <string name="diag_fact_best_quality">أعلى جودة %1$sp</string>
+    <string name="diag_fact_subtitles">ترجمات: %1$s</string>
     <string name="diag_fact_elapsed">الفحص %1$s ث</string>
     <string name="diag_fact_live">مباشر</string>
 
@@ -80,7 +82,7 @@
     <string name="player_subtitles">الترجمة</string>
     <string name="player_quality_auto">تلقائي</string>
     <string name="player_quality_auto_detail">تلقائي (حتى 1080p)</string>
-    <string name="player_quality_auto_playing">تلقائي · %1$dp</string>
+    <string name="player_quality_auto_playing">تلقائي · %1$sp</string>
     <string name="player_speed_normal">عادية</string>
     <string name="player_subtitles_off">إيقاف</string>
     <string name="player_subtitles_auto">%1$s (تلقائية)</string>

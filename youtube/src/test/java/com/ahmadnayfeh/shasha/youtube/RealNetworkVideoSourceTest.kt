@@ -49,6 +49,28 @@ class RealNetworkVideoSourceTest {
         assertThat(details.videoTracks.maxOf { it.height }).isAtLeast(720)
         assertThat(info.videoOnlyStreams).isNotEmpty()
         assertThat(info.audioStreams).isNotEmpty()
+
+        // The app re-extracts before the URLs expire (about 6 h): the handle must say when.
+        val expiresInMinutes = (details.playback.expiresAtEpochMs!! - System.currentTimeMillis()) / 60_000
+        report("normal dQw4w9WgXcQ expiry", "URLs expire in $expiresInMinutes min")
+        assertThat(expiresInMinutes).isIn(com.google.common.collect.Range.closed(60L, 24 * 60L))
+    }
+
+    @Test
+    fun searchWithoutResultsIsAnEmptyListNotAnError() = runBlocking {
+        // YouTube answers these with "no results" (NPE: NothingFoundException); a typo must not open the
+        // "YouTube changed something" screen.
+        val outcomes = listOf(
+            "qzkxjvbnwyq plmoknijbuhv zzqqxxjj" to SearchFilter.VIDEOS,
+            "qzkxjvbnwyq plmoknijbuhv zzqqxxjj" to SearchFilter.ALL,
+            "qzkxjvbnwyq plmoknijbuhv zzqqxxjj" to SearchFilter.PLAYLISTS,
+            "xqzjwvkpfhgbm" to SearchFilter.CHANNELS,
+        ).map { (query, filter) ->
+            val page = source.search(query, filter)
+            "$filter=${page.items.size}"
+        }
+        report("search without results", "OK: $outcomes (no exception)")
+        assertThat(outcomes).isNotEmpty()
     }
 
     @Test

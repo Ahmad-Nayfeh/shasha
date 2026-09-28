@@ -7,12 +7,14 @@ import androidx.media3.exoplayer.dash.manifest.DashManifest
 import androidx.media3.exoplayer.dash.manifest.DashManifestParser
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
+import com.ahmadnayfeh.shasha.youtube.newpipe.StreamMapper
 import com.ahmadnayfeh.shasha.youtube.playback.PlaybackFixtures.audio
 import com.ahmadnayfeh.shasha.youtube.playback.PlaybackFixtures.info
 import com.ahmadnayfeh.shasha.youtube.playback.PlaybackFixtures.muxed
 import com.ahmadnayfeh.shasha.youtube.playback.PlaybackFixtures.subtitle
 import com.ahmadnayfeh.shasha.youtube.playback.PlaybackFixtures.videoOnly
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -153,9 +155,91 @@ class PlaybackPlannerTest {
     }
 
     @Test
-    fun onlyMuxedStreamsMeansProgressiveMuxedWithoutSeparateAudio() {
-        val plan = planner().plan(info(videoOnly = emptyList(), muxed = listOf(muxed(18, 360))), 1080, null)
-        assertThat(plan.parts).containsExactly(MediaPart.Progressive(PlaybackFixtures.url(18), "muxed 360p"))
+    fun muxedAbove360IsTheLastResortWithoutSeparateAudio() {
+        val plan = planner().plan(info(videoOnly = emptyList(), muxed = listOf(muxed(22, 720), muxed(18, 360))), 1080, null)
+        assertThat(plan.parts).containsExactly(MediaPart.Progressive(PlaybackFixtures.url(22), "muxed 720p"))
+        // The quality cap still applies among muxed files.
+        val capped = planner().plan(info(videoOnly = emptyList(), muxed = listOf(muxed(22, 720), muxed(18, 360))), 480, null)
+        assertThat(capped.parts).containsExactly(MediaPart.Progressive(PlaybackFixtures.url(18), "muxed 360p"))
+    }
+
+    @Test
+    fun muxed360AloneGoesToTheErrorScreenInsteadOfPlayingSilentlyAt360p() {
+        val e = assertThrows(SourceException::class.java) {
+            planner().plan(info(videoOnly = emptyList(), muxed = listOf(muxed(18, 360))), 1080, null)
+        }
+        assertThat(e.kind).isEqualTo(SourceErrorKind.LOW_QUALITY_ONLY)
+        assertThat(e.technicalName).isEqualTo("MuxedOnly360p")
+    }
+
+    @Test
+    fun hlsIsPreferredOverMuxedWhenThereIsNoAdaptiveVideo() {
+        // E.g. visionOS formats turned SABR-only (no URLs) while its HLS manifest stays.
+        val hls = "https://manifest.googlevideo.com/api/manifest/hls_variant/expire/1790655988/x"
+        listOf(listOf(muxed(18, 360)), listOf(muxed(22, 720), muxed(18, 360))).forEach { muxed ->
+            val plan = planner().plan(info(videoOnly = emptyList(), audio = emptyList(), muxed = muxed, hls = hls), 1080, null)
+            assertThat(plan.parts).containsExactly(MediaPart.Hls(hls, live = false))
+        }
+    }
+
+    @Test
+    fun videoWithoutAudioIsNeverPlayedMute() {
+        // ANDROID's muxed itag 18 is always there, but it is not an audio source for the adaptive video.
+        val e = assertThrows(SourceException::class.java) {
+            planner().plan(info(audio = emptyList(), muxed = listOf(muxed(18, 360))), 1080, null)
+        }
+        assertThat(e.kind).isEqualTo(SourceErrorKind.EXTRACTION_BROKEN)
+        assertThat(e.technicalName).isEqualTo("NoAudioStreams")
+
+        // HLS carries the sound: it replaces the silent ladder.
+        val hls = "https://manifest.googlevideo.com/api/manifest/hls_variant/x"
+        assertThat(planner().plan(info(audio = emptyList(), hls = hls), 1080, null).parts)
+            .containsExactly(MediaPart.Hls(hls, live = false))
+
+        val postLive = listOf(videoOnly(137, "avc1.640028", 1920, 1080, ranges = false, postLive = true))
+        val ended = assertThrows(SourceException::class.java) {
+            planner().plan(info(videoOnly = postLive, audio = emptyList(), type = StreamType.POST_LIVE_STREAM), 1080, null)
+        }
+        assertThat(ended.technicalName).isEqualTo("NoAudioStreams")
+    }
+
+    /**
+     * StreamMapper.checkPlayable decides at extraction time (e.g. for the diagnostics screen) what the
+     * planner decides when the player opens: for every shape of streams, both accept, or both reject
+     * with the same error. And whatever is played has sound and is more than a muxed 360p file.
+     */
+    @Test
+    fun extractionCheckAndPlannerAgreeOnEveryShape() {
+        val hlsUrl = "https://manifest.googlevideo.com/api/manifest/hls_variant/x"
+        val shapes = buildList {
+            for (ladder in listOf(emptyList(), PlaybackFixtures.standardLadder()))
+                for (audio in listOf(emptyList(), PlaybackFixtures.standardAudio()))
+                    for (muxed in listOf(emptyList(), listOf(muxed(18, 360)), listOf(muxed(22, 720), muxed(18, 360))))
+                        for (hls in listOf("", hlsUrl)) add(info(videoOnly = ladder, audio = audio, muxed = muxed, hls = hls))
+            for (hls in listOf("", "https://h/m.m3u8")) for (dash in listOf("", "https://d/m.mpd")) {
+                add(info(type = StreamType.LIVE_STREAM, hls = hls, dash = dash))
+            }
+        }
+        for (info in shapes) {
+            val shape = "${info.streamType} adaptive=${info.videoOnlyStreams.size} audio=${info.audioStreams.size} " +
+                "muxed=${info.videoStreams.map { it.height }} hls=${info.hlsUrl.isNotEmpty()} dash=${info.dashMpdUrl.isNotEmpty()}"
+            val verdict = StreamMapper.checkPlayable(StreamMapper.summaryOf(info))
+            val planned = runCatching { planner().plan(info, 1080, null) }
+            assertWithMessage(shape).that(planned.isSuccess).isEqualTo(verdict == null)
+            if (verdict != null) {
+                val error = planned.exceptionOrNull() as SourceException
+                assertWithMessage(shape).that(error.kind).isEqualTo(verdict.kind)
+                assertWithMessage(shape).that(error.technicalName).isEqualTo(verdict.technicalName)
+                continue
+            }
+            val parts = planned.getOrThrow().parts
+            val muxed360 = parts.any { it is MediaPart.Progressive && it.kind == "muxed 360p" }
+            assertWithMessage("$shape played $parts").that(muxed360).isFalse()
+            val dash = parts.filterIsInstance<MediaPart.Dash>().map(::manifestOf)
+            if (dash.isNotEmpty()) {
+                assertWithMessage("$shape: video has sound").that(dash.flatMap { it.representationIds(C.TRACK_TYPE_AUDIO) }).isNotEmpty()
+            }
+        }
     }
 
     @Test
@@ -175,8 +259,9 @@ class PlaybackPlannerTest {
     @Test
     fun postLiveUsesLazyDvrManifests() {
         val ladder = listOf(videoOnly(137, "avc1.640028", 1920, 1080, ranges = false, postLive = true))
-        val plan = planner().plan(info(videoOnly = ladder, audio = emptyList(), type = StreamType.POST_LIVE_STREAM), 1080, null)
-        assertThat(plan.parts.map { (it as MediaPart.LazyDash).kind }).containsExactly("post-live 137")
+        val audio = listOf(audio(140, "mp4a.40.2", 130_000, ranges = false))
+        val plan = planner().plan(info(videoOnly = ladder, audio = audio, type = StreamType.POST_LIVE_STREAM), 1080, null)
+        assertThat(plan.parts.map { (it as MediaPart.LazyDash).kind }).containsExactly("post-live 137", "post-live 140").inOrder()
     }
 
     @Test

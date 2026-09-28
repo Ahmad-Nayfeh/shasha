@@ -1,11 +1,3 @@
-# NewPipeExtractor uses Rhino to run YouTube's player JavaScript (signature / n-parameter).
--keep class org.mozilla.javascript.** { *; }
--keep class org.mozilla.classfile.ClassFileWriter
--dontwarn org.mozilla.javascript.tools.**
--dontwarn org.mozilla.javascript.JavaToJSONConverters
--keep class org.mozilla.javascript.engine.** { *; }
--dontwarn javax.script.**
--dontwarn jdk.dynalink.**
--keep class org.schabi.newpipe.extractor.timeago.patterns.** { *; }
--keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite { <fields>; }
--dontwarn java.beans.**
+# Rules for the app's own code. Library modules bring their rules with them (consumerProguardFiles):
+# NewPipeExtractor/Rhino and the exception-name rule in youtube/consumer-rules.pro, Ktor in
+# remote/consumer-rules.pro.

@@ -22,7 +22,9 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.schabi.newpipe.extractor.InfoItem
+import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage
 import org.schabi.newpipe.extractor.NewPipe
+import org.schabi.newpipe.extractor.Page
 import org.schabi.newpipe.extractor.ServiceList
 import org.schabi.newpipe.extractor.StreamingService
 import org.schabi.newpipe.extractor.channel.ChannelInfo
@@ -33,6 +35,7 @@ import org.schabi.newpipe.extractor.linkhandler.SearchQueryHandler
 import org.schabi.newpipe.extractor.localization.ContentCountry
 import org.schabi.newpipe.extractor.localization.Localization
 import org.schabi.newpipe.extractor.playlist.PlaylistInfo
+import org.schabi.newpipe.extractor.search.SearchExtractor
 import org.schabi.newpipe.extractor.search.SearchInfo
 import org.schabi.newpipe.extractor.services.youtube.YoutubeChannelHelper
 import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory
@@ -57,16 +60,18 @@ internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
         return io {
             val handler: SearchQueryHandler = service.searchQHFactory.fromQuery(q, listOf(filter.contentFilter()), "")
             val owner = "search:${filter.name}:$q"
-            if (page == null) {
-                val info = SearchInfo.getInfo(service, handler)
-                failIfBroken(info.relatedItems, info.errors)
-                ItemsPage(info.relatedItems.mapNotNull(ItemMapper::toSourceItem), pages.put(owner, info.nextPage))
+            val result = if (page == null) {
+                // The results only: SearchInfo would also parse (and report failures of) the spelling
+                // suggestion and info boxes, which this app never shows.
+                val extractor = service.getSearchExtractor(handler)
+                extractor.fetchPage()
+                noResultsIsEmpty { extractor.initialPage }
             } else {
                 val (next, _) = pages.get(owner, page) ?: return@io ItemsPage(emptyList(), null)
-                val more = SearchInfo.getMoreItems(service, handler, next)
-                failIfBroken(more.items, more.errors)
-                ItemsPage(more.items.mapNotNull(ItemMapper::toSourceItem), pages.put(owner, more.nextPage))
+                noResultsIsEmpty { SearchInfo.getMoreItems(service, handler, next) }
             }
+            failIfBroken(result.items, result.errors)
+            ItemsPage(result.items.mapNotNull(ItemMapper::toSourceItem), pages.put(owner, result.nextPage))
         }
     }
 
@@ -85,20 +90,27 @@ internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
     }
 
     override suspend fun channelVideos(channelId: String, page: PageKey?): ItemsPage = io {
-        val handler = service.channelTabLHFactory.fromQuery(channelPath(channelId), listOf(ChannelTabs.VIDEOS), "")
         val owner = "channel:$channelId"
-        val knownId = channelId.takeIf(YouTubeLinkParser::isChannelId)
         if (page == null) {
-            val info = ChannelTabInfo.getInfo(service, handler)
-            failIfBroken(info.relatedItems, info.errors)
-            ItemsPage(info.relatedItems.toVideos(knownId), pages.put(owner, info.nextPage))
+            val (videos, next) = firstChannelVideos(channelId)
+            ItemsPage(videos, pages.put(owner, next))
         } else {
             val (next, _) = pages.get(owner, page) ?: return@io ItemsPage(emptyList(), null)
-            val more = ChannelTabInfo.getMoreItems(service, handler, next)
+            val more = ChannelTabInfo.getMoreItems(service, videosTab(channelId), next)
             failIfBroken(more.items, more.errors)
-            ItemsPage(more.items.toVideos(knownId), pages.put(owner, more.nextPage))
+            ItemsPage(more.items.toVideos(channelId.takeIf(YouTubeLinkParser::isChannelId)), pages.put(owner, more.nextPage))
         }
     }
+
+    /** The first page of a channel's Videos tab and its continuation. Blocking: call inside [io]. */
+    private fun firstChannelVideos(channelId: String): Pair<List<VideoItem>, Page?> {
+        val info = ChannelTabInfo.getInfo(service, videosTab(channelId))
+        failIfBroken(info.relatedItems, info.errors)
+        return info.relatedItems.toVideos(channelId.takeIf(YouTubeLinkParser::isChannelId)) to info.nextPage
+    }
+
+    private fun videosTab(channelId: String) =
+        service.channelTabLHFactory.fromQuery(channelPath(channelId), listOf(ChannelTabs.VIDEOS), "")
 
     override suspend fun playlist(playlistId: String, page: PageKey?): PlaylistPage {
         if (!YouTubeLinkParser.isPlaylistId(playlistId)) {
@@ -152,7 +164,9 @@ internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
                 null // RSS has intermittent 404 windows: fall back to the channel's Videos tab.
             }
         }
-        return fromRss ?: channelVideos(channelId).items.filterIsInstance<VideoItem>()
+        // Only the first page, and no continuation key: a feed sync of hundreds of channels must not
+        // push the keys of the list the user is scrolling out of the (bounded) page store.
+        return fromRss ?: io { firstChannelVideos(channelId).first }
     }
 
     override fun parseLink(text: String): YouTubeLink? = YouTubeLinkParser.parse(text)
@@ -191,11 +205,6 @@ internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
         }
     }
 
-    /** A list that came back empty while the extractor logged errors is a broken extraction, not "no results". */
-    private fun failIfBroken(items: List<*>, errors: List<Throwable>?) {
-        if (items.isEmpty() && !errors.isNullOrEmpty()) throw errors.first()
-    }
-
     private fun List<InfoItem>.toVideos(channelId: String?): List<VideoItem> =
         filterIsInstance<StreamInfoItem>().mapNotNull { ItemMapper.toVideo(it, channelId) }
 
@@ -207,6 +216,23 @@ internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
     }
 
     internal companion object {
+        /**
+         * A list that came back empty while the extractor logged errors (the page failed, or every item
+         * failed to parse) is a broken extraction, not "no results". YouTube's own "no results" answer
+         * is not an error.
+         */
+        fun failIfBroken(items: List<*>, errors: List<Throwable>?) {
+            if (items.isNotEmpty()) return
+            errors.orEmpty().firstOrNull { it !is SearchExtractor.NothingFoundException }?.let { throw it }
+        }
+
+        /** NPE reports a search without results (a typo, a narrow filter) as NothingFoundException. */
+        fun <T : InfoItem> noResultsIsEmpty(load: () -> InfoItemsPage<T>): InfoItemsPage<T> = try {
+            load()
+        } catch (e: SearchExtractor.NothingFoundException) {
+            InfoItemsPage.emptyPage()
+        }
+
         /** "UC…" → channel/UC…; "@handle", "c/x", "user/x" are kept (percent-encoded). */
         fun channelPath(channelIdOrRaw: String): String {
             val raw = channelIdOrRaw.trim().removePrefix("/")

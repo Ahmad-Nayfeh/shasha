@@ -13,6 +13,7 @@ import com.ahmadnayfeh.shasha.youtube.SourceErrorKind.NETWORK
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind.RATE_LIMITED
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.newpipe.HttpStatusException
+import com.ahmadnayfeh.shasha.youtube.newpipe.className
 import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
 import java.io.IOException
 import java.io.InterruptedIOException
@@ -77,7 +78,7 @@ internal object PlaybackErrorClassifier {
         is HttpDataSource.InvalidResponseCodeException -> "HTTP ${t.responseCode}"
         is HttpStatusException -> "HTTP ${t.code}"
         is PlaybackException -> t.errorCodeName
-        else -> t.javaClass.simpleName.ifEmpty { t.javaClass.name }
+        else -> t.className()
     }
 
     private fun Throwable.causeChain(): Sequence<Throwable> {

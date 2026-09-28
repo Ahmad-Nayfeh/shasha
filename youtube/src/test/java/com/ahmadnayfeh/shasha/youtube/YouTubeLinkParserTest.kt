@@ -107,6 +107,24 @@ class YouTubeLinkParserTest {
     }
 
     @Test
+    fun directionMarksAndNoBreakSpacesAroundLinks() {
+        val rlm = "‏"
+        val lrm = "‎"
+        val nbsp = " "
+        val video = YouTubeLink.Video(id, null, null)
+        // Arabic chat apps wrap Latin links in direction marks and put no-break spaces next to them.
+        assertThat(parse("https://youtu.be/$id$rlm")).isEqualTo(video)
+        assertThat(parse("${rlm}https://youtu.be/$id$rlm")).isEqualTo(video)
+        assertThat(parse("https://youtu.be/$id${nbsp}شاهد")).isEqualTo(video)
+        assertThat(parse("شاهد${nbsp}https://www.youtube.com/watch?v=$id$lrm")).isEqualTo(video)
+        assertThat(parse("⁧https://www.youtube.com/watch?v=$id&t=90⁩")).isEqualTo(YouTubeLink.Video(id, 90, null))
+        assertThat(parse("‫https://www.youtube.com/playlist?list=$playlistId‬")).isEqualTo(YouTubeLink.Playlist(playlistId))
+        assertThat(parse("انظر: https://youtu.be/$id؛ جميل")).isEqualTo(video)
+        assertThat(parse("$rlm$id$rlm")).isEqualTo(video)
+        assertThat(parse("$lrm@RickAstleyYT$lrm")).isEqualTo(YouTubeLink.Channel("@RickAstleyYT"))
+    }
+
+    @Test
     fun rejectsNonYouTubeAndIncompleteLinks() {
         assertThat(parse("")).isNull()
         assertThat(parse("   ")).isNull()

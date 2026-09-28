@@ -40,12 +40,30 @@ internal data class SubtitlePart(val url: String, val mimeType: String, val lang
 
 internal data class PlaybackPlan(val parts: List<MediaPart>, val subtitle: SubtitlePart?, val isLive: Boolean)
 
+/** A muxed-only result at or below this height is a broken extraction (SPEC: "360p only" → error screen). */
+internal const val LOW_QUALITY_MAX_HEIGHT = 360
+
+internal fun lowQualityOnly(bestHeight: Int) = SourceException(
+    SourceErrorKind.LOW_QUALITY_ONLY, "MuxedOnly360p",
+    "Only muxed streams up to ${bestHeight}p, and no adaptive streams or HLS manifest", null,
+)
+
+/** YouTube's quality label: the stream's height, or the number in its resolution ("360p"). */
+internal fun VideoStream.heightOrResolution(): Int =
+    height.takeIf { it > 0 } ?: getResolution().substringBefore('p').toIntOrNull() ?: 0
+
 /**
  * Decides how a [StreamInfo] is played (pure, apart from NPE's offline progressive manifest creator):
  * - VOD: one generated MPD with every decodable video-only quality ≤ maxHeight (ABR) + the original
- *   audio track; per-stream fallbacks (NPE manifest creators, progressive) for streams without index ranges;
- *   muxed progressive as the last resort, then HLS.
+ *   audio track; per-stream fallbacks (NPE manifest creators, progressive) for streams without index ranges.
+ *   Without adaptive video, or without any audio for it: YouTube's HLS manifest (the ladder, with sound).
+ *   Muxed progressive is the last resort, and only above 360p: muxed 360p alone is the signature of a
+ *   broken extraction and must reach the error screen instead of playing silently at 360p. Video
+ *   without audio is never played (a mute picture is a failure too).
  * - Live: HLS, else the DASH manifest URL. Ended live (post-live DVR) and OTF: NPE's manifest creators.
+ *
+ * StreamMapper.checkPlayable applies the same rules when the stream is extracted, so its verdict
+ * (e.g. on the diagnostics screen) is the one the player would reach.
  */
 @OptIn(UnstableApi::class)
 internal class PlaybackPlanner(private val decoders: VideoDecoderCheck) {
@@ -70,48 +88,46 @@ internal class PlaybackPlanner(private val decoders: VideoDecoderCheck) {
         val audios = preferredAudio(info.audioStreams.orEmpty())
         val rangedVideos = videos.filter { it.stream.hasIndexRanges() }
         val rangedAudios = audios.filter { it.hasIndexRanges() }
-
-        val parts = mutableListOf<MediaPart>()
-        var hasVideo = rangedVideos.isNotEmpty()
-        var muxed = false
+        // Streams without index ranges (OTF, or ranges missing) are played as their own sources.
         val separateVideo = if (rangedVideos.isEmpty()) videos.firstNotNullOfOrNull { singleStreamPart(it.stream, durationSeconds) } else null
-        if (separateVideo != null) {
-            hasVideo = true
-        } else if (!hasVideo) {
-            bestMuxed(info.videoStreams.orEmpty(), maxHeight)?.let {
-                parts += MediaPart.Progressive(it.content, "muxed ${it.getResolution()}")
-                hasVideo = true
-                muxed = true
-            }
-        }
+        val separateAudio = if (rangedAudios.isEmpty()) audios.firstNotNullOfOrNull { singleStreamPart(it, durationSeconds) } else null
+        val hasVideo = rangedVideos.isNotEmpty() || separateVideo != null
+        val hasAudio = rangedAudios.isNotEmpty() || separateAudio != null
 
-        val manifestAudios = if (muxed) emptyList() else rangedAudios
-        if (rangedVideos.isNotEmpty() || manifestAudios.isNotEmpty()) {
-            parts.add(0, MediaPart.Dash(generatedManifest(rangedVideos, manifestAudios, durationSeconds), "generated"))
-        }
-        separateVideo?.let { parts += it }
-        if (!muxed && manifestAudios.isEmpty()) {
-            audios.firstNotNullOfOrNull { singleStreamPart(it, durationSeconds) }?.let { parts += it }
-        }
+        fun manifest(videos: List<VideoCandidate>) = MediaPart.Dash(generatedManifest(videos, rangedAudios, durationSeconds), "generated")
+            .takeIf { videos.isNotEmpty() || rangedAudios.isNotEmpty() }
 
-        if (!hasVideo) {
-            // No usable video stream: an HLS manifest (visionOS/iOS) is still better than audio only.
-            info.hlsUrl?.takeIf { it.isNotBlank() }?.let { return listOf(MediaPart.Hls(it, live = false)) }
-            if (info.streamType != StreamType.AUDIO_STREAM || parts.isEmpty()) {
-                throw broken("NoPlayableStreams", "No playable video stream for ${info.id}")
-            }
-        }
-        return parts
+        if (hasVideo && hasAudio) return listOfNotNull(manifest(rangedVideos), separateVideo, separateAudio)
+        val audioOnly = if (info.streamType == StreamType.AUDIO_STREAM && hasAudio) listOfNotNull(manifest(emptyList()), separateAudio) else emptyList()
+        return fallbackParts(info, maxHeight, videoWithoutAudio = hasVideo, audioOnly = audioOnly)
     }
 
     private fun postLiveParts(info: StreamInfo, maxHeight: Int): List<MediaPart> {
         val durationSeconds = info.duration
         val video = selectVideos(info.videoOnlyStreams.orEmpty(), maxHeight).firstNotNullOfOrNull { postLivePart(it.stream, durationSeconds) }
         val audio = preferredAudio(info.audioStreams.orEmpty()).firstNotNullOfOrNull { postLivePart(it, durationSeconds) }
-        if (video != null) return listOfNotNull(video, audio)
+        if (video != null && audio != null) return listOf(video, audio)
+        val audioOnly = if (info.streamType == StreamType.POST_LIVE_AUDIO_STREAM) listOfNotNull(audio) else emptyList()
+        return fallbackParts(info, maxHeight, videoWithoutAudio = video != null, audioOnly = audioOnly)
+    }
+
+    /**
+     * No adaptive video with sound. YouTube's HLS manifest (visionOS/iOS) has the whole ladder with audio;
+     * without it, a picture without sound is a broken extraction; audio-only content plays as audio; muxed
+     * progressive is the last resort, above 360p only.
+     */
+    private fun fallbackParts(info: StreamInfo, maxHeight: Int, videoWithoutAudio: Boolean, audioOnly: List<MediaPart>): List<MediaPart> {
         info.hlsUrl?.takeIf { it.isNotBlank() }?.let { return listOf(MediaPart.Hls(it, live = false)) }
-        if (audio != null && info.streamType == StreamType.POST_LIVE_AUDIO_STREAM) return listOf(audio)
-        throw broken("NoPlayableStreams", "No playable stream for ended live ${info.id}")
+        if (videoWithoutAudio) throw broken("NoAudioStreams", "Video-only streams but no playable audio stream for ${info.id}")
+        if (audioOnly.isNotEmpty()) return audioOnly
+        val muxed = info.videoStreams.orEmpty().filter { it.isPlayableMuxed() }
+        if (muxed.isNotEmpty()) {
+            val best = muxed.maxOf { it.heightOrResolution() }
+            if (best <= LOW_QUALITY_MAX_HEIGHT) throw lowQualityOnly(best)
+            val chosen = bestMuxed(muxed, maxHeight)
+            return listOf(MediaPart.Progressive(chosen.content, "muxed ${chosen.getResolution()}"))
+        }
+        throw broken("NoPlayableStreams", "No playable video stream for ${info.id}")
     }
 
     private fun postLivePart(stream: Stream, durationSeconds: Long): MediaPart? {
@@ -212,13 +228,13 @@ internal class PlaybackPlanner(private val decoders: VideoDecoderCheck) {
         else -> null
     }
 
-    private fun bestMuxed(streams: List<VideoStream>, maxHeight: Int): VideoStream? {
-        val usable = streams.filter { !it.isVideoOnly() && it.isUrl && it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP && !it.content.isNullOrBlank() }
-        if (usable.isEmpty()) return null
-        fun VideoStream.h() = height.takeIf { it > 0 } ?: getResolution().substringBefore('p').toIntOrNull() ?: 0
-        val fitting = usable.filter { maxHeight <= 0 || it.h() <= maxHeight }
-        return fitting.maxByOrNull { it.h() } ?: usable.minByOrNull { it.h() }
-    }
+    private fun VideoStream.isPlayableMuxed() =
+        !isVideoOnly() && isUrl && deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP && !content.isNullOrBlank()
+
+    /** The best of [muxed] (not empty) within [maxHeight], or the lowest when none fits. */
+    private fun bestMuxed(muxed: List<VideoStream>, maxHeight: Int): VideoStream =
+        muxed.filter { maxHeight <= 0 || it.heightOrResolution() <= maxHeight }.maxByOrNull { it.heightOrResolution() }
+            ?: muxed.minBy { it.heightOrResolution() }
 
     // --- audio ---------------------------------------------------------------------------------
 
