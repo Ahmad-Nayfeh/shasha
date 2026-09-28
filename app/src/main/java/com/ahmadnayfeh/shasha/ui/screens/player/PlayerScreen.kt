@@ -1,0 +1,154 @@
+package com.ahmadnayfeh.shasha.ui.screens.player
+
+import androidx.annotation.OptIn
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.compose.ContentFrame
+import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
+import com.ahmadnayfeh.shasha.R
+import com.ahmadnayfeh.shasha.appContainer
+import com.ahmadnayfeh.shasha.data.asSourceException
+import com.ahmadnayfeh.shasha.player.PlaybackController
+import com.ahmadnayfeh.shasha.ui.components.ShashaLoaderWithText
+import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
+import com.ahmadnayfeh.shasha.youtube.StreamDetails
+import com.ahmadnayfeh.shasha.youtube.playback.YouTubeMediaSourceFactory
+
+/**
+ * Loads a video and plays it. Any failure, while extracting or while playing, shows the unified
+ * [ErrorScreen] in place of the video.
+ */
+@Composable
+fun PlayerScreen(videoId: String, onBack: () -> Unit, onCheckUpdates: () -> Unit) {
+    val container = LocalContext.current.appContainer
+    val vm: PlayerViewModel = viewModel(
+        key = "player:$videoId",
+        factory = viewModelFactory { initializer { PlayerViewModel(videoId, container.streams) } },
+    )
+    val load by vm.load.collectAsStateWithLifecycle()
+
+    AnimatedContent(
+        targetState = load,
+        contentKey = { it::class },
+        transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(200)) },
+        modifier = Modifier.fillMaxSize().background(Color.Black),
+        label = "player",
+    ) { state ->
+        when (state) {
+            PlayerViewModel.Load.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                ShashaLoaderWithText(stringResource(R.string.player_loading))
+            }
+            is PlayerViewModel.Load.Failed -> ErrorScreen(
+                error = state.error,
+                extractorVersion = container.videoSource.extractorVersion,
+                onCheckUpdates = onCheckUpdates,
+                onBack = onBack,
+            )
+            is PlayerViewModel.Load.Ready -> VideoPlayer(state.stream, vm, container.mediaSourceFactory, onExit = onBack)
+        }
+    }
+}
+
+/**
+ * Owns the ExoPlayer for as long as this screen is started: created on ON_START, released on ON_STOP
+ * (Home pressed, screen covered) and when leaving the screen.
+ */
+@OptIn(UnstableApi::class)
+@Composable
+private fun VideoPlayer(
+    stream: StreamDetails,
+    vm: PlayerViewModel,
+    factory: YouTubeMediaSourceFactory,
+    onExit: () -> Unit,
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var controller by remember { mutableStateOf<PlaybackController?>(null) }
+
+    DisposableEffect(lifecycleOwner, stream) {
+        fun start() {
+            if (controller != null) return
+            val created = PlaybackController(context, factory, stream, onError = vm::fail)
+            try {
+                created.start(vm.resume)
+                controller = created
+            } catch (e: Exception) {
+                created.release()
+                vm.fail(e.asSourceException())
+            }
+        }
+
+        fun stop() {
+            controller?.let { vm.resume = it.release() }
+            controller = null
+        }
+
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> start()
+                Lifecycle.Event.ON_STOP -> stop()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            stop()
+        }
+    }
+
+    val current = controller ?: return
+    val ui by current.state.collectAsStateWithLifecycle()
+    KeepScreenOn(ui.playWhenReady && !ui.isEnded)
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        // SurfaceView: the video goes straight to the hardware composer, the cheapest path on a weak TV.
+        ContentFrame(
+            player = current.player,
+            modifier = Modifier.fillMaxSize(),
+            surfaceType = SURFACE_TYPE_SURFACE_VIEW,
+            contentScale = ContentScale.Fit,
+        )
+        PlayerOsd(
+            state = ui,
+            progress = current::progress,
+            onAction = current::onAction,
+            onExit = onExit,
+        )
+    }
+}
+
+@Composable
+private fun KeepScreenOn(enabled: Boolean) {
+    val view = LocalView.current
+    DisposableEffect(view, enabled) {
+        view.keepScreenOn = enabled
+        onDispose { view.keepScreenOn = false }
+    }
+}

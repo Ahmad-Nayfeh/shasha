@@ -1,2 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The phone remote is a local HTTP server; NSD announces it on the LAN. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

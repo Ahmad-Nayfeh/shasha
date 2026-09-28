@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -34,6 +35,18 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
     testOptions { unitTests.isIncludeAndroidResources = true }
+}
+
+roborazzi {
+    // Commit-able reference screenshots (record: ./gradlew :app:recordRoborazziDebug).
+    outputDir.set(file("src/test/screenshots"))
+}
+
+tasks.withType<Test>().configureEach {
+    // Robolectric downloads its android-all jars at test time. Maven Central (repo1) rate-limits this
+    // build environment, so use Google's mirror of it, the same one settings.gradle.kts uses.
+    systemProperty("robolectric.dependency.repo.url", "https://maven-central.storage-download.googleapis.com/maven2")
+    maxHeapSize = "3g"
 }
 
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
@@ -90,4 +103,7 @@ dependencies {
     debugImplementation(libs.compose.ui.test.manifest)
     testImplementation(libs.room.testing)
     testImplementation(libs.work.testing)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
 }

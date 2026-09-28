@@ -1,0 +1,66 @@
+# Dependabot: weekly PRs for new versions in gradle/libs.versions.toml and for the pinned Actions.
+#
+# NewPipeExtractor (com.github.TeamNewPipe:NewPipeExtractor, published only on JitPack) always gets
+# its OWN pull request: it is the part that breaks when YouTube changes something, and the part a
+# fix arrives in. Never merge it blindly and never auto-merge it. Test it first as MAINTENANCE.md
+# says: android.yml (unit tests + R8 release build) and youtube-canary.yml (tests against the real
+# YouTube) run on the PR by themselves and must both be green; then try it on the TV.
+# JitPack lists every release twice (v0.26.6 and 0.26.6); both are the same code.
+
+version: 2
+
+registries:
+  jitpack:
+    type: maven-repository
+    url: https://jitpack.io
+  google-maven:
+    type: maven-repository
+    url: https://dl.google.com/dl/android/maven2/
+
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    registries:
+      - jitpack
+      - google-maven
+    schedule:
+      interval: weekly
+      day: thursday
+      time: '05:00'
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: deps
+    # A dependency joins the first group it matches. NewPipeExtractor matches none: own PR.
+    groups:
+      androidx:
+        patterns:
+          - 'androidx.*'
+      kotlin:
+        patterns:
+          - 'org.jetbrains.kotlin*'
+          - 'com.google.devtools.ksp*'
+      android-gradle-plugin:
+        patterns:
+          - 'com.android.*'
+      others:
+        patterns:
+          - '*'
+        exclude-patterns:
+          - 'com.github.TeamNewPipe*'
+          - 'androidx.*'
+          - 'org.jetbrains.kotlin*'
+          - 'com.google.devtools.ksp*'
+          - 'com.android.*'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: thursday
+      time: '05:00'
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - '*'

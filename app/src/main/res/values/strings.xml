@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app is Arabic only (SPEC): every UI string lives here, Western digits for numbers. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="ar">
+    <string name="app_name" translatable="false">شاشة</string>
+
+    <!-- Common -->
+    <string name="action_back">رجوع</string>
+    <string name="action_check_updates">فحص التحديثات</string>
+    <string name="loading">جارٍ التحميل…</string>
+
+    <!-- Unified error screen -->
+    <string name="error_title_youtube">يوتيوب غيّر شيئاً. حدّث التطبيق.</string>
+    <string name="error_title_network">لا يوجد اتصال بالإنترنت</string>
+    <string name="error_detail_name">اسم الخطأ</string>
+    <string name="error_detail_extractor">إصدار المكتبة</string>
+    <string name="error_explain_content_unavailable">هذا الفيديو غير متاح: ربما حُذف أو أخفاه صاحبه.</string>
+    <string name="error_explain_private">هذا الفيديو خاص، ولا يُشاهَد إلا بحساب مسموح له.</string>
+    <string name="error_explain_age_restricted">هذا الفيديو مقيَّد بالعمر ويتطلب تسجيل الدخول، وشاشة لا تسجّل الدخول.</string>
+    <string name="error_explain_geo_restricted">هذا الفيديو غير متاح في بلدك.</string>
+    <string name="error_explain_paid">هذا المحتوى مدفوع أو خاص بأعضاء القناة.</string>
+    <string name="error_explain_account_terminated">أُغلقت القناة التي نشرت هذا الفيديو.</string>
+    <string name="error_explain_bot_check">يوتيوب يطلب التأكد من أنك لست روبوتاً ويرفض التشغيل من هذه الشبكة الآن.</string>
+    <string name="error_explain_blocked_403">رفض يوتيوب طلب تشغيل الفيديو (403). غالباً غيّر طريقة التشغيل.</string>
+    <string name="error_explain_rate_limited">طلبات كثيرة في وقت قصير. انتظر بضع دقائق ثم حاول من جديد.</string>
+    <string name="error_explain_low_quality_only">لم يعطِ يوتيوب إلا جودة 360p أو أقل، وهذه علامة على تعطّل الاستخراج.</string>
+    <string name="error_explain_network">تأكّد من اتصال الشاشة بالشبكة ثم حاول من جديد.</string>
+    <string name="error_explain_extraction_broken">تعذّر فهم ردّ يوتيوب. غالباً غيّر يوتيوب شيئاً في موقعه.</string>
+    <string name="error_short_content_unavailable">غير متاح</string>
+    <string name="error_short_private">خاص</string>
+    <string name="error_short_age_restricted">مقيَّد بالعمر</string>
+    <string name="error_short_geo_restricted">محجوب في بلدك</string>
+    <string name="error_short_paid">مدفوع</string>
+    <string name="error_short_account_terminated">قناة مغلقة</string>
+    <string name="error_short_bot_check">تحقّق روبوت</string>
+    <string name="error_short_blocked_403">مرفوض 403</string>
+    <string name="error_short_rate_limited">طلبات كثيرة</string>
+    <string name="error_short_low_quality_only">360p فقط</string>
+    <string name="error_short_network">لا اتصال</string>
+    <string name="error_short_extraction_broken">تعطّل الاستخراج</string>
+
+    <!-- Updates placeholder -->
+    <string name="updates_title">المحدِّث يصل في إصدار لاحق</string>
+    <string name="updates_body">سيقرأ هذا الزر آخر إصدار من GitHub Releases ويثبّته. حتى ذلك الحين ثبّت الإصدار الجديد عبر ADB كما في README.</string>
+    <string name="updates_current_version">الإصدار الحالي: %1$s · مكتبة الاستخراج %2$s</string>
+
+    <!-- Diagnostics (فيديوهات تجريبية) -->
+    <string name="diag_title">فيديوهات تجريبية</string>
+    <string name="diag_subtitle">افحص التشغيل عندما يتعطّل يوتيوب</string>
+    <string name="diag_recheck">إعادة الفحص</string>
+    <string name="diag_versions">مكتبة الاستخراج %1$s · التطبيق %2$s</string>
+    <string name="diag_case_normal">عادي</string>
+    <string name="diag_case_live">بث مباشر</string>
+    <string name="diag_case_kids">للأطفال</string>
+    <string name="diag_case_deleted">محذوف</string>
+    <string name="diag_case_sponsorblock">SponsorBlock</string>
+    <string name="diag_about_normal">فيديو عادي: يجب أن يعمل بجودة 1080p.</string>
+    <string name="diag_about_live">بث مباشر: إن انتهى هذا البث فظهور الخطأ متوقَّع.</string>
+    <string name="diag_about_kids">فيديو مصنّف «للأطفال»: أصعب حالة في يوتيوب حالياً.</string>
+    <string name="diag_about_deleted">فيديو محذوف: النتيجة الصحيحة هي شاشة الخطأ.</string>
+    <string name="diag_about_sponsorblock">فيه مقطع رعاية معروف لاختبار التخطي (في مرحلة لاحقة).</string>
+    <string name="diag_status_waiting">في الانتظار</string>
+    <string name="diag_status_checking">جارٍ الفحص…</string>
+    <string name="diag_status_ready">يعمل · حتى %1$dp</string>
+    <string name="diag_status_ready_live">يعمل · بث مباشر</string>
+    <string name="diag_untitled">لم يُعرف العنوان بعد</string>
+    <string name="diag_fact_best_quality">أعلى جودة %1$dp</string>
+    <string name="diag_fact_subtitles">ترجمات: %1$d</string>
+    <string name="diag_fact_duration">المدة %1$s</string>
+    <string name="diag_fact_elapsed">الفحص %1$s ث</string>
+    <string name="diag_fact_live">مباشر</string>
+    <string name="diag_hint_play">اضغط زر الوسط للتشغيل</string>
+
+    <!-- Player -->
+    <string name="player_loading">جارٍ تجهيز الفيديو…</string>
+    <string name="player_live">مباشر</string>
+    <string name="player_play">تشغيل</string>
+    <string name="player_pause">إيقاف مؤقت</string>
+    <string name="player_rewind">رجوع 10 ثوانٍ</string>
+    <string name="player_forward">تقديم 10 ثوانٍ</string>
+    <string name="player_quality">الجودة</string>
+    <string name="player_speed">السرعة</string>
+    <string name="player_subtitles">الترجمة</string>
+    <string name="player_quality_auto">تلقائي</string>
+    <string name="player_quality_auto_detail">تلقائي (حتى 1080p)</string>
+    <string name="player_quality_auto_playing">تلقائي · %1$dp</string>
+    <string name="player_speed_normal">عادية</string>
+    <string name="player_subtitles_off">إيقاف</string>
+    <string name="player_subtitles_auto">%1$s (تلقائية)</string>
+</resources>
