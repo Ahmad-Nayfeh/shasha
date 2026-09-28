@@ -80,10 +80,11 @@ fun ErrorScreen(
             .fillMaxSize()
             .background(ShashaColors.Background)
             .drawBehind {
-                // A faint coral halo behind the illustration.
+                // A faint halo behind the illustration: coral for YouTube trouble, grey when offline.
+                val halo = if (kind == SourceErrorKind.NETWORK) ShashaColors.Muted else ShashaColors.Error
                 drawRect(
                     Brush.radialGradient(
-                        colors = listOf(ShashaColors.Error.copy(alpha = 0.10f), Color.Transparent),
+                        colors = listOf(halo.copy(alpha = 0.10f), Color.Transparent),
                         center = Offset(size.width / 2f, size.height * 0.30f),
                         radius = size.width * 0.42f,
                     ),
@@ -120,7 +121,8 @@ fun ErrorScreen(
             )
             Spacer(Modifier.height(24.dp))
             ErrorDetails(
-                technical = ErrorTexts.technical(kind, error.technicalName),
+                technicalName = error.technicalName.ifBlank { kind.name },
+                kind = kind,
                 extractorVersion = extractorVersion,
             )
             Spacer(Modifier.height(32.dp))
@@ -143,9 +145,12 @@ fun ErrorScreen(
     }
 }
 
-/** Two facts side by side: what failed (technical) and which extractor version is installed. */
+/**
+ * Two facts side by side: what failed (the exception's name, with our category under it) and which
+ * extractor version is installed. Both are what MAINTENANCE.md asks for when YouTube breaks.
+ */
 @Composable
-private fun ErrorDetails(technical: String, extractorVersion: String) {
+private fun ErrorDetails(technicalName: String, kind: SourceErrorKind, extractorVersion: String) {
     val shape = RoundedCornerShape(16.dp)
     Row(
         modifier = Modifier
@@ -155,7 +160,12 @@ private fun ErrorDetails(technical: String, extractorVersion: String) {
             .padding(horizontal = 24.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Fact(stringResource(R.string.error_detail_name), technical, Modifier.testTag("error_technical"))
+        Fact(
+            stringResource(R.string.error_detail_name),
+            technicalName,
+            Modifier.testTag("error_technical"),
+            detail = kind.name.takeIf { it != technicalName },
+        )
         Box(
             Modifier
                 .padding(horizontal = 24.dp)
@@ -168,17 +178,25 @@ private fun ErrorDetails(technical: String, extractorVersion: String) {
 }
 
 @Composable
-private fun Fact(label: String, value: String, modifier: Modifier = Modifier) {
+private fun Fact(label: String, value: String, modifier: Modifier = Modifier, detail: String? = null) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = ShashaColors.Muted)
-        // Technical values are Latin: lay them out left-to-right so "HTTP 403 · BLOCKED_403" reads correctly.
+        // Technical values are Latin: always laid out left-to-right.
         Text(
             value,
             style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Ltr),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 380.dp),
+            modifier = Modifier.widthIn(max = 460.dp),
         )
+        if (detail != null) {
+            Text(
+                detail,
+                style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Ltr),
+                color = ShashaColors.Secondary,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -187,7 +205,7 @@ private fun Fact(label: String, value: String, modifier: Modifier = Modifier) {
  * is grey and the three dots of «ش» (the signal) are hollow: nothing is arriving.
  */
 @Composable
-private fun ErrorIllustration(kind: SourceErrorKind, modifier: Modifier = Modifier) {
+fun ErrorIllustration(kind: SourceErrorKind, modifier: Modifier = Modifier) {
     val offline = kind == SourceErrorKind.NETWORK
     Canvas(modifier) { drawTroubledMark(offline) }
 }

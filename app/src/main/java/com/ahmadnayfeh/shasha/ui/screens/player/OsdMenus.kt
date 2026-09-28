@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -28,6 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,6 +59,12 @@ internal fun menuTitle(menu: OsdMenu): String = stringResource(
         OsdMenu.SUBTITLES -> R.string.player_subtitles
     },
 )
+
+internal fun menuIcon(menu: OsdMenu) = when (menu) {
+    OsdMenu.QUALITY -> ShashaIcons.Tune
+    OsdMenu.SPEED -> ShashaIcons.Speed
+    OsdMenu.SUBTITLES -> ShashaIcons.Subtitles
+}
 
 @Composable
 internal fun menuOptions(menu: OsdMenu, state: PlayerUiState): List<MenuOption> = when (menu) {
@@ -102,24 +110,25 @@ internal fun OsdMenuPanel(
     val shape = RoundedCornerShape(24.dp)
     Column(
         modifier
-            .width(320.dp)
-            .fillMaxHeight()
-            .background(ShashaColors.Surface.copy(alpha = 0.96f), shape)
+            .width(340.dp)
+            .shadow(24.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
+            .background(ShashaColors.Surface, shape)
             .border(1.dp, ShashaColors.Outline, shape)
-            .padding(top = 24.dp, bottom = 12.dp)
+            .padding(top = 22.dp, bottom = 14.dp)
             .testTag("osd_menu"),
     ) {
-        Text(
-            menuTitle(menu),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(horizontal = 28.dp),
-        )
-        Spacer(Modifier.height(12.dp))
+        Row(Modifier.padding(horizontal = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(menuIcon(menu), contentDescription = null, tint = ShashaColors.Primary, modifier = Modifier.size(26.dp))
+            Spacer(Modifier.width(12.dp))
+            Text(menuTitle(menu), style = MaterialTheme.typography.headlineSmall)
+        }
+        Spacer(Modifier.height(10.dp))
         LazyColumn(
             state = listState,
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier
+                .heightIn(max = 360.dp)
                 .focusProperties { onExit = { if (trapFocus) cancelFocusChange() } }
                 .focusGroup(),
         ) {

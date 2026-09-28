@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- API 31+ (the TCL TV runs Android TV 12): the three dots of «ش» drop in, then the play triangle. -->
+    <style name="Theme.Shasha.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo_animated</item>
+        <item name="windowSplashScreenAnimationDuration">880</item>
+        <item name="postSplashScreenTheme">@style/Theme.Shasha</item>
+    </style>
+</resources>

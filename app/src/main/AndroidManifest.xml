@@ -1,18 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- YouTube, and later SponsorBlock and GitHub Releases. Nothing else. -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- A TV app driven by the remote: no touchscreen, and it also installs on non-Leanback devices. -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
+    <!-- The label is a literal, so it reads «شاشة» whatever the TV's system language is. -->
     <application
+        android:name=".ShashaApp"
         android:allowBackup="false"
+        android:banner="@drawable/banner"
+        android:icon="@mipmap/ic_launcher"
         android:label="شاشة"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+        android:theme="@style/Theme.Shasha"
+        android:usesCleartextTraffic="false">
+        <!-- configChanges: connecting a remote, keyboard or gamepad must not recreate the activity
+             (that would restart the video); Compose handles these changes itself. -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|fontScale|layoutDirection|locale"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.Shasha.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

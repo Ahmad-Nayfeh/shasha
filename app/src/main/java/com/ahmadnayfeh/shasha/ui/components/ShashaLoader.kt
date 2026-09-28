@@ -42,9 +42,10 @@ import kotlin.math.sin
 @Composable
 fun ShashaLoader(modifier: Modifier = Modifier, size: Dp = 72.dp) {
     val transition = rememberInfiniteTransition(label = "loader")
+    // Starts a little into the cycle so that a still frame (e.g. when animations are off) shows a lit dot.
     val t by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
+        initialValue = 0.2f,
+        targetValue = 1.2f,
         animationSpec = infiniteRepeatable(tween(durationMillis = 1300, easing = LinearEasing), RepeatMode.Restart),
         label = "loaderPhase",
     )

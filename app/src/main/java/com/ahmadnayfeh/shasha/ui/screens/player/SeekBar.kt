@@ -42,13 +42,16 @@ fun SeekBar(
     scrubbing: Boolean,
     interactionSource: MutableInteractionSource,
     modifier: Modifier = Modifier,
+    isLive: Boolean = false,
 ) {
     val focused by interactionSource.collectIsFocusedAsState()
     val trackHeight by animateDpAsState(if (focused) 8.dp else 5.dp, label = "trackHeight")
     val thumbRadius by animateDpAsState(if (focused) 10.dp else 0.dp, label = "thumb")
     val glow by animateFloatAsState(if (focused) 1f else 0f, label = "glow")
-    val fraction = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-    val bufferedFraction = if (durationMs > 0) (bufferedMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+    // A live stream whose window is not known yet sits at the live edge.
+    val unknownLive = isLive && durationMs <= 0
+    val fraction = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else if (unknownLive) 1f else 0f
+    val bufferedFraction = if (durationMs > 0) (bufferedMs.toFloat() / durationMs).coerceIn(0f, 1f) else fraction
 
     Box(modifier.fillMaxWidth().height(64.dp)) {
         if (scrubbing) {

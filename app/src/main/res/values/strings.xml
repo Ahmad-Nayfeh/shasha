@@ -61,6 +61,7 @@
     <string name="diag_status_waiting">في الانتظار</string>
     <string name="diag_status_checking">جارٍ الفحص…</string>
     <string name="diag_status_ready">يعمل · حتى %1$dp</string>
+    <string name="diag_status_ready_plain">يعمل</string>
     <string name="diag_status_ready_live">يعمل · بث مباشر</string>
     <string name="diag_untitled">لم يُعرف العنوان بعد</string>
     <string name="diag_fact_best_quality">أعلى جودة %1$dp</string>

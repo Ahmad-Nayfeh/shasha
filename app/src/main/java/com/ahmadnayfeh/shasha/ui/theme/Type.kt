@@ -5,6 +5,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Typography
@@ -20,6 +21,8 @@ val PlexArabic = FontFamily(
 
 // Arabic needs more vertical room than Latin (dots and marks above and below), and TV text is read from
 // three metres away: sizes are a step larger than Material's defaults and line heights are generous.
+// Text direction follows the content: Arabic strings read right-to-left, while an English video title
+// or "1080p" keeps its own order (Compose would otherwise force the layout direction on every string).
 private val CenteredLines = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)
 
 private fun style(size: TextUnit, lineHeight: TextUnit, weight: FontWeight) = TextStyle(
@@ -28,6 +31,7 @@ private fun style(size: TextUnit, lineHeight: TextUnit, weight: FontWeight) = Te
     fontSize = size,
     lineHeight = lineHeight,
     lineHeightStyle = CenteredLines,
+    textDirection = TextDirection.Content,
 )
 
 internal val ShashaTypography = Typography(

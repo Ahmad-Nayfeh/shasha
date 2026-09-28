@@ -72,7 +72,7 @@ jobs:
               sleep 90
             fi
           done
-          echo "::error title=YouTube changed something?::Real-network tests failed twice. Read the REAL-RESULT lines in the summary, then follow MAINTENANCE.md."
+          echo "::error title=YouTube changed something?::Failed twice. Read REAL-RESULT in the summary, then MAINTENANCE.md."
           exit 1
 
       - name: Summary
@@ -87,7 +87,8 @@ jobs:
               echo "(no REAL-RESULT lines: the tests did not get that far)"
             fi
             echo
-            echo "NewPipeExtractor: \`$(sed -nE 's/^newpipeExtractor[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' gradle/libs.versions.toml)\`"
+            extractor=$(sed -nE 's/^newpipeExtractor[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' gradle/libs.versions.toml)
+            echo "NewPipeExtractor: \`${extractor:-unknown}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload test reports

@@ -339,6 +339,7 @@ fun PlayerOsd(
                         durationMs = shown.durationMs,
                         scrubbing = scrubMs != null,
                         interactionSource = seekInteraction,
+                        isLive = state.isLive,
                         modifier = Modifier
                             .focusRequester(seekFocus)
                             .focusProperties { down = playFocus }
@@ -379,11 +380,16 @@ fun PlayerOsd(
             }
         }
 
+        // While a menu is open the rest of the controls step back.
+        AnimatedVisibility(visible = menu != null, enter = fadeIn(tween(200)), exit = fadeOut(tween(200))) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)))
+        }
+
         AnimatedVisibility(
             visible = menu != null,
             enter = fadeIn(tween(200)) + slideInHorizontally(tween(260)) { it / 2 },
             exit = fadeOut(tween(200)) + slideOutHorizontally(tween(260)) { it / 2 },
-            modifier = Modifier.align(Alignment.CenterStart),
+            modifier = Modifier.align(Alignment.BottomStart),
         ) {
             val current = lastMenu
             if (current != null) {
@@ -395,7 +401,12 @@ fun PlayerOsd(
                         onAction(action)
                         closeMenu()
                     },
-                    modifier = Modifier.padding(vertical = 32.dp, horizontal = 40.dp),
+                    modifier = Modifier.padding(
+                        start = ShashaDimens.ScreenHorizontal,
+                        end = ShashaDimens.ScreenHorizontal,
+                        top = ShashaDimens.ScreenVertical,
+                        bottom = ShashaDimens.ScreenVertical,
+                    ),
                 )
             }
         }

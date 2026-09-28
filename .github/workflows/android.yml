@@ -162,10 +162,11 @@ jobs:
           [ -n "$KEY_PASSWORD" ] || missing+=(SIGNING_KEY_PASSWORD)
           if [ "${#missing[@]}" -gt 0 ]; then
             if [ "$MUST_SIGN" = true ]; then
-              echo "::error title=Signing secrets missing::main is released and must be signed with the fixed key. Add these repository secrets: ${missing[*]}"
+              echo "::error title=Signing secrets missing::main is released, so it must be signed. Add: ${missing[*]}"
               exit 1
             fi
-            echo "::warning title=UNSIGNED BUILD::Secrets not available here (${missing[*]}); normal for Dependabot PRs. The APK is unsigned and cannot be installed; it only proves that the release build works."
+            echo "::warning title=UNSIGNED BUILD::No signing secrets here (normal for Dependabot PRs): ${missing[*]}"
+            echo "The APK will be unsigned: it proves the release build (R8) works but cannot be installed."
             echo "keystore_file=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -175,10 +176,11 @@ jobs:
           chmod 600 "$keystore"
           # Fail here with a clear message instead of deep inside Gradle.
           if ! keytool -list -keystore "$keystore" -storepass:env KEYSTORE_PASSWORD -alias "$KEY_ALIAS" > /dev/null; then
-            echo "::error title=Bad signing secrets::keytool cannot read alias SIGNING_KEY_ALIAS with SIGNING_KEYSTORE_PASSWORD (or SIGNING_KEYSTORE_BASE64 is not a valid keystore)."
+            echo "::error title=Bad signing secrets::Check SIGNING_KEYSTORE_BASE64, SIGNING_KEYSTORE_PASSWORD, SIGNING_KEY_ALIAS."
             exit 1
           fi
-          cert_sha256=$(keytool -exportcert -keystore "$keystore" -storepass:env KEYSTORE_PASSWORD -alias "$KEY_ALIAS" | sha256sum | cut -d' ' -f1)
+          cert_sha256=$(keytool -exportcert -keystore "$keystore" -storepass:env KEYSTORE_PASSWORD -alias "$KEY_ALIAS" |
+            sha256sum | cut -d' ' -f1)
           echo "keystore_file=$keystore" >> "$GITHUB_OUTPUT"
           echo "cert_sha256=$cert_sha256" >> "$GITHUB_OUTPUT"
 
@@ -219,7 +221,7 @@ jobs:
             exit 1
           fi
           if [ "$code" != "$VERSION_CODE" ]; then
-            echo "::error title=versionCode not applied::APK versionCode is '$code' but SHASHA_VERSION_CODE is $VERSION_CODE. app/build.gradle.kts must read SHASHA_VERSION_CODE."
+            echo "::error title=versionCode not applied::APK has '$code', expected $VERSION_CODE (read SHASHA_VERSION_CODE)."
             exit 1
           fi
           if ! [[ "$name" =~ ^[0-9A-Za-z._-]+$ ]]; then
@@ -229,14 +231,14 @@ jobs:
 
           if [ -n "$EXPECTED_CERT" ]; then
             if ! certs=$("$tools/apksigner" verify --print-certs "$apk"); then
-              echo "::error title=Signature check failed::apksigner rejected $apk. Is SHASHA_KEYSTORE_FILE wired to the release signingConfig?"
+              echo "::error title=Not signed::apksigner rejected $apk. Does the release signingConfig use SHASHA_KEYSTORE_FILE?"
               exit 1
             fi
             echo "$certs"
             # "V2 Signer: certificate SHA-256 digest: <hex>" (older apksigner: "Signer #1 certificate ...").
             actual=$(sed -nE 's/.*[Ss]igner.* certificate SHA-256 digest: ([0-9a-f]{64})$/\1/p' <<< "$certs" | sort -u)
             if [ "$actual" != "$EXPECTED_CERT" ]; then
-              echo "::error title=Wrong signing key::APK certificate(s): ${actual//$'\n'/, }. Expected only the release key $EXPECTED_CERT."
+              echo "::error title=Wrong signing key::APK signed by: ${actual//$'\n'/, }. Expected only $EXPECTED_CERT."
               exit 1
             fi
             signed=true
