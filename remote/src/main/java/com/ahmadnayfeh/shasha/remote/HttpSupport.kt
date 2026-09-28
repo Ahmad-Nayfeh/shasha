@@ -133,6 +133,11 @@ private suspend fun ApplicationCall.receiveMultipartUpload(maxBytes: Long): Uplo
         }
     } catch (e: IOException) {
         throw tooLarge(maxBytes)
+    } catch (e: ApiException) {
+        // Under load the part can reach us empty before the parser's failure does; the scope then carries
+        // that failure as suppressed, and the file was too large, not empty or missing.
+        if (e.suppressed.any { it is IOException }) throw tooLarge(maxBytes)
+        throw e
     }
 }
 

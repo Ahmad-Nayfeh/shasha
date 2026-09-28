@@ -7,6 +7,7 @@ import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -76,7 +77,7 @@ class BodyLimitTest {
             val multi = client.submitFormWithBinaryData("/api/parent/backup", formData {
                 append("file", ByteArray(10 * mb + extra), Headers.build { append(HttpHeaders.ContentDisposition, "filename=\"b.json\"") })
             }) { bearerAuth(TOKEN); header(PARENT_SESSION_HEADER, s) }
-            assertThat(multi.status).isEqualTo(HttpStatusCode.PayloadTooLarge)
+            com.google.common.truth.Truth.assertWithMessage("+$extra bytes: ${multi.bodyAsText()}").that(multi.status).isEqualTo(HttpStatusCode.PayloadTooLarge)
             assertThat(multi.json().str("code")).isEqualTo("too_large")
         }
         assertThat(h.controller.calls.drop(1)).isEmpty()
