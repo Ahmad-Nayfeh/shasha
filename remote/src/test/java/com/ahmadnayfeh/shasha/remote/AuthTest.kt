@@ -16,20 +16,43 @@ import java.util.Base64
 
 class AuthTest {
     @Test
-    fun page_withoutToken_is401_andOnlyThePairingHint() = remoteTest { h ->
+    fun page_withoutToken_is401Json() = remoteTest { h ->
         val res = client.get("/")
         assertThat(res.status).isEqualTo(HttpStatusCode.Unauthorized)
+        assertThat(res.contentType()?.withoutParameters()).isEqualTo(ContentType.Application.Json)
+        assertThat(res.json().str("code")).isEqualTo("pairing")
+        assertThat(h.controller.calls).isEmpty()
+    }
+
+    @Test
+    fun page_withoutToken_fromABrowser_is401_andOnlyThePairingHint() = remoteTest { h ->
+        val res = client.get("/") { header(HttpHeaders.Accept, BROWSER_ACCEPT) }
+        assertThat(res.status).isEqualTo(HttpStatusCode.Unauthorized)
+        assertThat(res.contentType()?.withoutParameters()).isEqualTo(ContentType.Text.Html)
+        assertThat(res.contentType()?.parameter("charset")?.lowercase()).isEqualTo("utf-8")
         val body = res.bodyAsText()
         assertThat(body).contains("امسح رمز QR")
+        assertThat(body).contains("""dir="rtl"""")
         assertThat(body).doesNotContain("الآن على الشاشة")
+        assertThat(body).doesNotContain(TOKEN)
         assertThat(h.controller.calls).isEmpty()
     }
 
     @Test
     fun page_withWrongToken_is401() = remoteTest {
-        assertThat(client.get("/?t=nope").status).isEqualTo(HttpStatusCode.Unauthorized)
-        assertThat(client.get("/?t=${TOKEN}x").status).isEqualTo(HttpStatusCode.Unauthorized)
-        assertThat(client.get("/?t=${TOKEN.dropLast(1)}").status).isEqualTo(HttpStatusCode.Unauthorized)
+        for (t in listOf("nope", "${TOKEN}x", TOKEN.dropLast(1), TOKEN.uppercase())) {
+            assertThat(client.get("/?t=$t").status).isEqualTo(HttpStatusCode.Unauthorized)
+            val browser = client.get("/?t=$t") { header(HttpHeaders.Accept, BROWSER_ACCEPT) }
+            assertThat(browser.status).isEqualTo(HttpStatusCode.Unauthorized)
+            assertThat(browser.bodyAsText()).doesNotContain("الآن على الشاشة")
+        }
+    }
+
+    @Test
+    fun onlyThePageItself_getsTheHtmlHint() = remoteTest {
+        val api = client.get("/api/status") { header(HttpHeaders.Accept, BROWSER_ACCEPT) }
+        assertThat(api.status).isEqualTo(HttpStatusCode.Unauthorized)
+        assertThat(api.contentType()?.withoutParameters()).isEqualTo(ContentType.Application.Json)
     }
 
     @Test
@@ -74,8 +97,10 @@ class AuthTest {
 
     @Test
     fun unpairedPage_hasItsOwnCsp() = remoteTest {
-        val res = client.get("/")
-        assertThat(res.headers["Content-Security-Policy"]).contains("script-src 'sha256-")
+        val res = client.get("/") { header(HttpHeaders.Accept, BROWSER_ACCEPT) }
+        val script = Regex("""<script>([\s\S]*?)</script>""").find(res.bodyAsText())!!.groupValues[1]
+        val hash = Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(script.toByteArray()))
+        assertThat(res.headers["Content-Security-Policy"]).contains("script-src 'sha256-$hash'")
     }
 
     @Test
@@ -169,5 +194,10 @@ class AuthTest {
 
     private fun assertWithMessage(method: String, path: String, actual: HttpStatusCode, expected: HttpStatusCode) {
         com.google.common.truth.Truth.assertWithMessage("$method $path").that(actual).isEqualTo(expected)
+    }
+
+    private companion object {
+        /** What a phone browser sends when it navigates to a page. */
+        const val BROWSER_ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
     }
 }

@@ -46,6 +46,7 @@ internal fun Application.remoteModule(
     tokenProvider: () -> String,
     sessions: ParentSessions,
     pages: RemotePages = RemotePages.fromClasspath(),
+    onError: (Throwable) -> Unit = {},
 ) {
     intercept(ApplicationCallPipeline.Plugins) {
         call.response.header("X-Content-Type-Options", "nosniff")
@@ -59,7 +60,9 @@ internal fun Application.remoteModule(
         val authorized = RemoteTokens.matches(bearer, expected) ||
             RemoteTokens.matches(request.queryParameters["t"], expected)
         if (!authorized) {
-            if (request.httpMethod == HttpMethod.Get && request.path() == "/") {
+            val browserNavigation = request.httpMethod == HttpMethod.Get && request.path() == "/" &&
+                request.headers[HttpHeaders.Accept].orEmpty().contains("text/html")
+            if (browserNavigation) {
                 // A person, not a script: explain how to pair (and retry with a remembered token).
                 call.respondPage(pages.unpaired, HttpStatusCode.Unauthorized)
             } else {
@@ -73,7 +76,7 @@ internal fun Application.remoteModule(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            call.respondFailure(e)
+            call.respondFailure(e, onError)
         }
     }
 
@@ -243,7 +246,8 @@ private suspend fun ApplicationCall.respondPage(page: WebPage, status: HttpStatu
     respondBytes(page.bytes, ContentType.Text.Html.withCharset(Charsets.UTF_8), status)
 }
 
-private suspend fun ApplicationCall.respondFailure(e: Throwable) {
+private suspend fun ApplicationCall.respondFailure(e: Throwable, onError: (Throwable) -> Unit) {
+    if (e !is ApiException && e !is RemoteRejection) runCatching { onError(e) }
     if (response.isCommitted) return
     when (e) {
         is ApiException -> {

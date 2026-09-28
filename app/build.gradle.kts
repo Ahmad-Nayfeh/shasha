@@ -6,6 +6,11 @@ plugins {
     alias(libs.plugins.roborazzi)
 }
 
+// Release signing and versionCode come from CI (contract documented in .github/workflows/android.yml).
+// Without them (local builds, Dependabot PRs) the release build still succeeds, unsigned.
+fun ciEnv(name: String): String? = providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
+val releaseKeystore = ciEnv("SHASHA_KEYSTORE_FILE")
+
 android {
     namespace = "com.ahmadnayfeh.shasha"
     compileSdk = 37
@@ -14,12 +19,26 @@ android {
         applicationId = "com.ahmadnayfeh.shasha"
         minSdk = 28
         targetSdk = 35
-        versionCode = 1
+        versionCode = ciEnv("SHASHA_VERSION_CODE")
+            ?.let { it.toIntOrNull() ?: error("SHASHA_VERSION_CODE must be an integer, got '$it'") }
+            ?: 1
         versionName = "0.1.0"
+    }
+
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = ciEnv("SHASHA_KEYSTORE_PASSWORD")
+                keyAlias = ciEnv("SHASHA_KEY_ALIAS")
+                keyPassword = ciEnv("SHASHA_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

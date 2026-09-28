@@ -8,6 +8,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.text.CueGroup
@@ -31,7 +32,8 @@ import kotlinx.coroutines.flow.update
  *
  * Quality: the MediaSource holds every decodable quality up to [MAX_AUTO_HEIGHT] (the cap is applied
  * inside the generated DASH manifest by the YouTube module, on the short side so vertical videos are
- * not cut down), and ExoPlayer adapts between them ("Auto"). A fixed quality is a
+ * not cut down), and ExoPlayer adapts between them ("Auto"). Live manifests come from YouTube uncapped,
+ * so the track selector applies the same cap ([withAutoQualityCap]). A fixed quality is a
  * TrackSelectionOverride on the same source, so switching does not reload the video.
  *
  * Main thread only.
@@ -56,6 +58,7 @@ class PlaybackController(
         .setSeekBackIncrementMs(SEEK_STEP_MS)
         .setSeekForwardIncrementMs(SEEK_STEP_MS)
         .build()
+        .apply { trackSelectionParameters = trackSelectionParameters.withAutoQualityCap() }
 
     private val _state = MutableStateFlow(
         PlayerUiState(
@@ -254,3 +257,19 @@ class PlaybackController(
     private fun androidx.media3.common.Format.shortSide(): Int =
         if (width > 0 && height > 0) minOf(width, height) else height
 }
+
+/**
+ * "Auto" never goes above 1080p, whatever the source (live HLS/DASH manifests list up to 2160p).
+ *
+ * Expressed as a 1920x1080 viewport that may rotate, not as setMaxVideoSize(.., 1080): ExoPlayer keeps the
+ * smallest track that fills the viewport turned to the video's orientation, and nothing above it. So a
+ * vertical 1080x1920 video keeps its 1080p track (a height limit would drop it to 480p), and an ultra-wide
+ * one stops at the track that fills the screen's width (e.g. 1920x804). It also replaces Media3's default
+ * viewport, the physical display, which is 4K on many TVs.
+ */
+internal fun TrackSelectionParameters.withAutoQualityCap(): TrackSelectionParameters =
+    buildUpon()
+        .setViewportSize(AUTO_VIEWPORT_WIDTH, MAX_AUTO_HEIGHT, /* viewportOrientationMayChange= */ true)
+        .build()
+
+private const val AUTO_VIEWPORT_WIDTH = 1920

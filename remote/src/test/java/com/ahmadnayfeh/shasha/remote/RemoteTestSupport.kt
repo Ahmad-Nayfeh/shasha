@@ -16,6 +16,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.concurrent.CopyOnWriteArrayList
 
 const val TOKEN = "Pa1r-token_for_tests"
 
@@ -51,10 +52,12 @@ internal class Harness(val controller: FakeController = FakeController()) {
     var now = 0L
     val sessions = ParentSessions({ now })
     var token = TOKEN
+    /** What the server passed to onError (unexpected controller exceptions). */
+    val errors = CopyOnWriteArrayList<Throwable>()
 }
 
 internal fun remoteTest(harness: Harness = Harness(), block: suspend ApplicationTestBuilder.(Harness) -> Unit) = testApplication {
-    application { remoteModule(harness.controller, { harness.token }, harness.sessions) }
+    application { remoteModule(harness.controller, { harness.token }, harness.sessions, onError = harness.errors::add) }
     block(harness)
 }
 

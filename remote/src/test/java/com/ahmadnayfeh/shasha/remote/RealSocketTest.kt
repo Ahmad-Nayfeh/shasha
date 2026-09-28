@@ -16,7 +16,9 @@ class RealSocketTest {
     private val controller = FakeController()
     private val servers = mutableListOf<RemoteServer>()
 
-    private fun server() = RemoteServer(controller) { TOKEN }.also { servers += it }
+    private val errors = java.util.concurrent.CopyOnWriteArrayList<Throwable>()
+
+    private fun server() = RemoteServer(controller) { TOKEN }.also { it.onError = errors::add; servers += it }
 
     @After
     fun tearDown() = servers.forEach { it.stop() }
@@ -75,13 +77,43 @@ class RealSocketTest {
     }
 
     @Test
-    fun portInUse_throws_andLeavesTheServerStopped() {
+    fun portInUse_throwsTheBindException_andLeavesTheServerStopped() {
         val port = server().start(loopback, 0)
-        val second = server()
-        val error = runCatching { second.start(loopback, port) }.exceptionOrNull()
-        assertThat(error).isNotNull()
-        assertThat(second.isRunning).isFalse()
-        assertThat(second.start(loopback, 0)).isNotEqualTo(port)
+        repeat(10) {
+            val second = server()
+            val error = runCatching { second.start(loopback, port) }.exceptionOrNull()
+            assertThat(error).isInstanceOf(java.net.BindException::class.java)
+            assertThat(second.isRunning).isFalse()
+            assertThat(second.start(loopback, 0)).isNotEqualTo(port)
+            second.stop()
+        }
+    }
+
+    @Test
+    fun portInUse_isNotAnUncaughtException() {
+        // On Android an exception that escapes to a thread's handler kills the app.
+        val uncaught = java.util.concurrent.CopyOnWriteArrayList<Throwable>()
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { _, e -> uncaught += e }
+        try {
+            val port = server().start(loopback, 0)
+            assertThrows(java.net.BindException::class.java) { server().start(loopback, port) }
+            Thread.sleep(300)
+            // kotlinx-coroutines-test also records stray coroutine exceptions and fails the next runTest.
+            kotlinx.coroutines.test.runTest { }
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(previous)
+        }
+        assertThat(uncaught).isEmpty()
+        assertThat(errors).isEmpty() // start() already reported it by throwing
+    }
+
+    @Test
+    fun controllerFailures_reachOnError() {
+        controller.failure = IllegalStateException("boom")
+        val port = server().start(loopback, 0)
+        assertThat(get(port, "/api/status", TOKEN).first).isEqualTo(500)
+        assertThat(errors.map { it.message }).containsExactly("boom")
     }
 
     @Test

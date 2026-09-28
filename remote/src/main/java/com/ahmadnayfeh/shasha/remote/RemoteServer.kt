@@ -11,6 +11,7 @@ import io.ktor.server.engine.embeddedServer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.runBlocking
+import java.io.IOException
 import java.net.InetAddress
 
 /**
@@ -19,18 +20,22 @@ import java.net.InetAddress
  * [start] and [stop] block (binding, graceful shutdown); call them off the main thread, e.g. from the
  * foreground service on Dispatchers.IO. [tokenProvider] is read on every request, so a regenerated
  * token takes effect immediately (call [revokeParentSessions] too).
- *
- * [onError] receives what would otherwise be lost: controller exceptions (the phone only gets a
- * generic HTTP 500) and engine failures after a successful start. Log it; never show it to the user.
  */
 class RemoteServer internal constructor(
     private val controller: RemoteController,
     private val tokenProvider: () -> String,
     nowMillis: () -> Long,
-    private val onError: (Throwable) -> Unit,
 ) {
-    constructor(controller: RemoteController, tokenProvider: () -> String, onError: (Throwable) -> Unit = {}) :
-        this(controller, tokenProvider, { System.nanoTime() / 1_000_000 }, onError)
+    constructor(controller: RemoteController, tokenProvider: () -> String) :
+        this(controller, tokenProvider, { System.nanoTime() / 1_000_000 })
+
+    /**
+     * Receives what would otherwise be lost: controller exceptions (the phone only gets a generic
+     * HTTP 500) and engine failures after a successful start. Called on server threads. Log it;
+     * never show it to the user.
+     */
+    @Volatile
+    var onError: (Throwable) -> Unit = {}
 
     private val sessions = ParentSessions(nowMillis)
     private val pages by lazy { RemotePages.fromClasspath() }
@@ -59,9 +64,10 @@ class RemoteServer internal constructor(
         // uncaught-exception handler, which on Android kills the app. start() reports bind failures by
         // throwing; later engine failures go to onError.
         val engineFailures = CoroutineExceptionHandler { _, e ->
-            if (attempt.started && e !is CancellationException) onError(e)
+            if (e is CancellationException) return@CoroutineExceptionHandler
+            if (attempt.started) runCatching { onError(e) } else attempt.failure = e
         }
-        val module: Application.() -> Unit = { remoteModule(controller, tokenProvider, sessions, pages, onError) }
+        val module: Application.() -> Unit = { remoteModule(controller, tokenProvider, sessions, pages) { onError(it) } }
         val config = serverConfig(applicationEnvironment()) {
             parentCoroutineContext = engineFailures
             module(module)
@@ -85,8 +91,20 @@ class RemoteServer internal constructor(
             return actual
         } catch (e: Throwable) {
             runCatching { created.stop(0, 0) }
-            throw e
+            throw startFailure(e, attempt.failure)
         }
+    }
+
+    /**
+     * Ktor may report a failed bind as the cancellation it caused. Callers need the real cause, and
+     * must never get a CancellationException from a plain function: inside a coroutine it would
+     * look like an ordinary cancellation and the failure would pass silently.
+     */
+    private fun startFailure(e: Throwable, engineFailure: Throwable?): Throwable {
+        if (e !is CancellationException) return e
+        return generateSequence(e.cause) { it.cause }.firstOrNull { it !is CancellationException }
+            ?: engineFailure
+            ?: IOException("The remote server did not start", e)
     }
 
     /** Graceful but short: in-flight requests get [GRACE_MILLIS], everything ends within [TIMEOUT_MILLIS]. Idempotent. */
@@ -105,6 +123,9 @@ class RemoteServer internal constructor(
     private class Attempt {
         @Volatile
         var started = false
+
+        @Volatile
+        var failure: Throwable? = null
     }
 
     private companion object {

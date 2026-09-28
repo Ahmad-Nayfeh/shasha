@@ -6,7 +6,6 @@
     <!-- Common -->
     <string name="action_back">رجوع</string>
     <string name="action_check_updates">فحص التحديثات</string>
-    <string name="loading">جارٍ التحميل…</string>
 
     <!-- Unified error screen -->
     <string name="error_title_youtube">يوتيوب غيّر شيئاً. حدّث التطبيق.</string>
@@ -63,19 +62,17 @@
     <string name="diag_status_ready">يعمل · حتى %1$dp</string>
     <string name="diag_status_ready_plain">يعمل</string>
     <string name="diag_status_ready_live">يعمل · بث مباشر</string>
-    <string name="diag_untitled">لم يُعرف العنوان بعد</string>
     <string name="diag_fact_best_quality">أعلى جودة %1$dp</string>
     <string name="diag_fact_subtitles">ترجمات: %1$d</string>
-    <string name="diag_fact_duration">المدة %1$s</string>
     <string name="diag_fact_elapsed">الفحص %1$s ث</string>
     <string name="diag_fact_live">مباشر</string>
-    <string name="diag_hint_play">اضغط زر الوسط للتشغيل</string>
 
     <!-- Player -->
     <string name="player_loading">جارٍ تجهيز الفيديو…</string>
     <string name="player_live">مباشر</string>
     <string name="player_play">تشغيل</string>
     <string name="player_pause">إيقاف مؤقت</string>
+    <string name="player_replay">إعادة التشغيل</string>
     <string name="player_rewind">رجوع 10 ثوانٍ</string>
     <string name="player_forward">تقديم 10 ثوانٍ</string>
     <string name="player_quality">الجودة</string>

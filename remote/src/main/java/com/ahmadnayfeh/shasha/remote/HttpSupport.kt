@@ -3,6 +3,7 @@ package com.ahmadnayfeh.shasha.remote
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.MultiPartData
 import io.ktor.http.content.PartData
 import io.ktor.http.decodeURLPart
 import io.ktor.http.withCharset
@@ -13,13 +14,16 @@ import io.ktor.server.request.receiveChannel
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.header
 import io.ktor.server.response.respondText
-import io.ktor.utils.io.readRemaining
+import io.ktor.utils.io.readBuffer
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.coroutineScope
 import kotlinx.io.readByteArray
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
+import java.io.IOException
 
 internal val RemoteJson = Json {
     ignoreUnknownKeys = true
@@ -32,6 +36,8 @@ internal object Limits {
     const val BACKUP_BYTES = 10L * 1024 * 1024
     /** Room for multipart boundaries and part headers on top of the file itself. */
     const val MULTIPART_OVERHEAD = 64L * 1024
+    /** Parts read while looking for the file (a browser sends exactly one). */
+    const val MULTIPART_PARTS = 8
 }
 
 /** Error body of every failed request. [code] lets the page react (e.g. "pairing" → re-scan QR). */
@@ -85,7 +91,7 @@ internal suspend fun ApplicationCall.respondError(status: HttpStatusCode, code: 
 internal suspend fun ApplicationCall.receiveBytesLimited(maxBytes: Long): ByteArray {
     val declared = request.contentLength()
     if (declared != null && declared > maxBytes) throw tooLarge(maxBytes)
-    val bytes = receiveChannel().readRemaining(maxBytes + 1).readByteArray()
+    val bytes = receiveChannel().readBuffer(maxBytes + 1).readByteArray()
     if (bytes.size > maxBytes) throw tooLarge(maxBytes)
     return bytes
 }
@@ -108,28 +114,44 @@ internal class Upload(val fileName: String?, val bytes: ByteArray)
  * or as the first file part of a multipart/form-data body.
  */
 internal suspend fun ApplicationCall.receiveUpload(maxBytes: Long): Upload {
-    if (request.contentType().match(ContentType.MultiPart.FormData)) {
-        val declared = request.contentLength()
-        if (declared != null && declared > maxBytes + Limits.MULTIPART_OVERHEAD) throw tooLarge(maxBytes)
-        val multipart = receiveMultipart(formFieldLimit = maxBytes + 2)
-        while (true) {
-            val part = multipart.readPart() ?: break
-            try {
-                if (part is PartData.FileItem) {
-                    val bytes = part.provider().readRemaining(maxBytes + 1).readByteArray()
-                    if (bytes.size > maxBytes) throw tooLarge(maxBytes)
-                    if (bytes.isEmpty()) throw badRequest(ServerMessages.EMPTY_FILE)
-                    return Upload(part.originalFileName, bytes)
-                }
-            } finally {
-                part.dispose()
-            }
-        }
-        throw badRequest(ServerMessages.NO_FILE)
-    }
+    if (request.contentType().match(ContentType.MultiPart.FormData)) return receiveMultipartUpload(maxBytes)
     val name = request.headers["X-File-Name"]?.let { runCatching { it.decodeURLPart() }.getOrNull() }
         ?: request.queryParameters["name"]
     val bytes = receiveBytesLimited(maxBytes)
     if (bytes.isEmpty()) throw badRequest(ServerMessages.EMPTY_FILE)
     return Upload(name, bytes)
+}
+
+private suspend fun ApplicationCall.receiveMultipartUpload(maxBytes: Long): Upload {
+    val declared = request.contentLength()
+    if (declared != null && declared > maxBytes + Limits.MULTIPART_OVERHEAD) throw tooLarge(maxBytes)
+    // Ktor applies formFieldLimit to every part, the file included, and fails its parser coroutine
+    // with an IOException past it. The parser runs as a child of this scope, so that failure (or a
+    // dropped connection) ends up in the catch below instead of cancelling the whole call.
+    return try {
+        coroutineScope {
+            val upload = firstFile(receiveMultipart(formFieldLimit = maxBytes + 1), maxBytes)
+            coroutineContext.cancelChildren() // do not wait for the parser to read what follows the file
+            upload
+        }
+    } catch (e: IOException) {
+        throw tooLarge(maxBytes)
+    }
+}
+
+private suspend fun firstFile(multipart: MultiPartData, maxBytes: Long): Upload {
+    repeat(Limits.MULTIPART_PARTS) {
+        val part = multipart.readPart() ?: throw badRequest(ServerMessages.NO_FILE)
+        try {
+            if (part is PartData.FileItem) {
+                val bytes = part.provider().readBuffer(maxBytes + 1).readByteArray()
+                if (bytes.size > maxBytes) throw tooLarge(maxBytes)
+                if (bytes.isEmpty()) throw badRequest(ServerMessages.EMPTY_FILE)
+                return Upload(part.originalFileName, bytes)
+            }
+        } finally {
+            part.release()
+        }
+    }
+    throw badRequest(ServerMessages.NO_FILE)
 }

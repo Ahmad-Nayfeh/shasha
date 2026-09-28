@@ -267,6 +267,7 @@ class RoutesTest {
         val res = client.call("GET", "/api/profiles")
         assertThat(res.status).isEqualTo(HttpStatusCode.Forbidden)
         assertThat(res.json().str("message")).isEqualTo("الملف غير موجود.")
+        assertThat(h.errors).isEmpty() // a refusal is not an error worth logging
     }
 
     @Test
@@ -282,6 +283,20 @@ class RoutesTest {
         val json = res.json()
         assertThat(json.str("code")).isEqualTo("server_error")
         assertThat(json.str("message")).isEqualTo(ServerMessages.SERVER_ERROR)
+        // The details are not lost: the app gets them for its log.
+        assertThat(h.errors).containsExactly(h.controller.failure)
+    }
+
+    @Test
+    fun controllerCrash_onEveryRoute_isA500Json() = remoteTest { h ->
+        val session = client.login()
+        h.controller.failure = RuntimeException("boom")
+        for ((method, path, body) in (PUBLIC_ROUTES + PARENT_ROUTES).filter { it.second.startsWith("/api/") && it.second != "/api/parent/logout" }) {
+            val res = client.call(method, path, body, parent = session)
+            com.google.common.truth.Truth.assertWithMessage("$method $path").that(res.status).isEqualTo(HttpStatusCode.InternalServerError)
+            assertThat(res.contentType()?.withoutParameters()).isEqualTo(ContentType.Application.Json)
+            assertThat(res.json().str("message")).isEqualTo(ServerMessages.SERVER_ERROR)
+        }
     }
 
     @Test

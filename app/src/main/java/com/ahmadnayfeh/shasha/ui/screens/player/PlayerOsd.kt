@@ -427,19 +427,15 @@ private fun TitleBar(state: PlayerUiState) {
             )
             .testTag("osd_title"),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (state.isLive) {
-                LiveBadge(stringResource(R.string.player_live))
-                Spacer(Modifier.width(12.dp))
-            }
-            Text(
-                state.title,
-                style = MaterialTheme.typography.headlineSmall.copy(textDirection = TextDirection.Content),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.widthIn(max = 760.dp),
-            )
-        }
+        // A Latin title keeps its own reading order but, like everything else, hangs from the right edge.
+        Text(
+            state.title,
+            style = MaterialTheme.typography.headlineSmall.copy(textDirection = TextDirection.Content),
+            textAlign = TextAlign.Right,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(max = 760.dp),
+        )
         state.channelName?.let {
             Text(it, style = MaterialTheme.typography.titleMedium, color = ShashaColors.Muted, maxLines = 1)
         }
@@ -462,8 +458,18 @@ private fun ControlsRow(
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         val playing = state.playWhenReady && !state.isEnded
         OsdIconButton(
-            icon = if (playing) ShashaIcons.Pause else ShashaIcons.Play,
-            contentDescription = stringResource(if (playing) R.string.player_pause else R.string.player_play),
+            icon = when {
+                state.isEnded -> ShashaIcons.Refresh
+                playing -> ShashaIcons.Pause
+                else -> ShashaIcons.Play
+            },
+            contentDescription = stringResource(
+                when {
+                    state.isEnded -> R.string.player_replay
+                    playing -> R.string.player_pause
+                    else -> R.string.player_play
+                },
+            ),
             onClick = { onAction(PlayerAction.TogglePlayPause) },
             size = 60.dp,
             modifier = upToBar.focusRequester(playFocus).testTag("osd_play_pause"),

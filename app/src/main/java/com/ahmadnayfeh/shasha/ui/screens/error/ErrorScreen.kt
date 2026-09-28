@@ -103,15 +103,16 @@ fun ErrorScreen(
                 },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            ErrorIllustration(kind, Modifier.size(width = 132.dp, height = 140.dp))
-            Spacer(Modifier.height(24.dp))
+            // Sized so that a two-line explanation still fits the overscan-safe area.
+            ErrorIllustration(kind, Modifier.size(width = 112.dp, height = 119.dp))
+            Spacer(Modifier.height(22.dp))
             Text(
                 text = stringResource(ErrorTexts.title(kind)),
                 style = MaterialTheme.typography.headlineLarge,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.testTag("error_title"),
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 text = stringResource(ErrorTexts.explanation(kind)),
                 style = MaterialTheme.typography.bodyLarge,
@@ -119,13 +120,13 @@ fun ErrorScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.testTag("error_explanation"),
             )
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(22.dp))
             ErrorDetails(
                 technicalName = error.technicalName.ifBlank { kind.name },
                 kind = kind,
                 extractorVersion = extractorVersion,
             )
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(28.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                 ShashaButton(
                     text = stringResource(R.string.action_back),

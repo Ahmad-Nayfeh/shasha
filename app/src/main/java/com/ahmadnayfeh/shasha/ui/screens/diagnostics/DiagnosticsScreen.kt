@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -324,11 +325,14 @@ private fun Preview(item: DiagnosticItem) {
                 )
             }
             is CheckStatus.Ready -> {
+                // Latin titles keep their reading order but hang from the right edge like the rest.
                 Text(
                     status.summary.title,
                     style = MaterialTheme.typography.titleLarge.copy(textDirection = TextDirection.ContentOrRtl),
+                    textAlign = TextAlign.Right,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 status.summary.channelName?.let {
                     Text(it, style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Muted, maxLines = 1)

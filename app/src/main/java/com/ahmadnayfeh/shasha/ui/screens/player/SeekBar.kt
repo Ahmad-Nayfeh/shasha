@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -46,7 +47,7 @@ fun SeekBar(
 ) {
     val focused by interactionSource.collectIsFocusedAsState()
     val trackHeight by animateDpAsState(if (focused) 8.dp else 5.dp, label = "trackHeight")
-    val thumbRadius by animateDpAsState(if (focused) 10.dp else 0.dp, label = "thumb")
+    val thumbRadius by animateDpAsState(if (focused) THUMB_RADIUS else 0.dp, label = "thumb")
     val glow by animateFloatAsState(if (focused) 1f else 0f, label = "glow")
     // A live stream whose window is not known yet sits at the live edge.
     val unknownLive = isLive && durationMs <= 0
@@ -61,7 +62,7 @@ fun SeekBar(
                 color = ShashaColors.OnPrimary,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .centeredAt(fraction)
+                    .centeredAt(fraction, inset = THUMB_RADIUS)
                     .background(ShashaColors.PrimaryBright, RoundedCornerShape(10.dp))
                     .padding(horizontal = 12.dp, vertical = 2.dp),
             )
@@ -75,18 +76,21 @@ fun SeekBar(
             val h = trackHeight.toPx()
             val y = size.height / 2f
             val r = CornerRadius(h / 2f)
-            val w = size.width
-            drawRoundRect(Color.White.copy(alpha = 0.22f), Offset(0f, y - h / 2), Size(w, h), r)
-            drawRoundRect(Color.White.copy(alpha = 0.40f), Offset(0f, y - h / 2), Size(w * bufferedFraction, h), r)
+            // The track is inset by the thumb's radius so the thumb stays inside the bar at both ends
+            // (and inside the overscan-safe margins).
+            val start = THUMB_RADIUS.toPx()
+            val w = size.width - 2 * start
+            drawRoundRect(Color.White.copy(alpha = 0.22f), Offset(start, y - h / 2), Size(w, h), r)
+            drawRoundRect(Color.White.copy(alpha = 0.40f), Offset(start, y - h / 2), Size(w * bufferedFraction, h), r)
             drawRoundRect(
                 if (focused) ShashaColors.PrimaryBright else ShashaColors.Primary,
-                Offset(0f, y - h / 2),
+                Offset(start, y - h / 2),
                 Size(w * fraction, h),
                 r,
             )
             val thumb = thumbRadius.toPx()
             if (thumb > 0f) {
-                val c = Offset(w * fraction, y)
+                val c = Offset(start + w * fraction, y)
                 drawCircle(ShashaColors.Primary.copy(alpha = 0.35f * glow), radius = thumb * 2.1f, center = c)
                 drawCircle(Color.White, radius = thumb, center = c)
             }
@@ -95,12 +99,16 @@ fun SeekBar(
 }
 
 /**
- * Places the element so its centre sits at [fraction] of the parent's width, clamped so the bubble
- * stays inside the bar near either end.
+ * Places the element so its centre sits above the thumb, at [fraction] of the track (the parent's width
+ * minus [inset] on both sides), clamped so the bubble stays inside the bar near either end.
  */
-private fun Modifier.centeredAt(fraction: Float): Modifier = layout { measurable, constraints ->
+private fun Modifier.centeredAt(fraction: Float, inset: Dp): Modifier = layout { measurable, constraints ->
     val placeable = measurable.measure(constraints.copy(minWidth = 0))
     val parentWidth = constraints.maxWidth
-    val x = (parentWidth * fraction - placeable.width / 2f).toInt().coerceIn(0, (parentWidth - placeable.width).coerceAtLeast(0))
+    val start = inset.toPx()
+    val center = start + (parentWidth - 2 * start) * fraction
+    val x = (center - placeable.width / 2f).toInt().coerceIn(0, (parentWidth - placeable.width).coerceAtLeast(0))
     layout(parentWidth, placeable.height) { placeable.place(x, 0) }
 }
+
+private val THUMB_RADIUS = 10.dp

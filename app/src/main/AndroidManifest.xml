@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- YouTube, and later SponsorBlock and GitHub Releases. Nothing else. -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -12,13 +13,15 @@
     <application
         android:name=".ShashaApp"
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:banner="@drawable/banner"
         android:icon="@mipmap/ic_launcher"
         android:label="شاشة"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Shasha"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="false"
+        tools:targetApi="31">
         <!-- configChanges: connecting a remote, keyboard or gamepad must not recreate the activity
              (that would restart the video); Compose handles these changes itself. -->
         <activity
