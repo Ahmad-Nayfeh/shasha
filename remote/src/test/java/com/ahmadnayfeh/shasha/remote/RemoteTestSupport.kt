@@ -47,13 +47,13 @@ val PARENT_ROUTES = listOf(
     Triple("POST", "/api/parent/backup", """{"v":1}"""),
 )
 
-class Harness(val controller: FakeController = FakeController()) {
+internal class Harness(val controller: FakeController = FakeController()) {
     var now = 0L
     val sessions = ParentSessions({ now })
     var token = TOKEN
 }
 
-fun remoteTest(harness: Harness = Harness(), block: suspend ApplicationTestBuilder.(Harness) -> Unit) = testApplication {
+internal fun remoteTest(harness: Harness = Harness(), block: suspend ApplicationTestBuilder.(Harness) -> Unit) = testApplication {
     application { remoteModule(harness.controller, { harness.token }, harness.sessions) }
     block(harness)
 }

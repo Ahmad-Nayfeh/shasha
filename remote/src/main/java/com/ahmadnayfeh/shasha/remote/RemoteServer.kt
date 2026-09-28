@@ -1,11 +1,15 @@
 package com.ahmadnayfeh.shasha.remote
 
+import io.ktor.server.application.Application
+import io.ktor.server.application.serverConfig
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.applicationEnvironment
 import io.ktor.server.engine.connector
 import io.ktor.server.engine.embeddedServer
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.runBlocking
 import java.net.InetAddress
 
@@ -15,14 +19,18 @@ import java.net.InetAddress
  * [start] and [stop] block (binding, graceful shutdown); call them off the main thread, e.g. from the
  * foreground service on Dispatchers.IO. [tokenProvider] is read on every request, so a regenerated
  * token takes effect immediately (call [revokeParentSessions] too).
+ *
+ * [onError] receives what would otherwise be lost: controller exceptions (the phone only gets a
+ * generic HTTP 500) and engine failures after a successful start. Log it; never show it to the user.
  */
 class RemoteServer internal constructor(
     private val controller: RemoteController,
     private val tokenProvider: () -> String,
     nowMillis: () -> Long,
+    private val onError: (Throwable) -> Unit,
 ) {
-    constructor(controller: RemoteController, tokenProvider: () -> String) :
-        this(controller, tokenProvider, { System.nanoTime() / 1_000_000 })
+    constructor(controller: RemoteController, tokenProvider: () -> String, onError: (Throwable) -> Unit = {}) :
+        this(controller, tokenProvider, { System.nanoTime() / 1_000_000 }, onError)
 
     private val sessions = ParentSessions(nowMillis)
     private val pages by lazy { RemotePages.fromClasspath() }
@@ -36,8 +44,9 @@ class RemoteServer internal constructor(
     val isRunning: Boolean get() = boundPort != null
 
     /**
-     * Binds to [bindAddress] only (never the wildcard address) and returns the bound port.
-     * Throws (e.g. java.net.BindException) if the port is taken; the server is then left stopped.
+     * Binds to [bindAddress] only (never the wildcard address) and returns the bound port (pass 0 for
+     * any free port). Throws (e.g. java.net.BindException) if the port is taken; the server is then
+     * left stopped and can be started again.
      */
     @Synchronized
     fun start(bindAddress: InetAddress, port: Int): Int {
@@ -45,25 +54,32 @@ class RemoteServer internal constructor(
         require(port in 0..65535) { "Bad port $port" }
         check(server == null) { "Already started" }
         val pages = pages
-        val created = embeddedServer(
-            factory = CIO,
-            environment = applicationEnvironment(),
-            configure = {
-                connector {
-                    host = bindAddress.hostAddress!!
-                    this.port = port
-                }
-                reuseAddress = true
-                connectionIdleTimeoutSeconds = 20
-                shutdownGracePeriod = GRACE_MILLIS
-                shutdownTimeout = TIMEOUT_MILLIS
-            },
-        ) {
-            remoteModule(controller, tokenProvider, sessions, pages)
+        val attempt = Attempt()
+        // Without a handler, a failing accept loop (e.g. the port is taken) reaches the thread's
+        // uncaught-exception handler, which on Android kills the app. start() reports bind failures by
+        // throwing; later engine failures go to onError.
+        val engineFailures = CoroutineExceptionHandler { _, e ->
+            if (attempt.started && e !is CancellationException) onError(e)
+        }
+        val module: Application.() -> Unit = { remoteModule(controller, tokenProvider, sessions, pages, onError) }
+        val config = serverConfig(applicationEnvironment()) {
+            parentCoroutineContext = engineFailures
+            module(module)
+        }
+        val created = embeddedServer(CIO, config) {
+            connector {
+                host = bindAddress.hostAddress!!
+                this.port = port
+            }
+            reuseAddress = true
+            connectionIdleTimeoutSeconds = 20
+            shutdownGracePeriod = GRACE_MILLIS
+            shutdownTimeout = TIMEOUT_MILLIS
         }
         try {
             created.start(wait = false)
             val actual = runBlocking { created.engine.resolvedConnectors().first().port }
+            attempt.started = true
             server = created
             boundPort = actual
             return actual
@@ -73,7 +89,7 @@ class RemoteServer internal constructor(
         }
     }
 
-    /** Graceful but short: in-flight requests get [GRACE_MILLIS], everything ends within [TIMEOUT_MILLIS]. */
+    /** Graceful but short: in-flight requests get [GRACE_MILLIS], everything ends within [TIMEOUT_MILLIS]. Idempotent. */
     @Synchronized
     fun stop() {
         val running = server ?: return
@@ -85,6 +101,11 @@ class RemoteServer internal constructor(
 
     /** Logs every phone out of the parent section (e.g. after the parent PIN or the token changed). */
     fun revokeParentSessions() = sessions.clear()
+
+    private class Attempt {
+        @Volatile
+        var started = false
+    }
 
     private companion object {
         const val GRACE_MILLIS = 300L
