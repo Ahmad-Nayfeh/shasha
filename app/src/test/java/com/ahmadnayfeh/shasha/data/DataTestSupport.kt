@@ -120,8 +120,17 @@ class FakeVideoSource : VideoSource {
         if (link.raw.startsWith("UC")) link.raw
         else handles[link.raw] ?: throw SourceException(SourceErrorKind.CONTENT_UNAVAILABLE, "UnresolvedChannel", link.raw, null)
 
+    /** A channel's Videos tab (durations known, no shorts); [uploads] without its shorts when not set. */
+    val videosTab = ConcurrentHashMap<String, List<VideoItem>>()
+    val tabFetched = CopyOnWriteArrayList<String>()
+
+    override suspend fun channelVideos(channelId: String, page: PageKey?): ItemsPage {
+        tabFetched += channelId
+        failures[channelId]?.let { throw it }
+        return ItemsPage(videosTab[channelId] ?: uploads[channelId].orEmpty().filterNot { it.isShortForm }, next = null)
+    }
+
     override suspend fun search(query: String, filter: SearchFilter, page: PageKey?): ItemsPage = error("unused")
-    override suspend fun channelVideos(channelId: String, page: PageKey?): ItemsPage = error("unused")
     override suspend fun playlist(playlistId: String, page: PageKey?): PlaylistPage = error("unused")
     override suspend fun stream(videoId: String): StreamDetails = error("unused")
 }

@@ -25,11 +25,13 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
 /**
- * One focus language for the whole app: the focused element grows a little, gets a teal outline and a
- * soft teal glow. Everything is driven by tv-material3 (animated scale, border and glow on focus).
+ * One focus language for the whole app: the focused element grows a little, gets an outline and a soft
+ * glow in the accent colour ([LocalAccent]: teal, kids yellow in a child profile). Everything is driven by
+ * tv-material3 (animated scale, border and glow on focus).
  */
 object ShashaFocus {
     const val CardScale = 1.05f
@@ -61,6 +63,7 @@ fun FocusSurface(
     onLongClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val accent = LocalAccent.current
     Surface(
         onClick = onClick,
         onLongClick = onLongClick,
@@ -75,17 +78,17 @@ fun FocusSurface(
             pressedContentColor = focusedContentColor,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = scale, pressedScale = scale * 0.98f),
-        border = ClickableSurfaceDefaults.border(focusedBorder = ShashaFocus.border(shape)),
-        glow = ClickableSurfaceDefaults.glow(focusedGlow = ShashaFocus.CardGlow),
+        border = ClickableSurfaceDefaults.border(focusedBorder = ShashaFocus.border(shape, accent.main)),
+        glow = ClickableSurfaceDefaults.glow(focusedGlow = accent.cardGlow),
         interactionSource = interactionSource ?: remember { MutableInteractionSource() },
         content = content,
     )
 }
 
 /**
- * Pill button with an optional leading icon. [primary] buttons are teal at rest; the others turn teal
- * only when focused, so the focused one is always unmistakable from the sofa. [compact] is the smaller
- * size used inside cards.
+ * Pill button with an optional leading icon. [primary] buttons are tinted with the accent at rest; the
+ * others take the accent only when focused, so the focused one is always unmistakable from the sofa.
+ * [compact] is the smaller size used inside cards.
  */
 @Composable
 fun ShashaButton(
@@ -97,20 +100,21 @@ fun ShashaButton(
     compact: Boolean = false,
 ) {
     val shape = RoundedCornerShape(percent = 50)
+    val accent = LocalAccent.current
     Button(
         onClick = onClick,
         modifier = modifier,
         shape = ButtonDefaults.shape(shape = shape),
         colors = ButtonDefaults.colors(
-            containerColor = if (primary) ShashaColors.Primary.copy(alpha = 0.18f) else ShashaColors.SurfaceVariant,
-            contentColor = if (primary) ShashaColors.PrimaryBright else ShashaColors.Text,
-            focusedContainerColor = ShashaColors.Primary,
-            focusedContentColor = ShashaColors.OnPrimary,
-            pressedContainerColor = ShashaColors.PrimaryBright,
-            pressedContentColor = ShashaColors.OnPrimary,
+            containerColor = if (primary) accent.tint(0.18f) else ShashaColors.SurfaceVariant,
+            contentColor = if (primary) accent.bright else ShashaColors.Text,
+            focusedContainerColor = accent.main,
+            focusedContentColor = accent.onMain,
+            pressedContainerColor = accent.bright,
+            pressedContentColor = accent.onMain,
         ),
         scale = ButtonDefaults.scale(focusedScale = ShashaFocus.ButtonScale),
-        glow = ButtonDefaults.glow(focusedGlow = ShashaFocus.ButtonGlow),
+        glow = ButtonDefaults.glow(focusedGlow = accent.buttonGlow),
         border = ButtonDefaults.border(
             border = Border(BorderStroke(1.dp, ShashaColors.Outline), shape = shape),
             focusedBorder = Border.None,

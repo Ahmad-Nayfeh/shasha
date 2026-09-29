@@ -2,6 +2,7 @@ package com.ahmadnayfeh.shasha.ui.screens.channel
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -38,9 +39,14 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
+import com.ahmadnayfeh.shasha.policy.Decision
+import com.ahmadnayfeh.shasha.policy.DenyReason
 import com.ahmadnayfeh.shasha.ui.components.ChannelAvatar
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
+import com.ahmadnayfeh.shasha.ui.components.LocalCollectionMenu
+import com.ahmadnayfeh.shasha.ui.components.MenuTarget
 import com.ahmadnayfeh.shasha.ui.components.PagingFooter
+import com.ahmadnayfeh.shasha.ui.components.PolicyNotice
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaGrid
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
@@ -61,12 +67,20 @@ import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 
+/**
+ * [adult]: the adult profile's page, with the subscribe toggle and the parental menu (allowlists, block).
+ * A child's page has neither: nothing to manage.
+ */
 @Composable
-fun ChannelRoute(channelId: String, nameHint: String?, onPlay: (VideoItem) -> Unit, onBack: () -> Unit, onCheckUpdates: () -> Unit) {
-    val vm = containerViewModel("channel:$channelId") { ChannelViewModel(channelId, it.videoSource, it.subscriptions, it.watch, it.appScope) }
+fun ChannelRoute(channelId: String, nameHint: String?, adult: Boolean, onPlay: (VideoItem) -> Unit, onBack: () -> Unit, onCheckUpdates: () -> Unit) {
+    val vm = containerViewModel("channel:$channelId") {
+        ChannelViewModel(channelId, it.videoSource, it.subscriptions, it.watch, it.appScope, it.policy.filter)
+    }
+    val access by vm.access.collectAsStateWithLifecycle()
     val header by vm.header.collectAsStateWithLifecycle()
     val videos by vm.videos.collectAsStateWithLifecycle()
     val subscribed by vm.isSubscribed.collectAsStateWithLifecycle()
+    val openMenu = LocalCollectionMenu.current
     ChannelScreen(
         channelId = channelId,
         nameHint = nameHint,
@@ -87,10 +101,16 @@ fun ChannelRoute(channelId: String, nameHint: String?, onPlay: (VideoItem) -> Un
         onRetryMore = vm::retryMore,
         onBack = onBack,
         onCheckUpdates = onCheckUpdates,
+        access = access,
+        adult = adult,
+        onParental = { (header as? ChannelHeader.Ready)?.let { openMenu(MenuTarget.Channel(it.details.channel)) } },
     )
 }
 
-/** A channel: banner, picture, name and the subscribe toggle, then its videos (newest first). */
+/**
+ * A channel: banner, picture, name and (adult profile) the subscribe toggle and «الرقابة», then its videos
+ * (newest first). A channel the profile may not open shows why instead ([access]).
+ */
 @Composable
 fun ChannelScreen(
     channelId: String,
@@ -110,12 +130,33 @@ fun ChannelScreen(
     onBack: () -> Unit,
     onCheckUpdates: () -> Unit,
     modifier: Modifier = Modifier,
+    access: Decision? = Decision.Allow,
+    adult: Boolean = true,
+    onParental: () -> Unit = {},
 ) {
+    when (access) {
+        null -> return // the profile's rules are a moment away
+        is Decision.Deny -> {
+            PolicyNotice(access.reason, onBack, modifier) {
+                // Blocked for the household while the adult still follows it: the page never opens, so leave here.
+                if (subscribed && adult && access.reason == DenyReason.BLOCKED_CHANNEL) {
+                    ShashaButton(
+                        stringResource(R.string.channel_unsubscribe),
+                        onUnsubscribe,
+                        icon = ShashaIcons.Delete,
+                        modifier = Modifier.testTag("channel_unsubscribe"),
+                    )
+                }
+            }
+            return
+        }
+        Decision.Allow -> Unit
+    }
     val error = (header as? ChannelHeader.Failed)?.error ?: videos.error
     if (error != null) {
         ErrorScreen(error, extractorVersion, onCheckUpdates, onBack, modifier) {
             // A subscribed channel that is gone (deleted, terminated) can only be removed from here.
-            if (subscribed) {
+            if (subscribed && adult) {
                 ShashaButton(
                     stringResource(R.string.channel_unsubscribe),
                     onUnsubscribe,
@@ -138,7 +179,7 @@ fun ChannelScreen(
         modifier.fillMaxSize().testTag("channel_screen"),
         contentPadding = PaddingValues(horizontal = ShashaDimens.ScreenHorizontal, vertical = 40.dp),
     ) {
-        fullWidthItem("header") { Header(channelId, nameHint, header, subscribed, onToggleSubscription, formats) }
+        fullWidthItem("header") { Header(channelId, nameHint, header, subscribed, onToggleSubscription, formats, adult, onParental) }
         when {
             videos.loadingFirst -> fullWidthItem("loading") {
                 Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
@@ -173,6 +214,8 @@ private fun Header(
     subscribed: Boolean,
     onToggleSubscription: () -> Unit,
     formats: Formats,
+    adult: Boolean,
+    onParental: () -> Unit,
 ) {
     val details = (header as? ChannelHeader.Ready)?.details
     val name = details?.channel?.name ?: nameHint.orEmpty()
@@ -202,8 +245,16 @@ private fun Header(
                     Text(formats.subscribers(it), style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Muted)
                 }
             }
-            if (details != null) {
-                SubscribeButton(subscribed, onToggleSubscription, Modifier.padding(top = AvatarSize / 2 + 14.dp))
+            if (details != null && adult) {
+                Row(Modifier.padding(top = AvatarSize / 2 + 14.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    SubscribeButton(subscribed, onToggleSubscription)
+                    ShashaButton(
+                        stringResource(R.string.channel_parental),
+                        onParental,
+                        icon = ShashaIcons.Shield,
+                        modifier = Modifier.testTag("channel_parental"),
+                    )
+                }
             }
         }
     }

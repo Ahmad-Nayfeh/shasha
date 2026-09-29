@@ -182,6 +182,9 @@
     <string name="action_retry">إعادة المحاولة</string>
     <string name="action_subscribe">اشتراك</string>
     <string name="action_subscribed">مشترك</string>
+    <string name="action_add">إضافة</string>
+    <string name="action_remove">إزالة</string>
+    <string name="action_save">حفظ</string>
     <string name="badge_live">مباشر</string>
     <string name="paging_error">تعذّر تحميل المزيد</string>
 
@@ -192,6 +195,9 @@
     <string name="nav_watch_later">شاهد لاحقاً</string>
     <string name="nav_history">السجل</string>
     <string name="nav_settings">الإعدادات</string>
+    <string name="nav_allowed_channels">القنوات المسموحة</string>
+    <string name="rail_exit">خروج</string>
+    <string name="rail_switch_profile">تبديل الملف</string>
 
     <!-- Home -->
     <string name="home_title">الرئيسية</string>
@@ -231,6 +237,7 @@
     <string name="channel_loading">جارٍ جلب الفيديوهات…</string>
     <string name="channel_no_videos">لا فيديوهات في هذه القناة.</string>
     <string name="channel_unsubscribe">إلغاء الاشتراك</string>
+    <string name="channel_parental">الرقابة</string>
     <string name="playlist_label">قائمة تشغيل</string>
     <string name="playlist_play_all">تشغيل الكل</string>
     <string name="playlist_loading">جارٍ فتح قائمة التشغيل…</string>
@@ -255,15 +262,280 @@
     <string name="menu_watch_later_add">شاهد لاحقاً</string>
     <string name="menu_watch_later_remove">إزالة من «شاهد لاحقاً»</string>
     <string name="menu_go_to_channel">اذهب إلى القناة</string>
+    <string name="menu_allowlist_add">أضف إلى قائمة سماح &#x2068;%1$s&#x2069;</string>
+    <string name="menu_allowlist_remove">أزِل من قائمة سماح &#x2068;%1$s&#x2069;</string>
+    <string name="menu_block_channel">حظر القناة</string>
+    <string name="menu_unblock_channel">إلغاء حظر القناة</string>
+    <string name="menu_channel_subtitle">قناة</string>
+    <string name="menu_no_children">لا ملفات أطفال بعد. أضِفها من الإعدادات ← الملفات.</string>
+    <string name="menu_parental_pin_body">لتعديل قوائم السماح والحظر</string>
+    <!-- %1$s arrives already quoted and isolated: «…». -->
+    <string name="message_allowlist_added">أُضيفت %1$s إلى قائمة سماح &#x2068;%2$s&#x2069;</string>
+    <string name="message_allowlist_removed">أُزيلت %1$s من قائمة سماح &#x2068;%2$s&#x2069;</string>
+    <string name="message_blocked">حُظرت %1$s في كل الملفات</string>
+    <string name="message_unblocked">أُلغي حظر %1$s</string>
+    <string name="message_unsubscribed">أُلغي الاشتراك في %1$s</string>
 
     <!-- Settings (placeholder until the settings phase) -->
     <string name="settings_title">الإعدادات</string>
-    <string name="settings_subtitle">بقية الإعدادات تصل مع المراحل القادمة</string>
+    <string name="settings_subtitle">الملفات والرقابة، والاشتراكات، والتشخيص</string>
     <string name="settings_import">استيراد الاشتراكات</string>
-    <string name="settings_import_body">ملف subscriptions.csv من Google Takeout، عبر ADB أو من ذاكرة الشاشة</string>
+    <string name="settings_import_body">من Google Takeout، عبر ADB أو ملف</string>
     <string name="settings_diagnostics">تشخيص</string>
-    <string name="settings_diagnostics_body">فيديوهات تجريبية تفحص التشغيل عندما يتعطّل يوتيوب</string>
+    <string name="settings_diagnostics_body">يفحص التشغيل حين يتعطّل يوتيوب</string>
     <string name="settings_version">شاشة %1$s · مكتبة الاستخراج %2$s</string>
+
+    <!-- Counted phrases (same order as above: ONE, TWO, FEW, MANY, OTHER) -->
+    <string-array name="count_minutes">
+        <item>دقيقة واحدة</item>
+        <item>دقيقتان</item>
+        <item>%1$s دقائق</item>
+        <item>%1$s دقيقة</item>
+        <item>%1$s دقيقة</item>
+    </string-array>
+    <string-array name="count_hours">
+        <item>ساعة واحدة</item>
+        <item>ساعتان</item>
+        <item>%1$s ساعات</item>
+        <item>%1$s ساعة</item>
+        <item>%1$s ساعة</item>
+    </string-array>
+    <string-array name="count_playlists">
+        <item>قائمة تشغيل واحدة</item>
+        <item>قائمتا تشغيل</item>
+        <item>%1$s قوائم تشغيل</item>
+        <item>%1$s قائمة تشغيل</item>
+        <item>%1$s قائمة تشغيل</item>
+    </string-array>
+    <string-array name="count_profiles">
+        <item>ملف واحد</item>
+        <item>ملفان</item>
+        <item>%1$s ملفات</item>
+        <item>%1$s ملفاً</item>
+        <item>%1$s ملف</item>
+    </string-array>
+    <string-array name="count_times">
+        <item>مرة واحدة</item>
+        <item>مرتان</item>
+        <item>%1$s مرات</item>
+        <item>%1$s مرة</item>
+        <item>%1$s مرة</item>
+    </string-array>
+    <string-array name="attempts_left">
+        <item>بقيت محاولة واحدة</item>
+        <item>بقيت محاولتان</item>
+        <item>بقيت %1$s محاولات</item>
+        <item>بقيت %1$s محاولة</item>
+        <item>بقيت %1$s محاولة</item>
+    </string-array>
+
+    <!-- Times of day and durations (ui/format/TimeTexts): 12-hour clock, Western digits. -->
+    <string name="clock_am">%1$s ص</string>
+    <string name="clock_pm">%1$s م</string>
+    <string name="clock_am_short">ص</string>
+    <string name="clock_pm_short">م</string>
+    <string name="when_today">الساعة %1$s</string>
+    <string name="when_tomorrow">غداً الساعة %1$s</string>
+    <string name="when_weekday">يوم %1$s الساعة %2$s</string>
+    <!-- Monday first (java.time.DayOfWeek order). -->
+    <string-array name="weekdays">
+        <item>الاثنين</item>
+        <item>الثلاثاء</item>
+        <item>الأربعاء</item>
+        <item>الخميس</item>
+        <item>الجمعة</item>
+        <item>السبت</item>
+        <item>الأحد</item>
+    </string-array>
+    <string name="duration_hours_minutes">%1$s و%2$s</string>
+    <string name="duration_short_minutes">%1$s د</string>
+    <string name="duration_short_hours">%1$s س</string>
+    <string name="duration_short_both">%1$s س %2$s د</string>
+    <string name="unit_minutes">دقيقة</string>
+
+    <!-- The app's PIN pad (never the system keyboard) -->
+    <string name="pin_parent_title">رمز الوالدين</string>
+    <string name="pin_clear">مسح</string>
+    <string name="pin_backspace">حذف رقم</string>
+    <string name="pin_confirm">تأكيد</string>
+    <!-- %1$s: attempts_left, e.g. «بقيت 3 محاولات». -->
+    <string name="pin_wrong">رمز غير صحيح. %1$s.</string>
+    <!-- %1$s: minutes:seconds, e.g. 4:59. -->
+    <string name="pin_locked_out">محاولات خاطئة كثيرة. حاول بعد %1$s</string>
+    <string name="pin_not_set">لم يُضبط رمز الوالدين بعد.</string>
+    <string name="pin_required">هذا الاختيار يحتاج رمز الوالدين.</string>
+    <string name="pin_switch_playback_locked">فيديو مقفول قيد المشاهدة. أنهِه أولاً ثم بدّل الملف.</string>
+    <string name="pin_switch_not_found">هذا الملف لم يعد موجوداً.</string>
+    <string name="pin_check_failed">تعذّر التحقق من الرمز. حاول مرة أخرى.</string>
+    <string name="pin_enter_body">للدخول إلى ملف &#x2068;%1$s&#x2069;</string>
+    <string name="pin_exit_body">للخروج من ملف &#x2068;%1$s&#x2069;</string>
+    <string name="pin_new_confirm_title">أعد إدخال الرمز</string>
+    <string name="pin_new_confirm_body">للتأكد من أنك كتبته كما تريد</string>
+    <string name="pin_new_mismatch">الرمزان غير متطابقين. اختر الرمز من جديد.</string>
+
+    <!-- First start -->
+    <string name="setup_welcome_title">أهلاً بك في شاشة</string>
+    <string name="setup_welcome_body">يوتيوب لبيتك، بلا إعلانات ولا خوارزمية. ثلاث خطوات قصيرة: رمز للوالدين، ثم ملفك، ثم ملف لطفلك إن أردت.</string>
+    <string name="setup_feature_kids">ملفات للأطفال لا يظهر فيها إلا ما تسمح به</string>
+    <string name="setup_feature_time">حصة يومية وأوقات للمشاهدة مع تنبيه هادئ</string>
+    <string name="setup_feature_pin">رمز يحمي ملفك وإعدادات الرقابة</string>
+    <string name="setup_start">لنبدأ</string>
+    <string name="setup_pin_title">اختر رمز الوالدين</string>
+    <string name="setup_pin_body">من 4 إلى 8 أرقام. يفتح ملفك، ويُخرج الأطفال من ملفاتهم، ويمنح وقتاً إضافياً.</string>
+    <string name="setup_pin_body_short">من 4 إلى 8 أرقام</string>
+    <string name="setup_owner_title">ملفك</string>
+    <string name="setup_owner_body">اسمك وصورتك كما يظهران في قائمة الملفات. ملفك لا يُفتح إلا بالرمز.</string>
+    <string name="setup_owner_hint">اسمك</string>
+    <string name="setup_next">التالي</string>
+    <string name="setup_child_title">ملف لطفلك</string>
+    <string name="setup_child_body">اختياري. يدخله الطفل بلا رمز ويخرج منه بالرمز، ولا يرى إلا القنوات التي تسمح بها. يبدأ بساعة يومياً بين 7 صباحاً و10 مساءً وبلا مقاطع قصيرة، وتغيّر ذلك من الإعدادات.</string>
+    <string name="setup_child_hint">اسم الطفل</string>
+    <string name="setup_child_add">إضافة الملف</string>
+    <string name="setup_child_skip">لاحقاً</string>
+
+    <!-- Profile picker -->
+    <string name="picker_title">من يشاهد الآن؟</string>
+    <string name="picker_with_pin">بالرمز</string>
+    <string name="picker_current">الملف الحالي</string>
+    <string name="picker_child">ملف طفل</string>
+    <string name="picker_adult">ملف الكبار</string>
+    <string name="picker_hint_start">ملفات الأطفال تُفتح مباشرة، وملف الكبار بالرمز.</string>
+    <string name="picker_hint_from_adult">اضغط رجوع للعودة إلى ملفك.</string>
+    <string name="picker_hint_from_child">اختر ملفاً، أو اضغط رجوع للعودة. وتعود الشاشة وحدها بعد دقيقة.</string>
+
+    <!-- A child's screens -->
+    <string name="kids_hello">أهلاً يا &#x2068;%1$s&#x2069;!</string>
+    <string name="kids_hello_body">هذه أحدث الفيديوهات من قنواتك</string>
+    <string name="kids_playlists">قوائمك</string>
+    <string name="kids_latest">أحدث الفيديوهات</string>
+    <string name="kids_loading">نجهّز فيديوهاتك…</string>
+    <string name="kids_empty_title">لا شيء هنا بعد</string>
+    <string name="kids_empty_body">اطلب من والديك أن يضيفوا قنواتك المفضّلة.</string>
+    <string name="kids_no_videos_title">لا فيديوهات جديدة</string>
+    <string name="kids_no_videos_body">لم تنشر قنواتك شيئاً مؤخراً. افتح «القنوات المسموحة» لمشاهدة المزيد.</string>
+    <string name="kids_failed_body">تعذّر جلب فيديوهات القنوات المسموحة.</string>
+
+    <!-- Why something may not be played or opened (titles; the sentence is policy_deny_*) -->
+    <string name="deny_title_not_in_allowlist">غير مسموح في هذا الملف</string>
+    <string name="deny_title_blocked_channel">قناة محظورة</string>
+    <string name="deny_title_blocked_keyword">عنوان محظور</string>
+    <string name="deny_title_shorts_hidden">المقاطع القصيرة مخفية</string>
+    <string name="deny_title_time_up">انتهى الوقت</string>
+    <string name="deny_title_outside_schedule">خارج أوقات المشاهدة</string>
+    <string name="deny_title_locked">فيديو مقفول</string>
+
+    <!-- Time: the quiet notice, "time up", outside the allowed hours -->
+    <!-- %1$s: count_minutes, e.g. «5 دقائق». -->
+    <string name="time_warning_title">بقيت %1$s من وقت المشاهدة</string>
+    <string name="time_warning_body">تتوقف المشاهدة بعدها، ويفتحها الوالدان بالرمز.</string>
+    <string name="time_up_title">انتهى الوقت</string>
+    <string name="time_up_body_child">انتهت دقائق المشاهدة لهذا اليوم. نلتقي غداً!</string>
+    <string name="time_up_body">انتهت حصة المشاهدة لهذا اليوم.</string>
+    <string name="time_up_reopens">تعود المشاهدة غداً</string>
+    <string name="time_up_reopens_at">تعود المشاهدة غداً من الساعة %1$s</string>
+    <string name="outside_schedule_title">خارج أوقات المشاهدة</string>
+    <string name="outside_schedule_body_child">حان وقت الراحة. الشاشة تنتظرك في وقتك المعتاد.</string>
+    <string name="outside_schedule_body">المشاهدة غير مسموحة في هذا الوقت حسب جدول الملف.</string>
+    <!-- %1$s: when_*, e.g. «غداً الساعة 7:00 ص». -->
+    <string name="outside_schedule_reopens">تعود المشاهدة %1$s</string>
+    <string name="time_unlock_with_pin">فتح بالرمز</string>
+    <string name="time_unlock_switch_profile">تبديل الملف</string>
+    <string name="time_unlock_phone_hint">ويستطيع الوالدان الفتح من الجوال أيضاً.</string>
+    <string name="time_unlock_pin_body">لإضافة وقت مشاهدة لملف &#x2068;%1$s&#x2069;</string>
+    <string name="time_unlock_choose_title">كم تضيف؟</string>
+    <string name="time_unlock_choose_body">يبدأ الوقت الإضافي الآن، ويتجاوز الجدول أيضاً إن كان هو ما أوقف المشاهدة.</string>
+    <string name="time_unlock_rest_of_today">بقية اليوم</string>
+    <string name="time_unlock_failed">تعذّر حفظ الوقت الإضافي. حاول مرة أخرى.</string>
+
+    <!-- Settings: parental sections -->
+    <string name="settings_section_parental">الرقابة الأبوية · تُفتح برمز الوالدين</string>
+    <string name="settings_section_general">عام</string>
+    <string name="settings_profiles">الملفات</string>
+    <string name="settings_profiles_body">ملفات الأطفال: الحصة والأوقات وقوائم السماح</string>
+    <string name="settings_blocklist">قائمة الحظر</string>
+    <string name="settings_blocklist_body">قنوات وكلمات تُخفى في كل الملفات</string>
+    <string name="settings_stats">الإحصائيات</string>
+    <string name="settings_stats_body">دقائق المشاهدة لكل ملف وأكثر القنوات</string>
+    <string name="settings_change_pin">تغيير رمز الوالدين</string>
+    <string name="settings_change_pin_body">يُطلب الرمز الحالي أولاً</string>
+    <string name="settings_pin_body">لفتح إعدادات الرقابة</string>
+
+    <string name="profiles_title">الملفات</string>
+    <string name="profiles_add_child">إضافة ملف طفل</string>
+    <string name="profiles_new_child_title">ملف طفل جديد</string>
+    <string name="profiles_new_child_body">يبدأ بساعة يومياً بين 7 صباحاً و10 مساءً، بلا مقاطع قصيرة، وبقائمة سماح فارغة تملؤها أنت.</string>
+    <string name="profiles_create">إنشاء</string>
+    <string name="profile_kind_child">ملف طفل</string>
+    <string name="profile_kind_adult">ملف الكبار</string>
+    <string name="profile_name">الاسم</string>
+    <string name="profile_avatar">الصورة</string>
+    <string name="profile_quota">الحصة اليومية</string>
+    <string name="profile_schedule">أوقات المشاهدة</string>
+    <string name="profile_hide_shorts">إخفاء المقاطع القصيرة</string>
+    <string name="profile_allowlist">قائمة السماح</string>
+    <string name="profile_delete">حذف الملف</string>
+    <string name="profile_delete_title">حذف ملف &#x2068;%1$s&#x2069;؟</string>
+    <string name="profile_delete_body">يُحذف الملف مع سجلّه ومواضع الاستكمال و«شاهد لاحقاً» وإحصائياته، ولا يمكن التراجع.</string>
+    <string name="profile_deleted">حُذف ملف &#x2068;%1$s&#x2069;</string>
+    <string name="profile_edit_child_note">يدخله الطفل بلا رمز ويخرج منه برمز الوالدين. تُحفظ التغييرات فوراً.</string>
+    <string name="profile_edit_adult_note">ملفك يُفتح بالرمز. الحصة والأوقات هنا لك أنت أيضاً إن أردت.</string>
+    <string name="quota_unlimited">بلا حد</string>
+    <!-- %1$s: a duration, e.g. «ساعة واحدة». -->
+    <string name="quota_per_day">%1$s يومياً</string>
+    <string name="schedule_all_day">طوال اليوم</string>
+    <string name="schedule_range">من %1$s إلى %2$s</string>
+    <string name="schedule_from">من</string>
+    <string name="schedule_until">إلى</string>
+    <string name="schedule_summary">المشاهدة مسموحة من %1$s إلى %2$s</string>
+    <string name="schedule_hint">اضغط OK على رقم لتعديله بالأعلى والأسفل، ثم OK مرة أخرى.</string>
+    <string name="toggle_on">مفعّل</string>
+    <string name="toggle_off">متوقف</string>
+
+    <string name="allowlist_title">قائمة سماح &#x2068;%1$s&#x2069;</string>
+    <string name="allowlist_add_from_subscriptions">من اشتراكاتي</string>
+    <string name="allowlist_channels">القنوات</string>
+    <string name="allowlist_playlists">قوائم التشغيل</string>
+    <string name="allowlist_empty_body">قائمة سماح &#x2068;%1$s&#x2069; فارغة، فلن يظهر في ملفه شيء بعد. أضِف قنوات «من اشتراكاتي»، أو اضغط مطوّلاً على بطاقة قناة أو قائمة تشغيل.</string>
+    <string name="allowlist_empty_short">القائمة فارغة</string>
+    <string name="allowlist_no_playlists">لا قوائم تشغيل.</string>
+    <string name="allowlist_how_to_add">للإضافة: اضغط مطوّلاً على بطاقة قناة أو قائمة تشغيل، أو «الرقابة» في صفحتها، أو من الجوال.</string>
+    <string name="allowlist_pick_title">اشتراكاتي في قائمة سماح &#x2068;%1$s&#x2069;</string>
+    <string name="allowlist_pick_empty">لا اشتراكات بعد. استوردها من الإعدادات.</string>
+
+    <string name="blocklist_title">قائمة الحظر</string>
+    <string name="blocklist_subtitle">ما تحظره هنا لا يظهر في أي ملف</string>
+    <string name="blocklist_keywords">كلمات في العنوان</string>
+    <string name="blocklist_keyword_hint">كلمة أو عبارة</string>
+    <string name="blocklist_keyword_added">حُظرت «&#x2068;%1$s&#x2069;»</string>
+    <string name="blocklist_keyword_exists">«&#x2068;%1$s&#x2069;» محظورة من قبل</string>
+    <string name="blocklist_no_keywords">لا كلمات محظورة.</string>
+    <string name="blocklist_channels">القنوات المحظورة</string>
+    <string name="blocklist_no_channels">لا قنوات محظورة. احظر قناة من قائمة بطاقتها، أو من «الرقابة» في صفحتها.</string>
+    <string name="blocklist_unblock">إلغاء الحظر</string>
+    <string name="blocklist_subscribed">مشترك فيها</string>
+
+    <string name="change_pin_current">الرمز الحالي</string>
+    <string name="change_pin_current_body">أدخل رمز الوالدين الحالي</string>
+    <string name="change_pin_new">الرمز الجديد</string>
+    <string name="change_pin_done">تغيّر رمز الوالدين</string>
+    <string name="change_pin_failed">تعذّر تغيير الرمز. ابدأ من جديد.</string>
+
+    <string name="stats_title">الإحصائيات</string>
+    <string name="stats_subtitle">دقائق المشاهدة كما هي، بلا نقاط ولا أوسمة</string>
+    <string name="stats_last_7_days">آخر 7 أيام</string>
+    <string name="stats_today">اليوم</string>
+    <string name="stats_quota_key">الحصة %1$s</string>
+    <string name="stats_this_week">هذا الأسبوع</string>
+    <!-- %1$s: a percentage, e.g. «12%». -->
+    <string name="stats_more_than_last_week">أكثر بـ %1$s من الأسبوع الماضي</string>
+    <string name="stats_less_than_last_week">أقل بـ %1$s من الأسبوع الماضي</string>
+    <string name="stats_same_as_last_week">مثل الأسبوع الماضي</string>
+    <string name="stats_no_previous_week">لا بيانات من الأسبوع الماضي للمقارنة</string>
+    <string name="stats_top_channels">أكثر القنوات مشاهدة</string>
+    <string name="stats_no_channels">لا مشاهدة مسجّلة في هذه الأيام.</string>
+    <!-- %1$s: count_times, e.g. «مرتان». -->
+    <string name="stats_surrenders">الاستسلام هذا الأسبوع: %1$s</string>
+    <string name="stats_no_surrenders">لا استسلام هذا الأسبوع</string>
 
     <!-- Import subscriptions -->
     <string name="import_title">استيراد الاشتراكات</string>

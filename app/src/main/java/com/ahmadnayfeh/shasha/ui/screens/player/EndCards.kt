@@ -47,6 +47,7 @@ import com.ahmadnayfeh.shasha.ui.components.Thumbnail
 import com.ahmadnayfeh.shasha.ui.components.ThumbnailBadge
 import com.ahmadnayfeh.shasha.ui.format.Thumbnails
 import com.ahmadnayfeh.shasha.ui.format.rememberFormats
+import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import kotlinx.coroutines.delay
@@ -98,11 +99,11 @@ private fun Finished(heading: String, title: String, onBack: () -> Unit, onRepla
         Box(
             Modifier
                 .size(84.dp)
-                .background(ShashaColors.Primary.copy(alpha = 0.16f), CircleShape)
-                .border(1.dp, ShashaColors.Primary.copy(alpha = 0.45f), CircleShape),
+                .background(LocalAccent.current.tint(0.16f), CircleShape)
+                .border(1.dp, LocalAccent.current.tint(0.45f), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(ShashaIcons.CheckCircle, contentDescription = null, tint = ShashaColors.PrimaryBright, modifier = Modifier.size(42.dp))
+            Icon(ShashaIcons.CheckCircle, contentDescription = null, tint = LocalAccent.current.bright, modifier = Modifier.size(42.dp))
         }
         Spacer(Modifier.height(20.dp))
         Text(heading, style = MaterialTheme.typography.headlineMedium, color = Color.White)
@@ -150,7 +151,7 @@ private fun UpNext(
         onPlayNext(next)
     }
     Column(Modifier.widthIn(max = 640.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(stringResource(R.string.player_up_next), style = MaterialTheme.typography.labelLarge, color = ShashaColors.PrimaryBright)
+        Text(stringResource(R.string.player_up_next), style = MaterialTheme.typography.labelLarge, color = LocalAccent.current.bright)
         Spacer(Modifier.height(12.dp))
         Box(Modifier.width(384.dp).height(216.dp)) {
             val url = remember(next.videoId) { Thumbnails.video(next.videoId) }

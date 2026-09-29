@@ -23,3 +23,16 @@ class BrowseActions(
         is PlaylistUi -> openPlaylist(item.playlist.playlistId)
     }
 }
+
+/** Where the settings go (adult profile). The parent PIN is asked before the parental ones open. */
+@Stable
+class SettingsActions(
+    val openProfiles: () -> Unit,
+    val openProfile: (profileId: String) -> Unit,
+    val openAllowlist: (profileId: String) -> Unit,
+    val openBlocklist: () -> Unit,
+    val openChangePin: () -> Unit,
+    val openStats: () -> Unit,
+    val openImport: () -> Unit,
+    val openDiagnostics: () -> Unit,
+)

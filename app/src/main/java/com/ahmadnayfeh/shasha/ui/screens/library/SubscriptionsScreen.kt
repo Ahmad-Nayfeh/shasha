@@ -32,7 +32,7 @@ import com.ahmadnayfeh.shasha.ui.model.ChannelUi
 
 @Composable
 fun SubscriptionsRoute(focus: ContentFocus, onOpenChannel: (channelId: String, name: String) -> Unit, onImport: () -> Unit, onSearch: () -> Unit) {
-    val vm = containerViewModel { SubscriptionsViewModel(it.subscriptions) }
+    val vm = containerViewModel { SubscriptionsViewModel(it.subscriptions, it.policy.filter) }
     val channels by vm.channels.collectAsStateWithLifecycle()
     SubscriptionsScreen(channels, focus, onOpenChannel, onImport, onSearch)
 }

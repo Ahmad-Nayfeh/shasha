@@ -2,6 +2,7 @@ package com.ahmadnayfeh.shasha
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.animation.AccelerateInterpolator
@@ -9,14 +10,39 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.ahmadnayfeh.shasha.ui.navigation.ShashaNavHost
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ViewModelProvider
+import com.ahmadnayfeh.shasha.ui.app.RootScreen
+import com.ahmadnayfeh.shasha.ui.app.RootViewModel
+import com.ahmadnayfeh.shasha.ui.app.ShashaRoot
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 
 class MainActivity : ComponentActivity() {
+    /** An activity this one opened for an answer (the import's document picker) is in front. */
+    private var awaitingResult = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Brand splash (animated logo on API 31+), then the app theme.
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
+        val root = ViewModelProvider(this, RootViewModel.factory(appContainer))[RootViewModel::class.java]
+        // Back from HOME or the TV's standby, the adult profile asks for the PIN again (RootViewModel.onAppShown).
+        lifecycle.addObserver(
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_START -> {
+                        root.onAppShown(ownRequest = awaitingResult)
+                        awaitingResult = false
+                    }
+                    Lifecycle.Event.ON_STOP -> if (!isChangingConfigurations) root.onAppHidden()
+                    else -> Unit
+                }
+            },
+        )
+        // The splash stays until the current profile and the parent PIN are known: never a blank frame, and never
+        // a moment of the owner's screens before a child's (the profile is read from disk off the main thread).
+        splash.setKeepOnScreenCondition { root.screen.value == RootScreen.Loading }
         splash.setOnExitAnimationListener { provider ->
             // Let the logo animation finish (the first frame is often ready before it ends), then the
             // logo grows slightly and fades into the first screen instead of disappearing abruptly.
@@ -38,8 +64,17 @@ class MainActivity : ComponentActivity() {
             }
         }
         setContent {
-            ShashaTheme { ShashaNavHost() }
+            ShashaTheme { ShashaRoot(root) }
         }
+    }
+
+    // Every ActivityResultLauncher ends up here. Set only once the launch succeeded (no picker installed =
+    // ActivityNotFoundException, and nothing to wait for).
+    @Deprecated("The Activity Result API calls it; the app never calls it directly.")
+    override fun startActivityForResult(intent: Intent, requestCode: Int, options: Bundle?) {
+        @Suppress("DEPRECATION")
+        super.startActivityForResult(intent, requestCode, options)
+        awaitingResult = true
     }
 
     private companion object {

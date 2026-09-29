@@ -26,6 +26,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
+import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
 /** Dark pill over a thumbnail: a duration ("12:34") or a count, with an optional icon. */
@@ -67,9 +68,10 @@ fun LiveThumbnailBadge(modifier: Modifier = Modifier) {
  */
 @Composable
 fun WatchedBar(fraction: () -> Float, modifier: Modifier = Modifier, height: Dp = 4.dp) {
+    val color = LocalAccent.current.main
     // Canvas coordinates are never mirrored: x = 0 is the left edge in RTL too.
     Canvas(modifier.fillMaxWidth().height(height)) {
         drawRect(Color.Black.copy(alpha = 0.45f))
-        drawRect(ShashaColors.Primary, Offset.Zero, Size(size.width * fraction().coerceIn(0f, 1f), size.height))
+        drawRect(color, Offset.Zero, Size(size.width * fraction().coerceIn(0f, 1f), size.height))
     }
 }

@@ -33,8 +33,8 @@ import coil3.compose.AsyncImage
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.ui.format.Formats
 import com.ahmadnayfeh.shasha.ui.model.PlaylistUi
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.PlexArabic
+import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 
 /**
@@ -65,17 +65,20 @@ fun ChannelAvatar(url: String?, name: String, channelId: String, size: Dp, modif
 
 /**
  * A channel in a grid, as tall as a video card: its picture centred in a 16:9 tile, its name and
- * [subtitle] (subscribers) under it. OK opens the channel.
+ * [subtitle] (subscribers) under it. OK opens the channel; holding OK or MENU opens its context menu
+ * ([LocalCollectionMenu]: the parent's allowlist and block actions).
  */
 @Composable
 fun ChannelCard(channel: ChannelItem, subtitle: String?, onClick: () -> Unit, modifier: Modifier = Modifier, tileModifier: Modifier = Modifier) {
+    val openMenu = LocalCollectionMenu.current
     Column(modifier) {
         FocusSurface(
             onClick = onClick,
+            onLongClick = { openMenu(MenuTarget.Channel(channel)) },
             shape = CardShape,
             containerColor = ShashaColors.Surface,
             focusedContainerColor = ShashaColors.SurfaceHigh,
-            modifier = tileModifier.fillMaxWidth().aspectRatio(16f / 9f),
+            modifier = tileModifier.fillMaxWidth().aspectRatio(16f / 9f).onMenuKey { openMenu(MenuTarget.Channel(channel)) },
         ) {
             Box(Modifier.fillMaxSize().background(ChannelTileBrush))
             ChannelAvatar(
@@ -108,17 +111,19 @@ fun ChannelCard(channel: ChannelItem, subtitle: String?, onClick: () -> Unit, mo
     }
 }
 
-/** A playlist in a grid: its thumbnail with the video count, title and channel. OK opens it. */
+/** A playlist in a grid: its thumbnail with the video count, title and channel. OK opens it; OK held or MENU opens its menu. */
 @Composable
 fun PlaylistCard(item: PlaylistUi, formats: Formats, onClick: () -> Unit, modifier: Modifier = Modifier, tileModifier: Modifier = Modifier) {
     val playlist = item.playlist
+    val openMenu = LocalCollectionMenu.current
     Column(modifier) {
         FocusSurface(
             onClick = onClick,
+            onLongClick = { openMenu(MenuTarget.Playlist(playlist)) },
             shape = CardShape,
             containerColor = ShashaColors.Surface,
             focusedContainerColor = ShashaColors.Surface,
-            modifier = tileModifier.fillMaxWidth().aspectRatio(16f / 9f),
+            modifier = tileModifier.fillMaxWidth().aspectRatio(16f / 9f).onMenuKey { openMenu(MenuTarget.Playlist(playlist)) },
         ) {
             Thumbnail(playlist.thumbnailUrl, Modifier.fillMaxSize(), CardShape, logoSize = 44.dp)
             val count = playlist.videoCount?.let { formats.count(R.array.count_videos, it) } ?: stringResource(R.string.playlist_label)

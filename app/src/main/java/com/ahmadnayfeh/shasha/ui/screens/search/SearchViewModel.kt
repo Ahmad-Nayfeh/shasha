@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmadnayfeh.shasha.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.data.WatchRepository
+import com.ahmadnayfeh.shasha.policy.ContentFilter
 import com.ahmadnayfeh.shasha.ui.model.ItemUi
 import com.ahmadnayfeh.shasha.ui.model.VideoUi
+import com.ahmadnayfeh.shasha.ui.model.source
 import com.ahmadnayfeh.shasha.ui.model.toUi
 import com.ahmadnayfeh.shasha.ui.paging.Page
 import com.ahmadnayfeh.shasha.ui.paging.PagedLoader
@@ -18,18 +20,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * البحث (adult profile; phase 3 removes it for children). A search runs when the user submits it or
- * changes the filter, never while typing; results come page by page as focus nears their end.
+ * البحث (adult profile only: a child's navigation graph has no search). A search runs when the user
+ * submits it or changes the filter, never while typing; results come page by page as focus nears their
+ * end. Results the profile's rules hide (blocked channels and keywords, shorts) are never shown, and one
+ * blocked from a card's menu disappears at once.
  */
 class SearchViewModel(
     private val source: VideoSource,
     private val subscriptions: SubscriptionRepository,
     watch: WatchRepository,
+    filter: StateFlow<ContentFilter>,
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
@@ -45,7 +51,9 @@ class SearchViewModel(
         Page(result.items.map { it.toUi() }, result.next)
     }
 
-    val results: StateFlow<PagedState<ItemUi>> = loader.state
+    val results: StateFlow<PagedState<ItemUi>> = combine(loader.state, filter) { state, rules ->
+        state.copy(items = state.items.filter { rules.items(listOf(it.source())).isNotEmpty() })
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, loader.state.value)
 
     /** Ids of subscribed channels, for the subscribe buttons on channel results. */
     val subscribed: StateFlow<Set<String>> = subscriptions.observe()

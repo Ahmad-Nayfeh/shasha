@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.ahmadnayfeh.shasha.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.data.WatchRepository
 import com.ahmadnayfeh.shasha.data.asSourceException
+import com.ahmadnayfeh.shasha.policy.ContentFilter
+import com.ahmadnayfeh.shasha.policy.Decision
 import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.ui.model.toUi
 import com.ahmadnayfeh.shasha.ui.paging.Page
@@ -21,6 +23,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -32,7 +37,9 @@ sealed interface ChannelHeader {
 }
 
 /**
- * A channel's page: its header, its videos page by page, and the subscribe toggle.
+ * A channel's page: its header, its videos page by page, and the subscribe toggle. Nothing is fetched
+ * before the profile's rules allow the channel ([access]); its videos pass the same rules (a child's
+ * shorts, blocked keywords), also when they change while the page is open.
  * @param appScope for a write that must finish after the page has closed ([unsubscribe]).
  */
 class ChannelViewModel(
@@ -41,16 +48,25 @@ class ChannelViewModel(
     private val subscriptions: SubscriptionRepository,
     watch: WatchRepository,
     private val appScope: CoroutineScope,
+    filter: StateFlow<ContentFilter>,
 ) : ViewModel() {
+
+    /** Whether the current profile may open this channel; null until the profile is known. */
+    val access: StateFlow<Decision?> = filter.map { rules -> rules.profile?.let { rules.channel(channelId) } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, filter.value.profile?.let { filter.value.channel(channelId) })
 
     private val _header = MutableStateFlow<ChannelHeader>(ChannelHeader.Loading)
     val header: StateFlow<ChannelHeader> = _header.asStateFlow()
 
     private val loader = PagedLoader(viewModelScope, VideoUi::key) { page ->
         val result = source.channelVideos(channelId, page)
-        Page(result.items.filterIsInstance<VideoItem>().map { it.toUi() }, result.next)
+        // The channel's own uploads: one without a channel id is this channel's.
+        Page(result.items.filterIsInstance<VideoItem>().map { (if (it.channelId == null) it.copy(channelId = channelId) else it).toUi() }, result.next)
     }
-    val videos: StateFlow<PagedState<VideoUi>> = loader.state
+    val videos: StateFlow<PagedState<VideoUi>> = combine(loader.state, filter) { state, rules ->
+        val shown = rules.channelVideos(channelId, state.items.map { it.video }).mapTo(HashSet()) { it.videoId }
+        state.copy(items = state.items.filter { it.video.videoId in shown })
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, loader.state.value)
 
     val isSubscribed: StateFlow<Boolean> = subscriptions.observeIsSubscribed(channelId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
@@ -60,8 +76,12 @@ class ChannelViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     init {
-        loadHeader()
-        loader.start()
+        viewModelScope.launch {
+            if (access.filterNotNull().first().isAllowed) {
+                loadHeader()
+                loader.start()
+            }
+        }
     }
 
     fun loadMore() = loader.loadMore()

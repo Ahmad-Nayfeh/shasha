@@ -276,7 +276,17 @@ class BrowseScreenshotTest {
     @Test
     fun settings() = snap("settings") {
         Shell(Tab.SETTINGS) {
-            SettingsScreen(remember { ContentFocus() }, "0.1.0", "v0.26.5", onDiagnostics = {}, onImport = {})
+            SettingsScreen(
+                remember { ContentFocus() },
+                "0.1.0",
+                "v0.26.5",
+                onProfiles = {},
+                onBlocklist = {},
+                onStats = {},
+                onChangePin = {},
+                onImport = {},
+                onDiagnostics = {},
+            )
         }
     }
 

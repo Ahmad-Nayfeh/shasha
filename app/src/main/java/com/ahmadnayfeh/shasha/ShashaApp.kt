@@ -2,6 +2,7 @@ package com.ahmadnayfeh.shasha
 
 import android.app.Application
 import android.content.Context
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.WorkManager
 import coil3.ImageLoader
 import coil3.PlatformContext
@@ -10,6 +11,10 @@ import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
+import com.ahmadnayfeh.shasha.policy.spendingTime
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okio.Path.Companion.toOkioPath
 
 class ShashaApp : Application(), SingletonImageLoader.Factory {
@@ -17,9 +22,24 @@ class ShashaApp : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
-        // The two-hourly feed sync (SPEC §2); an existing schedule is kept. androidx.startup initialized
-        // WorkManager before onCreate; only JVM unit tests start without it (Robolectric runs no providers).
-        if (WorkManager.isInitialized()) container.feedSyncScheduler.ensurePeriodic()
+        // androidx.startup initialized WorkManager and the process lifecycle before onCreate; only JVM unit
+        // tests start without them (Robolectric runs no providers), and they start what they test themselves.
+        if (!WorkManager.isInitialized()) return
+        // The two-hourly feed sync (SPEC §2); an existing schedule is kept.
+        container.feedSyncScheduler.ensurePeriodic()
+        startPolicy()
+    }
+
+    /**
+     * The current profile is read from disk off the main thread (the first screen waits for it only if it
+     * comes first), then the session state and the usage tracker start: time counts while the app is
+     * visible (at least STARTED, as the player plays) and a profile's screens are shown ([spendingTime]).
+     */
+    private fun startPolicy() {
+        container.appScope.launch {
+            withContext(Dispatchers.IO) { container.currentProfile }
+            container.startPolicy(spendingTime(ProcessLifecycleOwner.get().lifecycle, container.profileScreensShown))
+        }
     }
 
     /**

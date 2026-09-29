@@ -9,13 +9,10 @@ interface CurrentProfile {
     val id: StateFlow<String>
 }
 
-/** The owner's profile id while there are no profiles yet. */
+/** The owner's profile: created on the first start (ProfileRepository.ensureOwner) under the id phase 2 used. */
 const val ADULT_PROFILE_ID = "adult"
 
-/**
- * Stand-in until profiles arrive (SPEC phase 3): everyone is the adult owner. Phase 3 replaces it in
- * AppContainer with the persisted current profile.
- */
+/** A profile that never changes, for tests and previews. The app uses [ActiveProfile]. */
 class FixedProfile(id: String = ADULT_PROFILE_ID) : CurrentProfile {
     override val id: StateFlow<String> = MutableStateFlow(id).asStateFlow()
 }

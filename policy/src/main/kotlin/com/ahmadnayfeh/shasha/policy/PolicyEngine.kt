@@ -100,6 +100,16 @@ class PolicyEngine(private val clock: Clock) {
         return !item.isLive && duration in 1..SHORTS_MAX_SECONDS
     }
 
+    /**
+     * Whether [profile]'s shorts rule cannot judge [item] until its duration is known: the profile hides
+     * shorts, and the item is neither flagged, a "/shorts/" link nor live, and has no duration (RSS items
+     * carry none). [canShow] lets such an item through, but playing it may still be refused once the
+     * duration is known (a regular 2-minute video is a short here). A list that can learn the durations
+     * (a channel's Videos tab) should leave these items out until it has; the player looks the video up first.
+     */
+    fun needsDuration(profile: Profile, item: Candidate): Boolean =
+        profile.hideShorts && !item.isLive && (item.durationSeconds ?: 0) <= 0 && !isShort(item)
+
     fun features(profile: Profile): Features {
         val adult = profile.isAdult
         return Features(
@@ -264,6 +274,28 @@ class PolicyEngine(private val clock: Clock) {
             val open = overrideUntil != null || isAllowedAt(schedule, now)
             val left = if (open) secondsUntilScheduleEnd(schedule, now, overrideUntil) else 0L
             if (left != null && left < seconds) grants += ScheduleOverride(profile.id, nowMs + seconds * 1000)
+        }
+        return grants
+    }
+
+    /**
+     * The parent's "for the rest of today" (the TV's PIN or the phone's "فتح انتهى الوقت" without
+     * minutes), whatever stops the profile: today's quota is lifted ([grantUnlimitedToday]) and, when
+     * the schedule keeps the profile from watching right now, the schedule too, until the end of the
+     * local day ([grantScheduleOverrideUntilEndOfDay]). A bedtime that is still to come today stays.
+     * Returns only the grants that change something; store them with `overrides + result`.
+     */
+    fun grantRestOfToday(profile: Profile, overrides: Overrides): Overrides {
+        val now = clock.instant()
+        val today = localDate(now).toEpochDay()
+        var grants = Overrides.NONE
+        if (quotaLimitSeconds(profile, today, overrides) != null) grants += QuotaOverride(profile.id, today, unlimited = true)
+        val schedule = profile.schedule?.takeUnless { it.isAlwaysAllowed }
+        if (schedule != null &&
+            activeScheduleOverride(profile, overrides, now.toEpochMilli()) == null &&
+            !isAllowedAt(schedule, now)
+        ) {
+            grants += grantScheduleOverrideUntilEndOfDay(profile)
         }
         return grants
     }

@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.player.formatDuration
+import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
 /**
@@ -46,6 +47,7 @@ fun SeekBar(
     isLive: Boolean = false,
 ) {
     val focused by interactionSource.collectIsFocusedAsState()
+    val accent = LocalAccent.current
     val trackHeight by animateDpAsState(if (focused) 8.dp else 5.dp, label = "trackHeight")
     val thumbRadius by animateDpAsState(if (focused) THUMB_RADIUS else 0.dp, label = "thumb")
     val glow by animateFloatAsState(if (focused) 1f else 0f, label = "glow")
@@ -59,11 +61,11 @@ fun SeekBar(
             Text(
                 text = formatDuration(positionMs),
                 style = MaterialTheme.typography.titleMedium,
-                color = ShashaColors.OnPrimary,
+                color = accent.onMain,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .centeredAt(fraction, inset = THUMB_RADIUS)
-                    .background(ShashaColors.PrimaryBright, RoundedCornerShape(10.dp))
+                    .background(accent.bright, RoundedCornerShape(10.dp))
                     .padding(horizontal = 12.dp, vertical = 2.dp),
             )
         }
@@ -83,7 +85,7 @@ fun SeekBar(
             drawRoundRect(Color.White.copy(alpha = 0.22f), Offset(start, y - h / 2), Size(w, h), r)
             drawRoundRect(Color.White.copy(alpha = 0.40f), Offset(start, y - h / 2), Size(w * bufferedFraction, h), r)
             drawRoundRect(
-                if (focused) ShashaColors.PrimaryBright else ShashaColors.Primary,
+                if (focused) accent.bright else accent.main,
                 Offset(start, y - h / 2),
                 Size(w * fraction, h),
                 r,
@@ -91,7 +93,7 @@ fun SeekBar(
             val thumb = thumbRadius.toPx()
             if (thumb > 0f) {
                 val c = Offset(start + w * fraction, y)
-                drawCircle(ShashaColors.Primary.copy(alpha = 0.35f * glow), radius = thumb * 2.1f, center = c)
+                drawCircle(accent.tint(0.35f * glow), radius = thumb * 2.1f, center = c)
                 drawCircle(Color.White, radius = thumb, center = c)
             }
         }

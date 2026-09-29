@@ -58,7 +58,7 @@ import com.ahmadnayfeh.shasha.youtube.SearchFilter
 
 @Composable
 fun SearchRoute(focus: ContentFocus, actions: BrowseActions) {
-    val vm = containerViewModel { SearchViewModel(it.videoSource, it.subscriptions, it.watch) }
+    val vm = containerViewModel { SearchViewModel(it.videoSource, it.subscriptions, it.watch, it.policy.filter) }
     val extractorVersion = LocalContext.current.appContainer.videoSource.extractorVersion
     val query by vm.query.collectAsStateWithLifecycle()
     val filter by vm.filter.collectAsStateWithLifecycle()

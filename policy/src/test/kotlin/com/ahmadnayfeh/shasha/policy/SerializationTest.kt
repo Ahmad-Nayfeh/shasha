@@ -57,10 +57,19 @@ class SerializationTest {
 
     @Test
     fun limiterState_roundTrip() {
-        for (state in listOf(PinAttemptState(), PinAttemptState(3, null), PinAttemptState(0, 1_790_000_000_000))) {
+        val states = listOf(
+            PinAttemptState(),
+            PinAttemptState(3, null),
+            PinAttemptState(0, 1_790_000_000_000),
+            PinAttemptState(0, 1_790_000_000_000, lockouts = 3, lockedUntilElapsedMs = 86_400_000, bootId = 41),
+        )
+        for (state in states) {
             val text = json.encodeToString(PinAttemptState.serializer(), state)
             assertThat(json.decodeFromString(PinAttemptState.serializer(), text)).isEqualTo(state)
         }
+        // What the app saved before lockouts escalated still reads.
+        assertThat(json.decodeFromString(PinAttemptState.serializer(), """{"consecutiveFailures":2,"lockedUntilEpochMs":1790000000000}"""))
+            .isEqualTo(PinAttemptState(2, 1_790_000_000_000))
     }
 
     @Test

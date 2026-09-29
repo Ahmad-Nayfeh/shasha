@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,11 +49,11 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
-import com.ahmadnayfeh.shasha.ui.components.ShashaFocus
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
+import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
-/** The rail's destinations, top to bottom (settings sits apart at the bottom). */
+/** The rail's destinations. Which of them a profile has is [Tab.Adult] or [Tab.Kids]. */
 enum class Tab(@StringRes val label: Int, val icon: ImageVector) {
     HOME(R.string.nav_home, ShashaIcons.Home),
     SEARCH(R.string.nav_search, ShashaIcons.Search),
@@ -60,20 +61,48 @@ enum class Tab(@StringRes val label: Int, val icon: ImageVector) {
     WATCH_LATER(R.string.nav_watch_later, ShashaIcons.WatchLater),
     HISTORY(R.string.nav_history, ShashaIcons.History),
     SETTINGS(R.string.nav_settings, ShashaIcons.Settings),
+
+    /** A child's channels and playlists, the ones the parent allowed. */
+    ALLOWED_CHANNELS(R.string.nav_allowed_channels, ShashaIcons.Subscriptions),
+    ;
+
+    /** The tab's destination in [MainScreen]'s tab graph. */
+    val route: String get() = "tab/$name"
+
+    companion object {
+        /** The adult profile's rail, top to bottom (settings sits apart at the bottom). */
+        val Adult = listOf(HOME, SEARCH, SUBSCRIPTIONS, WATCH_LATER, HISTORY, SETTINGS)
+
+        /** A child profile's rail (SPEC §3): no search, nothing to manage. */
+        val Kids = listOf(HOME, ALLOWED_CHANNELS)
+    }
 }
+
+/**
+ * Something the rail does rather than shows (at its bottom, above settings): «تبديل الملف» in the adult
+ * profile, «خروج» in a child's. [icon] draws the leading picture (an icon, or the profile's avatar).
+ */
+@Immutable
+class RailAction(
+    @StringRes val label: Int,
+    val tag: String,
+    val onClick: () -> Unit,
+    val icon: @Composable (Modifier) -> Unit,
+)
 
 /** Width the rail always takes on the right; the screens are laid out beside it. */
 val RailCollapsedWidth = 104.dp
 private val RailExpandedWidth = 272.dp
 private val RailEdge = 48.dp // overscan-safe distance from the screen's right edge
-private val ItemHeight = 50.dp
+private val ItemHeight = 48.dp
+private val ItemGap = 6.dp
 private val ScrimWidth = 360.dp
 
 /**
  * The navigation rail on the right (the start side in Arabic). Icons only while the content has focus;
  * when focus enters it, it widens over the content and shows the labels. Focus always enters on the
  * selected tab, and OK switches tabs (moving the focus doesn't: no screen loads just because focus
- * passes by).
+ * passes by). [tabs] are the profile's; [actions] sit at the bottom, above settings.
  */
 @Composable
 fun NavRail(
@@ -82,6 +111,8 @@ fun NavRail(
     itemFocus: Map<Tab, FocusRequester>,
     modifier: Modifier = Modifier,
     initiallyExpanded: Boolean = false,
+    tabs: List<Tab> = Tab.Adult,
+    actions: List<RailAction> = emptyList(),
 ) {
     var expanded by remember { mutableStateOf(initiallyExpanded) }
     val width by animateDpAsState(if (expanded) RailExpandedWidth else RailCollapsedWidth, tween(240), label = "railWidth")
@@ -116,19 +147,44 @@ fun NavRail(
         Column(
             Modifier
                 .fillMaxHeight()
-                .padding(start = RailEdge, end = if (expanded) 20.dp else 0.dp, top = 40.dp, bottom = 40.dp)
+                .padding(start = RailEdge, end = if (expanded) 20.dp else 0.dp, top = 34.dp, bottom = 34.dp)
                 .onFocusChanged { expanded = it.hasFocus }
                 .focusProperties { onEnter = { itemFocus[selected]?.requestFocus() } }
                 .focusGroup(),
         ) {
             RailLogo(expanded)
-            Spacer(Modifier.height(40.dp))
-            Tab.entries.filter { it != Tab.SETTINGS }.forEach { tab ->
-                RailItem(tab, tab == selected, expanded, { onSelect(tab) }, Modifier.focusRequester(itemFocus.getValue(tab)))
-                Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(34.dp))
+            tabs.filter { it != Tab.SETTINGS }.forEach { tab ->
+                RailItem(
+                    label = stringResource(tab.label),
+                    selected = tab == selected,
+                    expanded = expanded,
+                    onClick = { onSelect(tab) },
+                    modifier = Modifier.focusRequester(itemFocus.getValue(tab)).testTag("rail_${tab.name}"),
+                ) { Icon(tab.icon, contentDescription = stringResource(tab.label), modifier = it) }
+                Spacer(Modifier.height(ItemGap))
             }
             Spacer(Modifier.weight(1f))
-            RailItem(Tab.SETTINGS, selected == Tab.SETTINGS, expanded, { onSelect(Tab.SETTINGS) }, Modifier.focusRequester(itemFocus.getValue(Tab.SETTINGS)))
+            actions.forEach { action ->
+                RailItem(
+                    label = stringResource(action.label),
+                    selected = false,
+                    expanded = expanded,
+                    onClick = action.onClick,
+                    modifier = Modifier.testTag(action.tag),
+                    icon = action.icon,
+                )
+                Spacer(Modifier.height(ItemGap))
+            }
+            if (Tab.SETTINGS in tabs) {
+                RailItem(
+                    label = stringResource(Tab.SETTINGS.label),
+                    selected = selected == Tab.SETTINGS,
+                    expanded = expanded,
+                    onClick = { onSelect(Tab.SETTINGS) },
+                    modifier = Modifier.focusRequester(itemFocus.getValue(Tab.SETTINGS)).testTag("rail_${Tab.SETTINGS.name}"),
+                ) { Icon(Tab.SETTINGS.icon, contentDescription = stringResource(Tab.SETTINGS.label), modifier = it) }
+            }
         }
     }
 }
@@ -149,36 +205,43 @@ private fun RailLogo(expanded: Boolean) {
 }
 
 @Composable
-private fun RailItem(tab: Tab, selected: Boolean, expanded: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun RailItem(
+    label: String,
+    selected: Boolean,
+    expanded: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: @Composable (Modifier) -> Unit,
+) {
     val shape = RoundedCornerShape(percent = 50)
+    val accent = LocalAccent.current
     Surface(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .height(ItemHeight)
-            .semantics { this.selected = selected }
-            .testTag("rail_${tab.name}"),
+            .semantics { this.selected = selected },
         shape = ClickableSurfaceDefaults.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
-            containerColor = if (selected) ShashaColors.Primary.copy(alpha = 0.16f) else Color.Transparent,
+            containerColor = if (selected) accent.tint(0.16f) else Color.Transparent,
             contentColor = when {
-                selected -> ShashaColors.PrimaryBright
+                selected -> accent.bright
                 expanded -> ShashaColors.Text
                 else -> ShashaColors.Muted
             },
-            focusedContainerColor = ShashaColors.Primary,
-            focusedContentColor = ShashaColors.OnPrimary,
-            pressedContainerColor = ShashaColors.PrimaryBright,
-            pressedContentColor = ShashaColors.OnPrimary,
+            focusedContainerColor = accent.main,
+            focusedContentColor = accent.onMain,
+            pressedContainerColor = accent.bright,
+            pressedContentColor = accent.onMain,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.04f),
-        glow = ClickableSurfaceDefaults.glow(focusedGlow = ShashaFocus.ButtonGlow),
+        glow = ClickableSurfaceDefaults.glow(focusedGlow = accent.buttonGlow),
     ) {
         Row(Modifier.fillMaxHeight().padding(start = 16.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(tab.icon, contentDescription = stringResource(tab.label), modifier = Modifier.size(24.dp))
+            icon(Modifier.size(24.dp))
             AnimatedVisibility(expanded, enter = fadeIn(tween(200, delayMillis = 80)), exit = fadeOut(tween(100))) {
                 Text(
-                    stringResource(tab.label),
+                    label,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     modifier = Modifier.padding(start = 16.dp),

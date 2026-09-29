@@ -56,4 +56,25 @@ class ShortsTest {
         assertThat(engine.canShow(child(), video(isShortFormFlag = true))).isEqualTo(deny(DenyReason.SHORTS_HIDDEN))
         assertThat(engine.canShow(adult(), video(isShortFormFlag = true))).isEqualTo(Decision.Allow)
     }
+
+    @Test
+    fun needsDuration_onlyWhenTheShortsRuleCannotDecideWithoutIt() {
+        val rss = video(durationSeconds = null) // a regular upload as RSS gives it: no duration
+        assertThat(engine.needsDuration(child(), rss)).isTrue()
+        assertThat(engine.needsDuration(child(), video(durationSeconds = 0))).isTrue()
+        // It lists (the engine cannot know), but the same video with its real 150 s is a short here.
+        assertThat(engine.canShow(child(), rss)).isEqualTo(Decision.Allow)
+        assertThat(engine.canShow(child(), rss.copy(durationSeconds = 150))).isEqualTo(deny(DenyReason.SHORTS_HIDDEN))
+
+        // Known either way: a duration, a "/shorts/" link, the flag, or a live stream.
+        assertThat(engine.needsDuration(child(), video(durationSeconds = 150))).isFalse()
+        assertThat(engine.needsDuration(child(), video(durationSeconds = 600))).isFalse()
+        assertThat(engine.needsDuration(child(), video(durationSeconds = null, url = "https://www.youtube.com/shorts/abc"))).isFalse()
+        assertThat(engine.needsDuration(child(), video(durationSeconds = null, isShortFormFlag = true))).isFalse()
+        assertThat(engine.needsDuration(child(), video(durationSeconds = null, isLive = true))).isFalse()
+        // A profile that shows shorts never needs it.
+        assertThat(engine.needsDuration(adult(), rss)).isFalse()
+        assertThat(engine.needsDuration(child().copy(hideShorts = false), rss)).isFalse()
+        assertThat(engine.needsDuration(adult().copy(hideShorts = true), rss)).isTrue()
+    }
 }

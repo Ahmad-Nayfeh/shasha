@@ -42,12 +42,16 @@ import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.player.formatDuration
+import com.ahmadnayfeh.shasha.policy.Decision
 import com.ahmadnayfeh.shasha.ui.components.CardShape
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
 import com.ahmadnayfeh.shasha.ui.components.LiveThumbnailBadge
+import com.ahmadnayfeh.shasha.ui.components.LocalCollectionMenu
 import com.ahmadnayfeh.shasha.ui.components.LocalVideoMenu
+import com.ahmadnayfeh.shasha.ui.components.MenuTarget
 import com.ahmadnayfeh.shasha.ui.components.PagingFooter
+import com.ahmadnayfeh.shasha.ui.components.PolicyNotice
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoaderWithText
@@ -65,20 +69,33 @@ import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.ui.paging.LoadMoreWhenNearEnd
 import com.ahmadnayfeh.shasha.ui.paging.PagedState
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
+import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 
+/** [adult]: the adult profile's page, with the parental menu (add to a child's allowlist). */
 @Composable
 fun PlaylistRoute(
     playlistId: String,
+    adult: Boolean,
     onPlay: (videoId: String, playlistId: String, index: Int) -> Unit,
     onBack: () -> Unit,
     onCheckUpdates: () -> Unit,
 ) {
-    val vm = containerViewModel("playlist:$playlistId") { PlaylistViewModel(playlistId, it.videoSource, it.watch, it.playQueues) }
+    val vm = containerViewModel("playlist:$playlistId") { PlaylistViewModel(playlistId, it.videoSource, it.watch, it.playQueues, it.policy.filter) }
+    val access by vm.access.collectAsStateWithLifecycle()
     val details by vm.details.collectAsStateWithLifecycle()
     val videos by vm.videos.collectAsStateWithLifecycle()
+    val openMenu = LocalCollectionMenu.current
+    when (val decision = access) {
+        null -> return // the profile's rules are a moment away
+        is Decision.Deny -> {
+            PolicyNotice(decision.reason, onBack)
+            return
+        }
+        Decision.Allow -> Unit
+    }
     PlaylistScreen(
         details = details,
         videos = videos,
@@ -90,6 +107,7 @@ fun PlaylistRoute(
         onRetryMore = vm::retryMore,
         onBack = onBack,
         onCheckUpdates = onCheckUpdates,
+        onParental = if (adult) ({ details?.let { openMenu(MenuTarget.Playlist(it)) } }) else null,
     )
 }
 
@@ -110,6 +128,7 @@ fun PlaylistScreen(
     onBack: () -> Unit,
     onCheckUpdates: () -> Unit,
     modifier: Modifier = Modifier,
+    onParental: (() -> Unit)? = null,
 ) {
     val error = videos.error
     if (error != null) {
@@ -128,7 +147,7 @@ fun PlaylistScreen(
             .focusGroup()
             .testTag("playlist_screen"),
     ) {
-        Info(details, videos, formats, onPlayAll = { onPlayFrom(0) }, playAll = playAll)
+        Info(details, videos, formats, onPlayAll = { onPlayFrom(0) }, playAll = playAll, onParental = onParental)
         Spacer(Modifier.width(36.dp))
         Box(Modifier.weight(1f).fillMaxHeight()) {
             when {
@@ -145,7 +164,14 @@ fun PlaylistScreen(
 }
 
 @Composable
-private fun Info(details: PlaylistItem?, videos: PagedState<VideoUi>, formats: Formats, onPlayAll: () -> Unit, playAll: FocusRequester) {
+private fun Info(
+    details: PlaylistItem?,
+    videos: PagedState<VideoUi>,
+    formats: Formats,
+    onPlayAll: () -> Unit,
+    playAll: FocusRequester,
+    onParental: (() -> Unit)?,
+) {
     Column(Modifier.width(300.dp).fillMaxHeight().padding(vertical = ShashaDimens.ScreenVertical)) {
         val cover = details?.thumbnailUrl ?: videos.items.firstOrNull()?.let { Thumbnails.video(it.video.videoId) }
         Thumbnail(cover, Modifier.fillMaxWidth().aspectRatio(16f / 9f), RoundedCornerShape(20.dp), logoSize = 64.dp)
@@ -153,7 +179,7 @@ private fun Info(details: PlaylistItem?, videos: PagedState<VideoUi>, formats: F
         Text(
             stringResource(R.string.playlist_label),
             style = MaterialTheme.typography.labelLarge,
-            color = ShashaColors.PrimaryBright,
+            color = LocalAccent.current.bright,
         )
         Text(
             details?.title.orEmpty(),
@@ -176,6 +202,15 @@ private fun Info(details: PlaylistItem?, videos: PagedState<VideoUi>, formats: F
                 icon = ShashaIcons.Play,
                 primary = true,
                 modifier = Modifier.focusRequester(playAll).testTag("playlist_play_all"),
+            )
+        }
+        if (onParental != null && details != null) {
+            Spacer(Modifier.height(14.dp))
+            ShashaButton(
+                stringResource(R.string.channel_parental),
+                onParental,
+                icon = ShashaIcons.Shield,
+                modifier = Modifier.testTag("playlist_parental"),
             )
         }
     }

@@ -55,7 +55,7 @@ import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 @Composable
 fun HomeRoute(focus: ContentFocus, onPlay: (VideoItem) -> Unit, onImport: () -> Unit, onSearch: () -> Unit, onCheckUpdates: () -> Unit) {
-    val vm = containerViewModel { HomeViewModel(it.feed, it.subscriptions, it.watch, it.network.online, it.feedSyncScheduler::syncNow) }
+    val vm = containerViewModel { HomeViewModel(it.feed, it.subscriptions, it.watch, it.network.online, it.feedSyncScheduler::syncNow, it.policy.filter) }
     val state by vm.state.collectAsStateWithLifecycle()
     val watched = vm.watched.collectAsStateWithLifecycle()
     val sync by vm.sync.collectAsStateWithLifecycle()

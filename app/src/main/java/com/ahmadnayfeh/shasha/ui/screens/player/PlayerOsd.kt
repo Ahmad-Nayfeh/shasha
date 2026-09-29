@@ -46,7 +46,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +67,8 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -86,8 +90,10 @@ import com.ahmadnayfeh.shasha.player.SEEK_STEP_MS
 import com.ahmadnayfeh.shasha.player.SeekAccelerator
 import com.ahmadnayfeh.shasha.player.formatDuration
 import com.ahmadnayfeh.shasha.player.formatSpeed
+import com.ahmadnayfeh.shasha.ui.components.LocalTopClearance
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoader
+import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 import kotlinx.coroutines.delay
@@ -138,6 +144,8 @@ fun PlayerOsd(
     var interactions by remember { mutableIntStateOf(0) }
     var scrubMs by remember { mutableStateOf<Long?>(null) }
     var shown by remember { mutableStateOf(progress()) }
+    // Where the title's text ends (from the top of the screen), for [LocalTopClearance].
+    var titleBottom by remember { mutableStateOf(0.dp) }
     // Key code whose key-up must be swallowed (its key-down only revealed the controls).
     val swallowUp = remember { IntArray(1) { NO_KEY } }
     val accelerator = remember { SeekAccelerator() }
@@ -267,6 +275,14 @@ fun PlayerOsd(
     // Safety net: the D-pad keys are normally consumed above; if focus was lost, BACK still behaves.
     BackHandler { back() }
 
+    // While the title shows, the top of the screen is the player's: the 5-minute notice waits below it.
+    val clearance = LocalTopClearance.current
+    if (clearance != null) {
+        val reserved = if (visible) titleBottom else 0.dp
+        SideEffect { clearance.bottom = reserved }
+        DisposableEffect(clearance) { onDispose { clearance.bottom = 0.dp } }
+    }
+
     LaunchedEffect(visible) {
         if (visible) {
             if (menu == null) runCatching { seekFocus.requestFocus() }
@@ -328,7 +344,7 @@ fun PlayerOsd(
             exit = fadeOut(tween(260)) + slideOutVertically(tween(260)) { -it / 3 },
             modifier = Modifier.align(Alignment.TopCenter),
         ) {
-            TitleBar(state, endReserve = if (hintShown) RESUME_HINT_RESERVE else 0.dp)
+            TitleBar(state, endReserve = if (hintShown) RESUME_HINT_RESERVE else 0.dp, onTextBottom = { titleBottom = it })
         }
 
         AnimatedVisibility(
@@ -446,8 +462,10 @@ fun PlayerOsd(
     }
 }
 
+/** [onTextBottom]: how far from the top of the screen the title and channel name reach (the bar is at the top). */
 @Composable
-private fun TitleBar(state: PlayerUiState, endReserve: Dp = 0.dp) {
+private fun TitleBar(state: PlayerUiState, endReserve: Dp = 0.dp, onTextBottom: (Dp) -> Unit = {}) {
+    val density = LocalDensity.current
     Column(
         Modifier
             .fillMaxWidth()
@@ -460,17 +478,20 @@ private fun TitleBar(state: PlayerUiState, endReserve: Dp = 0.dp) {
             )
             .testTag("osd_title"),
     ) {
-        // A Latin title keeps its own reading order but, like everything else, hangs from the right edge.
-        Text(
-            state.title,
-            style = MaterialTheme.typography.headlineSmall.copy(textDirection = TextDirection.Content),
-            textAlign = TextAlign.Right,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 760.dp),
-        )
-        state.channelName?.let {
-            Text(it, style = MaterialTheme.typography.titleMedium, color = ShashaColors.Muted, maxLines = 1)
+        // The texts' size, not their place: the bar slides in and out, where it rests does not move.
+        Column(Modifier.onSizeChanged { onTextBottom(ShashaDimens.ScreenVertical + with(density) { it.height.toDp() }) }) {
+            // A Latin title keeps its own reading order but, like everything else, hangs from the right edge.
+            Text(
+                state.title,
+                style = MaterialTheme.typography.headlineSmall.copy(textDirection = TextDirection.Content),
+                textAlign = TextAlign.Right,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.widthIn(max = 760.dp).testTag("osd_title_text"),
+            )
+            state.channelName?.let {
+                Text(it, style = MaterialTheme.typography.titleMedium, color = ShashaColors.Muted, maxLines = 1)
+            }
         }
     }
 }
@@ -610,12 +631,12 @@ private fun ResumeHint(positionMs: Long) {
     Row(
         Modifier
             .background(Color.Black.copy(alpha = 0.62f), RoundedCornerShape(percent = 50))
-            .border(1.dp, ShashaColors.Primary.copy(alpha = 0.45f), RoundedCornerShape(percent = 50))
+            .border(1.dp, LocalAccent.current.tint(0.45f), RoundedCornerShape(percent = 50))
             .padding(start = 14.dp, end = 18.dp, top = 6.dp, bottom = 6.dp)
             .testTag("osd_resume_hint"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(ShashaIcons.History, contentDescription = null, tint = ShashaColors.PrimaryBright, modifier = Modifier.size(22.dp))
+        Icon(ShashaIcons.History, contentDescription = null, tint = LocalAccent.current.bright, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(10.dp))
         Text(
             stringResource(R.string.player_resumed_from, formatDuration(positionMs)),

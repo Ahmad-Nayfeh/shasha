@@ -7,6 +7,7 @@ import com.ahmadnayfeh.shasha.data.FeedRepository
 import com.ahmadnayfeh.shasha.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.data.SyncHealth
 import com.ahmadnayfeh.shasha.data.WatchRepository
+import com.ahmadnayfeh.shasha.policy.ContentFilter
 import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.ui.model.toUi
 import com.ahmadnayfeh.shasha.ui.screens.watchedFractions
@@ -60,6 +61,8 @@ data class HomeSync(
 /**
  * The home feed. Everything comes from the local database, which the feed sync fills; the screen
  * never fetches from YouTube itself. [refresh] is the header's «تحديث» (a sync run in WorkManager).
+ * Only what the current profile's rules allow is shown ([filter]: blocked channels and keywords, shorts);
+ * nothing before the profile is known.
  */
 class HomeViewModel(
     feed: FeedRepository,
@@ -67,11 +70,16 @@ class HomeViewModel(
     watch: WatchRepository,
     online: Flow<Boolean>,
     private val syncNow: () -> Unit,
+    filter: StateFlow<ContentFilter>,
 ) : ViewModel() {
 
     val state: StateFlow<HomeState> =
-        combine(feed.observeHome(), subscriptions.observe()) { items, channels ->
-            HomeState(loaded = true, videos = items.map { it.toUi() }, subscriptionCount = channels.size)
+        combine(feed.observeHome(), subscriptions.observe(), filter) { items, channels, rules ->
+            HomeState(
+                loaded = rules.profile != null,
+                videos = rules.videos(items.map { it.toVideoItem() }).map { it.toUi() },
+                subscriptionCount = channels.size,
+            )
         }
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), HomeState())

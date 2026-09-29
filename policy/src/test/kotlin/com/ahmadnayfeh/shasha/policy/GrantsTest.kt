@@ -106,6 +106,57 @@ class GrantsTest {
         assertThrows(IllegalArgumentException::class.java) { engine.grantUnlock(kid, 0, Overrides.NONE, 0) }
     }
 
+    // ---- Rest of today ----------------------------------------------------------------------
+
+    @Test
+    fun restOfToday_quotaUsedUp_liftsTheQuotaOnly_andTonightsBedtimeStays() {
+        val engine = engineAt("2026-09-28T12:00")
+        assertThat(engine.session(kid, 3600)).isEqualTo(SessionState.TimeUp)
+        val grants = engine.grantRestOfToday(kid, Overrides.NONE)
+        assertThat(grants).isEqualTo(Overrides(quota = listOf(QuotaOverride(kid.id, epochDay("2026-09-28"), unlimited = true))))
+        assertThat(engine.session(kid, 3600, grants)).isEqualTo(SessionState.Ok(10 * 3600)) // until 22:00
+        assertThat(engineAt("2026-09-28T22:30").session(kid, 3600, grants))
+            .isEqualTo(SessionState.OutsideSchedule(epochMsAt("2026-09-29T07:00")))
+    }
+
+    @Test
+    fun restOfToday_afterBedtime_liftsTheScheduleUntilMidnight_andTheQuota() {
+        val engine = engineAt("2026-09-28T23:00")
+        assertThat(engine.session(kid, 3600)).isInstanceOf(SessionState.OutsideSchedule::class.java)
+        val grants = engine.grantRestOfToday(kid, Overrides.NONE)
+        assertThat(grants).isEqualTo(
+            Overrides(
+                quota = listOf(QuotaOverride(kid.id, epochDay("2026-09-28"), unlimited = true)),
+                schedule = listOf(ScheduleOverride(kid.id, epochMsAt("2026-09-29T00:00"))),
+            ),
+        )
+        assertThat(engine.session(kid, 3600, grants)).isEqualTo(SessionState.Ok(3600))
+        // Tomorrow is an ordinary day again.
+        assertThat(engineAt("2026-09-29T00:10").session(kid, 0, grants))
+            .isEqualTo(SessionState.OutsideSchedule(epochMsAt("2026-09-29T07:00")))
+    }
+
+    @Test
+    fun restOfToday_beforeTheWindowOpens_liftsTheMorningGapOnly() {
+        val engine = engineAt("2026-09-28T06:00")
+        val grants = engine.grantRestOfToday(kid.copy(dailyQuotaMinutes = null), Overrides.NONE)
+        assertThat(grants).isEqualTo(Overrides(schedule = listOf(ScheduleOverride(kid.id, epochMsAt("2026-09-28T07:00")))))
+        // Open from now on, until the evening's bedtime.
+        assertThat(engine.session(kid.copy(dailyQuotaMinutes = null), 0, grants)).isEqualTo(SessionState.Ok(16 * 3600))
+    }
+
+    @Test
+    fun restOfToday_nothingInTheWay_grantsNothing() {
+        val engine = engineAt("2026-09-28T12:00")
+        assertThat(engine.grantRestOfToday(adult(), Overrides.NONE)).isEqualTo(Overrides.NONE)
+        val unlimited = Overrides.NONE + engine.grantUnlimitedToday(kid)
+        assertThat(engine.grantRestOfToday(kid, unlimited)).isEqualTo(Overrides.NONE)
+        // A schedule override already running is not granted twice.
+        val night = engineAt("2026-09-28T23:00")
+        val lifted = Overrides(schedule = listOf(night.grantScheduleOverrideUntilEndOfDay(kid)))
+        assertThat(night.grantRestOfToday(kid.copy(dailyQuotaMinutes = null), lifted)).isEqualTo(Overrides.NONE)
+    }
+
     @Test
     fun grantExtraTime_withHugeEarlierGrants_doesNotOverflow() {
         val engine = engineAt("2026-09-28T12:00")

@@ -13,6 +13,7 @@ import com.ahmadnayfeh.shasha.ui.UiFixtures
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.job
@@ -31,6 +32,7 @@ import org.robolectric.annotation.Config
  * What playing a video records (SPEC §1): resume only between 10 s and 95 %, progress in order, the
  * history entry, "watched" at the end, watch later; and what follows the end (end card or next item).
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
 class PlayerWatchTest {
@@ -51,6 +53,10 @@ class PlayerWatchTest {
 
     @After
     fun tearDown() {
+        // The session's last writes (an end marks the video watched) finish before the database closes: a write
+        // failing on a closed database would surface as an uncaught exception in whichever test runs next.
+        settle()
+        writes.coroutineContext.job.cancel()
         db.close()
         Dispatchers.resetMain()
     }
@@ -134,10 +140,10 @@ class PlayerWatchTest {
     @Test
     fun insideAPlaylistTheNextVideoFollowsAndTheLastOneEndsIt() {
         val next = UiFixtures.videos[1]
-        val middle = PlayerViewModel(id, StreamRepository(FakeUiSource()), session(), nextInPlaylist = { next })
+        val middle = PlayerViewModel(id, StreamRepository(FakeUiSource()), session(), nextInPlaylist = { NextVideo(next, 3) })
         middle.onEnded(PlaybackProgress(600_000, 600_000, 600_000))
         runBlocking { withTimeout(5_000) { middle.end.first { it != null } } }
-        assertThat(middle.end.value).isEqualTo(PlaybackEnd.UpNext(next))
+        assertThat(middle.end.value).isEqualTo(PlaybackEnd.UpNext(next, 3))
 
         val last = PlayerViewModel(id, StreamRepository(FakeUiSource()), session(), nextInPlaylist = { null })
         last.onEnded(PlaybackProgress(600_000, 600_000, 600_000))

@@ -38,14 +38,14 @@ import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 @Composable
 fun WatchLaterRoute(focus: ContentFocus, onPlay: (VideoItem) -> Unit) {
-    val vm = containerViewModel { WatchLaterViewModel(it.watch) }
+    val vm = containerViewModel { WatchLaterViewModel(it.watch, it.policy.filter) }
     val items by vm.items.collectAsStateWithLifecycle()
     WatchLaterScreen(items, vm.watched.collectAsStateWithLifecycle(), rememberNow(), focus, onPlay)
 }
 
 @Composable
 fun HistoryRoute(focus: ContentFocus, onPlay: (VideoItem) -> Unit) {
-    val vm = containerViewModel { HistoryViewModel(it.watch) }
+    val vm = containerViewModel { HistoryViewModel(it.watch, it.policy.filter) }
     val items by vm.items.collectAsStateWithLifecycle()
     HistoryScreen(items, vm.watched.collectAsStateWithLifecycle(), rememberNow(), focus, onPlay, onClear = vm::clear)
 }

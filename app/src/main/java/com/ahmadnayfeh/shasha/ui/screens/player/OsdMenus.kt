@@ -9,9 +9,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,10 +25,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -45,6 +45,7 @@ import com.ahmadnayfeh.shasha.player.QualityChoice
 import com.ahmadnayfeh.shasha.player.formatSpeed
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
+import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
 enum class OsdMenu { QUALITY, SPEED, SUBTITLES }
@@ -118,7 +119,7 @@ internal fun OsdMenuPanel(
             .testTag("osd_menu"),
     ) {
         Row(Modifier.padding(horizontal = 28.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(menuIcon(menu), contentDescription = null, tint = ShashaColors.Primary, modifier = Modifier.size(26.dp))
+            Icon(menuIcon(menu), contentDescription = null, tint = LocalAccent.current.main, modifier = Modifier.size(26.dp))
             Spacer(Modifier.width(12.dp))
             Text(menuTitle(menu), style = MaterialTheme.typography.headlineSmall)
         }
@@ -141,6 +142,7 @@ internal fun OsdMenuPanel(
 
 @Composable
 private fun MenuOptionRow(option: MenuOption, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val accent = LocalAccent.current
     FocusSurface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().height(52.dp),
@@ -154,13 +156,13 @@ private fun MenuOptionRow(option: MenuOption, onClick: () -> Unit, modifier: Mod
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(Modifier.size(26.dp), contentAlignment = Alignment.Center) {
-                if (option.selected) Icon(ShashaIcons.Check, contentDescription = null, tint = ShashaColors.Primary, modifier = Modifier.size(24.dp))
+                if (option.selected) Icon(ShashaIcons.Check, contentDescription = null, tint = accent.main, modifier = Modifier.size(24.dp))
             }
             Spacer(Modifier.width(12.dp))
             Text(
                 option.label,
                 style = MaterialTheme.typography.titleMedium,
-                color = if (option.selected) ShashaColors.PrimaryBright else ShashaColors.Text,
+                color = if (option.selected) accent.bright else ShashaColors.Text,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

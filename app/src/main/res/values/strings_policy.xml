@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texts of the policy glue (app package com.ahmadnayfeh.shasha.policy). Same rules as strings.xml:
+     Arabic only, Western digits, numbers passed as ready-made text (%1$s). -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="ar">
+    <!-- The owner's profile, created on the first start (renamed in the settings). -->
+    <string name="profile_owner_default_name">الكبار</string>
+
+    <!-- Why something may not be shown or played (DenyReason.messageRes). Also sent to the phone. -->
+    <string name="policy_deny_not_in_allowlist">هذا المحتوى ليس ضمن القنوات والقوائم المسموحة لهذا الملف.</string>
+    <string name="policy_deny_blocked_channel">هذه القناة محظورة في هذا الملف.</string>
+    <string name="policy_deny_blocked_keyword">العنوان فيه كلمة محظورة في هذا الملف.</string>
+    <string name="policy_deny_shorts_hidden">المقاطع القصيرة (Shorts) مخفية في هذا الملف.</string>
+    <string name="policy_deny_time_up">انتهى وقت المشاهدة لهذا اليوم.</string>
+    <string name="policy_deny_outside_schedule">المشاهدة غير مسموحة في هذا الوقت.</string>
+    <string name="policy_deny_locked">فيديو مقفول قيد المشاهدة، ولا يبدأ غيره حتى ينتهي أو يُفتح قفله.</string>
+</resources>

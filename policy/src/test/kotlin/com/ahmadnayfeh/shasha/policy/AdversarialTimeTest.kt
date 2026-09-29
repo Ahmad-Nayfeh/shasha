@@ -835,7 +835,8 @@ class AdversarialTimeTest {
         repeat(20) { assertThat(limiter.attempt { false }).isInstanceOf(PinAttemptResult.LockedOut::class.java) }
         clock.advance(Duration.ofMinutes(5))
         val afterLockout = (1..5).map { limiter.attempt { false } }
-        assertThat(afterLockout.last()).isEqualTo(PinAttemptResult.LockedOut(PinAttemptLimiter.LOCKOUT_MILLIS))
+        // The next lockout in a row is longer (see PinAttemptLimiterTest).
+        assertThat(afterLockout.last()).isEqualTo(PinAttemptResult.LockedOut(PinAttemptLimiter.lockoutMillis(2)))
         assertThat(afterLockout.dropLast(1)).containsExactly(
             PinAttemptResult.Wrong(4), PinAttemptResult.Wrong(3), PinAttemptResult.Wrong(2), PinAttemptResult.Wrong(1),
         ).inOrder()

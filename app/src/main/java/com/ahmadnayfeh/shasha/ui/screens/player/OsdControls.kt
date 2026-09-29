@@ -30,10 +30,10 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
-import com.ahmadnayfeh.shasha.ui.components.ShashaFocus
+import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
-/** Round transport button (play/pause, ±10 s). Teal with a glow when focused, like everything else. */
+/** Round transport button (play/pause, ±10 s). The accent with a glow when focused, like everything else. */
 @Composable
 internal fun OsdIconButton(
     icon: ImageVector,
@@ -43,6 +43,7 @@ internal fun OsdIconButton(
     size: Dp = 52.dp,
     badge: String? = null,
 ) {
+    val accent = LocalAccent.current
     Surface(
         onClick = onClick,
         modifier = modifier.size(size).semantics { this.contentDescription = contentDescription },
@@ -50,13 +51,13 @@ internal fun OsdIconButton(
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color.White.copy(alpha = 0.14f),
             contentColor = Color.White,
-            focusedContainerColor = ShashaColors.Primary,
-            focusedContentColor = ShashaColors.OnPrimary,
-            pressedContainerColor = ShashaColors.PrimaryBright,
-            pressedContentColor = ShashaColors.OnPrimary,
+            focusedContainerColor = accent.main,
+            focusedContentColor = accent.onMain,
+            pressedContainerColor = accent.bright,
+            pressedContentColor = accent.onMain,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.12f),
-        glow = ClickableSurfaceDefaults.glow(focusedGlow = ShashaFocus.ButtonGlow),
+        glow = ClickableSurfaceDefaults.glow(focusedGlow = accent.buttonGlow),
         interactionSource = remember { MutableInteractionSource() },
     ) {
         Box(Modifier.align(Alignment.Center)) {
@@ -83,6 +84,7 @@ internal fun OsdChip(
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(18.dp)
+    val accent = LocalAccent.current
     Surface(
         onClick = onClick,
         modifier = modifier,
@@ -90,13 +92,13 @@ internal fun OsdChip(
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color.White.copy(alpha = 0.12f),
             contentColor = Color.White,
-            focusedContainerColor = ShashaColors.Primary,
-            focusedContentColor = ShashaColors.OnPrimary,
-            pressedContainerColor = ShashaColors.PrimaryBright,
-            pressedContentColor = ShashaColors.OnPrimary,
+            focusedContainerColor = accent.main,
+            focusedContentColor = accent.onMain,
+            pressedContainerColor = accent.bright,
+            pressedContentColor = accent.onMain,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.08f),
-        glow = ClickableSurfaceDefaults.glow(focusedGlow = ShashaFocus.ButtonGlow),
+        glow = ClickableSurfaceDefaults.glow(focusedGlow = accent.buttonGlow),
         interactionSource = remember { MutableInteractionSource() },
     ) {
         Row(

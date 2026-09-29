@@ -19,28 +19,30 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
-/** A filter pill: teal-tinted with a check when [selected], solid teal when focused. */
+/** A filter pill: accent-tinted with a check when [selected], solid accent when focused. */
 @Composable
 fun ShashaChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(percent = 50)
+    val accent = LocalAccent.current
     Surface(
         onClick = onClick,
         modifier = modifier.semantics { this.selected = selected },
         shape = ClickableSurfaceDefaults.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
-            containerColor = if (selected) ShashaColors.Primary.copy(alpha = 0.18f) else ShashaColors.SurfaceVariant,
-            contentColor = if (selected) ShashaColors.PrimaryBright else ShashaColors.Text,
-            focusedContainerColor = ShashaColors.Primary,
-            focusedContentColor = ShashaColors.OnPrimary,
-            pressedContainerColor = ShashaColors.PrimaryBright,
-            pressedContentColor = ShashaColors.OnPrimary,
+            containerColor = if (selected) accent.tint(0.18f) else ShashaColors.SurfaceVariant,
+            contentColor = if (selected) accent.bright else ShashaColors.Text,
+            focusedContainerColor = accent.main,
+            focusedContentColor = accent.onMain,
+            pressedContainerColor = accent.bright,
+            pressedContentColor = accent.onMain,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = ShashaFocus.ButtonScale),
-        glow = ClickableSurfaceDefaults.glow(focusedGlow = ShashaFocus.ButtonGlow),
+        glow = ClickableSurfaceDefaults.glow(focusedGlow = accent.buttonGlow),
         border = ClickableSurfaceDefaults.border(
-            border = Border(BorderStroke(1.dp, if (selected) ShashaColors.Primary.copy(alpha = 0.6f) else ShashaColors.Outline), shape = shape),
+            border = Border(BorderStroke(1.dp, if (selected) accent.tint(0.6f) else ShashaColors.Outline), shape = shape),
             focusedBorder = Border.None,
         ),
     ) {

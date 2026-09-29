@@ -40,6 +40,13 @@ data class PlaylistUi(val playlist: PlaylistItem) : ItemUi {
 
 fun VideoItem.toUi() = VideoUi(this, publishedAtEpochMs, TimeKind.PUBLISHED)
 
+/** The source item a card shows (for the policy's list rules). */
+fun ItemUi.source(): SourceItem = when (this) {
+    is VideoUi -> video
+    is ChannelUi -> channel
+    is PlaylistUi -> playlist
+}
+
 fun SourceItem.toUi(): ItemUi = when (this) {
     is VideoItem -> toUi()
     is ChannelItem -> ChannelUi(this)

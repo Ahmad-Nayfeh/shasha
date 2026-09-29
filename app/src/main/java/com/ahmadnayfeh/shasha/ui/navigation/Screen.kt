@@ -2,9 +2,12 @@ package com.ahmadnayfeh.shasha.ui.navigation
 
 import kotlinx.serialization.Serializable
 
-/** Type-safe Navigation Compose routes. */
+/**
+ * Type-safe Navigation Compose routes. Each profile kind registers only its own ([profileGraph]): a
+ * child's graph has none of the adult-only destinations.
+ */
 sealed interface Screen {
-    /** The rail and its tabs (home, search, subscriptions, watch later, history, settings). */
+    /** The rail and the profile's tabs ([com.ahmadnayfeh.shasha.ui.main.Tab.Adult] or Kids). */
     @Serializable
     data object Main : Screen
 
@@ -15,9 +18,19 @@ sealed interface Screen {
     @Serializable
     data class Playlist(val playlistId: String) : Screen
 
-    /** Inside a playlist, [playlistIndex] is the video's position: the next one plays when it ends. */
+    /**
+     * Inside a playlist, [playlistIndex] is the video's position: the next one plays when it ends.
+     * [fromLink]: the video arrived as a link (the phone, another app); the policy then ignores any
+     * playlist it names and asks for the video's own channel.
+     */
     @Serializable
-    data class Player(val videoId: String, val playlistId: String? = null, val playlistIndex: Int = -1) : Screen
+    data class Player(val videoId: String, val playlistId: String? = null, val playlistIndex: Int = -1, val fromLink: Boolean = false) : Screen
+
+    /** Placeholder until the GitHub Releases updater arrives (SPEC phase 7). */
+    @Serializable
+    data object Updates : Screen
+
+    // ---- Adult profile only ---------------------------------------------------------------------
 
     /** Fixed test videos ("فيديوهات تجريبية"), under Settings → تشخيص. */
     @Serializable
@@ -27,7 +40,26 @@ sealed interface Screen {
     @Serializable
     data object ImportSubscriptions : Screen
 
-    /** Placeholder until the GitHub Releases updater arrives (SPEC phase 7). */
+    /** Settings → الملفات (behind the parent PIN). */
     @Serializable
-    data object Updates : Screen
+    data object Profiles : Screen
+
+    @Serializable
+    data class ProfileEdit(val profileId: String) : Screen
+
+    /** A child's allowlist (from the profile's page). */
+    @Serializable
+    data class Allowlist(val profileId: String) : Screen
+
+    /** Settings → قائمة الحظر (behind the parent PIN). */
+    @Serializable
+    data object Blocklist : Screen
+
+    /** Settings → تغيير رمز PIN (asks for the current one first). */
+    @Serializable
+    data object ChangePin : Screen
+
+    /** Settings → الإحصائيات (behind the parent PIN). */
+    @Serializable
+    data object Stats : Screen
 }

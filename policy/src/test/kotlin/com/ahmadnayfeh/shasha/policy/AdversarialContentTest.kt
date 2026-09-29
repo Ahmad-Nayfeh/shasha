@@ -460,7 +460,7 @@ class AdversarialContentTest {
     }
 
     @Test
-    fun limiter_lockoutIsExactlyFiveMinutes_andAppliesAgainAfterFiveMoreFailures() {
+    fun limiter_lockoutIsExactlyFiveMinutes_andTheNextOneAfterFiveMoreFailuresIsLonger() {
         val clock = clockAt("2026-09-28T12:00")
         val limiter = PinAttemptLimiter(clock)
         repeat(4) { assertThat(limiter.attempt { false }).isInstanceOf(PinAttemptResult.Wrong::class.java) }
@@ -468,7 +468,7 @@ class AdversarialContentTest {
         clock.advance(Duration.ofMinutes(5))
         assertThat(limiter.isLocked()).isFalse()
         repeat(4) { i -> assertThat(limiter.attempt { false }).isEqualTo(PinAttemptResult.Wrong(4 - i)) }
-        assertThat(limiter.attempt { false }).isEqualTo(PinAttemptResult.LockedOut(300_000))
+        assertThat(limiter.attempt { false }).isEqualTo(PinAttemptResult.LockedOut(15 * 60_000L))
     }
 
     @Test

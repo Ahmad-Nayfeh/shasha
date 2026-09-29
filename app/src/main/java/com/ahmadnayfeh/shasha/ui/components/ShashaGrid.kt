@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
@@ -39,12 +40,16 @@ import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.ui.screens.error.CheckUpdatesButton
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorTexts
+import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.youtube.SourceException
 
 /** Grid geometry shared by every browsing screen (4 columns of ~181 dp in the area beside the rail). */
 object GridDefaults {
     val MinCellWidth = 176.dp
+
+    /** A child's grid: three bigger cards per row, easier to aim at and to read from the sofa. */
+    val KidsCellWidth = 224.dp
     val ColumnGap = 20.dp
     val RowGap = 30.dp
 
@@ -64,10 +69,11 @@ fun ShashaGrid(
     firstItem: FocusRequester,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = GridDefaults.ContentPadding,
+    minCellWidth: Dp = GridDefaults.MinCellWidth,
     content: LazyGridScope.() -> Unit,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(GridDefaults.MinCellWidth),
+        columns = GridCells.Adaptive(minCellWidth),
         state = state,
         modifier = modifier.then(if (focus != null) Modifier.contentFocus(focus) else Modifier).focusRestorer(firstItem),
         contentPadding = contentPadding,
@@ -115,14 +121,15 @@ fun EmptyState(
         if (busy) {
             ShashaLoader(size = 72.dp)
         } else {
+            val accent = LocalAccent.current
             Box(
                 Modifier
                     .size(88.dp)
-                    .background(ShashaColors.Primary.copy(alpha = 0.12f), CircleShape)
-                    .border(1.dp, ShashaColors.Primary.copy(alpha = 0.35f), CircleShape),
+                    .background(accent.tint(0.12f), CircleShape)
+                    .border(1.dp, accent.tint(0.35f), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(icon, contentDescription = null, tint = ShashaColors.PrimaryBright, modifier = Modifier.size(42.dp))
+                Icon(icon, contentDescription = null, tint = accent.bright, modifier = Modifier.size(42.dp))
             }
         }
         Spacer(Modifier.height(20.dp))
