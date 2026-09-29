@@ -122,6 +122,13 @@ class RemoteServer internal constructor(
     /** Logs every phone out of the parent section (e.g. after the parent PIN or the token changed). */
     fun revokeParentSessions() = sessions.clear()
 
+    /**
+     * Forgets the wrong PINs the server's brake counted and ends its block. Call it after a new pairing token:
+     * the phones that guessed are no longer paired, and the brake is shared by every phone. Waits for a PIN
+     * check in progress.
+     */
+    suspend fun forgetPinFailures() = pinGate.reset()
+
     private class Attempt {
         @Volatile
         var started = false

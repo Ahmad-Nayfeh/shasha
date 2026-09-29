@@ -14,6 +14,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModelProvider
 import com.ahmadnayfeh.shasha.lock.GuardService
+import com.ahmadnayfeh.shasha.remote.RemoteService
 import com.ahmadnayfeh.shasha.ui.app.RootScreen
 import com.ahmadnayfeh.shasha.ui.app.RootViewModel
 import com.ahmadnayfeh.shasha.ui.app.ShashaRoot
@@ -39,6 +40,8 @@ class MainActivity : ComponentActivity() {
                         root.onAppShown(ownRequest = awaitingResult)
                         awaitingResult = false
                         GuardService.start(this)
+                        // In front, a foreground service may always start: the phone remote, if it is wanted.
+                        RemoteService.startIfWanted(this)
                     }
                     Lifecycle.Event.ON_RESUME -> visibility.onResumed()
                     Lifecycle.Event.ON_PAUSE -> visibility.onPaused()

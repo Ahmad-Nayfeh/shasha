@@ -13,6 +13,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import com.ahmadnayfeh.shasha.lock.GuardService
 import com.ahmadnayfeh.shasha.policy.spendingTime
+import com.ahmadnayfeh.shasha.remote.RemoteService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,6 +32,8 @@ class ShashaApp : Application(), SingletonImageLoader.Factory {
         startPolicy()
         // SPEC §4's guard, whenever its ADB permissions are granted (also when a job or the boot started us).
         GuardService.start(this)
+        // SPEC §5's phone remote, when switched on (the default once the first start is done).
+        RemoteService.startIfWanted(this)
     }
 
     /**

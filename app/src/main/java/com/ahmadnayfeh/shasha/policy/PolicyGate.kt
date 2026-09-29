@@ -206,8 +206,17 @@ class PolicyGate(
      * a while ([com.ahmadnayfeh.shasha.ui.app.PickerMode.START]). An adult's locked video left there (the
      * TV was switched off mid-video) must not keep the others from the TV: choosing another profile ends
      * it, recorded as a surrender ([PolicyEngine.surrenderOf]). Choosing the same adult keeps it.
+     *
+     * [verifyPin] checks [pin]: the TV's one attempt limiter by default. The phone passes its own check
+     * (phase 5, owner decision: the TV's lockout never closes the parent's phone route; the :remote server's
+     * PIN brake limits the phone instead).
      */
-    suspend fun switchProfile(profileId: String, pin: String?, fromStartPicker: Boolean = false): SwitchResult = switching.withLock {
+    suspend fun switchProfile(
+        profileId: String,
+        pin: String?,
+        fromStartPicker: Boolean = false,
+        verifyPin: suspend (String) -> PinResult = parentPin::verify,
+    ): SwitchResult = switching.withLock {
         val target = profiles.get(profileId) ?: return@withLock SwitchResult.NotFound
         val current = active.awaitProfile()
         if (target.id == current.id) return@withLock SwitchResult.Switched
@@ -218,7 +227,7 @@ class PolicyGate(
         if (lock != null && leftBehind == null && (!needsPin || engine.unlockWithPin(lock) != null)) return@withLock SwitchResult.PlaybackLocked
         if (needsPin) {
             if (pin == null) return@withLock SwitchResult.PinRequired
-            when (val result = parentPin.verify(pin)) {
+            when (val result = verifyPin(pin)) {
                 PinResult.Success -> Unit
                 is PinResult.Wrong -> return@withLock SwitchResult.WrongPin(result.attemptsLeft)
                 is PinResult.LockedOut -> return@withLock SwitchResult.LockedOut(result.remainingMillis)

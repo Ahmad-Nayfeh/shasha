@@ -14,15 +14,21 @@ import kotlinx.coroutines.SupervisorJob
 
 /**
  * The small policy values kept in DataStore ("policy.preferences_pb"), each written whole: which profile
- * is current, the parent PIN, the PIN lockout, the parent's grants and the playback lock. Profiles and
- * usage live in Room. One file, one DataStore instance per process (AppContainer owns it).
+ * is current, the parent PIN, the PIN lockouts (the TV's and the phone's), the parent's grants and the
+ * playback lock. Profiles and usage live in Room. One file, one DataStore instance per process
+ * (AppContainer owns it).
  */
 object PolicyStore {
     const val FILE_NAME = "policy"
 
     val CURRENT_PROFILE_ID = stringPreferencesKey("current_profile_id")
     val PARENT_PIN_HASH = stringPreferencesKey("parent_pin_hash")
+
+    /** The TV's PIN pad ([ParentPinRepository]). */
     val PIN_ATTEMPTS = stringPreferencesKey("pin_attempts")
+
+    /** The phone's PIN checks ([com.ahmadnayfeh.shasha.remote.PhonePin]): their own count, never the TV's. */
+    val PHONE_PIN_ATTEMPTS = stringPreferencesKey("phone_pin_attempts")
     val OVERRIDES = stringPreferencesKey("overrides")
     val PLAYBACK_LOCK = stringPreferencesKey("playback_lock")
 

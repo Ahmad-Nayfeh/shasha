@@ -1300,7 +1300,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
   }
   async function switchTo(p, tile) {
     if (tile.classList.contains('busy')) return;
-    if (p.isCurrent) { toast(quote(p.name) + ' هو الملف المفتوح الآن.', ''); return; }
+    // The current profile too: while the TV asks «من يشاهد الآن؟», choosing a child's profile here opens it there.
     let pin = null;
     if (p.needsPin) {
       pin = await pinSheet('رمز PIN', 'للانتقال إلى ملف ' + quote(p.name) + '.');

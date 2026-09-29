@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.work.WorkManager
+import com.ahmadnayfeh.shasha.backup.BackupManager
 import com.ahmadnayfeh.shasha.data.ActiveProfile
 import com.ahmadnayfeh.shasha.data.FeedRepository
 import com.ahmadnayfeh.shasha.data.NetworkStatus
@@ -23,6 +24,7 @@ import com.ahmadnayfeh.shasha.lock.AppVisibility
 import com.ahmadnayfeh.shasha.lock.GuardReturnTimes
 import com.ahmadnayfeh.shasha.lock.LockController
 import com.ahmadnayfeh.shasha.player.PlayQueues
+import com.ahmadnayfeh.shasha.player.PlayerHub
 import com.ahmadnayfeh.shasha.policy.DeviceClock
 import com.ahmadnayfeh.shasha.policy.DeviceUptime
 import com.ahmadnayfeh.shasha.policy.LookedUpVideo
@@ -32,6 +34,17 @@ import com.ahmadnayfeh.shasha.policy.SessionController
 import com.ahmadnayfeh.shasha.policy.UsageTracker
 import com.ahmadnayfeh.shasha.policy.VideoLookup
 import com.ahmadnayfeh.shasha.policy.spendingTime
+import com.ahmadnayfeh.shasha.remote.NsdAdvertiser
+import com.ahmadnayfeh.shasha.remote.NsdAnnouncer
+import com.ahmadnayfeh.shasha.remote.PhonePin
+import com.ahmadnayfeh.shasha.remote.PhoneProfileChoices
+import com.ahmadnayfeh.shasha.remote.RemoteRuntime
+import com.ahmadnayfeh.shasha.remote.RemoteSettings
+import com.ahmadnayfeh.shasha.remote.RemoteTexts
+import com.ahmadnayfeh.shasha.remote.TvDisplay
+import com.ahmadnayfeh.shasha.remote.TvRemoteController
+import com.ahmadnayfeh.shasha.ui.navigation.NavigationRequests
+import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
 import com.ahmadnayfeh.shasha.ui.screens.kids.KidsFeed
 import com.ahmadnayfeh.shasha.youtube.VideoSource
 import com.ahmadnayfeh.shasha.youtube.YouTube
@@ -44,6 +57,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import java.time.Clock
 import java.util.concurrent.TimeUnit
@@ -194,6 +208,72 @@ class AppContainer(context: Context) {
             scope = appScope,
             surrenders = { event -> usage.recordSurrender(event) },
         )
+    }
+
+    // ---- The phone remote (SPEC §5) and the manual backup. ---------------------------------------------------
+
+    /** The player on screen, as the phone remote sees and drives it. */
+    val playerHub: PlayerHub = PlayerHub()
+
+    /** Destinations the phone asks the current profile's screens to open. */
+    val navigationRequests: NavigationRequests = NavigationRequests()
+
+    private val remoteStore: DataStore<Preferences> by lazy { RemoteSettings.createStore(appContext) }
+
+    /** «التحكم من الجوال»: on/off, the pairing token, the port. */
+    val remoteSettings: RemoteSettings by lazy { RemoteSettings(remoteStore) }
+
+    /** SPEC: «نسخة احتياطية JSON يدوية», from Settings → الاستيراد والتصدير and from the phone. */
+    val backup: BackupManager by lazy {
+        BackupManager(
+            db = database,
+            policyStore = policyStore,
+            sections = listOf(RemoteSettings.backupSection(remoteStore)),
+            clock = clock,
+            appVersion = BuildConfig.VERSION_NAME,
+            filesDir = { appContext.getExternalFilesDir(null) },
+            afterRestore = { report ->
+                // Restored subscriptions get their videos; a restored PIN logs every phone out of the parent section.
+                feedSyncScheduler.syncNow()
+                if (report.pinChanged) remote.revokeParentSessions()
+            },
+        )
+    }
+
+    /**
+     * The parent PIN as the phone checks it: its own attempt count, saved like the TV's (a restart grants no new
+     * guesses), never the TV's (owner decision: guesses on the TV never close the parent's phone route).
+     */
+    val phonePin: PhonePin by lazy { PhonePin(policyStore, clock, uptime = DeviceUptime.of(appContext)) }
+
+    /** The profile the phone chose («اختيار الملف»), after PolicyGate allowed it: the TV's picker follows it. */
+    val phoneProfileChoices: PhoneProfileChoices = PhoneProfileChoices()
+
+    /**
+     * The phone remote's server and its controller. [com.ahmadnayfeh.shasha.remote.RemoteService] starts and
+     * stops it; creating it starts nothing.
+     */
+    val remote: RemoteRuntime by lazy {
+        val controller = TvRemoteController(
+            gate = policy,
+            profiles = profiles,
+            session = session,
+            lock = lock,
+            lists = ParentalLists(profiles),
+            subscriptions = subscriptions,
+            source = videoSource,
+            phonePin = phonePin,
+            backup = backup,
+            player = playerHub,
+            display = TvDisplay(appContext, appVisibility, profileScreensShown, navigationRequests),
+            playQueues = playQueues,
+            texts = RemoteTexts(appContext.resources),
+            profileChoices = phoneProfileChoices,
+        )
+        RemoteRuntime(remoteSettings, controller, NsdAnnouncer(NsdAdvertiser(appContext)), phonePin = phonePin).also { runtime ->
+            // A new parent PIN logs every phone out of the parent section.
+            appScope.launch { parentPin.changes.collect { runtime.revokeParentSessions() } }
+        }
     }
 
     /**

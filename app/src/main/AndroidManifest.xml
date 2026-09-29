@@ -23,6 +23,14 @@
          the app-op). Declared now so «حالة الحماية» can tell whether it is allowed. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- SPEC §5, the phone remote: a web server on the home network (INTERNET comes from :remote), in a
+         foreground service of type connectedDevice, rebound when the network changes and announced with NSD.
+         From Android 14 that type also needs one of a few permissions: CHANGE_WIFI_MULTICAST_STATE (normal,
+         granted at install), which the announcement's Wi-Fi multicast lock uses. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+
     <!-- «حالة الحماية» says whether the official YouTube app is still enabled (targetSdk 30+ hides other
          packages unless they are named here). -->
     <queries>
@@ -32,6 +40,8 @@
     <!-- A TV app driven by the remote: no touchscreen, and it also installs on non-Leanback devices. -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <!-- The phone remote's Wi-Fi permissions must not make Wi-Fi required: a TV on Ethernet reaches the phone too. -->
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
 
     <!-- The label is a literal, so it reads «شاشة» whatever the TV's system language is. -->
     <application
@@ -74,6 +84,22 @@
         <!-- Starts the guard after a reboot and after an update (system broadcasts reach it unexported). -->
         <receiver
             android:name=".lock.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- SPEC §5's phone remote: the LAN server lives in this service while «التحكم من الجوال» is on. -->
+        <service
+            android:name=".remote.RemoteService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
+        <!-- Starts the phone remote after a reboot and after an update. -->
+        <receiver
+            android:name=".remote.RemoteBootReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

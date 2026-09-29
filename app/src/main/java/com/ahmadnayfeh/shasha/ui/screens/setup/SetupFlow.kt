@@ -71,6 +71,7 @@ import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.components.ShashaTextField
 import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
+import com.ahmadnayfeh.shasha.ui.settings.remote.SetupPairingStep
 import com.ahmadnayfeh.shasha.ui.theme.KidsAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
@@ -79,12 +80,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-enum class SetupStep { WELCOME, PIN, OWNER, CHILD }
+enum class SetupStep { WELCOME, PIN, OWNER, CHILD, PHONE }
 
 /**
  * The first start (no parent PIN yet): welcome, the parent PIN (typed twice on the app's own keypad),
- * the owner's name and picture, and optionally a first child profile. Done by the parent, so the TV's
- * keyboard is fine for the names. [onDone] follows.
+ * the owner's name and picture, optionally a first child profile, and last the phone remote's pairing QR
+ * code (SPEC §5). Done by the parent, so the TV's keyboard is fine for the names. [onDone] follows.
  */
 class SetupViewModel(private val profiles: ProfileRepository, private val pin: ParentPinRepository) : ViewModel() {
     private val _step = MutableStateFlow(SetupStep.WELCOME)
@@ -131,10 +132,15 @@ class SetupViewModel(private val profiles: ProfileRepository, private val pin: P
     fun addChild(name: String, avatar: String) = work {
         val household = ParentalLists.householdBlocklist(profiles.all())
         profiles.upsert(Profile.newChild(name.trim(), avatar = avatar).copy(blocklist = household))
-        _done.value = true
+        _step.value = SetupStep.PHONE
     }
 
     fun skipChild() {
+        _step.value = SetupStep.PHONE
+    }
+
+    /** The pairing step is over (paired, or later from the settings). */
+    fun finish() {
         _done.value = true
     }
 
@@ -160,6 +166,8 @@ fun SetupRoute(profiles: ProfileRepository, pin: ParentPinRepository, onDone: ()
     val done by vm.done.collectAsStateWithLifecycle()
     LaunchedEffect(done) { if (done) onDone() }
     BackHandler(enabled = step == SetupStep.PIN || step == SetupStep.CHILD) { vm.back() }
+    // The last step is optional: BACK there finishes too (the child step's profile is already made).
+    BackHandler(enabled = step == SetupStep.PHONE) { vm.finish() }
     SetupScreen(
         step = step,
         busy = busy,
@@ -170,6 +178,7 @@ fun SetupRoute(profiles: ProfileRepository, pin: ParentPinRepository, onDone: ()
         onOwner = vm::saveOwner,
         onChild = vm::addChild,
         onSkipChild = vm::skipChild,
+        phoneStep = { SetupPairingStep(onDone = vm::finish) },
     )
 }
 
@@ -185,6 +194,7 @@ fun SetupScreen(
     onChild: (name: String, avatar: String) -> Unit,
     onSkipChild: () -> Unit,
     modifier: Modifier = Modifier,
+    phoneStep: @Composable () -> Unit = {},
 ) {
     Box(
         modifier
@@ -249,6 +259,7 @@ fun SetupScreen(
                                 onSecondary = onSkipChild,
                             )
                         }
+                        SetupStep.PHONE -> phoneStep()
                     }
                 }
             }

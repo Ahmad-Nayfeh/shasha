@@ -73,6 +73,9 @@ fun interface PlayGate {
  * with the playlist video that follows ([playlistId]) and how much of the video was really played
  * ([PlayedMeter]: skipped to its end, it stays locked), and a video that cannot play here any more (not
  * for a lost network: the lock stays and the video is tried again, [retry]).
+ *
+ * [startAtMs]: where a shared link asks the video to start (`t=`); it replaces the saved position (past the
+ * video's end, the video starts from the beginning).
  */
 class PlayerViewModel(
     private val videoId: String,
@@ -84,6 +87,7 @@ class PlayerViewModel(
     private val wallClock: () -> Long = System::currentTimeMillis,
     private val lock: PlaybackLocking? = null,
     private val playlistId: String? = null,
+    startAtMs: Long? = null,
 ) : ViewModel() {
 
     sealed interface Load {
@@ -133,6 +137,9 @@ class PlayerViewModel(
 
     /** The player was released since the last check: ask the policy again before the next one starts. */
     private var recheck = false
+
+    /** A link's start, for the first extraction only (then playback goes on from where it is). */
+    private var linkStartMs: Long? = startAtMs?.coerceAtLeast(0)
 
     init {
         extract(fresh = false)
@@ -314,7 +321,11 @@ class PlayerViewModel(
             if (fresh) streams.invalidate(videoId)
             // The saved position is read while the stream is extracted (only once: later extractions
             // continue from where this visit got to).
-            val savedPosition = if (session != null && !resumeLookedUp) async { runCatching { session.resumePositionMs() }.getOrDefault(0L) } else null
+            val savedPosition = if (session != null && !resumeLookedUp && linkStartMs == null) {
+                async { runCatching { session.resumePositionMs() }.getOrDefault(0L) }
+            } else {
+                null
+            }
             val next = try {
                 // The policy first: nothing is prepared for a video that may not play here.
                 val stream = when (val check = gate?.check(videoId)) {
@@ -330,6 +341,15 @@ class PlayerViewModel(
                     if (position > 0 && !stream.video.isLive && resume.positionMs == 0L) {
                         resume = resume.copy(positionMs = position)
                         _resumedFromMs.value = position
+                    }
+                }
+                linkStartMs?.let { at ->
+                    // The link's start instead of the saved position; a start past the end (a wrong t=) is ignored.
+                    linkStartMs = null
+                    resumeLookedUp = true
+                    val durationMs = stream.video.durationSeconds?.let { it * 1000 }
+                    if (at > 0 && !stream.video.isLive && resume.positionMs == 0L && (durationMs == null || at < durationMs)) {
+                        resume = resume.copy(positionMs = at)
                     }
                 }
                 Load.Ready(stream, StreamFreshness(elapsedClock(), stream.playback.expiresAtEpochMs, wallClock()))

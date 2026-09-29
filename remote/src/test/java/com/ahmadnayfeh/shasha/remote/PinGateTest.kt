@@ -143,6 +143,25 @@ class PinGateTest {
     }
 
     @Test
+    fun forgetPinFailures_endsTheBlock_andStartsTheCountAgain() {
+        val controller = FakeController().apply { result = RemoteResult.error("رمز PIN غير صحيح.") }
+        val server = RemoteServer(controller) { TOKEN }
+        val loopback = java.net.InetAddress.getByName("127.0.0.1")
+        try {
+            val port = server.start(loopback, 0)
+            repeat(5) { assertThat(post(port, "/api/profile", """{"id":"a","pin":"0000"}""")).isEqualTo(200) }
+            assertThat(post(port, "/api/profile", """{"id":"a","pin":"1234"}""")).isEqualTo(429)
+            // A new pairing token: the phones that guessed are gone.
+            kotlinx.coroutines.runBlocking { server.forgetPinFailures() }
+            repeat(5) { assertThat(post(port, "/api/profile", """{"id":"a","pin":"0000"}""")).isEqualTo(200) }
+            assertThat(post(port, "/api/profile", """{"id":"a","pin":"1234"}""")).isEqualTo(429)
+            assertThat(controller.calls.count { it.startsWith("switchProfile(") }).isEqualTo(10)
+        } finally {
+            server.stop()
+        }
+    }
+
+    @Test
     fun theGate_survivesAServerRestart() {
         val controller = FakeController().apply { result = RemoteResult.error("رمز PIN غير صحيح.") }
         val server = RemoteServer(controller) { TOKEN }

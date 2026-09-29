@@ -36,4 +36,6 @@ class SettingsActions(
     val openImport: () -> Unit,
     val openDiagnostics: () -> Unit,
     val openProtection: () -> Unit = {},
+    val openRemote: () -> Unit = {},
+    val openBackup: () -> Unit = {},
 )

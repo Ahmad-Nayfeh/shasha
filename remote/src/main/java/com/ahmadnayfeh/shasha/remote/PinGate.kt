@@ -15,8 +15,13 @@ import kotlinx.coroutines.sync.withLock
  *
  * Only a verified PIN (a successful parent login) resets the count: a profile switch can succeed without
  * checking anything (e.g. to the profile already on screen), so it must not. The count is also forgotten
- * after [FORGET_MILLIS] without failures, so a typo now and then never adds up. Memory only, one gate
- * per [RemoteServer] (it outlives stop/start). [nowMillis] must be monotonic.
+ * after [FORGET_MILLIS] without failures, so a typo now and then never adds up, and at once by [reset]
+ * (a new pairing token: the phones that guessed are unpaired). Memory only, one gate per [RemoteServer]
+ * (it outlives stop/start, not the process: the controller keeps its own count on disk). [nowMillis] must
+ * be monotonic.
+ *
+ * One count for every paired phone: the server cannot tell them apart (they share the pairing token), so a
+ * phone that guesses blocks the PIN checks of the others too, for as long as the block lasts.
  */
 internal class PinGate(private val nowMillis: () -> Long) {
     private val mutex = Mutex()
@@ -45,6 +50,13 @@ internal class PinGate(private val nowMillis: () -> Long) {
             isWrong(result) -> recordFailure()
         }
         result
+    }
+
+    /** Forgets every failure and ends a block; waits for a check in progress. */
+    suspend fun reset() = mutex.withLock {
+        failures = 0
+        lastFailureAt = 0L
+        blockedUntil = 0L
     }
 
     private fun recordFailure() {

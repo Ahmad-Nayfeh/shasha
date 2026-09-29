@@ -5,6 +5,7 @@ import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.ahmadnayfeh.shasha.backup.BackupDao
 
 /**
  * The app's one database (SPEC: everything stays on the TV). Every schema change bumps the version
@@ -45,6 +46,9 @@ abstract class ShashaDatabase : RoomDatabase() {
     abstract fun usage(): UsageDao
 
     abstract fun surrenders(): SurrenderDao
+
+    /** The manual backup's whole-table reads and writes (queries only: no schema change). */
+    abstract fun backup(): BackupDao
 
     companion object {
         const val FILE_NAME = "shasha.db"

@@ -38,6 +38,7 @@ import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.data.asSourceException
 import com.ahmadnayfeh.shasha.lock.LockController
+import com.ahmadnayfeh.shasha.player.AttachToPlayerHub
 import com.ahmadnayfeh.shasha.player.NextInPlaylist
 import com.ahmadnayfeh.shasha.player.PlaybackController
 import com.ahmadnayfeh.shasha.player.PlayerAction
@@ -71,8 +72,8 @@ import kotlinx.coroutines.delay
  * not watch shows why ([PolicyNotice]) and never plays. [fromLink]: the video came as a link (the phone),
  * so only its own channel counts, never a playlist the link names.
  *
- * It resumes from the saved position, saves progress, adds the video to the history and offers watch
- * later ([WatchSession]). Inside a playlist ([playlistId], [playlistIndex]) the next video the profile
+ * It resumes from the saved position (or starts at [startSeconds], a shared link's `t=`), saves progress,
+ * adds the video to the history and offers watch later ([WatchSession]). Inside a playlist ([playlistId], [playlistIndex]) the next video the profile
  * may watch follows when this one ends ([onPlayNext]); otherwise a calm end card waits for «رجوع».
  * The time really played goes to the stats ([com.ahmadnayfeh.shasha.policy.PlaybackMeter]).
  *
@@ -89,6 +90,7 @@ fun PlayerScreen(
     playlistId: String? = null,
     playlistIndex: Int = -1,
     fromLink: Boolean = false,
+    startSeconds: Long? = null,
     onPlayNext: (videoId: String, playlistIndex: Int) -> Unit = { _, _ -> },
     profile: Profile? = null,
     lock: LockController? = null,
@@ -118,6 +120,7 @@ fun PlayerScreen(
                     gate = PlayGate { id -> policy.checkPlay(id, origin) },
                     lock = locking?.playerHooks(profile!!.id),
                     playlistId = playlistId,
+                    startAtMs = startSeconds?.let { it * 1000 },
                 )
             }
         },
@@ -295,6 +298,8 @@ private fun VideoPlayer(
     }
 
     val current = controller ?: return
+    // SPEC §5: the phone sees this video and plays, pauses and seeks it; its «إيقاف» leaves like «رجوع» (the lock decides).
+    AttachToPlayerHub(current, ready.stream.video, leave = lock::requestExit, covered = { lock.covered })
     val ui by current.state.collectAsStateWithLifecycle()
     val end by vm.end.collectAsStateWithLifecycle()
     val skipped by vm.skippedToEnd.collectAsStateWithLifecycle()

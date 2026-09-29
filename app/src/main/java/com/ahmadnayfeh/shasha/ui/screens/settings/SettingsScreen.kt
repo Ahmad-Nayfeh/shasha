@@ -13,17 +13,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -51,8 +55,10 @@ import com.ahmadnayfeh.shasha.ui.components.containerViewModel
 import com.ahmadnayfeh.shasha.ui.navigation.SettingsActions
 import com.ahmadnayfeh.shasha.ui.parental.LocalParentUnlock
 import com.ahmadnayfeh.shasha.ui.parental.ParentUnlock
+import com.ahmadnayfeh.shasha.ui.settings.remote.RemoteIcons
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
@@ -73,6 +79,8 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
         onDiagnostics = settings.openDiagnostics,
         protection = rememberProtectionStatus().value,
         onProtection = settings.openProtection,
+        onRemote = guarded(settings.openRemote),
+        onBackup = guarded(settings.openBackup),
     )
     pending?.let { open ->
         PinDialog(onDismiss = { pending = null }) {
@@ -92,8 +100,10 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
 
 /**
  * الإعدادات: the parental sections first (they ask for the parent PIN: the adult profile may be left on
- * while a child walks by), then the general ones. «تغيير رمز PIN» asks for the current PIN itself.
- * «حالة الحماية» sits in the header, its state at a glance ([protection]: null while it is read).
+ * while a child walks by), then the general ones, then the phone and the backup (behind the PIN too: pairing a
+ * phone gives it the TV, a backup holds everything). «تغيير رمز PIN» asks for the current PIN itself.
+ * «حالة الحماية» sits in the header, its state at a glance ([protection]: null while it is read). The page
+ * scrolls to the rows below the first two as the focus moves down.
  */
 @Composable
 fun SettingsScreen(
@@ -109,11 +119,18 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     protection: ProtectionStatus? = null,
     onProtection: () -> Unit = {},
+    onRemote: () -> Unit = {},
+    onBackup: () -> Unit = {},
 ) {
     val first = remember { FocusRequester() }
+    val scroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    // The first row shows the header with it, the last one the margin under it (a focused tile grows a little).
+    val showTop = Modifier.onFocusChanged { if (it.hasFocus) scope.launch { scroll.animateScrollTo(0) } }
+    val showBottom = Modifier.onFocusChanged { if (it.hasFocus) scope.launch { scroll.animateScrollTo(scroll.maxValue) } }
     TakeFocusWhenReady(focus, ready = true)
-    FocusArea(focus, first, modifier.fillMaxSize().padding(GridDefaults.ContentPadding).testTag("settings")) {
-        Column(Modifier.fillMaxSize()) {
+    FocusArea(focus, first, modifier.fillMaxSize().testTag("settings")) {
+        Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(GridDefaults.ContentPadding)) {
             ScreenHeader(stringResource(R.string.settings_title), stringResource(R.string.settings_subtitle)) {
                 Column(horizontalAlignment = Alignment.End) {
                     ProtectionChip(protection, onProtection)
@@ -128,7 +145,7 @@ fun SettingsScreen(
             Spacer(Modifier.height(20.dp))
             SectionLabel(stringResource(R.string.settings_section_parental), icon = ShashaIcons.Lock)
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+            Row(Modifier.fillMaxWidth().then(showTop), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                 SettingsTile(ShashaIcons.Group, stringResource(R.string.settings_profiles), stringResource(R.string.settings_profiles_body), onProfiles, Modifier.weight(1f).focusRequester(first).testTag("settings_profiles"), locked = true)
                 SettingsTile(ShashaIcons.Block, stringResource(R.string.settings_blocklist), stringResource(R.string.settings_blocklist_body), onBlocklist, Modifier.weight(1f).testTag("settings_blocklist"), locked = true)
                 SettingsTile(ShashaIcons.BarChart, stringResource(R.string.settings_stats), stringResource(R.string.settings_stats_body), onStats, Modifier.weight(1f).testTag("settings_stats"), locked = true)
@@ -140,6 +157,15 @@ fun SettingsScreen(
                 SettingsTile(ShashaIcons.Key, stringResource(R.string.settings_change_pin), stringResource(R.string.settings_change_pin_body), onChangePin, Modifier.weight(1f).testTag("settings_change_pin"))
                 SettingsTile(ShashaIcons.Download, stringResource(R.string.settings_import), stringResource(R.string.settings_import_body), onImport, Modifier.weight(1f).testTag("settings_import"))
                 SettingsTile(ShashaIcons.Build, stringResource(R.string.settings_diagnostics), stringResource(R.string.settings_diagnostics_body), onDiagnostics, Modifier.weight(1f).testTag("settings_diagnostics"))
+            }
+            Spacer(Modifier.height(18.dp))
+            SectionLabel(stringResource(R.string.settings_section_phone), icon = ShashaIcons.Lock)
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth().then(showBottom), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                SettingsTile(RemoteIcons.Phone, stringResource(R.string.settings_remote), stringResource(R.string.settings_remote_body), onRemote, Modifier.weight(1f).testTag("settings_remote"), locked = true)
+                SettingsTile(RemoteIcons.Backup, stringResource(R.string.settings_backup), stringResource(R.string.settings_backup_body), onBackup, Modifier.weight(1f).testTag("settings_backup"), locked = true)
+                // The third column stays free (the tiles line up with the rows above).
+                Spacer(Modifier.weight(1f))
             }
         }
     }

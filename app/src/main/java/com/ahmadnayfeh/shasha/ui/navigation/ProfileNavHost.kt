@@ -65,6 +65,8 @@ import com.ahmadnayfeh.shasha.ui.screens.settings.ProtectionRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.SettingsRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.StatsRoute
 import com.ahmadnayfeh.shasha.ui.screens.updates.UpdatesPlaceholderScreen
+import com.ahmadnayfeh.shasha.ui.settings.backup.BackupRoute
+import com.ahmadnayfeh.shasha.ui.settings.remote.RemoteRoute
 
 /** What a tab of [MainScreen] shows; tests pass fakes. */
 typealias TabContent = @Composable (tab: Tab, focus: ContentFocus, select: (Tab) -> Unit) -> Unit
@@ -141,6 +143,8 @@ fun ProfileNavHost(
             if (!kids) adultDestinations(nav, actions, settings)
         }
         if (lock != null) KeepLockedVideoOnScreen(lock.lock, profile.id, nav)
+        // SPEC §5: links from the phone, once the policy allowed them for this profile, open here.
+        FollowNavigationRequests(nav, profile.id)
     }
     if (kids) {
         graph()
@@ -198,6 +202,7 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
             playlistId = route.playlistId,
             playlistIndex = route.playlistIndex,
             fromLink = route.fromLink,
+            startSeconds = route.startSeconds,
             onPlayNext = { videoId, index ->
                 // The next playlist video replaces this one: BACK still returns to the playlist. What came as a
                 // link stays one: each next video is judged by its own channel too.
@@ -252,6 +257,8 @@ private fun NavGraphBuilder.adultDestinations(nav: NavHostController, actions: B
     composable<Screen.ChangePin> { ChangePinRoute(onDone = dropUnlessResumed { nav.popBackStack() }) }
     composable<Screen.Stats> { StatsRoute() }
     composable<Screen.Protection> { ProtectionRoute() }
+    composable<Screen.RemoteControl> { RemoteRoute() }
+    composable<Screen.Backup> { BackupRoute() }
 }
 
 @Composable
@@ -295,4 +302,6 @@ private fun settingsActions(nav: NavHostController) = SettingsActions(
     openImport = { nav.navigate(Screen.ImportSubscriptions) { launchSingleTop = true } },
     openDiagnostics = { nav.navigate(Screen.Diagnostics) { launchSingleTop = true } },
     openProtection = { nav.navigate(Screen.Protection) { launchSingleTop = true } },
+    openRemote = { nav.navigate(Screen.RemoteControl) { launchSingleTop = true } },
+    openBackup = { nav.navigate(Screen.Backup) { launchSingleTop = true } },
 )

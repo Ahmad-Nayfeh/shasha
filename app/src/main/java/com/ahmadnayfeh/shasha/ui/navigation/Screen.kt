@@ -24,6 +24,7 @@ sealed interface Screen {
      * playlist it names and asks for the video's own channel. [diagnostic]: one of تشخيص's fixed test
      * videos (adult only): it is not locked (SPEC §4's lock is about watching, not about checking that
      * playback works; the live test never ends and would only leave through a surrender).
+     * [startSeconds]: where a shared link asks the video to start (its `t=`), in place of the saved position.
      */
     @Serializable
     data class Player(
@@ -32,6 +33,7 @@ sealed interface Screen {
         val playlistIndex: Int = -1,
         val fromLink: Boolean = false,
         val diagnostic: Boolean = false,
+        val startSeconds: Long? = null,
     ) : Screen
 
     /** Placeholder until the GitHub Releases updater arrives (SPEC phase 7). */
@@ -74,4 +76,12 @@ sealed interface Screen {
     /** Settings → حالة الحماية (SPEC §4): the guard's permissions and its measured returns. */
     @Serializable
     data object Protection : Screen
+
+    /** Settings → التحكم من الجوال (SPEC §5, behind the parent PIN): the pairing QR code, on/off, a new token. */
+    @Serializable
+    data object RemoteControl : Screen
+
+    /** Settings → الاستيراد والتصدير (behind the parent PIN): the manual JSON backup. */
+    @Serializable
+    data object Backup : Screen
 }

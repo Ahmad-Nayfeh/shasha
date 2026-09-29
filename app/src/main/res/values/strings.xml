@@ -293,6 +293,14 @@
         <item>%1$s دقيقة</item>
         <item>%1$s دقيقة</item>
     </string-array>
+    <!-- The same after a preposition («بعد دقيقتين»): the dual takes its genitive form. -->
+    <string-array name="count_minutes_after">
+        <item>دقيقة واحدة</item>
+        <item>دقيقتين</item>
+        <item>%1$s دقائق</item>
+        <item>%1$s دقيقة</item>
+        <item>%1$s دقيقة</item>
+    </string-array>
     <string-array name="count_hours">
         <item>ساعة واحدة</item>
         <item>ساعتان</item>
@@ -375,7 +383,7 @@
 
     <!-- First start -->
     <string name="setup_welcome_title">أهلاً بك في شاشة</string>
-    <string name="setup_welcome_body">يوتيوب لبيتك، بلا إعلانات ولا خوارزمية. ثلاث خطوات قصيرة: رمز للوالدين، ثم ملفك، ثم ملف لطفلك إن أردت.</string>
+    <string name="setup_welcome_body">يوتيوب لبيتك، بلا إعلانات ولا خوارزمية. خطوات قصيرة: رمز للوالدين، ثم ملفك، ثم ملف لطفلك إن أردت، ثم جوالك.</string>
     <string name="setup_feature_kids">ملفات للأطفال لا يظهر فيها إلا ما تسمح به</string>
     <string name="setup_feature_time">حصة يومية وأوقات للمشاهدة مع تنبيه هادئ</string>
     <string name="setup_feature_pin">رمز يحمي ملفك وإعدادات الرقابة</string>
@@ -668,4 +676,141 @@
 
     <!-- Settings: the protection status chip in the header. -->
     <string name="settings_protection">حالة الحماية</string>
+
+    <!-- SPEC §5, the phone remote (phase 5). Titles and names from YouTube or the profiles sit in FSI…PDI
+         (&#x2068;…&#x2069;) inside «…», so English text keeps its place in the Arabic sentence on the phone. -->
+    <string name="settings_section_phone">الجوال والبيانات · تُفتح برمز الوالدين</string>
+    <string name="settings_remote">التحكم من الجوال</string>
+    <string name="settings_remote_body">رمز QR للاقتران، وتشغيل الخادم أو إيقافه</string>
+    <string name="settings_backup">الاستيراد والتصدير</string>
+    <string name="settings_backup_body">نسخة احتياطية JSON لكل بيانات الشاشة</string>
+
+    <string name="remote_channel_name">التحكم من الجوال</string>
+    <string name="remote_notification_title">التحكم من الجوال يعمل</string>
+    <string name="remote_notification_text">يستقبل الروابط وأوامر التشغيل من صفحة «شاشة» على جوالك.</string>
+
+    <!-- Answers to the phone (RemoteResult.message and refusals). -->
+    <string name="remote_play_sent">يُعرض الآن على الشاشة: «&#x2068;%1$s&#x2069;»</string>
+    <string name="remote_play_sent_plain">أُرسل إلى الشاشة.</string>
+    <string name="remote_play_playlist">تُعرض قائمة «&#x2068;%1$s&#x2069;» على الشاشة الآن.</string>
+    <string name="remote_play_channel">تُعرض صفحة القناة على الشاشة الآن.</string>
+    <string name="remote_link_not_youtube">هذا ليس رابطاً من يوتيوب. أرسل رابط فيديو أو قائمة تشغيل أو قناة.</string>
+    <string name="remote_playlist_nothing_allowed">لا يوجد في قائمة التشغيل فيديو مسموح في هذا الملف.</string>
+    <string name="remote_screen_off">الشاشة في وضع الاستعداد. شغّلها ثم أعد الإرسال.</string>
+    <string name="remote_not_in_front">افتح «شاشة» على التلفاز ثم أعد الإرسال. ليفتح وحده يحتاج إذن «العرض فوق التطبيقات» من سكربت &#x2068;adb-setup&#x2069;.</string>
+    <string name="remote_no_profile">اختر الملف على الشاشة أولاً، ثم أعد الإرسال.</string>
+    <string name="remote_profile_changed">تغيّر الملف على الشاشة قبل أن يُفتح الرابط. أعد الإرسال.</string>
+    <string name="remote_show_failed">لم تستجب الشاشة. أعد المحاولة.</string>
+    <string name="remote_timeout">استغرقت الشاشة وقتاً طويلاً. أعد المحاولة.</string>
+    <string name="remote_nothing_playing">لا شيء يُعرض الآن.</string>
+    <string name="remote_stopped">أُوقف التشغيل.</string>
+    <string name="remote_video_locked">الفيديو مقفول حتى ينتهي. يفكّ الأب القفل من قسم الأب.</string>
+    <string name="remote_player_ended">انتهى الفيديو. «إعادة التشغيل» على الشاشة تبدؤه من جديد.</string>
+    <string name="remote_player_live">لا يمكن التقديم في البث المباشر.</string>
+    <string name="remote_player_covered">على الشاشة طلب رمز الآن، ويُستأنف الفيديو بعده.</string>
+    <string name="remote_search_disabled">البحث غير متاح في ملف الطفل.</string>
+    <string name="remote_youtube_changed">يوتيوب غيّر شيئاً. حدّث التطبيق. %1$s</string>
+    <string name="remote_offline">الشاشة غير متصلة بالإنترنت الآن.</string>
+    <string name="remote_profile_not_found">هذا الملف غير موجود.</string>
+    <string name="remote_profile_current">«&#x2068;%1$s&#x2069;» هو الملف المفتوح الآن.</string>
+    <string name="remote_profile_switched">الشاشة الآن على ملف «&#x2068;%1$s&#x2069;».</string>
+    <string name="remote_profile_switched_adult">بُدّل إلى ملف «&#x2068;%1$s&#x2069;»، ويُطلب رمز الوالدين على الشاشة أيضاً قبل فتحه.</string>
+    <string name="remote_profile_needs_pin">هذا الملف يحتاج رمز الوالدين.</string>
+    <string name="remote_pin_wrong">رمز PIN غير صحيح.</string>
+    <!-- %1$s: attempts_left, e.g. «بقيت 3 محاولات». -->
+    <string name="remote_pin_wrong_left">رمز PIN غير صحيح. %1$s.</string>
+    <!-- %1$s: count_minutes_after. The TV's own PIN pad keeps its own count. -->
+    <string name="remote_pin_locked">محاولات خاطئة كثيرة. حاول بعد %1$s، أو أدخل الرمز على التلفاز.</string>
+    <string name="remote_pin_not_set">لم يُضبط رمز الوالدين بعد. اضبطه من «شاشة» على التلفاز أولاً.</string>
+    <string name="remote_switch_locked">فيديو مقفول قيد المشاهدة. فكّ قفله من قسم الأب أولاً، ثم بدّل الملف.</string>
+    <string name="remote_quota_saved">حُفظت الحصة اليومية لملف «&#x2068;%1$s&#x2069;»: %2$s.</string>
+    <string name="remote_quota_unlimited">ملف «&#x2068;%1$s&#x2069;» بلا حد يومي الآن.</string>
+    <string name="remote_time_rest_of_today">فُتح الوقت لملف «&#x2068;%1$s&#x2069;» لبقية اليوم.</string>
+    <string name="remote_time_added">أُضيفت %2$s إلى وقت ملف «&#x2068;%1$s&#x2069;».</string>
+    <string name="remote_time_no_limit">ملف «&#x2068;%1$s&#x2069;» لا يوقفه شيء الآن.</string>
+    <string name="remote_time_failed">تعذّر حفظ الوقت الإضافي. حاول مرة أخرى.</string>
+    <string name="remote_video_unlocked">فُكّ قفل الفيديو. يمكن الخروج منه الآن.</string>
+    <string name="remote_video_unlocked_adult">فُكّ قفل الفيديو، وسُجّل الخروج قبل نهايته استسلاماً في الإحصائيات.</string>
+    <string name="remote_video_not_locked">لا يوجد فيديو مقفول الآن.</string>
+    <string name="remote_video_unlock_failed">تعذّر حفظ فك القفل. حاول مرة أخرى.</string>
+    <string name="remote_allowlist_child_only">قائمة السماح لملفات الأطفال فقط.</string>
+    <string name="remote_allowlist_bad_link">أرسل رابط قناة (مثل &#x2068;youtube.com/@name&#x2069;) أو رابط قائمة تشغيل.</string>
+    <string name="remote_allowlist_added">أُضيفت «&#x2068;%1$s&#x2069;» إلى قائمة سماح «&#x2068;%2$s&#x2069;».</string>
+    <string name="remote_allowlist_exists">«&#x2068;%1$s&#x2069;» في قائمة سماح «&#x2068;%2$s&#x2069;» من قبل.</string>
+    <string name="remote_allowlist_removed">أُزيلت «&#x2068;%1$s&#x2069;» من قائمة سماح «&#x2068;%2$s&#x2069;».</string>
+    <string name="remote_allowlist_not_there">هذا ليس في قائمة السماح.</string>
+    <string name="remote_subs_added">اشتركت في «&#x2068;%1$s&#x2069;»، وتصل فيديوهاتها إلى الرئيسية خلال دقائق.</string>
+    <string name="remote_subs_exists">أنت مشترك في «&#x2068;%1$s&#x2069;» من قبل.</string>
+    <string name="remote_subs_not_channel">هذا ليس رابط قناة من يوتيوب.</string>
+    <string name="remote_subs_removed">أُلغي الاشتراك في «&#x2068;%1$s&#x2069;».</string>
+    <string name="remote_subs_not_subscribed">لست مشتركاً في هذه القناة.</string>
+    <!-- %1$s / %2$s: count_channels, e.g. «18 قناة». -->
+    <string name="remote_takeout_added">أُضيفت %1$s من Google Takeout، وتصل فيديوهاتها خلال دقائق.</string>
+    <string name="remote_takeout_added_some_present">أُضيفت %1$s من Google Takeout، و%2$s موجودة من قبل.</string>
+    <string name="remote_takeout_all_present">كل قنوات الملف موجودة من قبل (%1$s).</string>
+    <string name="remote_backup_locked">فيديو مقفول قيد المشاهدة. فكّ قفله أولاً، ثم استعد النسخة.</string>
+
+    <!-- Settings → التحكم من الجوال -->
+    <string name="remote_title">التحكم من الجوال</string>
+    <string name="remote_subtitle">أرسل الروابط وابحث وتحكّم بالتشغيل من متصفح جوالك</string>
+    <string name="remote_status_running">يعمل</string>
+    <string name="remote_status_starting">جارٍ التشغيل…</string>
+    <string name="remote_status_no_network">لا شبكة محلية</string>
+    <string name="remote_status_failed">تعذّر التشغيل</string>
+    <string name="remote_status_off">متوقف</string>
+    <string name="remote_step_scan">امسح الرمز بكاميرا الجوال وافتح الرابط. الجوال على شبكة التلفاز نفسها.</string>
+    <string name="remote_step_home">أضف الصفحة إلى الشاشة الرئيسية في الجوال لتفتحها بلمسة. قسم الأب فيها يُفتح برمز الوالدين.</string>
+    <!-- Beside «إعادة توليد الرمز»: every paired phone shares one count of wrong PINs (an accepted limit). -->
+    <string name="remote_regenerate_hint">رموز PIN خاطئة متتالية من أي جوال مقترن توقف قسم الأب على كل الجوالات لفترة، ولا تمسّ التلفاز. إعادة التوليد تنهي ذلك.</string>
+    <!-- %1$s: how many wrong PINs, digits. -->
+    <string name="remote_phone_pin_wrong">رموز PIN خاطئة من الجوال منذ آخر دخول صحيح: %1$s.</string>
+    <!-- %1$s: time left, e.g. 4:59. -->
+    <string name="remote_phone_pin_locked">قسم الأب على الجوال موقوف بعد رموز PIN خاطئة، ويُفتح بعد %1$s.</string>
+    <string name="remote_step_share">مشاركة ← شاشة: افتح الصفحة ورابط الفيديو في آخرها بعد &#x2068;&amp;v=&#x2069;، باختصار («الاختصارات» في آيفون، أو «&#x2068;HTTP Shortcuts&#x2069;» في أندرويد) أو بإشارة مرجعية. الصفحة تعطيك الرابط جاهزاً للنسخ.</string>
+    <string name="remote_nsd_label">الاسم على الشبكة: «&#x2068;%1$s&#x2069;»</string>
+    <string name="remote_regenerate">إعادة توليد الرمز</string>
+    <string name="remote_regenerate_title">إعادة توليد رمز الاقتران؟</string>
+    <string name="remote_regenerate_body">تتوقف كل الهواتف المقترنة فوراً، وتحتاج إلى مسح الرمز الجديد. ويُنسى عدّ رموز PIN الخاطئة من الجوال.</string>
+    <string name="remote_regenerate_confirm">إعادة التوليد</string>
+    <string name="remote_regenerated">رمز جديد: امسحه من جوالك من جديد.</string>
+    <string name="remote_off_title">التحكم من الجوال متوقف</string>
+    <string name="remote_off_body">شغّله ليظهر رمز الاقتران هنا.</string>
+    <string name="remote_no_network_title">لا توجد شبكة محلية</string>
+    <string name="remote_no_network_body">وصّل التلفاز بشبكة &#x2068;Wi-Fi&#x2069; أو بكابل، وليكن الجوال على الشبكة نفسها.</string>
+    <string name="remote_failed_title">تعذّر تشغيل الخادم</string>
+    <string name="remote_failed_body">المنافذ المعتادة مشغولة. تُعاد المحاولة وحدها بعد قليل.</string>
+    <string name="remote_starting_title">جارٍ تشغيل الخادم…</string>
+    <string name="remote_qr_description">رمز QR لفتح صفحة «شاشة» على الجوال</string>
+
+    <!-- The first start's last step: pair the phone. -->
+    <string name="setup_phone_title">تحكّم من جوالك</string>
+    <string name="setup_phone_body">امسح الرمز بكاميرا الجوال، على شبكة التلفاز نفسها، لترسل الروابط وتبحث وتفتح الوقت من الجوال. تجده لاحقاً في الإعدادات ← التحكم من الجوال.</string>
+    <string name="setup_phone_done">تم</string>
+
+    <!-- Settings → الاستيراد والتصدير (the manual JSON backup, SPEC: «نسخة احتياطية JSON يدوية»). -->
+    <string name="backup_title">الاستيراد والتصدير</string>
+    <string name="backup_subtitle">نسخة JSON فيها الملفات ورمز الوالدين والحصص والقوائم والاشتراكات والسجل والإحصائيات</string>
+    <string name="backup_export_title">تصدير إلى ملف</string>
+    <string name="backup_export_body">يُحفظ في مجلد التطبيق، وتنقله إلى حاسوبك بهذا الأمر:</string>
+    <string name="backup_export_action">تصدير الآن</string>
+    <string name="backup_exported">حُفظت النسخة: &#x2068;%1$s&#x2069;</string>
+    <string name="backup_export_failed">تعذّر حفظ الملف.</string>
+    <string name="backup_import_title">استيراد من ملف</string>
+    <string name="backup_import_body">انسخ ملف النسخة إلى المجلد نفسه، ثم اختره:</string>
+    <string name="backup_import_none">لا ملفات في المجلد بعد. تظهر هنا وحدها حين تصل.</string>
+    <string name="backup_import_confirm_title">استعادة &#x2068;%1$s&#x2069;؟</string>
+    <string name="backup_import_confirm_body">تُستبدل كل بيانات الشاشة بما في الملف: الملفات ورمز الوالدين والقوائم والاشتراكات والسجل والإحصائيات. لا يمكن التراجع.</string>
+    <string name="backup_import_action">استعادة</string>
+    <!-- %1$s: count_profiles, %2$s: count_channels. -->
+    <string name="backup_restored">استُعيدت النسخة: %1$s و%2$s.</string>
+    <string name="backup_restored_skipped">%1$s وتُرك %2$s غير صالح.</string>
+    <string name="backup_phone_note">ومن الجوال: قسم الأب ← «نسخة احتياطية» للتنزيل والاستعادة.</string>
+    <string name="backup_file_size">%1$s كيلوبايت</string>
+    <string name="backup_working">جارٍ العمل…</string>
+    <string name="backup_error_not_backup">هذا الملف ليس نسخة احتياطية من «شاشة».</string>
+    <string name="backup_error_newer">هذه النسخة من إصدار أحدث من «شاشة». حدّث التطبيق أولاً.</string>
+    <string name="backup_error_no_adult">النسخة لا تحوي ملف الكبار، فلم تُستعد.</string>
+    <string name="backup_error_too_large">الملف أكبر من أن يكون نسخة احتياطية من «شاشة».</string>
+    <string name="backup_error_failed">تعذّرت الاستعادة، ولم يتغيّر شيء.</string>
+    <string name="backup_error_read">تعذّرت قراءة الملف.</string>
 </resources>

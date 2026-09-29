@@ -35,6 +35,7 @@ import com.ahmadnayfeh.shasha.ui.components.PinCheck
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
@@ -77,6 +78,9 @@ class RootViewModelTest {
     private val adult = owner()
     private val child = kid()
 
+    /** What the phone chose («اختيار الملف»), as TvRemoteController reports it. */
+    private val choices = MutableSharedFlow<String>(extraBufferCapacity = 4)
+
     @Before
     fun setUp() = runBlocking {
         Dispatchers.setMain(Dispatchers.Unconfined)
@@ -89,7 +93,7 @@ class RootViewModelTest {
         val session = SessionController(engine, active.profile, UsageRepository(db), OverridesRepository(store), scope)
         pin = ParentPinRepository(store, clock, PinHasher(iterations = 1_000))
         gate = PolicyGate(engine, active, profiles, session, PlaybackLockStore(store, scope), pin, VideoLookup { LookedUpVideo(clip(it), null) }, scope)
-        deps = RootDeps(profiles, active, pin, gate, session)
+        deps = RootDeps(profiles, active, pin, gate, session, phoneChoices = choices)
         active.awaitProfile()
         Unit
     }
@@ -125,6 +129,12 @@ class RootViewModelTest {
     private fun withChild() = wait { profiles.upsert(child) }
 
     private fun withPin() = wait { pin.setup(PIN) }
+
+    /** The phone chose [profileId] (after PolicyGate allowed it, or it was current). */
+    private fun phoneChooses(profileId: String) {
+        wait { choices.subscriptionCount.first { it > 0 } }
+        assertThat(choices.tryEmit(profileId)).isTrue()
+    }
 
     @Test
     fun firstStart_withoutAParentPin_isTheSetup_thenTheOwnersProfile() {
@@ -226,6 +236,41 @@ class RootViewModelTest {
         assertThat(wait { gate.switchProfile(adult.id, PIN) }).isEqualTo(SwitchResult.Switched)
         vm.shows(RootScreen.Picker(PickerMode.START))
         assertThat(vm.needsPin(adult)).isTrue()
+    }
+
+    @Test
+    fun onThePicker_aChildProfileThePhoneChose_opens_butTheAdultIsStillAskedForHere() {
+        withPin()
+        withChild()
+        val vm = root()
+        vm.shows(RootScreen.Picker(PickerMode.START))
+        vm.isIn(adult)
+
+        // The adult profile chosen on the phone (with its PIN there): whoever holds the TV's remote is asked here.
+        phoneChooses(adult.id)
+        wait { kotlinx.coroutines.delay(200) }
+        assertThat(vm.screen.value).isEqualTo(RootScreen.Picker(PickerMode.START))
+
+        // The phone switched to the child (entering a child profile needs no PIN) and told the parent it did.
+        assertThat(wait { gate.switchProfile(child.id, pin = null) }).isEqualTo(SwitchResult.Switched)
+        phoneChooses(child.id)
+        vm.shows(RootScreen.Browse)
+        vm.isIn(child)
+        // Leaving it still takes the parent PIN.
+        assertThat(vm.needsPin(adult)).isTrue()
+    }
+
+    @Test
+    fun onThePicker_theChildTheTvWasLeftIn_chosenOnThePhone_opens() {
+        withPin()
+        withChild()
+        assertThat(wait { gate.switchProfile(child.id, pin = null) }).isEqualTo(SwitchResult.Switched)
+        val vm = root()
+        vm.shows(RootScreen.Picker(PickerMode.START))
+        vm.isIn(child)
+        phoneChooses(child.id)
+        vm.shows(RootScreen.Browse)
+        vm.isIn(child)
     }
 
     private fun enterAdult(vm: RootViewModel) {

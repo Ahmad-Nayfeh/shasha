@@ -19,6 +19,7 @@ import com.ahmadnayfeh.shasha.ui.components.PinCheck
 import com.ahmadnayfeh.shasha.ui.components.toCheck
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -70,6 +71,8 @@ class RootDeps(
     val profileScreensShown: MutableStateFlow<Boolean> = MutableStateFlow(false),
     /** SPEC §4's playback lock (null: nothing is ever locked, e.g. in tests of the profiles alone). */
     val lock: LockController? = null,
+    /** The profiles the phone chose («اختيار الملف», SPEC §5), once PolicyGate allowed them. */
+    val phoneChoices: Flow<String> = emptyFlow(),
 )
 
 /**
@@ -85,6 +88,8 @@ class RootDeps(
  *   [onAppShown]).
  * - When the current profile turns from a child into the adult without this screen asking (the child's
  *   profile was deleted, the phone switched), the picker comes back first.
+ * - While the picker asks who is watching, a child profile the phone chose ([RootDeps.phoneChoices]) opens:
+ *   the choice is made (nobody needs a PIN to enter a child profile). The adult profile is still asked for here.
  *
  * [elapsed] is a clock the viewer cannot set (elapsedRealtime).
  */
@@ -140,8 +145,23 @@ class RootViewModel(
                 trusted = profile.id
                 _screen.value = first
             }
+            launch { deps.phoneChoices.collect { onPhoneChoice(deps, it) } }
             deps.active.profile.filterNotNull().collect(::onProfile)
         }
+    }
+
+    /**
+     * The phone chose [profileId] (PolicyGate allowed it, or it was current already). On the picker a child
+     * profile's screens open, as if its card was chosen here: the phone got «الشاشة الآن على ملف …». Never the
+     * adult profile: whoever holds the TV's remote may not be the parent who typed the PIN on the phone.
+     */
+    private suspend fun onPhoneChoice(deps: RootDeps, profileId: String) {
+        if (_screen.value !is RootScreen.Picker) return
+        val profile = deps.active.awaitProfile()
+        if (profile.id != profileId || !profile.isChild || _screen.value !is RootScreen.Picker) return
+        trusted = profile.id
+        forgetExitPin()
+        _screen.value = RootScreen.Browse
     }
 
     private fun onProfile(profile: Profile) {
@@ -305,6 +325,7 @@ class RootViewModel(
                             container.session,
                             container.profileScreensShown,
                             container.lock,
+                            container.phoneProfileChoices.chosen,
                         )
                     }
                 })

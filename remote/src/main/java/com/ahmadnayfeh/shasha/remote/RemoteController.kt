@@ -31,15 +31,15 @@ interface RemoteController {
     suspend fun profiles(): List<RemoteProfile>
 
     /**
-     * [pin] is null when the page sent none. When the switch needs a PIN, check it through the same shared
-     * PinAttemptLimiter as [parentLogin] and the TV's PIN pad (one limiter per PIN), and refuse a wrong
-     * PIN, or any attempt while the limiter is locked, with [RemoteResult.error]. The server brakes
-     * guessing on top of that: every non-ok answer to a call with a PIN counts as a wrong PIN, and after
-     * a few of them it answers 429 without calling this at all.
+     * [pin] is null when the page sent none. When the switch needs a PIN, check it through the same attempt
+     * limiter as [parentLogin], one whose count is kept on disk (the server's own brake lives in memory: a
+     * restart must not grant new guesses), and refuse a wrong PIN, or any attempt while the limiter is
+     * locked, with [RemoteResult.error]. The server brakes guessing on top of that: every non-ok answer to a
+     * call with a PIN counts as a wrong PIN, and after a few of them it answers 429 without calling this at all.
      */
     suspend fun switchProfile(id: String, pin: String?): RemoteResult
 
-    /** Checks the parent PIN through the shared PinAttemptLimiter. The server creates the session. */
+    /** Checks the parent PIN through the same persisted attempt limiter as [switchProfile]. The server creates the session. */
     suspend fun parentLogin(pin: String): ParentLoginResult
 
     // Everything below is only called with a valid parent session.
