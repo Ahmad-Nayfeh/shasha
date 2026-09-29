@@ -12,6 +12,12 @@ import coil3.request.crossfade
 class ShashaApp : Application(), SingletonImageLoader.Factory {
     val container: AppContainer by lazy { AppContainer(this) }
 
+    override fun onCreate() {
+        super.onCreate()
+        // The two-hourly feed sync (SPEC §2). KEEP: an existing schedule is left as it is.
+        container.feedSyncScheduler.ensurePeriodic()
+    }
+
     /** Thumbnails go through the shared OkHttp client; the memory cache is kept small for TV RAM. */
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader.Builder(context)
