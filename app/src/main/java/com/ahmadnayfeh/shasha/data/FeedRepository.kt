@@ -9,11 +9,14 @@ import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -71,8 +74,8 @@ class FeedRepository(
 
     fun observeHome(limit: Int = HOME_LIMIT): Flow<List<FeedItemEntity>> = feedDao.observeHome(limit)
 
-    /** When a channel was last synced successfully, null before the first sync. */
-    fun observeLastSync(): Flow<Long?> = subscriptionDao.observeLastSuccessfulSync()
+    /** How each channel's last sync went: for the home screen's status and its sync errors. */
+    fun observeSyncHealth(): Flow<SyncHealth> = subscriptionDao.observeSyncCounts().map { it.toHealth() }
 
     /**
      * Syncs every subscribed channel not synced successfully in the last [freshForMs], stalest first.
@@ -114,13 +117,17 @@ class FeedRepository(
         coroutineScope {
             for (channel in due) {
                 permits.acquire()
-                if (stopWhen()) {
+                // acquire() only notices a cancelled run when it has to wait: check before starting more.
+                if (!isActive || stopWhen()) {
                     permits.release()
                     stopped = true
                     break
                 }
                 started++
-                launch {
+                // ATOMIC: the child runs even when the run is cancelled before the child was dispatched, so
+                // its finally always returns the permit. The permits outlive every run (WorkManager cancels
+                // runs routinely); a lost one would never come back.
+                launch(start = CoroutineStart.ATOMIC) {
                     try {
                         results += syncOne(channel)
                     } finally {
@@ -146,7 +153,7 @@ class FeedRepository(
             throw e
         } catch (e: Exception) {
             val error = e.asSourceException()
-            subscriptionDao.setSyncResult(channel.channelId, clock(), "${error.kind}: ${error.technicalName}")
+            subscriptionDao.setSyncResult(channel.channelId, clock(), SyncErrors.format(error))
             return ChannelSyncResult.Failed(channel.channelId, error)
         }
         val stored = save(channel, videos)

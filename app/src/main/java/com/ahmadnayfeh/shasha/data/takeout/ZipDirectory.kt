@@ -11,8 +11,9 @@ internal class ZipFormatException(message: String, val tooManyEntries: Boolean =
  * Just enough of the ZIP format to take a small file out of an archive held in memory.
  *
  * Entries are listed from the central directory and only the ones asked for are inflated, each with a
- * hard output limit. So a zip bomb costs nothing unless its entry is read, and then stops at the limit.
- * (java.util.zip.ZipInputStream cannot skip an entry without inflating all of it.) Handles data
+ * hard output limit. So a zip bomb costs nothing unless its entry is read, and then stops at the limit
+ * (the caller also limits how much compressed input it reads in all: entries may be crafted to overlap).
+ * java.util.zip.ZipInputStream cannot skip an entry without inflating all of it. Handles data
  * descriptors and ZIP64 records; encrypted entries and methods other than stored/deflated are skipped.
  */
 internal class ZipDirectory private constructor(private val bytes: ByteArray, val entries: List<Entry>) {
@@ -31,12 +32,13 @@ internal class ZipDirectory private constructor(private val bytes: ByteArray, va
     /** The entry's bytes, or null when they are more than [limit]. */
     fun read(entry: Entry, limit: Int): ByteArray? {
         require(entry.isReadable) { "unreadable entry ${entry.name}" }
+        // Bounds are checked as "value > size - offset": ZIP64 values near Long.MAX_VALUE would overflow a sum.
         val header = entry.localHeaderOffset
-        if (header < 0 || header + LOCAL_HEADER_SIZE > bytes.size || u32(header) != LOCAL_SIGNATURE) {
+        if (header < 0 || header > bytes.size - LOCAL_HEADER_SIZE || u32(header) != LOCAL_SIGNATURE) {
             throw ZipFormatException("bad local header for ${entry.name}")
         }
         val dataStart = header + LOCAL_HEADER_SIZE + u16(header + 26) + u16(header + 28)
-        if (entry.compressedSize < 0 || dataStart + entry.compressedSize > bytes.size) {
+        if (entry.compressedSize < 0 || dataStart > bytes.size || entry.compressedSize > bytes.size - dataStart) {
             throw ZipFormatException("entry ${entry.name} runs past the end")
         }
         return if (entry.method == STORED) {
@@ -113,7 +115,7 @@ internal class ZipDirectory private constructor(private val bytes: ByteArray, va
             val locator = end - ZIP64_LOCATOR_SIZE
             if (locator >= 0 && u32(bytes, locator) == ZIP64_LOCATOR_SIGNATURE) {
                 val zip64End = u64(bytes, locator + 8)
-                if (zip64End < 0 || zip64End + 56 > bytes.size || u32(bytes, zip64End) != ZIP64_END_SIGNATURE) {
+                if (zip64End < 0 || zip64End > bytes.size - 56 || u32(bytes, zip64End) != ZIP64_END_SIGNATURE) {
                     throw ZipFormatException("bad ZIP64 end record")
                 }
                 count = u64(bytes, zip64End + 32)
@@ -122,7 +124,7 @@ internal class ZipDirectory private constructor(private val bytes: ByteArray, va
             }
             if (count > maxEntries) throw ZipFormatException("too many entries: $count", tooManyEntries = true)
             if (count < 0) throw ZipFormatException("bad entry count")
-            if (directoryOffset < 0 || directorySize < 0 || directoryOffset + directorySize > bytes.size) {
+            if (directoryOffset < 0 || directorySize < 0 || directoryOffset > bytes.size || directorySize > bytes.size - directoryOffset) {
                 throw ZipFormatException("central directory out of bounds")
             }
             val entries = ArrayList<Entry>(count.toInt())

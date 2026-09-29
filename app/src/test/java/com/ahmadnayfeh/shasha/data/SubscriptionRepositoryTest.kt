@@ -44,7 +44,7 @@ class SubscriptionRepositoryTest {
     fun tearDown() = db.close()
 
     @Test
-    fun add_byIdLinkOrHandle_looksUpNameAndAvatar() = runBlocking {
+    fun add_byIdLinkOrHandle_looksUpNameAndAvatar() = runBlocking<Unit> {
         val added = subscriptions.add("https://www.youtube.com/@alpha")
 
         assertThat(added).isEqualTo(AddResult.Added(subscription(a, "قناة أ").copy(avatarUrl = "https://yt3/a.jpg", addedAtMs = NOW_MS)))
@@ -56,7 +56,7 @@ class SubscriptionRepositoryTest {
     }
 
     @Test
-    fun add_somethingThatIsNotAChannel() = runBlocking {
+    fun add_somethingThatIsNotAChannel() = runBlocking<Unit> {
         assertThat(subscriptions.add("https://www.youtube.com/watch?v=dQw4w9WgXcQ")).isEqualTo(AddResult.NotAChannel)
         assertThat(subscriptions.add("hello")).isEqualTo(AddResult.NotAChannel)
         assertThat(subscriptions.observe().first()).isEmpty()
@@ -71,14 +71,14 @@ class SubscriptionRepositoryTest {
     }
 
     @Test
-    fun add_aChannelTheAppAlreadyShows_needsNoNetwork() = runBlocking {
+    fun add_aChannelTheAppAlreadyShows_needsNoNetwork() = runBlocking<Unit> {
         // The fake knows nothing about b: a lookup would throw.
         val result = subscriptions.add(ChannelItem(b, "  Beta  ", avatarUrl = null, subscriberCount = null))
         assertThat((result as AddResult.Added).channel.name).isEqualTo("Beta")
     }
 
     @Test
-    fun importTakeout_countsAddedExistingAndInvalidRows() = runBlocking {
+    fun importTakeout_countsAddedExistingAndInvalidRows() = runBlocking<Unit> {
         subscriptions.add(ChannelItem(a, "Already here", null, null))
         syncRequests = 0
         val csv = """
@@ -100,7 +100,7 @@ class SubscriptionRepositoryTest {
     }
 
     @Test
-    fun importTakeout_fromTheZip_andNothingNewMeansNoSync() = runBlocking {
+    fun importTakeout_fromTheZip_andNothingNewMeansNoSync() = runBlocking<Unit> {
         val zip = ByteArrayOutputStream().also { out ->
             ZipOutputStream(out).use {
                 it.putNextEntry(ZipEntry("Takeout/YouTube and YouTube Music/subscriptions/subscriptions.csv"))
@@ -123,7 +123,7 @@ class SubscriptionRepositoryTest {
     }
 
     @Test
-    fun remove_dropsTheChannelsVideosToo() = runBlocking {
+    fun remove_dropsTheChannelsVideosToo() = runBlocking<Unit> {
         subscriptions.add(ChannelItem(a, "A", null, null))
         subscriptions.add(ChannelItem(b, "B", null, null))
         db.feed().upsert(listOf(feedItem("v1", a), feedItem("v2", b)))
@@ -136,7 +136,7 @@ class SubscriptionRepositoryTest {
     }
 
     @Test
-    fun updateDetails_onlyTouchesSubscribedChannels() = runBlocking {
+    fun updateDetails_onlyTouchesSubscribedChannels() = runBlocking<Unit> {
         subscriptions.add(ChannelItem(a, "Old", "https://yt3/old.jpg", null))
         subscriptions.updateDetails(ChannelItem(a, "New", null, null))
         subscriptions.updateDetails(ChannelItem(b, "Not subscribed", null, null))

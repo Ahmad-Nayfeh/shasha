@@ -5,14 +5,19 @@ import androidx.work.WorkManager
 import com.ahmadnayfeh.shasha.data.CurrentProfile
 import com.ahmadnayfeh.shasha.data.FeedRepository
 import com.ahmadnayfeh.shasha.data.FixedProfile
+import com.ahmadnayfeh.shasha.data.NetworkStatus
 import com.ahmadnayfeh.shasha.data.StreamRepository
 import com.ahmadnayfeh.shasha.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.data.WatchRepository
 import com.ahmadnayfeh.shasha.data.db.ShashaDatabase
 import com.ahmadnayfeh.shasha.feed.FeedSyncScheduler
+import com.ahmadnayfeh.shasha.player.PlayQueues
 import com.ahmadnayfeh.shasha.youtube.VideoSource
 import com.ahmadnayfeh.shasha.youtube.YouTube
 import com.ahmadnayfeh.shasha.youtube.playback.YouTubeMediaSourceFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -64,6 +69,17 @@ class AppContainer(context: Context) {
     val feed: FeedRepository by lazy { FeedRepository(database, videoSource) }
 
     val watch: WatchRepository by lazy { WatchRepository(database, currentProfile) }
+
+    val network: NetworkStatus by lazy { NetworkStatus(appContext) }
+
+    /**
+     * For writes that must outlive the screen that started them (the player's last saved position is
+     * written while it closes). Main-immediate keeps them in the order they were made.
+     */
+    val appScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    /** Hands a playlist from its page to the player (the next video plays when one ends). */
+    val playQueues: PlayQueues by lazy { PlayQueues() }
 
     private companion object {
         const val USER_AGENT = "Shasha/${BuildConfig.VERSION_NAME} (Android TV)"

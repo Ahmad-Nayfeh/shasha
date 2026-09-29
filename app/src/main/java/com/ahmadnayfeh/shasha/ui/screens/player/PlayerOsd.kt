@@ -28,6 +28,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +40,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -69,8 +71,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
@@ -106,6 +110,9 @@ private val OK_KEYS = setOf(KEYCODE_DPAD_CENTER, KEYCODE_ENTER, KEYCODE_NUMPAD_E
  * - Seek bar focused (the default): LEFT/RIGHT move ±10 s, holding accelerates; OK plays/pauses.
  * - Media keys (play/pause, fast-forward, rewind) always work, visible or not.
  * - BACK closes an open menu, then hides the controls, then leaves ([onExit]).
+ *
+ * [savedForLater] (null = hidden) adds the «شاهد لاحقاً» chip; [resumedFromMs] shows "استُكمل من 12:34"
+ * for [resumeHintMs] once playback runs.
  */
 @Composable
 fun PlayerOsd(
@@ -117,6 +124,10 @@ fun PlayerOsd(
     initiallyVisible: Boolean = true,
     initialMenu: OsdMenu? = null,
     autoHideMs: Long = OSD_AUTO_HIDE_MS,
+    savedForLater: Boolean? = null,
+    onToggleWatchLater: () -> Unit = {},
+    resumedFromMs: Long? = null,
+    resumeHintMs: Long = RESUME_HINT_MS,
 ) {
     var visible by remember { mutableStateOf(initiallyVisible || initialMenu != null) }
     var menu by remember { mutableStateOf(initialMenu) }
@@ -288,6 +299,14 @@ fun PlayerOsd(
         runCatching { chipFocus.getValue(chip).requestFocus() }
         refocusChip = null
     }
+    // The resume hint stays a few seconds after the video actually starts moving, OSD shown or not.
+    var hintShown by remember(resumedFromMs) { mutableStateOf(resumedFromMs != null) }
+    LaunchedEffect(hintShown, state.isPlaying) {
+        if (hintShown && state.isPlaying) {
+            delay(resumeHintMs)
+            hintShown = false
+        }
+    }
 
     Box(
         modifier
@@ -309,7 +328,16 @@ fun PlayerOsd(
             exit = fadeOut(tween(260)) + slideOutVertically(tween(260)) { -it / 3 },
             modifier = Modifier.align(Alignment.TopCenter),
         ) {
-            TitleBar(state)
+            TitleBar(state, endReserve = if (hintShown) RESUME_HINT_RESERVE else 0.dp)
+        }
+
+        AnimatedVisibility(
+            visible = hintShown,
+            enter = fadeIn(tween(300)),
+            exit = fadeOut(tween(400)),
+            modifier = Modifier.align(Alignment.TopEnd).padding(top = ShashaDimens.ScreenVertical, end = ShashaDimens.ScreenHorizontal),
+        ) {
+            ResumeHint(resumedFromMs ?: 0L)
         }
 
         AnimatedVisibility(
@@ -375,6 +403,11 @@ fun PlayerOsd(
                         onAction = onAction,
                         onSeekBy = ::seekBy,
                         onOpenMenu = ::openMenu,
+                        savedForLater = savedForLater,
+                        onToggleWatchLater = {
+                            interactions++
+                            onToggleWatchLater()
+                        },
                     )
                 }
             }
@@ -414,14 +447,14 @@ fun PlayerOsd(
 }
 
 @Composable
-private fun TitleBar(state: PlayerUiState) {
+private fun TitleBar(state: PlayerUiState, endReserve: Dp = 0.dp) {
     Column(
         Modifier
             .fillMaxWidth()
             .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.80f), Color.Transparent)))
             .padding(
                 start = ShashaDimens.ScreenHorizontal,
-                end = ShashaDimens.ScreenHorizontal,
+                end = ShashaDimens.ScreenHorizontal + endReserve,
                 top = ShashaDimens.ScreenVertical,
                 bottom = 56.dp,
             )
@@ -453,6 +486,8 @@ private fun ControlsRow(
     onAction: (PlayerAction) -> Unit,
     onSeekBy: (Long) -> Unit,
     onOpenMenu: (OsdMenu) -> Unit,
+    savedForLater: Boolean?,
+    onToggleWatchLater: () -> Unit,
 ) {
     val upToBar = Modifier.focusProperties { up = seekFocus }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -503,6 +538,15 @@ private fun ControlsRow(
         }
         Spacer(Modifier.weight(1f))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (savedForLater != null) {
+                OsdChip(
+                    icon = if (savedForLater) ShashaIcons.CheckCircle else ShashaIcons.WatchLater,
+                    label = stringResource(R.string.player_watch_later),
+                    value = stringResource(if (savedForLater) R.string.player_watch_later_saved else R.string.player_watch_later_add),
+                    onClick = onToggleWatchLater,
+                    modifier = upToBar.testTag("osd_chip_watch_later"),
+                )
+            }
             OsdChip(
                 icon = ShashaIcons.Subtitles,
                 label = stringResource(R.string.player_subtitles),
@@ -559,6 +603,33 @@ private fun SubtitleCue(text: String?, controlsVisible: Boolean, modifier: Modif
         )
     }
 }
+
+/** "استُكمل من 12:34": playback continued where the profile stopped last time. */
+@Composable
+private fun ResumeHint(positionMs: Long) {
+    Row(
+        Modifier
+            .background(Color.Black.copy(alpha = 0.62f), RoundedCornerShape(percent = 50))
+            .border(1.dp, ShashaColors.Primary.copy(alpha = 0.45f), RoundedCornerShape(percent = 50))
+            .padding(start = 14.dp, end = 18.dp, top = 6.dp, bottom = 6.dp)
+            .testTag("osd_resume_hint"),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(ShashaIcons.History, contentDescription = null, tint = ShashaColors.PrimaryBright, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(10.dp))
+        Text(
+            stringResource(R.string.player_resumed_from, formatDuration(positionMs)),
+            style = MaterialTheme.typography.titleSmall,
+            color = Color.White,
+        )
+    }
+}
+
+/** How long "استُكمل من …" stays once the video plays. */
+const val RESUME_HINT_MS = 6_000L
+
+/** Room kept free for the resume hint at the end side of the title bar. */
+private val RESUME_HINT_RESERVE = 260.dp
 
 private const val NO_KEY = -1
 private const val PROGRESS_TICK_MS = 500L

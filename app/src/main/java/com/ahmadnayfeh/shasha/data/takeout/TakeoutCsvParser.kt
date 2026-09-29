@@ -43,6 +43,9 @@ object TakeoutCsvParser {
     private val whitespaceRun = Regex("\\s+")
     private val nameHints = listOf("subscription", "اشتراك")
 
+    /** Takeout's own file and folder name (English and Arabic exports): subscriptions/subscriptions.csv. */
+    private val subscriptionNames = setOf("subscriptions", "الاشتراكات")
+
     /** @throws TakeoutException */
     fun parse(fileName: String?, bytes: ByteArray): TakeoutParseResult {
         if (bytes.isEmpty()) throw TakeoutException(TakeoutException.Reason.EMPTY)
@@ -51,14 +54,15 @@ object TakeoutCsvParser {
         return parseCsv(decode(bytes))
     }
 
-    fun parseCsv(text: String): TakeoutParseResult {
+    /** @param linksRequired only rows with a `/channel/UC…` link count (a CSV that is not named like the list). */
+    fun parseCsv(text: String, linksRequired: Boolean = false): TakeoutParseResult {
         val channels = LinkedHashMap<String, String>()
         var invalid = 0
         var firstRow = true
         for (record in CsvReader(text).records()) {
             val fields = record.map(::clean)
             if (fields.all { it.isEmpty() }) continue
-            val id = idIn(fields)
+            val id = idIn(fields, linksRequired)
             when {
                 id != null -> if (channels[id].isNullOrEmpty()) channels[id] = nameIn(fields, id)
                 !firstRow -> invalid++
@@ -70,33 +74,57 @@ object TakeoutCsvParser {
     }
 
     /**
-     * The subscriptions CSV inside a zip: a file named like one first, else the first .csv with channels in
-     * it. At most [MAX_UNCOMPRESSED_BYTES] are inflated in total, however large the archive claims to be.
+     * The subscriptions CSV inside a zip: Takeout's own subscriptions/subscriptions.csv first (its answer
+     * counts even when empty: "no subscriptions"), then other files named like it, then any CSV whose rows
+     * carry `/channel/UC…` links (so channels/channel.csv, the owner's own channel, is never taken for it).
+     * At most [MAX_UNCOMPRESSED_BYTES] are inflated in total, however large the archive claims to be.
      */
     private fun parseZip(bytes: ByteArray): TakeoutParseResult {
         val zip = try {
             ZipDirectory.open(bytes, MAX_ZIP_ENTRIES)
         } catch (e: ZipFormatException) {
             throw TakeoutException(if (e.tooManyEntries) TakeoutException.Reason.TOO_LARGE else TakeoutException.Reason.BROKEN_ZIP)
+        } catch (e: RuntimeException) {
+            throw TakeoutException(TakeoutException.Reason.BROKEN_ZIP) // whatever else a crafted archive may cause
         }
-        val csvFiles = zip.entries.filter { it.isReadable && it.name.endsWith(".csv", ignoreCase = true) }
-        val (named, others) = csvFiles.partition { entry ->
-            val fileName = entry.name.substringAfterLast('/').substringAfterLast('\\').lowercase()
-            nameHints.any { it in fileName }
-        }
-        var budget = MAX_UNCOMPRESSED_BYTES
-        for (entry in named + others) {
+        val candidates = zip.entries.filter { it.isReadable && it.name.endsWith(".csv", ignoreCase = true) }.sortedBy(::rank)
+        var outputBudget = MAX_UNCOMPRESSED_BYTES
+        // The entries of a sound archive do not overlap, so together they are never larger than it. A crafted one
+        // can point thousands of entries at one huge deflate stream that inflates to nothing: CPU, not memory.
+        var inputBudget = bytes.size.toLong()
+        var firstResult: TakeoutParseResult? = null
+        for (entry in candidates) {
+            inputBudget -= entry.compressedSize
+            if (inputBudget < 0) throw TakeoutException(TakeoutException.Reason.BROKEN_ZIP)
             val content = try {
-                zip.read(entry, budget)
+                zip.read(entry, outputBudget)
             } catch (e: ZipFormatException) {
                 throw TakeoutException(TakeoutException.Reason.BROKEN_ZIP)
+            } catch (e: RuntimeException) {
+                throw TakeoutException(TakeoutException.Reason.BROKEN_ZIP)
             } ?: throw TakeoutException(TakeoutException.Reason.TOO_LARGE)
-            budget -= content.size
-            val result = parseCsv(decode(content))
-            // A subscriptions file with no rows is a real answer ("no subscriptions"), not a reason to guess.
-            if (entry in named || result.channels.isNotEmpty()) return result
+            outputBudget -= content.size
+            val rank = rank(entry)
+            val result = parseCsv(decode(content), linksRequired = rank == Rank.OTHER)
+            if (rank == Rank.TAKEOUT || result.channels.isNotEmpty()) return result
+            if (firstResult == null) firstResult = result
         }
-        throw TakeoutException(TakeoutException.Reason.NO_CSV)
+        // CSV files, but none with channels: "no channels found" says more than "no CSV".
+        return firstResult ?: throw TakeoutException(TakeoutException.Reason.NO_CSV)
+    }
+
+    /** In this order: Takeout's own subscriptions file, files named like it, any other CSV. */
+    private enum class Rank { TAKEOUT, NAMED, OTHER }
+
+    private fun rank(entry: ZipDirectory.Entry): Rank {
+        val path = entry.name.replace('\\', '/').lowercase()
+        val file = path.substringAfterLast('/').removeSuffix(".csv")
+        val folder = path.substringBeforeLast('/', "").substringAfterLast('/')
+        return when {
+            file in subscriptionNames || folder in subscriptionNames -> Rank.TAKEOUT
+            nameHints.any { it in file } -> Rank.NAMED
+            else -> Rank.OTHER
+        }
     }
 
     private fun decode(bytes: ByteArray): String {
@@ -114,8 +142,8 @@ object TakeoutCsvParser {
     private fun clean(field: String): String =
         field.trim { it.isWhitespace() || it == '﻿' || Character.getType(it) == Character.FORMAT.toInt() }
 
-    private fun idIn(fields: List<String>): String? {
-        fields.first().takeIf(channelId::matches)?.let { return it }
+    private fun idIn(fields: List<String>, linksRequired: Boolean): String? {
+        if (!linksRequired) fields.first().takeIf(channelId::matches)?.let { return it }
         return fields.firstNotNullOfOrNull { channelLink.find(it)?.groupValues?.get(1) }
     }
 

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "d15bb18ea1aa5a05cf2d5f87653656a2",
+    "identityHash": "f660a96d10116a34a2b52f0e715d066c",
     "entities": [
       {
         "tableName": "subscriptions",
@@ -51,7 +51,7 @@
       },
       {
         "tableName": "feed_items",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`videoId` TEXT NOT NULL, `channelId` TEXT NOT NULL, `channelName` TEXT NOT NULL, `title` TEXT NOT NULL, `publishedAtMs` INTEGER NOT NULL, `thumbnailUrl` TEXT, `durationSeconds` INTEGER, `isShort` INTEGER NOT NULL, `isLive` INTEGER NOT NULL, `url` TEXT NOT NULL, `fetchedAtMs` INTEGER NOT NULL, PRIMARY KEY(`videoId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`videoId` TEXT NOT NULL, `channelId` TEXT NOT NULL, `channelName` TEXT NOT NULL, `title` TEXT NOT NULL, `publishedAtMs` INTEGER NOT NULL, `thumbnailUrl` TEXT, `durationSeconds` INTEGER, `isShort` INTEGER NOT NULL, `isLive` INTEGER NOT NULL, `url` TEXT NOT NULL, `fetchedAtMs` INTEGER NOT NULL, `publishedAtApproximate` INTEGER NOT NULL, PRIMARY KEY(`videoId`))",
         "fields": [
           {
             "fieldPath": "videoId",
@@ -114,6 +114,12 @@
           {
             "fieldPath": "fetchedAtMs",
             "columnName": "fetchedAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publishedAtApproximate",
+            "columnName": "publishedAtApproximate",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -329,7 +335,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd15bb18ea1aa5a05cf2d5f87653656a2')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f660a96d10116a34a2b52f0e715d066c')"
     ]
   }
 }

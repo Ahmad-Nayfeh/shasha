@@ -14,9 +14,17 @@ interface SubscriptionDao {
     @Query("SELECT EXISTS(SELECT 1 FROM subscriptions WHERE channelId = :channelId)")
     fun observeIsSubscribed(channelId: String): Flow<Boolean>
 
-    /** Newest successful sync of any channel, for "updated N minutes ago". */
-    @Query("SELECT MAX(lastSyncAtMs) FROM subscriptions WHERE lastSyncError IS NULL")
-    fun observeLastSuccessfulSync(): Flow<Long?>
+    /** Each channel's last sync attempt, summed up in one row (the home screen's sync status). */
+    @Query(
+        """
+        SELECT COUNT(*) AS channels, COUNT(lastSyncAtMs) AS attempted, COUNT(lastSyncError) AS failed,
+            MAX(lastSyncAtMs) AS lastAttemptAtMs,
+            (SELECT lastSyncError FROM subscriptions WHERE lastSyncError IS NOT NULL
+                ORDER BY lastSyncAtMs DESC, channelId LIMIT 1) AS lastError
+        FROM subscriptions
+        """,
+    )
+    fun observeSyncCounts(): Flow<SyncCounts>
 
     @Query("SELECT * FROM subscriptions WHERE channelId = :channelId")
     suspend fun get(channelId: String): SubscriptionEntity?
@@ -42,3 +50,9 @@ interface SubscriptionDao {
     @Query("UPDATE subscriptions SET name = :name, avatarUrl = COALESCE(:avatarUrl, avatarUrl) WHERE channelId = :channelId")
     suspend fun updateDetails(channelId: String, name: String, avatarUrl: String?)
 }
+
+/**
+ * @property attempted channels synced at least once, successfully or not.
+ * @property failed channels whose last attempt failed; [lastError] is the newest of those errors.
+ */
+data class SyncCounts(val channels: Int, val attempted: Int, val failed: Int, val lastAttemptAtMs: Long?, val lastError: String?)

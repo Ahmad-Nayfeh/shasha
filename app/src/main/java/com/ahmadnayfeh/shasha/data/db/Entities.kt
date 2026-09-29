@@ -35,6 +35,8 @@ data class FeedItemEntity(
     val isLive: Boolean,
     val url: String,
     val fetchedAtMs: Long,
+    /** [publishedAtMs] came from a rounded "3 days ago" (the Videos-tab fallback): the upload may be older. */
+    val publishedAtApproximate: Boolean = false,
 ) {
     /** The same card model search and channel pages use. */
     fun toVideoItem() = VideoItem(
@@ -49,6 +51,7 @@ data class FeedItemEntity(
         isLive = isLive,
         isShortForm = isShort,
         url = url,
+        publishedAtIsApproximate = publishedAtApproximate,
     )
 }
 

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,21 +36,47 @@ import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.data.asSourceException
+import com.ahmadnayfeh.shasha.player.NextInPlaylist
 import com.ahmadnayfeh.shasha.player.PlaybackController
+import com.ahmadnayfeh.shasha.player.PlayerAction
+import com.ahmadnayfeh.shasha.player.WatchSession
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoaderWithText
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
+import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.playback.YouTubeMediaSourceFactory
+import kotlinx.coroutines.delay
 
 /**
  * Loads a video and plays it. Any failure, while extracting or while playing, shows the unified
  * [ErrorScreen] in place of the video.
+ *
+ * It resumes from the saved position, saves progress, adds the video to the history and offers watch
+ * later ([WatchSession]). Inside a playlist ([playlistId], [playlistIndex]) the next video follows when
+ * this one ends ([onPlayNext]); otherwise a calm end card waits for «رجوع».
  */
 @Composable
-fun PlayerScreen(videoId: String, onBack: () -> Unit, onCheckUpdates: () -> Unit) {
+fun PlayerScreen(
+    videoId: String,
+    onBack: () -> Unit,
+    onCheckUpdates: () -> Unit,
+    playlistId: String? = null,
+    playlistIndex: Int = -1,
+    onPlayNext: (videoId: String, playlistIndex: Int) -> Unit = { _, _ -> },
+) {
     val container = LocalContext.current.appContainer
     val vm: PlayerViewModel = viewModel(
         key = "player:$videoId",
-        factory = viewModelFactory { initializer { PlayerViewModel(videoId, container.streams) } },
+        factory = viewModelFactory {
+            initializer {
+                val next = if (playlistId != null && playlistIndex >= 0) NextInPlaylist(container.playQueues, container.videoSource) else null
+                PlayerViewModel(
+                    videoId = videoId,
+                    streams = container.streams,
+                    session = WatchSession(videoId, container.watch, container.appScope),
+                    nextInPlaylist = next?.let { finder -> { finder.after(playlistId!!, playlistIndex) } },
+                )
+            }
+        },
     )
     val load by vm.load.collectAsStateWithLifecycle()
 
@@ -70,7 +97,13 @@ fun PlayerScreen(videoId: String, onBack: () -> Unit, onCheckUpdates: () -> Unit
                 onCheckUpdates = onCheckUpdates,
                 onBack = onBack,
             )
-            is PlayerViewModel.Load.Ready -> VideoPlayer(state, vm, container.mediaSourceFactory, onExit = onBack)
+            is PlayerViewModel.Load.Ready -> VideoPlayer(
+                state,
+                vm,
+                container.mediaSourceFactory,
+                onExit = onBack,
+                onPlayNext = { next -> onPlayNext(next.videoId, playlistIndex + 1) },
+            )
         }
     }
 }
@@ -87,6 +120,7 @@ private fun VideoPlayer(
     vm: PlayerViewModel,
     factory: YouTubeMediaSourceFactory,
     onExit: () -> Unit,
+    onPlayNext: (VideoItem) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -103,6 +137,7 @@ private fun VideoPlayer(
             try {
                 created.start(vm.resume)
                 controller = created
+                vm.onPlaybackStarted(ready.stream.video)
             } catch (e: Exception) {
                 created.release()
                 vm.fail(e.asSourceException())
@@ -110,7 +145,11 @@ private fun VideoPlayer(
         }
 
         fun stop() {
-            controller?.let { vm.resume = it.release() }
+            controller?.let {
+                // Leaving (BACK, Home, standby): remember where this profile stopped.
+                vm.saveProgress(it.progress())
+                vm.onReleased(it.release())
+            }
             controller = null
         }
 
@@ -130,7 +169,23 @@ private fun VideoPlayer(
 
     val current = controller ?: return
     val ui by current.state.collectAsStateWithLifecycle()
+    val end by vm.end.collectAsStateWithLifecycle()
+    val savedForLater by vm.savedForLater.collectAsStateWithLifecycle()
+    val resumedFrom by vm.resumedFromMs.collectAsStateWithLifecycle()
     KeepScreenOn(ui.playWhenReady && !ui.isEnded)
+    // Progress: every 10 s while playing, and at every pause (the release saves the last position).
+    LaunchedEffect(current) {
+        while (true) {
+            delay(WatchSession.SAVE_EVERY_MS)
+            if (current.state.value.playWhenReady) vm.saveProgress(current.progress())
+        }
+    }
+    LaunchedEffect(current, ui.playWhenReady) {
+        if (!ui.playWhenReady) vm.saveProgress(current.progress())
+    }
+    LaunchedEffect(current, ui.isEnded) {
+        if (ui.isEnded) vm.onEnded(current.progress())
+    }
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         // SurfaceView: the video goes straight to the hardware composer, the cheapest path on a weak TV.
         ContentFrame(
@@ -139,12 +194,29 @@ private fun VideoPlayer(
             surfaceType = SURFACE_TYPE_SURFACE_VIEW,
             contentScale = ContentScale.Fit,
         )
-        PlayerOsd(
-            state = ui,
-            progress = current::progress,
-            onAction = current::onAction,
-            onExit = onExit,
-        )
+        val ending = end
+        if (ui.isEnded && ending != null) {
+            EndCard(
+                end = ending,
+                title = ui.title,
+                onBack = onExit,
+                onReplay = {
+                    vm.onReplay()
+                    current.onAction(PlayerAction.TogglePlayPause)
+                },
+                onPlayNext = onPlayNext,
+            )
+        } else {
+            PlayerOsd(
+                state = ui,
+                progress = current::progress,
+                onAction = current::onAction,
+                onExit = onExit,
+                savedForLater = savedForLater,
+                onToggleWatchLater = { vm.toggleWatchLater(ready.stream.video) },
+                resumedFromMs = resumedFrom,
+            )
+        }
     }
 }
 

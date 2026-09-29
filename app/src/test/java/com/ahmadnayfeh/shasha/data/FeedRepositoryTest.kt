@@ -7,15 +7,21 @@ import com.ahmadnayfeh.shasha.data.db.ShashaDatabase
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35], application = Application::class)
@@ -34,14 +40,14 @@ class FeedRepositoryTest {
     @After
     fun tearDown() = db.close()
 
-    private fun subscribe(vararg ids: String) = runBlocking { db.subscriptions().insertAll(ids.map { subscription(it) }) }
+    private fun subscribe(vararg ids: String) = runBlocking<Unit> { db.subscriptions().insertAll(ids.map { subscription(it) }) }
 
     private fun uploads(channel: String, count: Int, newest: Long = NOW_MS - HOUR_MS, step: Long = DAY_MS) {
         source.uploads[channel] = (0 until count).map { video("$channel-$it", channel, newest - it * step) }
     }
 
     @Test
-    fun syncAll_buildsTheHomeFeed_newestFirstAcrossChannels() = runBlocking {
+    fun syncAll_buildsTheHomeFeed_newestFirstAcrossChannels() = runBlocking<Unit> {
         val a = channelId(1)
         val b = channelId(2)
         subscribe(a, b)
@@ -55,11 +61,11 @@ class FeedRepositoryTest {
         assertThat(report.stoppedEarly).isFalse()
         assertThat(feed.observeHome().first().map { it.videoId }).containsExactly("b1", "a1", "a2", "b2").inOrder()
         assertThat(db.subscriptions().get(a)!!.lastSyncAtMs).isEqualTo(NOW_MS)
-        assertThat(feed.observeLastSync().first()).isEqualTo(NOW_MS)
+        assertThat(feed.observeSyncHealth().first()).isEqualTo(SyncHealth(channels = 2, attempted = 2, lastAttemptAtMs = NOW_MS))
     }
 
     @Test
-    fun prune_keepsTheNewest30PerChannel_andNothingOlderThan90Days() = runBlocking {
+    fun prune_keepsTheNewest30PerChannel_andNothingOlderThan90Days() = runBlocking<Unit> {
         val busy = channelId(1)
         val slow = channelId(2)
         subscribe(busy, slow)
@@ -80,7 +86,7 @@ class FeedRepositoryTest {
     }
 
     @Test
-    fun oneChannelFailing_doesNotFailTheRun_andItsErrorIsKeptUntilItSyncsAgain() = runBlocking {
+    fun oneChannelFailing_doesNotFailTheRun_andItsErrorIsKeptUntilItSyncsAgain() = runBlocking<Unit> {
         val ok = channelId(1)
         val broken = channelId(2)
         subscribe(ok, broken)
@@ -93,6 +99,11 @@ class FeedRepositoryTest {
         assertThat((report.results.single { it.channelId == broken } as ChannelSyncResult.Failed).error.kind).isEqualTo(SourceErrorKind.NETWORK)
         assertThat(db.subscriptions().get(broken)!!.lastSyncError).isEqualTo("NETWORK: SocketTimeoutException")
         assertThat(feed.observeHome().first()).hasSize(3)
+        val health = feed.observeSyncHealth().first()
+        assertThat(health.failed).isEqualTo(1)
+        assertThat(health.isFailing).isTrue() // half of the channels
+        assertThat(health.lastError?.kind).isEqualTo(SourceErrorKind.NETWORK)
+        assertThat(health.lastError?.technicalName).isEqualTo("SocketTimeoutException")
 
         // Failed channels are retried by the next run even if it comes soon; fresh ones are skipped.
         source.failures.clear()
@@ -105,7 +116,7 @@ class FeedRepositoryTest {
     }
 
     @Test
-    fun channelsSyncedInTheLast30Minutes_areSkipped() = runBlocking {
+    fun channelsSyncedInTheLast30Minutes_areSkipped() = runBlocking<Unit> {
         val fresh = channelId(1)
         val stale = channelId(2)
         db.subscriptions().insertAll(
@@ -120,21 +131,22 @@ class FeedRepositoryTest {
     }
 
     @Test
-    fun atMostThreeChannelsAtATime_onBackgroundPriorityThreads() = runBlocking {
+    fun atMostThreeChannelsAtATime_onBackgroundPriorityThreads() = runBlocking<Unit> {
         val ids = (1..12).map(::channelId)
         subscribe(*ids.toTypedArray())
         ids.forEach { uploads(it, 2) }
-        source.fetchDelayMs = 60
+        source.fetchDelayMs = 100
 
         val report = feed.syncAll()
 
         assertThat(report.synced).isEqualTo(12)
-        assertThat(source.maxConcurrent.get()).isEqualTo(FeedRepository.MAX_PARALLEL_CHANNELS)
+        assertThat(source.maxConcurrent.get()).isAtMost(FeedRepository.MAX_PARALLEL_CHANNELS)
+        assertThat(source.maxConcurrent.get()).isAtLeast(2) // it does run in parallel
         assertThat(source.fetchPriorities.toSet()).containsExactly(Process.THREAD_PRIORITY_BACKGROUND)
     }
 
     @Test
-    fun overlappingRuns_shareTheLimitAndDoNotRepeatWork() = runBlocking {
+    fun overlappingRuns_shareTheLimitAndDoNotRepeatWork() = runBlocking<Unit> {
         val ids = (1..9).map(::channelId)
         subscribe(*ids.toTypedArray())
         ids.forEach { uploads(it, 1) }
@@ -150,15 +162,15 @@ class FeedRepositoryTest {
     }
 
     @Test
-    fun stopWhen_startsNothingNew_finishesWhatIsInFlight_andTheNextRunContinues() = runBlocking {
+    fun stopWhen_startsNothingNew_finishesWhatIsInFlight_andTheNextRunContinues() = runBlocking<Unit> {
         val ids = (1..10).map(::channelId)
         subscribe(*ids.toTypedArray())
         ids.forEach { uploads(it, 1) }
-        var playing = false
-        source.onFetch = { if (source.fetched.size == 1) playing = true }
+        val playing = AtomicBoolean(false)
+        source.onFetch = { if (it == ids.first()) playing.set(true) } // a video starts during the first fetch
         source.fetchDelayMs = 50
 
-        val first = feed.syncAll(stopWhen = { playing })
+        val first = feed.syncAll(stopWhen = { playing.get() })
 
         assertThat(first.stoppedEarly).isTrue()
         val started = source.fetched.toList()
@@ -166,15 +178,38 @@ class FeedRepositoryTest {
         assertThat(first.synced).isEqualTo(started.size) // in-flight ones were saved
         assertThat(first.remaining).isEqualTo(10 - started.size)
 
-        playing = false
+        playing.set(false)
+        source.onFetch = {}
         now += 15 * 60_000
-        val second = feed.syncAll(stopWhen = { playing })
+        val second = feed.syncAll(stopWhen = { playing.get() })
         assertThat(second.stoppedEarly).isFalse()
         assertThat(second.results.map { it.channelId }).containsExactlyElementsIn(ids - started.toSet())
     }
 
     @Test
-    fun playingBeforeTheStart_fetchesNothing() = runBlocking {
+    fun aRunCancelledWhileStartingChannels_givesEveryPermitBack() = runBlocking<Unit> {
+        val ids = (1..6).map(::channelId)
+        subscribe(*ids.toTypedArray())
+        ids.forEach { source.failures[it] = SourceException(SourceErrorKind.NETWORK, "UnknownHostException", null, null) }
+        // One thread: the run's loop keeps it until the loop has to wait, so the channels it started have not
+        // begun when the run is cancelled (WorkManager's REPLACE, a lost network, its time limit).
+        val executor = Executors.newSingleThreadExecutor()
+        val oneThread = FeedRepository(db, source, executor.asCoroutineDispatcher(), clock = { now })
+        val run = Job()
+        var checks = 0
+        launch(run) { oneThread.syncAll(stopWhen = { if (++checks == 2) run.cancel(); false }) }.join()
+        assertThat(source.fetched).isEmpty() // a cancelled run does no work
+
+        // Every permit came back: the next runs are not stuck waiting for one.
+        source.failures.clear()
+        ids.forEach { uploads(it, 1) }
+        assertThat(withTimeout(10_000) { oneThread.syncAll() }.synced).isEqualTo(ids.size)
+        assertThat(withTimeout(10_000) { oneThread.syncChannel(ids[0]) }).isInstanceOf(ChannelSyncResult.Synced::class.java)
+        executor.shutdown()
+    }
+
+    @Test
+    fun playingBeforeTheStart_fetchesNothing() = runBlocking<Unit> {
         subscribe(channelId(1))
         val report = feed.syncAll(stopWhen = { true })
         assertThat(report.stoppedEarly).isTrue()
@@ -182,7 +217,7 @@ class FeedRepositoryTest {
     }
 
     @Test
-    fun aChannelRemovedWhileItsFeedLoads_leavesNothingBehind() = runBlocking {
+    fun aChannelRemovedWhileItsFeedLoads_leavesNothingBehind() = runBlocking<Unit> {
         val a = channelId(1)
         subscribe(a)
         uploads(a, 3)
@@ -194,7 +229,7 @@ class FeedRepositoryTest {
     }
 
     @Test
-    fun syncChannel_updatesTheNameAndRemovesVanishedUploads() = runBlocking {
+    fun syncChannel_updatesTheNameAndRemovesVanishedUploads() = runBlocking<Unit> {
         val a = channelId(1)
         subscribe(a)
         source.uploads[a] = listOf(video("gone", a, NOW_MS - HOUR_MS, channelName = "Renamed"), video("keep", a, NOW_MS - 2 * HOUR_MS))

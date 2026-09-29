@@ -20,6 +20,11 @@ data class VideoItem(
     /** Extractor short-form flag OR the url contains "/shorts/". */
     val isShortForm: Boolean,
     val url: String,
+    /**
+     * [publishedAtEpochMs] comes from a rounded text such as "2 weeks ago" (search, channel and playlist
+     * pages): the upload may be up to one unit older. RSS dates are exact.
+     */
+    val publishedAtIsApproximate: Boolean = false,
 ) : SourceItem
 
 data class ChannelItem(

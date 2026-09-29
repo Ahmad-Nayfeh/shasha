@@ -16,28 +16,29 @@ import kotlinx.coroutines.sync.withLock
  * Stream extraction with a short in-memory cache, so opening a video that was just checked (the
  * diagnostics screen checks all of its videos) starts playing without a second extraction.
  *
- * Only successes are cached, and only for a few minutes: googlevideo URLs expire after some hours
- * and a failure should always be retried for real. Concurrent calls for the same video share one
- * extraction.
+ * Only successes are cached, only the last [MAX_CACHED], and only for a few minutes: googlevideo URLs
+ * expire after some hours, a failure should always be retried for real, and each entry holds a whole
+ * extraction (every stream URL, related items, storyboards) that a TV's small heap should not keep.
+ * Concurrent calls for the same video share one extraction.
  */
 class StreamRepository(
     private val source: VideoSource,
     private val clock: () -> Long = System::currentTimeMillis,
-    private val maxAgeMs: Long = 10 * 60_000L,
+    maxAgeMs: Long = 10 * 60_000L,
 ) {
     private val scope = CoroutineScope(SupervisorJob())
     private val mutex = Mutex()
-    private val cache = HashMap<String, Pair<Long, StreamDetails>>()
+    private val cache = ExpiringCache<String, StreamDetails>(MAX_CACHED, maxAgeMs, clock)
     private val inFlight = HashMap<String, Deferred<StreamDetails>>()
 
     /** @throws SourceException for every failure (unexpected ones are wrapped as EXTRACTION_BROKEN). */
     suspend fun stream(videoId: String): StreamDetails {
         val job = mutex.withLock {
-            cache[videoId]?.let { (at, details) -> if (clock() - at <= maxAgeMs) return details else cache.remove(videoId) }
+            cache[videoId]?.let { return it }
             inFlight.getOrPut(videoId) {
                 scope.async {
                     try {
-                        source.stream(videoId).also { details -> mutex.withLock { cache[videoId] = clock() to details } }
+                        source.stream(videoId).also { details -> mutex.withLock { cache[videoId] = details } }
                     } finally {
                         mutex.withLock { inFlight.remove(videoId) }
                     }
@@ -59,8 +60,11 @@ class StreamRepository(
     }
 
     /** Takes the cached stream if it is still fresh, without any network work. */
-    suspend fun cached(videoId: String): StreamDetails? = mutex.withLock {
-        cache[videoId]?.takeIf { (at, _) -> clock() - at <= maxAgeMs }?.second
+    suspend fun cached(videoId: String): StreamDetails? = mutex.withLock { cache[videoId] }
+
+    private companion object {
+        /** The diagnostics screen's videos, checked and then played. */
+        const val MAX_CACHED = 6
     }
 }
 

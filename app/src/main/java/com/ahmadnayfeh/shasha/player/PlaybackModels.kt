@@ -40,7 +40,8 @@ data class PlayerUiState(
     val cueText: String? = null,
 )
 
-data class PlaybackProgress(val positionMs: Long, val bufferedMs: Long, val durationMs: Long) {
+/** [isLive]: a live stream, whose [durationMs] is only the live window Media3 can seek in (DVR). */
+data class PlaybackProgress(val positionMs: Long, val bufferedMs: Long, val durationMs: Long, val isLive: Boolean = false) {
     companion object {
         val Zero = PlaybackProgress(0, 0, 0)
     }

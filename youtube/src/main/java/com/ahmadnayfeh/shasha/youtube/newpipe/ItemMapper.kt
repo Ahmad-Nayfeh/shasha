@@ -30,7 +30,16 @@ internal object ItemMapper {
         else -> null
     }
 
-    fun toVideo(item: StreamInfoItem, fallbackChannelId: String? = null, fallbackChannelName: String? = null): VideoItem? {
+    /**
+     * @param exactDates the item's date is a timestamp (RSS), not a rounded text such as "2 weeks ago" (search,
+     *   channel and playlist pages), which NewPipe turns into the newest time it allows.
+     */
+    fun toVideo(
+        item: StreamInfoItem,
+        fallbackChannelId: String? = null,
+        fallbackChannelName: String? = null,
+        exactDates: Boolean = false,
+    ): VideoItem? {
         val url = item.url ?: return null
         val videoId = YouTubeLinkParser.videoIdFromUrl(url) ?: return null
         return VideoItem(
@@ -45,6 +54,7 @@ internal object ItemMapper {
             isLive = item.streamType.isLive(),
             isShortForm = item.isShortFormContent || isShortsUrl(url),
             url = url,
+            publishedAtIsApproximate = !exactDates,
         )
     }
 

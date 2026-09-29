@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -30,18 +31,19 @@ fun Thumbnail(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(16.dp),
     showLogo: Boolean = true,
+    logoSize: Dp = 120.dp,
 ) {
     Box(
         modifier
             .clip(shape)
-            .background(Brush.linearGradient(listOf(ShashaColors.SurfaceHigh, ShashaColors.Surface))),
+            .background(PlaceholderBrush),
         contentAlignment = Alignment.Center,
     ) {
         if (showLogo) {
             Image(
                 painterResource(R.drawable.splash_logo),
                 contentDescription = null,
-                modifier = Modifier.size(120.dp).alpha(0.22f),
+                modifier = Modifier.size(logoSize).alpha(0.22f),
             )
         }
         if (url != null) {
@@ -54,3 +56,5 @@ fun Thumbnail(
         }
     }
 }
+
+private val PlaceholderBrush = Brush.linearGradient(listOf(ShashaColors.SurfaceHigh, ShashaColors.Surface))

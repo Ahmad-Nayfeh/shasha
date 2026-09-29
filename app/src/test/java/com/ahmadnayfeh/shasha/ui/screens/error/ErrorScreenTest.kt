@@ -1,6 +1,8 @@
 package com.ahmadnayfeh.shasha.ui.screens.error
 
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
@@ -14,6 +16,7 @@ import androidx.compose.ui.test.pressKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.Fixtures
 import com.ahmadnayfeh.shasha.TV_1080P
+import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.google.common.truth.Truth.assertThat
@@ -91,5 +94,31 @@ class ErrorScreenTest {
         show(SourceErrorKind.NETWORK, "UnknownHostException")
         compose.onNodeWithTag("error_title").assertTextEquals("لا يوجد اتصال بالإنترنت")
         compose.onNodeWithText("UnknownHostException").assertIsDisplayed()
+    }
+
+    @Test
+    fun moreActionsSitBetweenBackAndCheckUpdates() {
+        var unsubscribes = 0
+        compose.setContent {
+            ShashaTheme {
+                ErrorScreen(
+                    error = Fixtures.error(SourceErrorKind.ACCOUNT_TERMINATED, "AccountTerminatedException"),
+                    extractorVersion = "v0.26.5",
+                    onCheckUpdates = { updateChecks++ },
+                    onBack = { backs++ },
+                ) {
+                    ShashaButton("إلغاء الاشتراك", { unsubscribes++ }, modifier = Modifier.testTag("unsubscribe"))
+                }
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("error_back").assertIsFocused()
+        press(Key.DirectionLeft)
+        compose.onNodeWithTag("unsubscribe").assertIsFocused()
+        press(Key.DirectionCenter)
+        assertThat(unsubscribes).isEqualTo(1)
+        press(Key.DirectionLeft)
+        compose.onNodeWithTag("error_check_updates").assertIsFocused()
+        assertThat(backs + updateChecks).isEqualTo(0)
     }
 }

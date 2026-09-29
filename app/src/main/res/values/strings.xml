@@ -86,4 +86,207 @@
     <string name="player_speed_normal">عادية</string>
     <string name="player_subtitles_off">إيقاف</string>
     <string name="player_subtitles_auto">%1$s (تلقائية)</string>
+    <string name="player_watch_later">شاهد لاحقاً</string>
+    <string name="player_watch_later_saved">محفوظ</string>
+    <string name="player_watch_later_add">أضِف</string>
+    <string name="player_resumed_from">استُكمل من %1$s</string>
+    <string name="player_ended_title">انتهى الفيديو</string>
+    <string name="player_playlist_ended_title">انتهت قائمة التشغيل</string>
+    <string name="player_up_next">التالي في القائمة</string>
+    <string name="player_play_now">تشغيل الآن</string>
+
+    <!-- Counted phrases: string-arrays with one item per Arabic plural form, in this order:
+         ONE (1), TWO (2), FEW (3–10), MANY (11–99), OTHER (100+). Chosen in code (ui/format/ArabicPlural),
+         because Android's plurals follow the system language, which may not be Arabic. -->
+    <string-array name="ago_minutes">
+        <item>منذ دقيقة</item>
+        <item>منذ دقيقتين</item>
+        <item>منذ %1$s دقائق</item>
+        <item>منذ %1$s دقيقة</item>
+        <item>منذ %1$s دقيقة</item>
+    </string-array>
+    <string-array name="ago_hours">
+        <item>منذ ساعة</item>
+        <item>منذ ساعتين</item>
+        <item>منذ %1$s ساعات</item>
+        <item>منذ %1$s ساعة</item>
+        <item>منذ %1$s ساعة</item>
+    </string-array>
+    <string-array name="ago_days">
+        <item>منذ يوم</item>
+        <item>منذ يومين</item>
+        <item>منذ %1$s أيام</item>
+        <item>منذ %1$s يوماً</item>
+        <item>منذ %1$s يوم</item>
+    </string-array>
+    <string-array name="ago_weeks">
+        <item>منذ أسبوع</item>
+        <item>منذ أسبوعين</item>
+        <item>منذ %1$s أسابيع</item>
+        <item>منذ %1$s أسبوعاً</item>
+        <item>منذ %1$s أسبوع</item>
+    </string-array>
+    <string-array name="ago_months">
+        <item>منذ شهر</item>
+        <item>منذ شهرين</item>
+        <item>منذ %1$s أشهر</item>
+        <item>منذ %1$s شهراً</item>
+        <item>منذ %1$s شهر</item>
+    </string-array>
+    <string-array name="ago_years">
+        <item>منذ سنة</item>
+        <item>منذ سنتين</item>
+        <item>منذ %1$s سنوات</item>
+        <item>منذ %1$s سنة</item>
+        <item>منذ %1$s سنة</item>
+    </string-array>
+    <string-array name="count_videos">
+        <item>فيديو واحد</item>
+        <item>فيديوهان</item>
+        <item>%1$s فيديوهات</item>
+        <item>%1$s فيديو</item>
+        <item>%1$s فيديو</item>
+    </string-array>
+    <string-array name="count_channels">
+        <item>قناة واحدة</item>
+        <item>قناتان</item>
+        <item>%1$s قنوات</item>
+        <item>%1$s قناة</item>
+        <item>%1$s قناة</item>
+    </string-array>
+    <string-array name="count_subscribers">
+        <item>مشترك واحد</item>
+        <item>مشتركان</item>
+        <item>%1$s مشتركين</item>
+        <item>%1$s مشتركاً</item>
+        <item>%1$s مشترك</item>
+    </string-array>
+    <string-array name="starts_in_seconds">
+        <item>يبدأ خلال ثانية</item>
+        <item>يبدأ خلال ثانيتين</item>
+        <item>يبدأ خلال %1$s ثوانٍ</item>
+        <item>يبدأ خلال %1$s ثانية</item>
+        <item>يبدأ خلال %1$s ثانية</item>
+    </string-array>
+    <string name="time_now">الآن</string>
+    <string name="watched_ago">شاهدته %1$s</string>
+    <string name="added_ago">أضفته %1$s</string>
+    <string name="subscribers_compact">%1$s مشترك</string>
+    <string name="number_thousands">%1$s ألف</string>
+    <string name="number_millions">%1$s مليون</string>
+    <string name="number_billions">%1$s مليار</string>
+
+    <!-- Common (browsing) -->
+    <string name="action_cancel">إلغاء</string>
+    <string name="action_clear">مسح</string>
+    <string name="action_retry">إعادة المحاولة</string>
+    <string name="action_subscribe">اشتراك</string>
+    <string name="action_subscribed">مشترك</string>
+    <string name="badge_live">مباشر</string>
+    <string name="paging_error">تعذّر تحميل المزيد</string>
+
+    <!-- Navigation rail -->
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_search">البحث</string>
+    <string name="nav_subscriptions">الاشتراكات</string>
+    <string name="nav_watch_later">شاهد لاحقاً</string>
+    <string name="nav_history">السجل</string>
+    <string name="nav_settings">الإعدادات</string>
+
+    <!-- Home -->
+    <string name="home_title">الرئيسية</string>
+    <string name="home_subtitle">أحدث ما نشرته قنواتك</string>
+    <string name="home_refresh">تحديث</string>
+    <string name="home_syncing">جارٍ التحديث…</string>
+    <string name="home_last_sync">آخر تحديث: %1$s</string>
+    <string name="home_never_synced">لم يُحدَّث بعد</string>
+    <string name="home_empty_title">اشتراكاتك تظهر هنا</string>
+    <string name="home_empty_body">شاشة لا تسجّل الدخول إلى يوتيوب. انقل قائمة اشتراكاتك مرة واحدة من Google Takeout، أو ابحث عن قناة واشترك فيها، وتظهر هنا أحدث فيديوهاتها.</string>
+    <string name="home_step_1">صدّر «الاشتراكات» من takeout.google.com</string>
+    <string name="home_step_2">انقل ملف subscriptions.csv إلى الشاشة</string>
+    <string name="home_step_3">استورده، وتصل الفيديوهات خلال دقائق</string>
+    <string name="home_empty_import">استيراد الاشتراكات</string>
+    <string name="home_empty_search">ابحث عن قناة</string>
+    <string name="home_loading_title">جارٍ جلب أحدث الفيديوهات</string>
+    <string name="home_loading_body">تُحدَّث القنوات ثلاثاً ثلاثاً كي لا تُثقل على الشاشة، وتظهر الفيديوهات هنا فور وصولها.</string>
+    <string name="home_no_videos_title">لا فيديوهات بعد</string>
+    <string name="home_no_videos_body">لم يصل شيء من قنواتك حتى الآن. جرّب التحديث بعد قليل.</string>
+    <string name="home_sync_failures">تعذّر تحديث %1$s من القنوات</string>
+    <string name="home_sync_error_body">تعذّر جلب أحدث الفيديوهات من قنواتك في آخر تحديث.</string>
+
+    <!-- Search -->
+    <string name="search_hint">ابحث في يوتيوب</string>
+    <string name="search_filter_all">الكل</string>
+    <string name="search_filter_videos">فيديوهات</string>
+    <string name="search_filter_channels">قنوات</string>
+    <string name="search_filter_playlists">قوائم تشغيل</string>
+    <string name="search_idle_title">عمّ تبحث؟</string>
+    <string name="search_idle_body">اضغط OK على خانة البحث لتظهر لوحة المفاتيح، ثم اضغط زر البحث فيها.</string>
+    <string name="search_loading">جارٍ البحث…</string>
+    <!-- The query sits in FSI…PDI so that English text keeps its place inside the Arabic sentence. -->
+    <string name="search_no_results">لا نتائج لـ «&#x2068;%1$s&#x2069;»</string>
+    <string name="search_no_results_body">جرّب كلمات أخرى أو نوعاً آخر من النتائج.</string>
+
+    <!-- Channel and playlist pages -->
+    <string name="channel_loading">جارٍ جلب الفيديوهات…</string>
+    <string name="channel_no_videos">لا فيديوهات في هذه القناة.</string>
+    <string name="channel_unsubscribe">إلغاء الاشتراك</string>
+    <string name="playlist_label">قائمة تشغيل</string>
+    <string name="playlist_play_all">تشغيل الكل</string>
+    <string name="playlist_loading">جارٍ فتح قائمة التشغيل…</string>
+    <string name="playlist_empty">قائمة التشغيل فارغة.</string>
+
+    <!-- Watch later, history, subscriptions -->
+    <string name="watch_later_title">شاهد لاحقاً</string>
+    <string name="watch_later_empty_title">لا شيء محفوظ بعد</string>
+    <string name="watch_later_empty_body">اضغط مطوّلاً على OK فوق أي فيديو، أو اضغط زر القائمة، ثم اختر «شاهد لاحقاً». ويمكنك الحفظ من المشغّل أيضاً.</string>
+    <string name="history_title">السجل</string>
+    <string name="history_clear">مسح السجل</string>
+    <string name="history_clear_confirm_title">مسح سجل المشاهدة؟</string>
+    <string name="history_clear_confirm_body">تُحذف كل الفيديوهات من السجل ولا يمكن التراجع. مواضع الاستكمال تبقى كما هي.</string>
+    <string name="history_empty_title">السجل فارغ</string>
+    <string name="history_empty_body">الفيديوهات التي تشاهدها تظهر هنا، الأحدث أولاً.</string>
+    <string name="subscriptions_title">الاشتراكات</string>
+    <string name="subscriptions_import">استيراد</string>
+    <string name="subscriptions_empty_title">لا اشتراكات بعد</string>
+    <string name="subscriptions_empty_body">استورد قائمة اشتراكاتك من Google Takeout، أو ابحث عن قناة واضغط «اشتراك».</string>
+
+    <!-- Card context menu (OK held, or the MENU key) -->
+    <string name="menu_watch_later_add">شاهد لاحقاً</string>
+    <string name="menu_watch_later_remove">إزالة من «شاهد لاحقاً»</string>
+    <string name="menu_go_to_channel">اذهب إلى القناة</string>
+
+    <!-- Settings (placeholder until the settings phase) -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="settings_subtitle">بقية الإعدادات تصل مع المراحل القادمة</string>
+    <string name="settings_import">استيراد الاشتراكات</string>
+    <string name="settings_import_body">ملف subscriptions.csv من Google Takeout، عبر ADB أو من ذاكرة الشاشة</string>
+    <string name="settings_diagnostics">تشخيص</string>
+    <string name="settings_diagnostics_body">فيديوهات تجريبية تفحص التشغيل عندما يتعطّل يوتيوب</string>
+    <string name="settings_version">شاشة %1$s · مكتبة الاستخراج %2$s</string>
+
+    <!-- Import subscriptions -->
+    <string name="import_title">استيراد الاشتراكات</string>
+    <string name="import_subtitle">في takeout.google.com اختر «YouTube وYouTube Music» ثم «الاشتراكات» فقط.</string>
+    <string name="import_adb_title">من حاسوبك عبر ADB</string>
+    <string name="import_adb_body">نفّذ هذا الأمر، وتلتقط الشاشة الملف وتستورده وحدها:</string>
+    <string name="import_adb_waiting">في انتظار الملف…</string>
+    <string name="import_adb_found">وصل الملف، جارٍ الاستيراد…</string>
+    <string name="import_file_title">من ملف على الشاشة</string>
+    <string name="import_file_body">اختر subscriptions.csv (أو ملف zip الذي نزّلته) بمتصفح ملفات الشاشة.</string>
+    <string name="import_file_pick">اختيار ملف</string>
+    <string name="import_file_unavailable">لا يوجد متصفح ملفات على هذه الشاشة. استخدم أمر ADB أعلاه.</string>
+    <string name="import_working">جارٍ الاستيراد…</string>
+    <string name="import_done_title">تم الاستيراد</string>
+    <string name="import_done_added">أُضيفت %1$s</string>
+    <string name="import_done_existing">مضافة من قبل: %1$s</string>
+    <string name="import_done_invalid">أسطر غير صالحة: %1$s</string>
+    <string name="import_go_home">إلى الرئيسية</string>
+    <string name="import_error_title">تعذّر الاستيراد</string>
+    <string name="import_error_empty">الملف فارغ.</string>
+    <string name="import_error_too_large">الملف أكبر مما يُتوقَّع لقائمة اشتراكات.</string>
+    <string name="import_error_broken_zip">ملف zip تالف أو غير مكتمل.</string>
+    <string name="import_error_no_csv">لا يوجد ملف CSV داخل ملف zip.</string>
+    <string name="import_error_no_channels">لم نجد أي قناة في الملف. تأكّد أنه subscriptions.csv من Takeout.</string>
+    <string name="import_error_read">تعذّرت قراءة الملف.</string>
 </resources>

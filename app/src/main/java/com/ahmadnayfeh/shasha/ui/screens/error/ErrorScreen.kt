@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -58,7 +59,8 @@ import com.ahmadnayfeh.shasha.youtube.SourceException
  * The ONE error screen of the app (SPEC: "شاشة الخطأ الموحدة"). Every [SourceException], from browsing
  * or from playback, ends here: nothing fails silently.
  *
- * Initial focus is on "رجوع" so an accidental OK press does not start anything.
+ * Initial focus is on "رجوع" so an accidental OK press does not start anything. [moreActions] sit
+ * between the two buttons (e.g. «إلغاء الاشتراك» on the page of a subscribed channel that is gone).
  */
 @Composable
 fun ErrorScreen(
@@ -67,11 +69,49 @@ fun ErrorScreen(
     onCheckUpdates: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    moreActions: @Composable RowScope.() -> Unit = {},
 ) {
-    val kind = error.kind
     val backFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { backFocus.requestFocus() } }
+    ErrorLayout(error, extractorVersion, modifier.testTag("error_screen")) {
+        ShashaButton(
+            text = stringResource(R.string.action_back),
+            onClick = onBack,
+            icon = ShashaIcons.Back,
+            modifier = Modifier.focusRequester(backFocus).testTag("error_back"),
+        )
+        moreActions()
+        CheckUpdatesButton(onCheckUpdates)
+    }
+}
 
+/** «فحص التحديثات», the way out of every YouTube breakage (SPEC §6). */
+@Composable
+fun CheckUpdatesButton(onClick: () -> Unit, modifier: Modifier = Modifier, compact: Boolean = false) {
+    ShashaButton(
+        text = stringResource(R.string.action_check_updates),
+        onClick = onClick,
+        icon = ShashaIcons.SystemUpdate,
+        primary = true,
+        compact = compact,
+        modifier = modifier.testTag("error_check_updates"),
+    )
+}
+
+/**
+ * The unified error's picture, title, explanation and facts (error name, extractor version) with the
+ * caller's own [actions]. Also used inside the home tab, where focus follows the tab's rules and there
+ * is nothing to go back from.
+ */
+@Composable
+fun ErrorLayout(
+    error: SourceException,
+    extractorVersion: String,
+    modifier: Modifier = Modifier,
+    explanation: String = stringResource(ErrorTexts.explanation(error.kind)),
+    actions: @Composable RowScope.() -> Unit,
+) {
+    val kind = error.kind
     val appear = remember { Animatable(0f) }
     LaunchedEffect(Unit) { appear.animateTo(1f, tween(durationMillis = 450, easing = FastOutSlowInEasing)) }
 
@@ -90,8 +130,7 @@ fun ErrorScreen(
                     ),
                 )
             }
-            .padding(ShashaDimens.ScreenPadding)
-            .testTag("error_screen"),
+            .padding(ShashaDimens.ScreenPadding),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -114,7 +153,7 @@ fun ErrorScreen(
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = stringResource(ErrorTexts.explanation(kind)),
+                text = explanation,
                 style = MaterialTheme.typography.bodyLarge,
                 color = ShashaColors.Muted,
                 textAlign = TextAlign.Center,
@@ -127,21 +166,7 @@ fun ErrorScreen(
                 extractorVersion = extractorVersion,
             )
             Spacer(Modifier.height(28.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                ShashaButton(
-                    text = stringResource(R.string.action_back),
-                    onClick = onBack,
-                    icon = ShashaIcons.Back,
-                    modifier = Modifier.focusRequester(backFocus).testTag("error_back"),
-                )
-                ShashaButton(
-                    text = stringResource(R.string.action_check_updates),
-                    onClick = onCheckUpdates,
-                    icon = ShashaIcons.SystemUpdate,
-                    primary = true,
-                    modifier = Modifier.testTag("error_check_updates"),
-                )
-            }
+            Row(horizontalArrangement = Arrangement.spacedBy(20.dp), content = actions)
         }
     }
 }

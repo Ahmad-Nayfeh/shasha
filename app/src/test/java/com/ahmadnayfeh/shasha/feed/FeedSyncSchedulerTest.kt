@@ -8,6 +8,7 @@ import androidx.work.Configuration
 import androidx.work.NetworkType
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.impl.WorkManagerImpl
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.google.common.truth.Truth.assertThat
@@ -33,7 +34,10 @@ class FeedSyncSchedulerTest {
     }
 
     @After
-    fun tearDown() = WorkManagerTestInitHelper.closeWorkDatabase()
+    fun tearDown() {
+        WorkManagerTestInitHelper.closeWorkDatabase()
+        WorkManagerImpl.setDelegate(null) // later test classes start without WorkManager, as Robolectric does
+    }
 
     private fun pending(name: String) = workManager.getWorkInfosForUniqueWork(name).get().filter { it.state == WorkInfo.State.ENQUEUED }
 

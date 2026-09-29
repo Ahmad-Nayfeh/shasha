@@ -63,13 +63,19 @@ class DaoTest {
     }
 
     @Test
-    fun subscriptions_lastSuccessfulSync_ignoresFailedChannels() = runTest {
+    fun subscriptions_syncCounts_sumUpEachChannelsLastAttempt() = runTest {
         val dao = db.subscriptions()
-        assertThat(dao.observeLastSuccessfulSync().first()).isNull()
-        dao.insertAll(listOf(subscription(channelId(1)), subscription(channelId(2))))
-        dao.setSyncResult(channelId(1), NOW_MS - 5_000, null)
-        dao.setSyncResult(channelId(2), NOW_MS, "NETWORK: SocketTimeoutException")
-        assertThat(dao.observeLastSuccessfulSync().first()).isEqualTo(NOW_MS - 5_000)
+        assertThat(dao.observeSyncCounts().first()).isEqualTo(SyncCounts(0, 0, 0, null, null))
+        dao.insertAll((1..4).map { subscription(channelId(it)) })
+        dao.setSyncResult(channelId(1), NOW_MS - 9_000, "BOT_CHECK: SignInConfirmNotBotException")
+        dao.setSyncResult(channelId(2), NOW_MS - 5_000, null)
+        dao.setSyncResult(channelId(3), NOW_MS, "NETWORK: SocketTimeoutException")
+        // Channel 4 was never synced. The newest failure is reported, and the newest attempt, failed or not.
+        assertThat(dao.observeSyncCounts().first())
+            .isEqualTo(SyncCounts(channels = 4, attempted = 3, failed = 2, lastAttemptAtMs = NOW_MS, lastError = "NETWORK: SocketTimeoutException"))
+        dao.setSyncResult(channelId(3), NOW_MS + 1_000, null)
+        assertThat(dao.observeSyncCounts().first())
+            .isEqualTo(SyncCounts(4, 3, 1, NOW_MS + 1_000, "BOT_CHECK: SignInConfirmNotBotException"))
     }
 
     @Test

@@ -43,7 +43,10 @@ object ShashaFocus {
         Border(BorderStroke(width, color), inset = 0.dp, shape = shape)
 }
 
-/** A focusable card-like surface (list rows, tiles, menu options). */
+/**
+ * A focusable card-like surface (list rows, tiles, menu options). [onLongClick] fires when OK is held
+ * (the remote repeats the key), e.g. to open a card's context menu.
+ */
 @Composable
 fun FocusSurface(
     onClick: () -> Unit,
@@ -52,21 +55,24 @@ fun FocusSurface(
     containerColor: Color = ShashaColors.Surface,
     focusedContainerColor: Color = ShashaColors.SurfaceHigh,
     contentColor: Color = ShashaColors.Text,
+    focusedContentColor: Color = contentColor,
     scale: Float = ShashaFocus.CardScale,
     interactionSource: MutableInteractionSource? = null,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Surface(
         onClick = onClick,
+        onLongClick = onLongClick,
         modifier = modifier,
         shape = ClickableSurfaceDefaults.shape(shape = shape),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = containerColor,
             contentColor = contentColor,
             focusedContainerColor = focusedContainerColor,
-            focusedContentColor = contentColor,
+            focusedContentColor = focusedContentColor,
             pressedContainerColor = focusedContainerColor,
-            pressedContentColor = contentColor,
+            pressedContentColor = focusedContentColor,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = scale, pressedScale = scale * 0.98f),
         border = ClickableSurfaceDefaults.border(focusedBorder = ShashaFocus.border(shape)),
@@ -78,7 +84,8 @@ fun FocusSurface(
 
 /**
  * Pill button with an optional leading icon. [primary] buttons are teal at rest; the others turn teal
- * only when focused, so the focused one is always unmistakable from the sofa.
+ * only when focused, so the focused one is always unmistakable from the sofa. [compact] is the smaller
+ * size used inside cards.
  */
 @Composable
 fun ShashaButton(
@@ -87,6 +94,7 @@ fun ShashaButton(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     primary: Boolean = false,
+    compact: Boolean = false,
 ) {
     val shape = RoundedCornerShape(percent = 50)
     Button(
@@ -107,12 +115,16 @@ fun ShashaButton(
             border = Border(BorderStroke(1.dp, ShashaColors.Outline), shape = shape),
             focusedBorder = Border.None,
         ),
-        contentPadding = PaddingValues(start = if (icon != null) 20.dp else 28.dp, end = 28.dp, top = 12.dp, bottom = 12.dp),
+        contentPadding = if (compact) {
+            PaddingValues(start = if (icon != null) 14.dp else 20.dp, end = 20.dp, top = 6.dp, bottom = 6.dp)
+        } else {
+            PaddingValues(start = if (icon != null) 20.dp else 28.dp, end = 28.dp, top = 12.dp, bottom = 12.dp)
+        },
     ) {
         if (icon != null) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
-            Spacer(Modifier.width(10.dp))
+            Icon(icon, contentDescription = null, modifier = Modifier.size(if (compact) 18.dp else 22.dp))
+            Spacer(Modifier.width(if (compact) 6.dp else 10.dp))
         }
-        Text(text, style = MaterialTheme.typography.titleMedium)
+        Text(text, style = if (compact) MaterialTheme.typography.labelLarge else MaterialTheme.typography.titleMedium)
     }
 }

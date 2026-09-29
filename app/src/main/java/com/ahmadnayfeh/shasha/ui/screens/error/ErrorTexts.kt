@@ -43,6 +43,12 @@ object ErrorTexts {
         SourceErrorKind.EXTRACTION_BROKEN -> R.string.error_short_extraction_broken
     }
 
+    /**
+     * Whether a newer app (extractor) may fix it: not for a missing network or YouTube asking to slow down.
+     * The unified error screen offers «فحص التحديثات» for every kind; smaller places only for these.
+     */
+    fun suggestsUpdate(kind: SourceErrorKind): Boolean = kind != SourceErrorKind.NETWORK && kind != SourceErrorKind.RATE_LIMITED
+
     /** "HTTP 403 · BLOCKED_403": the exception's technical name plus our category, for bug reports. */
     fun technical(kind: SourceErrorKind, technicalName: String): String =
         if (technicalName.isBlank() || technicalName == kind.name) kind.name else "$technicalName · ${kind.name}"

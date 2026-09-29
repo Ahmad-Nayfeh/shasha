@@ -157,7 +157,7 @@ internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
                 val info = FeedInfo.getInfo(service, channelUrl(channelId))
                 val fallbackName = info.name?.takeIf { it.isNotBlank() }
                 info.relatedItems.mapNotNull {
-                    ItemMapper.toVideo(it, channelId.takeIf(YouTubeLinkParser::isChannelId), fallbackName)
+                    ItemMapper.toVideo(it, channelId.takeIf(YouTubeLinkParser::isChannelId), fallbackName, exactDates = true)
                 }.takeIf { it.isNotEmpty() }
             } catch (e: Exception) {
                 ensureActive()
@@ -251,7 +251,11 @@ internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
     }
 }
 
-/** NewPipe keeps its downloader and locale in static state: set them exactly once. */
+/**
+ * NewPipe keeps its downloader and locale in static state: set them exactly once. Note: v0.26.5's YouTube
+ * service supports only en-GB and falls back to it, so YouTube's texts ("2 weeks ago", view counts) come in
+ * English whatever is preferred here, and NewPipe's English parsers read them.
+ */
 internal object NewPipeInit {
     private var downloader: NewPipeDownloader? = null
 

@@ -30,16 +30,15 @@ internal object FeedMerge {
         val known = existing.associateBy { it.videoId }
         val newName = channelNameOf(fetched, channel.channelId)?.takeIf { it != channel.name }
         val name = newName ?: channel.name
-        val merged = fetched.distinctBy { it.videoId }.map { video ->
+        val merged = fetched.distinctBy { it.videoId }.mapNotNull { video ->
             val old = known[video.videoId]
+            val date = dateOf(video, old, nowMs) ?: return@mapNotNull null
             FeedItemEntity(
                 videoId = video.videoId,
                 channelId = channel.channelId,
                 channelName = video.channelName?.trim()?.takeIf { it.isNotEmpty() } ?: name,
                 title = video.title.ifBlank { old?.title.orEmpty() },
-                // The first date seen sticks: RSS dates are exact, the Videos-tab fallback's ("3 days ago")
-                // are not, and switching between the two must not reorder the feed.
-                publishedAtMs = old?.publishedAtMs ?: video.publishedAtEpochMs ?: nowMs,
+                publishedAtMs = date.ms,
                 thumbnailUrl = video.thumbnailUrl ?: old?.thumbnailUrl,
                 // RSS has no durations; keep one learned from the Videos tab.
                 durationSeconds = video.durationSeconds ?: old?.durationSeconds,
@@ -47,17 +46,43 @@ internal object FeedMerge {
                 isLive = video.isLive,
                 url = video.url,
                 fetchedAtMs = nowMs,
+                publishedAtApproximate = date.approximate,
             )
         }
-        // The fetched list is the channel's newest uploads: anything newer than its oldest entry that is
-        // missing from it is gone from the channel. Shorts and lives are spared, the Videos-tab fallback
-        // does not list them.
-        val windowStart = merged.minOfOrNull { it.publishedAtMs }
+        return Outcome(merged.filter { it.publishedAtMs >= cutoffMs }, vanished(fetched, merged, existing), newName)
+    }
+
+    private class Dated(val ms: Long, val approximate: Boolean)
+
+    /**
+     * An exact date (RSS) replaces an approximate one (the Videos tab's "3 days ago"); otherwise the first
+     * date seen sticks: the same rounded text read again later is no better, and must not reorder the feed.
+     * An upload without any date is left out (it would head the feed as "now") unless it is live now.
+     */
+    private fun dateOf(video: VideoItem, old: FeedItemEntity?, nowMs: Long): Dated? {
+        val fetched = video.publishedAtEpochMs
+        val exactNow = fetched != null && !video.publishedAtIsApproximate
+        return when {
+            old != null && !(old.publishedAtApproximate && exactNow) -> Dated(old.publishedAtMs, old.publishedAtApproximate)
+            fetched != null -> Dated(fetched, video.publishedAtIsApproximate)
+            video.isLive -> Dated(nowMs, approximate = true)
+            else -> null
+        }
+    }
+
+    /**
+     * Uploads gone from the channel: missing from a list that should hold them. Only an RSS list (exact
+     * dates) holds every upload of its window, shorts and streams included; the Videos-tab fallback lists
+     * neither, so absence from it proves nothing. And a row dated from a rounded text may be older than its
+     * date says, i.e. outside the window. Shorts and lives are spared as before.
+     */
+    private fun vanished(fetched: List<VideoItem>, merged: List<FeedItemEntity>, existing: List<FeedItemEntity>): List<String> {
+        if (merged.isEmpty() || fetched.any { it.publishedAtIsApproximate }) return emptyList()
+        val windowStart = merged.minOf { it.publishedAtMs }
         val fetchedIds = merged.mapTo(HashSet()) { it.videoId }
-        val removed = if (windowStart == null) emptyList() else existing.filter {
-            it.videoId !in fetchedIds && it.publishedAtMs > windowStart && !it.isShort && !it.isLive
+        return existing.filter {
+            it.videoId !in fetchedIds && !it.publishedAtApproximate && it.publishedAtMs > windowStart && !it.isShort && !it.isLive
         }.map { it.videoId }
-        return Outcome(merged.filter { it.publishedAtMs >= cutoffMs }, removed, newName)
     }
 
     /** The name most of the channel's own uploads carry. */

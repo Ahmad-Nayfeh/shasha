@@ -77,14 +77,19 @@ class PlaybackController(
     private val listener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) = _state.update { it.copy(isPlaying = isPlaying) }
 
-        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) =
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             _state.update { it.copy(playWhenReady = playWhenReady) }
+            signalPlaying()
+        }
 
-        override fun onPlaybackStateChanged(playbackState: Int) = _state.update {
-            it.copy(
-                isBuffering = playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_IDLE,
-                isEnded = playbackState == Player.STATE_ENDED,
-            )
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            _state.update {
+                it.copy(
+                    isBuffering = playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_IDLE,
+                    isEnded = playbackState == Player.STATE_ENDED,
+                )
+            }
+            signalPlaying()
         }
 
         override fun onTracksChanged(tracks: Tracks) {
@@ -164,14 +169,29 @@ class PlaybackController(
             released = true
             player.removeListener(listener)
             player.release()
+            PlayingSignal.update(this, wantsToPlay = false)
         }
         return resume
+    }
+
+    /**
+     * Tells the app a video is playing (SPEC §2: the feed sync stands down meanwhile): while it wants to
+     * play, buffering included; not when paused, ended, failed (idle) or released.
+     */
+    private fun signalPlaying() {
+        val state = player.playbackState
+        PlayingSignal.update(this, player.playWhenReady && (state == Player.STATE_BUFFERING || state == Player.STATE_READY))
     }
 
     fun progress(): PlaybackProgress {
         if (released) return PlaybackProgress.Zero
         val duration = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L
-        return PlaybackProgress(player.currentPosition.coerceAtLeast(0), player.bufferedPosition.coerceAtLeast(0), duration)
+        return PlaybackProgress(
+            positionMs = player.currentPosition.coerceAtLeast(0),
+            bufferedMs = player.bufferedPosition.coerceAtLeast(0),
+            durationMs = duration,
+            isLive = stream.video.isLive || player.isCurrentMediaItemLive,
+        )
     }
 
     fun onAction(action: PlayerAction) {

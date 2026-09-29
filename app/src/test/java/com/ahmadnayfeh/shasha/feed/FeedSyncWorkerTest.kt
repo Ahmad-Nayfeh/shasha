@@ -11,6 +11,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import androidx.work.impl.WorkManagerImpl
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
@@ -28,6 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -65,6 +67,7 @@ class FeedSyncWorkerTest {
     fun tearDown() {
         db.close()
         WorkManagerTestInitHelper.closeWorkDatabase()
+        WorkManagerImpl.setDelegate(null) // later test classes start without WorkManager, as Robolectric does
     }
 
     private fun worker(): FeedSyncWorker = TestListenableWorkerBuilder<FeedSyncWorker>(context)
@@ -82,8 +85,8 @@ class FeedSyncWorkerTest {
     private fun ListenableWorker.Result.output() = (this as ListenableWorker.Result.Success).outputData
 
     @Test
-    fun syncsEveryChannel_atMostThreeAtATime() = runBlocking {
-        source.fetchDelayMs = 40
+    fun syncsEveryChannel_atMostThreeAtATime() = runBlocking<Unit> {
+        source.fetchDelayMs = 80
 
         val output = worker().doWork().output()
 
@@ -91,12 +94,12 @@ class FeedSyncWorkerTest {
         assertThat(output.getBoolean(FeedSyncWorker.KEY_STOPPED_FOR_PLAYBACK, true)).isFalse()
         assertThat(source.maxConcurrent.get()).isAtMost(3)
         assertThat(source.maxConcurrent.get()).isAtLeast(2) // it does run in parallel
-        assertThat(feed.observeHomeOnce()).hasSize(40)
+        assertThat(feed.observeHome().first()).hasSize(40)
         assertThat(pendingCatchUps()).isEmpty()
     }
 
     @Test
-    fun aVideoAlreadyPlaying_fetchesNothing_andSchedulesACatchUpIn15Minutes() = runBlocking {
+    fun aVideoAlreadyPlaying_fetchesNothing_andSchedulesACatchUpIn15Minutes() = runBlocking<Unit> {
         playing.value = true
 
         val output = worker().doWork().output()
@@ -109,7 +112,7 @@ class FeedSyncWorkerTest {
     }
 
     @Test
-    fun playbackStartingMidRun_letsTheFetchesInFlightFinish_startsNoMore_andSchedulesACatchUp() = runBlocking {
+    fun playbackStartingMidRun_letsTheFetchesInFlightFinish_startsNoMore_andSchedulesACatchUp() = runBlocking<Unit> {
         val gate = CountDownLatch(1)
         source.onFetch = { gate.await(10, TimeUnit.SECONDS) }
 
@@ -141,7 +144,7 @@ class FeedSyncWorkerTest {
     }
 
     @Test
-    fun aFailingChannel_doesNotFailTheRun() = runBlocking {
+    fun aFailingChannel_doesNotFailTheRun() = runBlocking<Unit> {
         source.failures[channels[4]] = SourceException(SourceErrorKind.BOT_CHECK, "SignInConfirmNotBotException", null, null)
 
         val result = worker().doWork()
@@ -157,6 +160,4 @@ class FeedSyncWorkerTest {
         // DefaultWorkerFactory looks this constructor up by reflection (R8 keeps it via WorkManager's rules).
         assertThat(FeedSyncWorker::class.java.getConstructor(Context::class.java, WorkerParameters::class.java)).isNotNull()
     }
-
-    private suspend fun FeedRepository.observeHomeOnce() = kotlinx.coroutines.flow.first(observeHome())
 }

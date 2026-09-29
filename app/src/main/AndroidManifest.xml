@@ -4,6 +4,9 @@
 
     <!-- YouTube, and later SponsorBlock and GitHub Releases. Nothing else. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Whether the TV is online (WorkManager declares it too): the home screen says «لا يوجد اتصال
+         بالإنترنت» instead of waiting for a feed sync that cannot start. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!-- A TV app driven by the remote: no touchscreen, and it also installs on non-Leanback devices. -->
     <uses-feature android:name="android.software.leanback" android:required="false" />

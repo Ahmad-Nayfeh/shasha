@@ -61,11 +61,25 @@ roborazzi {
     outputDir.set(file("src/test/screenshots"))
 }
 
+// Real-network tests (FeedSyncRealNetworkTest) are skipped unless run with -Dyoutube.realNetwork=true, as in :youtube.
+val realNetwork = System.getProperty("youtube.realNetwork") ?: "false"
+
 tasks.withType<Test>().configureEach {
     // Robolectric downloads its android-all jars at test time. Maven Central (repo1) rate-limits this
     // build environment, so use Google's mirror of it, the same one settings.gradle.kts uses.
     systemProperty("robolectric.dependency.repo.url", "https://maven-central.storage-download.googleapis.com/maven2")
     maxHeapSize = "3g"
+    systemProperty("youtube.realNetwork", realNetwork)
+    if (realNetwork == "true") {
+        // YouTube's answer changes over time: never reuse a cached or up-to-date result.
+        outputs.upToDateWhen { false }
+        outputs.cacheIf { false }
+        testLogging {
+            events("passed", "skipped", "failed")
+            showStandardStreams = true
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
+    }
 }
 
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }

@@ -32,7 +32,7 @@ class WatchRepositoryTest {
     fun tearDown() = db.close()
 
     @Test
-    fun progress_resumesFromTheSavedPosition_unlessBarelyStartedOrFinished() = runBlocking {
+    fun progress_resumesFromTheSavedPosition_unlessBarelyStartedOrFinished() = runBlocking<Unit> {
         watch.saveProgress("v1", positionMs = 125_000, durationMs = 600_000)
         assertThat(watch.resumePositionMs("v1")).isEqualTo(125_000)
 
@@ -50,7 +50,7 @@ class WatchRepositoryTest {
     }
 
     @Test
-    fun progress_ignoresLivesAndClampsThePosition() = runBlocking {
+    fun progress_ignoresLivesAndClampsThePosition() = runBlocking<Unit> {
         watch.saveProgress("live", positionMs = 50_000, durationMs = 0)
         assertThat(watch.progress("live")).isNull()
 
@@ -59,7 +59,7 @@ class WatchRepositoryTest {
     }
 
     @Test
-    fun markWatched_andClear() = runBlocking {
+    fun markWatched_andClear() = runBlocking<Unit> {
         watch.saveProgress("v1", positionMs = 60_000, durationMs = 600_000)
         watch.markWatched("v1", durationMs = 0) // unknown here: the saved duration is used
         assertThat(watch.progress("v1")!!.positionMs).isEqualTo(600_000)
@@ -73,7 +73,7 @@ class WatchRepositoryTest {
     }
 
     @Test
-    fun observeProgress_forTheCardsOnScreen_followsTheProfile() = runBlocking {
+    fun observeProgress_forTheCardsOnScreen_followsTheProfile() = runBlocking<Unit> {
         watch.saveProgress("v1", 60_000, 600_000)
         profile.id.value = "kid"
         watch.saveProgress("v2", 30_000, 300_000)
@@ -85,7 +85,7 @@ class WatchRepositoryTest {
     }
 
     @Test
-    fun history_oneRowPerVideo_newestFirst_perProfile() = runBlocking {
+    fun history_oneRowPerVideo_newestFirst_perProfile() = runBlocking<Unit> {
         watch.addToHistory(video("v1", ch, NOW_MS))
         now += 1_000
         watch.addToHistory(video("v2", ch, NOW_MS, durationSeconds = 212))
@@ -108,7 +108,7 @@ class WatchRepositoryTest {
     }
 
     @Test
-    fun watchLater_addRemoveAndIsSaved() = runBlocking {
+    fun watchLater_addRemoveAndIsSaved() = runBlocking<Unit> {
         watch.addToWatchLater(video("v1", ch, NOW_MS))
         now += 1_000
         watch.addToWatchLater(video("v2", ch, NOW_MS))

@@ -4,6 +4,8 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.zip.CRC32
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -251,6 +253,95 @@ class TakeoutCsvParserTest {
         assertThat(reason { TakeoutCsvParser.parse("t.zip", noCsv) }).isEqualTo(TakeoutException.Reason.NO_CSV)
     }
 
+    @Test
+    fun zip_takeoutsOwnFileWins_overPlaylistsNamedLikeIt() {
+        val playlist = "Video ID,Playlist Video Creation Timestamp\ndQw4w9WgXcQ,2024-01-01T00:00:00+00:00\n".toByteArray()
+        val english = zipOf(
+            "Takeout/YouTube and YouTube Music/playlists/My subscriptions-videos.csv" to playlist,
+            "Takeout/YouTube and YouTube Music/subscriptions/subscriptions.csv" to csv.toByteArray(),
+        )
+        assertThat(ids(TakeoutCsvParser.parse("takeout.zip", english))).containsExactly(a, b).inOrder()
+        val arabic = zipOf(
+            "Takeout/YouTube وYouTube Music/قوائم التشغيل/اشتراكاتي-videos.csv" to playlist,
+            "Takeout/YouTube وYouTube Music/الاشتراكات/الاشتراكات.csv" to csv.toByteArray(),
+        )
+        assertThat(ids(TakeoutCsvParser.parse("takeout.zip", arabic))).containsExactly(a, b).inOrder()
+        // A file named like the list but without channels does not end the search.
+        val renamed = zipOf("mine/my-subscriptions-videos.csv" to playlist, "export/data.csv" to csv.toByteArray())
+        assertThat(ids(TakeoutCsvParser.parse("t.zip", renamed))).containsExactly(a, b).inOrder()
+    }
+
+    @Test
+    fun zip_withoutTheSubscriptionsFile_neverImportsTheOwnersOwnChannel() {
+        // An export of "channels" only: channel.csv lists the owner's own channel (no /channel/ link on its row).
+        val zip = zipOf("Takeout/YouTube and YouTube Music/channels/channel.csv" to "Channel ID,Channel Title (Original),Channel Visibility\n$c,My own channel,Public\n".toByteArray())
+        assertThat(TakeoutCsvParser.parse("takeout-001.zip", zip).channels).isEmpty()
+    }
+
+    @Test
+    fun zip_craftedZip64Values_areABrokenZip_notACrash() {
+        val content = csv.toByteArray()
+        // Sizes and offsets near Long.MAX_VALUE: a sum of them overflows to a negative number.
+        assertThat(reason { TakeoutCsvParser.parse("t.zip", zip64(STORED, content, offset64 = Long.MAX_VALUE - 15)) })
+            .isEqualTo(TakeoutException.Reason.BROKEN_ZIP)
+        assertThat(reason { TakeoutCsvParser.parse("t.zip", zip64(DEFLATED, content, compressedSize64 = Long.MAX_VALUE - 15)) })
+            .isEqualTo(TakeoutException.Reason.BROKEN_ZIP)
+    }
+
+    @Test(timeout = 20_000)
+    fun zip_entriesPointingAtTheSameHugeStream_stopAfterOneReading() {
+        // 2,000 central-directory entries named .csv, all pointing at one 8 MB deflate stream of empty blocks:
+        // it inflates to nothing, so only the compressed input read can bound the work.
+        val bomb = overlappingEntries(entries = 2_000, streamBytes = 8 * 1024 * 1024)
+        assertThat(reason { TakeoutCsvParser.parse("t.zip", bomb) }).isEqualTo(TakeoutException.Reason.BROKEN_ZIP)
+    }
+
+    /** A one-entry zip whose central header keeps some values in a ZIP64 extra field. */
+    private fun zip64(method: Int, data: ByteArray, compressedSize64: Long? = null, offset64: Long? = null): ByteArray {
+        val name = "subscriptions.csv".toByteArray()
+        val out = ByteBuffer.allocate(4096).order(ByteOrder.LITTLE_ENDIAN)
+        out.putInt(0x04034b50).putShort(20).putShort(0).putShort(method.toShort()).putShort(0).putShort(0)
+            .putInt(0).putInt(data.size).putInt(data.size).putShort(name.size.toShort()).putShort(0).put(name).put(data)
+        val directory = out.position()
+        val fields = listOfNotNull(compressedSize64, offset64)
+        out.putInt(0x02014b50).putShort(45).putShort(45).putShort(0).putShort(method.toShort()).putShort(0).putShort(0).putInt(0)
+            .putInt(if (compressedSize64 != null) -1 else data.size).putInt(data.size)
+            .putShort(name.size.toShort()).putShort((4 + fields.size * 8).toShort()).putShort(0).putShort(0).putShort(0).putInt(0)
+            .putInt(if (offset64 != null) -1 else 0)
+            .put(name)
+            .putShort(1).putShort((fields.size * 8).toShort())
+        fields.forEach { out.putLong(it) }
+        val directorySize = out.position() - directory
+        out.putInt(0x06054b50).putShort(0).putShort(0).putShort(1).putShort(1).putInt(directorySize).putInt(directory).putShort(0)
+        return out.array().copyOf(out.position())
+    }
+
+    /** One local entry of empty stored deflate blocks, and [entries] central headers that all point at it. */
+    private fun overlappingEntries(entries: Int, streamBytes: Int): ByteArray {
+        val blocks = streamBytes / 5
+        val stream = ByteArray(blocks * 5)
+        for (i in 0 until blocks) {
+            stream[i * 5] = if (i == blocks - 1) 1 else 0 // BFINAL on the last block; BTYPE 00 (stored), LEN 0
+            stream[i * 5 + 3] = 0xFF.toByte()
+            stream[i * 5 + 4] = 0xFF.toByte()
+        }
+        val local = "a.csv".toByteArray()
+        val out = ByteBuffer.allocate(30 + local.size + stream.size + entries * 58 + 22).order(ByteOrder.LITTLE_ENDIAN)
+        out.putInt(0x04034b50).putShort(20).putShort(0).putShort(DEFLATED.toShort()).putShort(0).putShort(0).putInt(0)
+            .putInt(stream.size).putInt(0).putShort(local.size.toShort()).putShort(0).put(local).put(stream)
+        val directory = out.position()
+        repeat(entries) { e ->
+            val name = "f%06d.csv".format(e).toByteArray()
+            out.putInt(0x02014b50).putShort(20).putShort(20).putShort(0).putShort(DEFLATED.toShort()).putShort(0).putShort(0).putInt(0)
+                .putInt(stream.size).putInt(0).putShort(name.size.toShort()).putShort(0).putShort(0).putShort(0).putShort(0).putInt(0).putInt(0)
+                .put(name)
+        }
+        val directorySize = out.position() - directory
+        out.putInt(0x06054b50).putShort(0).putShort(0).putShort(entries.toShort()).putShort(entries.toShort())
+            .putInt(directorySize).putInt(directory).putShort(0)
+        return out.array().copyOf(out.position())
+    }
+
     private fun zipOf(vararg entries: Pair<String, ByteArray>, stored: Boolean = false): ByteArray {
         val out = ByteArrayOutputStream()
         ZipOutputStream(out).use { zip ->
@@ -267,5 +358,10 @@ class TakeoutCsvParserTest {
             }
         }
         return out.toByteArray()
+    }
+
+    private companion object {
+        const val STORED = 0
+        const val DEFLATED = 8
     }
 }
