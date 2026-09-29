@@ -34,6 +34,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,6 +61,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -93,10 +97,15 @@ fun SponsorSkipLayer(
     now: () -> Long = SystemClock::elapsedRealtime,
     osd: @Composable (Modifier) -> Unit,
 ) {
-    LaunchedEffect(skipper, target) {
-        while (true) {
-            skipper.tick(target)
-            delay(tickMs)
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(skipper, target, lifecycle) {
+        // Only while the screen is started: a stopped screen's player is released, and the recomposition that
+        // takes this layer away waits until the app is in front again.
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                skipper.tick(target)
+                delay(tickMs)
+            }
         }
     }
     val notice by skipper.notice.collectAsState()
@@ -202,15 +211,19 @@ fun SkipNoticeHost(notice: SkipNotice?, highlighted: Boolean, modifier: Modifier
                 }
                 SkipNoticeCard(
                     category = shown.category,
-                    undo = if (shown.undoable) UndoOffer(highlighted, remaining.value) else null,
+                    undo = if (shown.undoable) UndoOffer(highlighted) { remaining.value } else null,
                 )
             }
         }
     }
 }
 
-/** The undo part of a notice: [highlighted] = OK takes it now; [remaining] = the part of its time left (1 → 0). */
-data class UndoOffer(val highlighted: Boolean, val remaining: Float)
+/**
+ * The undo part of a notice: [highlighted] = OK takes it now; [remaining] = the part of its time left (1 → 0),
+ * read while drawing only, so the running line redraws the button without recomposing it every frame.
+ */
+@Stable
+class UndoOffer(val highlighted: Boolean, val remaining: () -> Float)
 
 /** «⏭ تم تخطي: إعلان مموَّل», and for the adult the «تراجع عن التخطي» button with its time running out. */
 @Composable
@@ -278,7 +291,7 @@ private fun UndoButton(offer: UndoOffer) {
                 // A short rounded line inside the pill, from the reading start, shrinking as the time runs out.
                 val inset = BAR_INSET.toPx()
                 val span = (size.width - 2 * inset).coerceAtLeast(0f)
-                val length = span * offer.remaining.coerceIn(0f, 1f)
+                val length = span * offer.remaining().coerceIn(0f, 1f)
                 if (length > 0f) {
                     val y = size.height - BAR_BOTTOM.toPx()
                     val rtl = layoutDirection == LayoutDirection.Rtl

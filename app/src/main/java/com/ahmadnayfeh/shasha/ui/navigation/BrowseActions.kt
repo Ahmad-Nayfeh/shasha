@@ -38,4 +38,6 @@ class SettingsActions(
     val openProtection: () -> Unit = {},
     val openRemote: () -> Unit = {},
     val openBackup: () -> Unit = {},
+    /** «فحص التحديثات» (SPEC §6): the updater's screen (a placeholder until phase 7). */
+    val openUpdates: () -> Unit = {},
 )

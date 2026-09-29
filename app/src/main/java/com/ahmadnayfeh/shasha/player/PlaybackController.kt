@@ -31,11 +31,11 @@ import kotlinx.coroutines.flow.update
  * stops (app in the background, another screen on top) or leaves: a TV has little memory and one
  * hardware decoder to share.
  *
- * Quality: the MediaSource holds every decodable quality up to [MAX_AUTO_HEIGHT] (the cap is applied
- * inside the generated DASH manifest by the YouTube module, on the short side so vertical videos are
- * not cut down), and ExoPlayer adapts between them ("Auto"). Live manifests come from YouTube uncapped,
- * so the track selector applies the same cap ([withAutoQualityCap]). A fixed quality is a
- * TrackSelectionOverride on the same source, so switching does not reload the video.
+ * Quality: the MediaSource holds every decodable quality up to [maxQuality] (Settings → «الجودة الافتراضية»,
+ * [MAX_AUTO_HEIGHT] by default; the cap is applied inside the generated DASH manifest by the YouTube module,
+ * on the short side so vertical videos are not cut down), and ExoPlayer adapts between them ("Auto"). Live
+ * manifests come from YouTube uncapped, so the track selector applies the same cap ([withAutoQualityCap]). A
+ * fixed quality is a TrackSelectionOverride on the same source, so switching does not reload the video.
  *
  * [onJump] hears every jump of the position (a seek from anywhere: the controls, the phone, a replay),
  * from where to where: what was skipped was not played ([PlayedMeter], SPEC §4).
@@ -47,6 +47,7 @@ class PlaybackController(
     context: Context,
     private val factory: YouTubeMediaSourceFactory,
     private val stream: StreamDetails,
+    private val maxQuality: Int = MAX_AUTO_HEIGHT,
     private val onJump: (fromMs: Long, toMs: Long) -> Unit = { _, _ -> },
     private val onError: (SourceException) -> Unit,
 ) {
@@ -63,13 +64,14 @@ class PlaybackController(
         .setSeekBackIncrementMs(SEEK_STEP_MS)
         .setSeekForwardIncrementMs(SEEK_STEP_MS)
         .build()
-        .apply { trackSelectionParameters = trackSelectionParameters.withAutoQualityCap() }
+        .apply { trackSelectionParameters = trackSelectionParameters.withAutoQualityCap(maxQuality) }
 
     private val _state = MutableStateFlow(
         PlayerUiState(
             title = stream.video.title,
             channelName = stream.video.channelName,
             isLive = stream.video.isLive,
+            autoQualityCap = maxQuality,
             subtitleOptions = subtitleOptions(stream.subtitles),
         ),
     )
@@ -101,7 +103,7 @@ class PlaybackController(
             val sides = tracks.groups.filter { it.type == C.TRACK_TYPE_VIDEO }.flatMap { group ->
                 (0 until group.length).filter { group.isTrackSupported(it) }.map { group.getTrackFormat(it).shortSide() }
             }
-            _state.update { it.copy(qualityOptions = qualityOptions(sides)) }
+            _state.update { it.copy(qualityOptions = qualityOptions(sides, maxQuality)) }
             // A fixed quality chosen before the tracks were known (e.g. restored after the app was in the
             // background) can only be applied now.
             val choice = _state.value.quality
@@ -252,7 +254,7 @@ class PlaybackController(
 
     private fun load(subtitleLanguage: String?, startPositionMs: Long) {
         try {
-            val source = factory.create(stream, MAX_AUTO_HEIGHT, subtitleLanguage)
+            val source = factory.create(stream, maxQuality, subtitleLanguage)
             sourceSubtitle = subtitleLanguage
             player.setMediaSource(source, startPositionMs)
             setTextEnabled(subtitleLanguage != null)
@@ -313,17 +315,19 @@ class PlaybackController(
 }
 
 /**
- * "Auto" never goes above 1080p, whatever the source (live HLS/DASH manifests list up to 2160p).
+ * "Auto" never goes above [maxQuality] (1080p unless Settings chose another), whatever the source (live
+ * HLS/DASH manifests list up to 2160p).
  *
- * Expressed as a 1920x1080 viewport that may rotate, not as setMaxVideoSize(.., 1080): ExoPlayer keeps the
- * smallest track that fills the viewport turned to the video's orientation, and nothing above it. So a
- * vertical 1080x1920 video keeps its 1080p track (a height limit would drop it to 480p), and an ultra-wide
- * one stops at the track that fills the screen's width (e.g. 1920x804). It also replaces Media3's default
- * viewport, the physical display, which is 4K on many TVs.
+ * Expressed as a 16:9 viewport that may rotate (1920x1080 for 1080p), not as setMaxVideoSize(.., 1080):
+ * ExoPlayer keeps the smallest track that fills the viewport turned to the video's orientation, and nothing
+ * above it. So a vertical 1080x1920 video keeps its 1080p track (a height limit would drop it to 480p), and
+ * an ultra-wide one stops at the track that fills the screen's width (e.g. 1920x804). It also replaces
+ * Media3's default viewport, the physical display, which is 4K on many TVs.
  */
-internal fun TrackSelectionParameters.withAutoQualityCap(): TrackSelectionParameters =
+internal fun TrackSelectionParameters.withAutoQualityCap(maxQuality: Int = MAX_AUTO_HEIGHT): TrackSelectionParameters =
     buildUpon()
-        .setViewportSize(AUTO_VIEWPORT_WIDTH, MAX_AUTO_HEIGHT, /* viewportOrientationMayChange= */ true)
+        .setViewportSize(viewportWidth(maxQuality), maxQuality, /* viewportOrientationMayChange= */ true)
         .build()
 
-private const val AUTO_VIEWPORT_WIDTH = 1920
+/** The 16:9 width of a quality (rounded like YouTube's own sizes: 480p is 854 wide, 1080p 1920). */
+internal fun viewportWidth(height: Int): Int = (height * 16 + 8) / 9

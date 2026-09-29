@@ -6,6 +6,7 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.io.IOException
+import java.util.Locale
 
 /** The privacy-preserving request and the local filtering of SponsorBlock's answer (plain JVM). */
 class SponsorBlockParsingTest {
@@ -16,6 +17,19 @@ class SponsorBlockParsingTest {
         // sha256("dQw4w9WgXcQ") = 5f7c3d…: lower case, always 4 characters.
         assertThat(SponsorBlockClient.hashPrefix("dQw4w9WgXcQ")).hasLength(4)
         assertThat(SponsorBlockClient.hashPrefix("dQw4w9WgXcQ")).matches("[0-9a-f]{4}")
+    }
+
+    @Test
+    fun theHashPrefix_staysLatinHex_whenTheTvSpeaksArabic() {
+        // A TV set to Arabic formats %d with Arabic-Indic digits: the prefix must never go through that.
+        val before = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag("ar-SA-u-nu-arab"))
+            assertThat(SponsorBlockClient.hashPrefix("lC3h3Lm3q54")).isEqualTo("a16c")
+            assertThat(SponsorBlockClient(OkHttpClient()).requestUrl("lC3h3Lm3q54").encodedPath).isEqualTo("/api/skipSegments/a16c")
+        } finally {
+            Locale.setDefault(before)
+        }
     }
 
     @Test

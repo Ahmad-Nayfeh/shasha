@@ -59,7 +59,11 @@ import com.ahmadnayfeh.shasha.ui.screens.search.SearchCallbacks
 import com.ahmadnayfeh.shasha.ui.screens.search.SearchScreen
 import com.ahmadnayfeh.shasha.ui.screens.settings.ImportScreen
 import com.ahmadnayfeh.shasha.ui.screens.settings.ImportStatus
-import com.ahmadnayfeh.shasha.ui.screens.settings.SettingsScreen
+import com.ahmadnayfeh.shasha.ui.settings.AppVersions
+import com.ahmadnayfeh.shasha.ui.settings.SettingsCategory
+import com.ahmadnayfeh.shasha.ui.settings.SettingsHubActions
+import com.ahmadnayfeh.shasha.ui.settings.SettingsHubScreen
+import com.ahmadnayfeh.shasha.ui.settings.SettingsHubState
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
@@ -278,17 +282,15 @@ class BrowseScreenshotTest {
     @Test
     fun settings() = snap("settings") {
         Shell(Tab.SETTINGS) {
-            SettingsScreen(
-                remember { ContentFocus() },
-                "0.1.0",
-                "v0.26.5",
-                onProfiles = {},
-                onBlocklist = {},
-                onStats = {},
-                onChangePin = {},
-                onImport = {},
-                onDiagnostics = {},
-                protection = ProtectionStatus(overlay = true, usageAccess = true, installPackages = true, guardRunning = true, youtube = YouTubeAppState.DISABLED),
+            SettingsHubScreen(
+                state = SettingsHubState(
+                    versions = AppVersions("0.1.0", 1, "v0.26.5"),
+                    protection = ProtectionStatus(overlay = true, usageAccess = true, installPackages = true, guardRunning = true, youtube = YouTubeAppState.DISABLED),
+                ),
+                selected = SettingsCategory.PROFILES,
+                onSelect = {},
+                actions = SettingsHubActions(),
+                focus = remember { ContentFocus() },
             )
         }
     }

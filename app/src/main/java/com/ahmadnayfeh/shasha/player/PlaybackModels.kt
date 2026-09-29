@@ -28,7 +28,9 @@ data class PlayerUiState(
     val isBuffering: Boolean = true,
     val isEnded: Boolean = false,
     val quality: QualityChoice = QualityChoice.Auto,
-    /** Rungs of [QUALITY_LADDER] this video offers on this TV, best first. */
+    /** The highest quality "Auto" reaches (Settings → «الجودة الافتراضية»). */
+    val autoQualityCap: Int = MAX_AUTO_HEIGHT,
+    /** Rungs of [QUALITY_LADDER] up to [autoQualityCap] this video offers on this TV, best first. */
     val qualityOptions: List<Int> = emptyList(),
     /** Short side of the picture being shown now, when known. */
     val currentHeight: Int? = null,
@@ -66,11 +68,14 @@ data class ResumeState(
     val subtitleLanguage: String? = null,
 )
 
-/** The quality cap of "Auto" (SPEC: prefer 1080p and fall back automatically). */
+/**
+ * The quality cap of "Auto" unless Settings → «الجودة الافتراضية» chose another (SPEC: prefer 1080p and fall
+ * back automatically).
+ */
 const val MAX_AUTO_HEIGHT = 1080
 
-/** Fixed qualities offered in the menu, best first. */
-val QUALITY_LADDER = listOf(1080, 720, 480, 360)
+/** Fixed qualities the menu may offer, best first; only those up to the quality cap ([qualityOptions]). */
+val QUALITY_LADDER = listOf(2160, 1440, 1080, 720, 480, 360)
 
 val PLAYBACK_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
 
@@ -81,10 +86,13 @@ private val STANDARD_HEIGHTS = listOf(144, 240, 360, 480, 720, 1080, 1440, 2160,
 /** Maps a picture's short side to YouTube's quality name (e.g. 1072 → 1080, 1920x1080 vertical → 1080). */
 fun qualityRung(shortSide: Int): Int = STANDARD_HEIGHTS.minBy { abs(it - shortSide) }
 
-/** The menu's fixed options for a video whose playable tracks have these short sides. */
-fun qualityOptions(shortSides: Collection<Int>): List<Int> {
+/**
+ * The menu's fixed options for a video whose playable tracks have these short sides, up to [cap] (live streams
+ * list up to 2160p whatever the cap; a fixed choice never goes above what "Auto" may reach).
+ */
+fun qualityOptions(shortSides: Collection<Int>, cap: Int = MAX_AUTO_HEIGHT): List<Int> {
     val rungs = shortSides.filter { it > 0 }.map(::qualityRung).toSet()
-    return QUALITY_LADDER.filter { it in rungs }
+    return QUALITY_LADDER.filter { it in rungs && it <= cap }
 }
 
 /**

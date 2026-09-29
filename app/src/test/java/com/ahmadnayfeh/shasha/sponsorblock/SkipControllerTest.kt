@@ -277,6 +277,22 @@ class SkipControllerTest {
     }
 
     @Test
+    fun aReplayWithoutTheEndCard_skipsAgainToo() {
+        val skipper = controller(undo = true, SPONSOR_SEGMENT)
+        player.positionMs = 119_600
+        skipper.tick(player)
+        player.ended = true // played to the end
+        skipper.tick(player)
+
+        // The controls' own replay button (seek to 0, play): no onReplay() on this path.
+        player.ended = false
+        player.positionMs = 0
+        player.seeks.clear()
+        skipper.play(125_000)
+        assertThat(player.seeks).containsExactly(162_837L)
+    }
+
+    @Test
     fun theEndOfTheVideo_takesTheNoticeAway() {
         val skipper = controller(undo = true, SPONSOR_SEGMENT)
         player.positionMs = 119_600
@@ -293,6 +309,41 @@ class SkipControllerTest {
         player.positionMs = 119_600
         skipper.play(2_000)
         assertThat(player.seeks).isEmpty()
+    }
+
+    @Test
+    fun withoutSegments_thePlayerIsNotEvenLookedAt() {
+        var reads = 0
+        val counted = object : SkipTarget by player {
+            override val positionMs: Long get() = player.positionMs.also { reads++ }
+            override val isPlaying: Boolean get() = player.isPlaying.also { reads++ }
+            override val isLive: Boolean get() = player.isLive.also { reads++ }
+        }
+        val skipper = controller(undo = true)
+        repeat(40) { skipper.tick(counted) } // ten seconds of looks
+        assertThat(reads).isEqualTo(0)
+
+        // Once the segments come (SponsorBlock answered), the looks begin.
+        skipper.setSegments(listOf(SPONSOR_SEGMENT))
+        player.positionMs = 119_600
+        skipper.tick(counted)
+        assertThat(reads).isGreaterThan(0)
+        assertThat(player.seeks).containsExactly(162_837L)
+    }
+
+    @Test
+    fun aMuteInProgress_endsWhenItsCategoryIsSwitchedOff() {
+        val mute = SponsorSegment("m", SponsorCategory.SPONSOR, SegmentAction.MUTE, 10_000, 20_000)
+        val skipper = controller(undo = true, mute)
+        player.positionMs = 12_000
+        skipper.tick(player)
+        assertThat(player.mutes).containsExactly(true)
+
+        skipper.setSegments(emptyList())
+        skipper.tick(player)
+        assertThat(player.mutes).containsExactly(true, false).inOrder()
+        skipper.tick(player)
+        assertThat(player.mutes).containsExactly(true, false).inOrder()
     }
 
     @Test

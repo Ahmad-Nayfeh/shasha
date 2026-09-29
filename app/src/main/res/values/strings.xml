@@ -81,7 +81,8 @@
     <string name="player_speed">السرعة</string>
     <string name="player_subtitles">الترجمة</string>
     <string name="player_quality_auto">تلقائي</string>
-    <string name="player_quality_auto_detail">تلقائي (حتى 1080p)</string>
+    <!-- %1$s: the quality cap of Settings → «الجودة الافتراضية», e.g. 1080. -->
+    <string name="player_quality_auto_detail">تلقائي (حتى %1$sp)</string>
     <string name="player_quality_auto_playing">تلقائي · %1$sp</string>
     <string name="player_speed_normal">عادية</string>
     <string name="player_subtitles_off">إيقاف</string>
@@ -276,13 +277,9 @@
     <string name="message_unblocked">أُلغي حظر %1$s</string>
     <string name="message_unsubscribed">أُلغي الاشتراك في %1$s</string>
 
-    <!-- Settings (placeholder until the settings phase) -->
+    <!-- Settings (SPEC §7). The hub's own strings are the hub_* section. -->
     <string name="settings_title">الإعدادات</string>
-    <string name="settings_subtitle">الملفات والرقابة، والاشتراكات، والتشخيص</string>
-    <string name="settings_import">استيراد الاشتراكات</string>
-    <string name="settings_import_body">من Google Takeout، عبر ADB أو ملف</string>
     <string name="settings_diagnostics">تشخيص</string>
-    <string name="settings_diagnostics_body">يفحص التشغيل حين يتعطّل يوتيوب</string>
     <string name="settings_version">شاشة %1$s · مكتبة الاستخراج %2$s</string>
 
     <!-- Counted phrases (same order as above: ONE, TWO, FEW, MANY, OTHER) -->
@@ -456,14 +453,7 @@
     <string name="time_unlock_failed">تعذّر حفظ الوقت الإضافي. حاول مرة أخرى.</string>
 
     <!-- Settings: parental sections -->
-    <string name="settings_section_parental">الرقابة الأبوية · تُفتح برمز الوالدين</string>
-    <string name="settings_section_general">عام</string>
-    <string name="settings_profiles">الملفات</string>
-    <string name="settings_profiles_body">ملفات الأطفال: الحصة والأوقات وقوائم السماح</string>
-    <string name="settings_blocklist">قائمة الحظر</string>
-    <string name="settings_blocklist_body">قنوات وكلمات تُخفى في كل الملفات</string>
     <string name="settings_stats">الإحصائيات</string>
-    <string name="settings_stats_body">دقائق المشاهدة لكل ملف وأكثر القنوات</string>
     <string name="settings_change_pin">تغيير رمز الوالدين</string>
     <string name="settings_change_pin_body">يُطلب الرمز الحالي أولاً</string>
     <string name="settings_pin_body">لفتح إعدادات الرقابة</string>
@@ -674,16 +664,13 @@
     <string name="protection_limits_owner">منع ذلك كله يحتاج وضع «مالك الجهاز» (&#x2068;Device Owner&#x2069;)، وقد استُبعد عمداً: القفل ليس منيعاً.</string>
     <string name="protection_limits_pin_lockout">عند انتهاء الوقت وخارج أوقات المشاهدة لا يفتح الشاشة إلا رمز الوالدين. إن قُفل الرمز بعد محاولات خاطئة (من 5 دقائق حتى 4 ساعات، ولا تنهي إعادة التشغيل المهلة) أو نُسي، تبقى الشاشة كلها على «شاشة» حتى تنتهي المهلة أو المنع. المخرج: من الحاسوب الذي جهّزها، وتصحيح الأخطاء ما زال مفعّلاً، نفّذ &#x2068;%1$s&#x2069; (يتوقف الحارس حتى يُفتح التطبيق من جديد).</string>
 
-    <!-- Settings: the protection status chip in the header. -->
+    <!-- Settings: the protection category. -->
     <string name="settings_protection">حالة الحماية</string>
 
     <!-- SPEC §5, the phone remote (phase 5). Titles and names from YouTube or the profiles sit in FSI…PDI
          (&#x2068;…&#x2069;) inside «…», so English text keeps its place in the Arabic sentence on the phone. -->
-    <string name="settings_section_phone">الجوال والبيانات · تُفتح برمز الوالدين</string>
     <string name="settings_remote">التحكم من الجوال</string>
-    <string name="settings_remote_body">رمز QR للاقتران، وتشغيل الخادم أو إيقافه</string>
     <string name="settings_backup">الاستيراد والتصدير</string>
-    <string name="settings_backup_body">نسخة احتياطية JSON لكل بيانات الشاشة</string>
 
     <string name="remote_channel_name">التحكم من الجوال</string>
     <string name="remote_notification_title">التحكم من الجوال يعمل</string>
@@ -813,4 +800,140 @@
     <string name="backup_error_too_large">الملف أكبر من أن يكون نسخة احتياطية من «شاشة».</string>
     <string name="backup_error_failed">تعذّرت الاستعادة، ولم يتغيّر شيء.</string>
     <string name="backup_error_read">تعذّرت قراءة الملف.</string>
+
+    <!-- Settings (SPEC §7): two panes, the list of settings on the right, the focused one's pane on the left. -->
+    <string name="hub_group_parental">الرقابة الأبوية</string>
+    <string name="hub_group_watching">المشاهدة</string>
+    <string name="hub_group_device">الشاشة والجوال</string>
+    <string name="hub_group_app">التطبيق</string>
+    <string name="hub_profiles">الملفات ورمز الوالدين</string>
+    <string name="hub_profiles_summary">من يشاهد على هذه الشاشة، والرمز الذي يحمي ملفك وإعدادات الرقابة</string>
+    <string name="hub_lists">قوائم السماح والحظر</string>
+    <string name="hub_lists_summary">ما يظهر في ملف كل طفل، وما يُخفى عن الجميع</string>
+    <string name="hub_time">الحصص والجداول</string>
+    <string name="hub_time_summary">دقائق المشاهدة اليومية وأوقاتها لكل ملف</string>
+    <string name="hub_sponsorblock">فئات SponsorBlock</string>
+    <string name="hub_quality">الجودة الافتراضية</string>
+    <string name="hub_quality_summary">أعلى جودة يبلغها المشغّل وحده، ويهبط عنها تلقائياً حين تضعف الشبكة</string>
+    <string name="hub_remote">الخادم المحلي</string>
+    <string name="hub_remote_summary">التحكم من الجوال: تشغيله، ورمز QR للاقتران، ورمز جديد</string>
+    <string name="hub_data_summary">نسخة احتياطية لكل بيانات الشاشة، واشتراكاتك من Takeout</string>
+    <string name="hub_updates_summary">الإصدار المثبّت، وآخر إصدار على GitHub Releases</string>
+    <string name="hub_diagnostics_summary">ما يعينك حين يتعطّل يوتيوب: فيديوهات تجريبية ومعلومات الشاشة</string>
+    <string name="hub_about">حول</string>
+    <string name="hub_about_summary">الإصدار، ومصدر بيانات التخطي، والمكتبات ورخصها</string>
+    <string name="hub_loading">جارٍ التحميل…</string>
+
+    <!-- A parental pane before the parent PIN. -->
+    <string name="hub_locked_title">يُفتح برمز الوالدين</string>
+    <string name="hub_locked_body">لتبقى الرقابة بيدك وحدك، ولو تُركت الشاشة على ملفك.</string>
+    <string name="hub_locked_action">فتح برمز الوالدين</string>
+    <string name="hub_locked_note">يبقى مفتوحاً خمس دقائق، ثم يُطلب الرمز من جديد.</string>
+
+    <!-- الملفات ورمز الوالدين -->
+    <string name="hub_profiles_manage">إدارة الملفات</string>
+    <string name="hub_profiles_manage_body">إضافة ملف طفل، والأسماء والصور، وإخفاء المقاطع القصيرة، وحذف ملف</string>
+    <string name="hub_pin_note">رمز الوالدين يفتح ملفك وهذه الإعدادات، ويُخرج الأطفال من ملفاتهم، ويمنح وقتاً إضافياً. وخمس محاولات خاطئة توقفه دقائق.</string>
+
+    <!-- قوائم السماح والحظر -->
+    <string name="hub_blocklist_section">الحظر · في كل الملفات</string>
+    <string name="hub_list_empty">فارغة</string>
+    <string name="hub_allowlists_section">السماح · لكل طفل قائمته</string>
+    <string name="hub_no_children">لا ملفات أطفال بعد. أضِف ملفاً من «الملفات ورمز الوالدين».</string>
+    <string name="hub_lists_hint">وللإضافة بسرعة: اضغط مطوّلاً على بطاقة قناة أو قائمة تشغيل، أو أرسل رابطها من قسم الأب في الجوال.</string>
+    <!-- Same order as the other counted phrases: ONE, TWO, FEW, MANY, OTHER. -->
+    <string-array name="count_keywords">
+        <item>كلمة واحدة</item>
+        <item>كلمتان</item>
+        <item>%1$s كلمات</item>
+        <item>%1$s كلمة</item>
+        <item>%1$s كلمة</item>
+    </string-array>
+
+    <!-- الحصص والجداول: the pickers' titles name the profile. -->
+    <string name="hub_time_quota_of">الحصة اليومية لملف &#x2068;%1$s&#x2069;</string>
+    <string name="hub_time_schedule_of">أوقات مشاهدة &#x2068;%1$s&#x2069;</string>
+    <string name="hub_time_note">قبل نهاية الوقت بخمس دقائق يظهر تنبيه هادئ، وبعدها لا تُفتح المشاهدة إلا برمز الوالدين، على الشاشة أو من الجوال.</string>
+
+    <!-- الإحصائيات -->
+    <string name="hub_stats_open">التفاصيل</string>
+    <string name="hub_stats_open_body">آخر 7 أيام يوماً بيوم، وأكثر القنوات مشاهدة، والاستسلام</string>
+
+    <!-- فئات SponsorBlock. The attribution is SponsorBlock's own sentence, exactly (its licence asks for it). -->
+    <string name="hub_sponsor_defaults">العودة إلى الاختيار الافتراضي</string>
+    <string name="sponsorblock_attribution_exact" translatable="false">Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/</string>
+
+    <!-- الجودة الافتراضية; %1$s: 2160, 1440, 1080, 720 or 480. -->
+    <string name="hub_quality_option">تلقائي حتى %1$sp</string>
+    <string name="hub_quality_2160">أعلى ما يعرضه يوتيوب (4K): لشاشة 4K وإنترنت سريع جداً، وقد يُثقل على المعالج.</string>
+    <string name="hub_quality_1440">أوضح من 1080p على شاشات 4K، ويحتاج إنترنت سريعاً.</string>
+    <string name="hub_quality_1080">صورة حادة بلا تقطيع على معظم الشاشات والشبكات.</string>
+    <string name="hub_quality_720">يوفّر في البيانات، ويناسب الشبكات البطيئة.</string>
+    <string name="hub_quality_480">أقل استهلاك للبيانات، لشبكة ضعيفة جداً.</string>
+    <string name="hub_quality_note">تسري من الفيديو التالي. ولا يتجاوز المشغّل ما تفكّ الشاشة ترميزه بسلاسة، وتبقى قائمة «الجودة» في المشغّل لاختيار جودة ثابتة حتى هذا الحد.</string>
+
+    <!-- حالة الحماية; %1$s: seconds with one decimal, e.g. 1.4. -->
+    <string name="hub_protection_open">التفاصيل وأوامر ADB</string>
+    <string name="hub_protection_open_body">ما ينقص والأمر الذي يمنحه، وسرعة العودة المقيسة، وما لا تمنعه الحماية</string>
+    <string name="hub_protection_last_return">آخر عودة إلى «شاشة» بعد Home: %1$s ث</string>
+
+    <!-- الخادم المحلي; %1$s: ip:port, e.g. 192.168.1.23:8765. -->
+    <string name="hub_remote_switch">تشغيل الخادم</string>
+    <string name="hub_remote_switch_body">يبدأ وحده مع الشاشة، ويستمع على شبكة البيت فقط</string>
+    <string name="hub_remote_pairing">رمز الاقتران QR</string>
+    <string name="hub_remote_pairing_body">امسحه بكاميرا الجوال. ومنه تعيد توليد الرمز فيتوقف كل جوال مقترن.</string>
+    <string name="hub_remote_address">يعمل على &#x2068;%1$s&#x2069;</string>
+    <string name="hub_remote_note">كل طلب من الجوال يحتاج رمز الاقتران، وقسم الأب فيه يحتاج رمز الوالدين أيضاً.</string>
+
+    <!-- الاستيراد والتصدير -->
+    <string name="hub_data_backup">النسخة الاحتياطية</string>
+    <string name="hub_data_takeout">استيراد الاشتراكات من Takeout</string>
+    <string name="hub_data_takeout_body">من takeout.google.com: عبر ADB، أو ملف على الشاشة، أو من الجوال</string>
+
+    <!-- فحص التحديثات; %1$s of hub_build_line: the versionCode, %2$s: the extractor's version. -->
+    <string name="hub_version">شاشة %1$s</string>
+    <string name="hub_build_line">رقم البناء %1$s · مكتبة الاستخراج %2$s</string>
+    <string name="hub_updates_how">يقرأ آخر إصدار من GitHub Releases، وينزّله ويفتح مثبّت النظام: أندرويد لا يسمح بتحديث صامت.</string>
+    <string name="hub_updates_when">حين يتعطّل يوتيوب فالحل غالباً إصدار أحدث من مكتبة الاستخراج.</string>
+    <string name="hub_updates_adb">وبديلاً: ثبّت الإصدار الجديد عبر ADB كما في README.</string>
+
+    <!-- تشخيص -->
+    <string name="hub_diag_videos_body">عادي، وبث مباشر، ومصنّف للأطفال، ومحذوف، وفيه إعلان يتخطاه SponsorBlock: تعرف في ثوانٍ ما الذي تعطّل</string>
+    <string name="hub_diag_facts">معلومات للتشخيص</string>
+    <string name="hub_fact_app">التطبيق %1$s · رقم البناء %2$s</string>
+    <string name="hub_fact_extractor">مكتبة الاستخراج NewPipeExtractor %1$s</string>
+    <!-- %1$s: maker and model, %2$s: the Android version, %3$s: the API level. -->
+    <string name="hub_fact_device">&#x2068;%1$s&#x2069; · أندرويد %2$s (API %3$s)</string>
+    <string name="hub_fact_no_subscriptions">لا اشتراكات بعد</string>
+    <!-- %1$s: count_channels, e.g. «20 قناة»; %2$s: ago_*, e.g. «منذ 5 دقائق». -->
+    <string name="hub_fact_feed_never">الاشتراكات: %1$s · لم تُحدَّث بعد</string>
+    <string name="hub_fact_feed">الاشتراكات: %1$s · آخر تحديث %2$s</string>
+    <!-- %1$s: a number of channels (digits). The last error follows on its own line, as it is. -->
+    <string name="hub_fact_feed_failed">قنوات تعذّر تحديثها في آخر محاولة: %1$s</string>
+    <string name="hub_diag_hint">حين يتعطّل شيء: شغّل الفيديوهات التجريبية أولاً، ثم «فحص التحديثات». وملف MAINTENANCE.md يشرح الباقي.</string>
+
+    <!-- حول -->
+    <string name="hub_about_terms_title">للاستخدام الشخصي فقط</string>
+    <string name="hub_about_terms_body">«شاشة» يخالف شروط خدمة يوتيوب. صُنع للاستخدام الشخصي في هذا البيت فقط، فلا يُنشر ولا يُباع. لا يسجّل الدخول، ولا يعرض الإعلانات، ولا يرسل بياناتك إلى أي مكان، والقفل فيه ليس منيعاً.</string>
+    <string name="hub_about_data_title">بيانات تخطي المقاطع</string>
+    <string name="hub_about_licenses">المكتبات ورخصها</string>
+    <string name="hub_about_ideas">أفكار من مشاريع مفتوحة المصدر، بشيفرة كُتبت من جديد</string>
+    <string name="hub_about_footer">بلا حسابات، ولا إعلانات، ولا تتبّع: كل البيانات على هذه الشاشة.</string>
+    <string name="license_role_newpipe">قراءة يوتيوب: البحث والقنوات وروابط التشغيل</string>
+    <string name="license_role_androidx">الواجهة والمشغّل وقاعدة البيانات والإعدادات</string>
+    <string name="license_role_okhttp">الاتصال بالشبكة</string>
+    <string name="license_role_ktor">خادم التحكم من الجوال</string>
+    <string name="license_role_kotlinx">لغة البرمجة، والمهام المتزامنة، وقراءة JSON</string>
+    <string name="license_role_coil">تحميل الصور المصغّرة</string>
+    <string name="license_role_zxing">رمز QR للاقتران</string>
+    <string name="license_role_rhino">تشغيل شيفرة يوتيوب داخل مكتبة الاستخراج</string>
+    <string name="license_role_jsoup">قراءة صفحات HTML داخل مكتبة الاستخراج</string>
+    <string name="license_role_nanojson">قراءة JSON داخل مكتبة الاستخراج</string>
+    <string name="license_role_protobuf">طلبات يوتيوب الثنائية داخل مكتبة الاستخراج</string>
+    <string name="license_role_slf4j">واجهة السجلات التي يستعملها Ktor</string>
+    <string name="license_role_helpers">مكتبات مساعدة تعتمد عليها المكتبات أعلاه</string>
+    <string name="license_role_desugar">ميزات جافا الحديثة على أندرويد 9</string>
+    <string name="license_role_plex">خط الواجهة العربي</string>
+    <string name="license_role_smarttube">تجربة الريموت، ومزامنة الاشتراكات دون إثقال التشغيل</string>
+    <string name="license_role_tv_app_lock">الحارس الذي يعيد التطبيق إلى المقدمة</string>
 </resources>

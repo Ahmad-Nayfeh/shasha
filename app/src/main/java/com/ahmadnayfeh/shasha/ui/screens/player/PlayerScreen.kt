@@ -39,6 +39,7 @@ import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.data.asSourceException
 import com.ahmadnayfeh.shasha.lock.LockController
 import com.ahmadnayfeh.shasha.player.AttachToPlayerHub
+import com.ahmadnayfeh.shasha.player.MAX_AUTO_HEIGHT
 import com.ahmadnayfeh.shasha.player.NextInPlaylist
 import com.ahmadnayfeh.shasha.player.PlaybackController
 import com.ahmadnayfeh.shasha.player.PlayerAction
@@ -151,6 +152,8 @@ fun PlayerScreen(
         null
     }
     val actions = remember(locking) { locking?.playerActions() ?: NoLockActions }
+    // SPEC §7 «الجودة الافتراضية»: read (from its small file) while the video is extracted, used when the player starts.
+    val playback = container.playbackSettings
     // A video that failed for the lack of a network (its lock stays) goes on by itself once the TV is online.
     val online by container.network.online.collectAsStateWithLifecycle(initialValue = true)
     LaunchedEffect(vm, online) { if (online) vm.retryAfterNetwork() }
@@ -169,6 +172,7 @@ fun PlayerScreen(
         onSurrendered = { messages?.show(surrendered, ShashaIcons.Lock) },
         onKidsHome = onKidsHome,
         skipper = sponsor.skipper,
+        maxQuality = { playback.maxQuality.value },
     )
 }
 
@@ -201,6 +205,7 @@ internal fun PlayerContent(
     onSurrendered: () -> Unit = {},
     onKidsHome: (() -> Unit)? = null,
     skipper: SkipController? = null,
+    maxQuality: () -> Int = { MAX_AUTO_HEIGHT },
 ) {
     val load by vm.load.collectAsStateWithLifecycle()
     LockedPlayback(lockMethod, lockActions, onLeave = onBack, onSurrendered = onSurrendered) { lock ->
@@ -242,6 +247,7 @@ internal fun PlayerContent(
                     onKidsHome = onKidsHome,
                     locked = lockMethod != null,
                     skipper = skipper,
+                    maxQuality = maxQuality,
                 )
             }
         }
@@ -265,6 +271,7 @@ private fun VideoPlayer(
     onKidsHome: (() -> Unit)?,
     locked: Boolean,
     skipper: SkipController? = null,
+    maxQuality: () -> Int = { MAX_AUTO_HEIGHT },
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -277,7 +284,7 @@ private fun VideoPlayer(
             if (controller != null) return
             if (!vm.canStart(ready)) return // a fresh extraction replaces this one; its player starts then
             lateinit var created: PlaybackController
-            created = PlaybackController(context, factory(), ready.stream, onJump = vm::onJumped) { error ->
+            created = PlaybackController(context, factory(), ready.stream, maxQuality = maxQuality(), onJump = vm::onJumped) { error ->
                 vm.onPlaybackError(ready, error, created.resumeState())
             }
             try {

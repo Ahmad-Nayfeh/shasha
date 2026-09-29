@@ -70,7 +70,8 @@ internal fun menuIcon(menu: OsdMenu) = when (menu) {
 @Composable
 internal fun menuOptions(menu: OsdMenu, state: PlayerUiState): List<MenuOption> = when (menu) {
     OsdMenu.QUALITY -> buildList {
-        add(MenuOption(stringResource(R.string.player_quality_auto_detail), state.quality == QualityChoice.Auto, PlayerAction.SetQuality(QualityChoice.Auto)))
+        val auto = stringResource(R.string.player_quality_auto_detail, state.autoQualityCap.toString())
+        add(MenuOption(auto, state.quality == QualityChoice.Auto, PlayerAction.SetQuality(QualityChoice.Auto)))
         state.qualityOptions.forEach { h ->
             add(MenuOption("${h}p", state.quality == QualityChoice.Fixed(h), PlayerAction.SetQuality(QualityChoice.Fixed(h))))
         }

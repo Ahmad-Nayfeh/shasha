@@ -62,9 +62,9 @@ import com.ahmadnayfeh.shasha.ui.screens.settings.ImportRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.ProfileEditRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.ProfilesRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.ProtectionRoute
-import com.ahmadnayfeh.shasha.ui.screens.settings.SettingsRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.StatsRoute
 import com.ahmadnayfeh.shasha.ui.screens.updates.UpdatesPlaceholderScreen
+import com.ahmadnayfeh.shasha.ui.settings.SettingsRoute
 import com.ahmadnayfeh.shasha.ui.settings.backup.BackupRoute
 import com.ahmadnayfeh.shasha.ui.settings.remote.RemoteRoute
 
@@ -304,4 +304,5 @@ private fun settingsActions(nav: NavHostController) = SettingsActions(
     openProtection = { nav.navigate(Screen.Protection) { launchSingleTop = true } },
     openRemote = { nav.navigate(Screen.RemoteControl) { launchSingleTop = true } },
     openBackup = { nav.navigate(Screen.Backup) { launchSingleTop = true } },
+    openUpdates = { nav.navigate(Screen.Updates) { launchSingleTop = true } },
 )

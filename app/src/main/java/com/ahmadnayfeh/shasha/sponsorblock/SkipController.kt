@@ -46,8 +46,8 @@ data class SkipNotice(
  * releases a player, a new one continues). [tick] is called about every [TICK_MS]; while the video plays and
  * the position is inside a segment to skip, it jumps to the segment's end and shows a [notice].
  *
- * - Every segment is skipped at most once per visit: after a skip, seeking back into it plays it (and a jump
- *   that landed a little short can never loop). A replay from the end card starts over ([onReplay]).
+ * - Every segment is skipped at most once per viewing: after a skip, seeking back into it plays it (and a jump
+ *   that landed a little short can never loop). Once the video has ended, a replay skips again ([onReplay]).
  * - [undoAllowed] (the adult, `Features.undoSponsorSkip`): the notice offers «تراجع عن التخطي» for
  *   [UNDO_WINDOW_MS]; [undo] goes back to the segment's start and never skips it again. A child only sees
  *   the message, for [NOTICE_MS].
@@ -88,8 +88,16 @@ class SkipController(
 
     /** One look at [target]: expire the notice, mute or unmute, and skip when playback entered a segment. */
     fun tick(target: SkipTarget) {
+        // Most videos have no segments (or none selected): then the player is not even looked at.
+        if (segments.isEmpty() && _notice.value == null && mutedOn == null) return
         val now = clock()
-        _notice.value?.let { if (now >= it.untilMs || target.isEnded) _notice.value = null }
+        if (target.isEnded) {
+            // This viewing is over: whatever starts it again (the end card's replay, the controls' own button)
+            // is a new viewing that skips again.
+            skipped.clear()
+            _notice.value = null
+        }
+        _notice.value?.let { if (now >= it.untilMs) _notice.value = null }
         if (target.isLive) {
             applyMute(target, false)
             return

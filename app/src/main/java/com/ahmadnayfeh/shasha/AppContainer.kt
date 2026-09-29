@@ -12,6 +12,7 @@ import com.ahmadnayfeh.shasha.data.NetworkStatus
 import com.ahmadnayfeh.shasha.data.OverridesRepository
 import com.ahmadnayfeh.shasha.data.ParentPinRepository
 import com.ahmadnayfeh.shasha.data.PlaybackLockStore
+import com.ahmadnayfeh.shasha.data.PlaybackSettings
 import com.ahmadnayfeh.shasha.data.PolicyStore
 import com.ahmadnayfeh.shasha.data.ProfileRepository
 import com.ahmadnayfeh.shasha.data.StreamRepository
@@ -231,7 +232,11 @@ class AppContainer(context: Context) {
         BackupManager(
             db = database,
             policyStore = policyStore,
-            sections = listOf(RemoteSettings.backupSection(remoteStore), SponsorBlockSettings.backupSection(sponsorStore)),
+            sections = listOf(
+                RemoteSettings.backupSection(remoteStore),
+                SponsorBlockSettings.backupSection(sponsorStore),
+                PlaybackSettings.backupSection(playbackStore),
+            ),
             clock = clock,
             appVersion = BuildConfig.VERSION_NAME,
             filesDir = { appContext.getExternalFilesDir(null) },
@@ -290,6 +295,13 @@ class AppContainer(context: Context) {
     val sponsorBlock: SponsorBlockRepository by lazy {
         SponsorBlockRepository(SponsorBlockClient(okHttpClient), database.sponsorSegments(), now = clock::millis)
     }
+
+    // ---- Playback (SPEC §7 «الجودة الافتراضية»). -------------------------------------------------------------
+
+    private val playbackStore: DataStore<Preferences> by lazy { PlaybackSettings.createStore(appContext) }
+
+    /** The highest quality "Auto" reaches (1080p unless Settings changed it); the player reads it for each video. */
+    val playbackSettings: PlaybackSettings by lazy { PlaybackSettings(playbackStore, appScope) }
 
     /**
      * Starts the session state and the usage tracker ([foreground]: [spendingTime], the app visible and a
