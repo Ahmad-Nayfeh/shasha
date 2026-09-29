@@ -43,6 +43,9 @@ import com.ahmadnayfeh.shasha.remote.RemoteSettings
 import com.ahmadnayfeh.shasha.remote.RemoteTexts
 import com.ahmadnayfeh.shasha.remote.TvDisplay
 import com.ahmadnayfeh.shasha.remote.TvRemoteController
+import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockClient
+import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockRepository
+import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockSettings
 import com.ahmadnayfeh.shasha.ui.navigation.NavigationRequests
 import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
 import com.ahmadnayfeh.shasha.ui.screens.kids.KidsFeed
@@ -228,7 +231,7 @@ class AppContainer(context: Context) {
         BackupManager(
             db = database,
             policyStore = policyStore,
-            sections = listOf(RemoteSettings.backupSection(remoteStore)),
+            sections = listOf(RemoteSettings.backupSection(remoteStore), SponsorBlockSettings.backupSection(sponsorStore)),
             clock = clock,
             appVersion = BuildConfig.VERSION_NAME,
             filesDir = { appContext.getExternalFilesDir(null) },
@@ -274,6 +277,18 @@ class AppContainer(context: Context) {
             // A new parent PIN logs every phone out of the parent section.
             appScope.launch { parentPin.changes.collect { runtime.revokeParentSessions() } }
         }
+    }
+
+    // ---- SponsorBlock (SPEC §1, §7). ------------------------------------------------------------------------
+
+    private val sponsorStore: DataStore<Preferences> by lazy { SponsorBlockSettings.createStore(appContext) }
+
+    /** «فئات SponsorBlock»: which categories every profile's videos skip. */
+    val sponsorBlockSettings: SponsorBlockSettings by lazy { SponsorBlockSettings(sponsorStore) }
+
+    /** A video's segments, asked for by the prefix of its hash and kept in Room for a day. */
+    val sponsorBlock: SponsorBlockRepository by lazy {
+        SponsorBlockRepository(SponsorBlockClient(okHttpClient), database.sponsorSegments(), now = clock::millis)
     }
 
     /**

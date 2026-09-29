@@ -14,6 +14,7 @@ import com.ahmadnayfeh.shasha.backup.BackupDao
  *
  * - 1: subscriptions, feed, progress, history, watch later (phase 2).
  * - 2: profiles, usage records, surrender events (phase 3): new tables only, so Room migrates by itself.
+ * - 3: sponsor_segments (phase 6), the SponsorBlock cache: a new table only.
  */
 @Database(
     entities = [
@@ -25,10 +26,11 @@ import com.ahmadnayfeh.shasha.backup.BackupDao
         ProfileEntity::class,
         UsageRecordEntity::class,
         SurrenderEventEntity::class,
+        SponsorSegmentsEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
 )
 abstract class ShashaDatabase : RoomDatabase() {
     abstract fun subscriptions(): SubscriptionDao
@@ -46,6 +48,9 @@ abstract class ShashaDatabase : RoomDatabase() {
     abstract fun usage(): UsageDao
 
     abstract fun surrenders(): SurrenderDao
+
+    /** SponsorBlock's answers, kept for a day (sponsorblock/SponsorBlockRepository). */
+    abstract fun sponsorSegments(): SponsorSegmentDao
 
     /** The manual backup's whole-table reads and writes (queries only: no schema change). */
     abstract fun backup(): BackupDao

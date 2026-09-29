@@ -58,7 +58,7 @@
     <string name="diag_about_live">بث مباشر: إن انتهى هذا البث فظهور الخطأ متوقَّع.</string>
     <string name="diag_about_kids">فيديو مصنّف «للأطفال»: أصعب حالة في يوتيوب حالياً.</string>
     <string name="diag_about_deleted">فيديو محذوف: النتيجة الصحيحة هي شاشة الخطأ.</string>
-    <string name="diag_about_sponsorblock">فيه مقطع رعاية معروف لاختبار التخطي (في مرحلة لاحقة).</string>
+    <string name="diag_about_sponsorblock">فيه إعلان مموَّل معروف: يجب أن يُتخطّى وحده.</string>
     <string name="diag_status_waiting">في الانتظار</string>
     <string name="diag_status_checking">جارٍ الفحص…</string>
     <string name="diag_status_ready">يعمل · حتى %1$sp</string>

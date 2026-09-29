@@ -47,6 +47,10 @@ import com.ahmadnayfeh.shasha.policy.PlayOrigin
 import com.ahmadnayfeh.shasha.policy.PlaybackMeter
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.UnlockMethod
+import com.ahmadnayfeh.shasha.sponsorblock.PlaybackSkipTarget
+import com.ahmadnayfeh.shasha.sponsorblock.SkipController
+import com.ahmadnayfeh.shasha.sponsorblock.SponsorSkipLayer
+import com.ahmadnayfeh.shasha.sponsorblock.SponsorSkipsViewModel
 import com.ahmadnayfeh.shasha.ui.components.LocalAppMessages
 import com.ahmadnayfeh.shasha.ui.components.PolicyNotice
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
@@ -125,6 +129,20 @@ fun PlayerScreen(
             }
         },
     )
+    // SPEC §1: SponsorBlock's segments are looked up now, beside the extraction; the adult may take a skip back.
+    val sponsor: SponsorSkipsViewModel = viewModel(
+        key = "sponsor:$videoId",
+        factory = viewModelFactory {
+            initializer {
+                SponsorSkipsViewModel(
+                    videoId = videoId,
+                    segments = container.sponsorBlock::segments,
+                    categories = container.sponsorBlockSettings.categories,
+                    undoAllowed = profile?.let { container.policyEngine.features(it).undoSponsorSkip } ?: false,
+                )
+            }
+        },
+    )
     val method = if (locking != null && profile != null) {
         // The lock as it is now (a StateFlow: its current value from the first frame), and how it holds this screen.
         val current by locking.lock.collectAsStateWithLifecycle()
@@ -150,6 +168,7 @@ fun PlayerScreen(
         lockActions = actions,
         onSurrendered = { messages?.show(surrendered, ShashaIcons.Lock) },
         onKidsHome = onKidsHome,
+        skipper = sponsor.skipper,
     )
 }
 
@@ -181,6 +200,7 @@ internal fun PlayerContent(
     lockActions: PlayerLockActions = NoLockActions,
     onSurrendered: () -> Unit = {},
     onKidsHome: (() -> Unit)? = null,
+    skipper: SkipController? = null,
 ) {
     val load by vm.load.collectAsStateWithLifecycle()
     LockedPlayback(lockMethod, lockActions, onLeave = onBack, onSurrendered = onSurrendered) { lock ->
@@ -221,6 +241,7 @@ internal fun PlayerContent(
                     onPlayNext = onPlayNext,
                     onKidsHome = onKidsHome,
                     locked = lockMethod != null,
+                    skipper = skipper,
                 )
             }
         }
@@ -243,6 +264,7 @@ private fun VideoPlayer(
     onPlayNext: (VideoItem, index: Int) -> Unit,
     onKidsHome: (() -> Unit)?,
     locked: Boolean,
+    skipper: SkipController? = null,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -349,6 +371,7 @@ private fun VideoPlayer(
                 onBack = lock::requestExit,
                 onReplay = {
                     vm.onReplay()
+                    skipper?.onReplay()
                     current.onAction(PlayerAction.TogglePlayPause)
                 },
                 onPlayNext = { next -> onPlayNext(next, (ending as? PlaybackEnd.UpNext)?.index ?: -1) },
@@ -358,16 +381,26 @@ private fun VideoPlayer(
                 stillLocked = skipped && locked,
             )
         } else {
-            PlayerOsd(
-                state = ui,
-                progress = current::progress,
-                onAction = current::onAction,
-                onExit = lock::requestExit,
-                savedForLater = savedForLater,
-                onToggleWatchLater = { vm.toggleWatchLater(ready.stream.video) },
-                resumedFromMs = resumedFrom,
-                suspended = lock.suspended,
-            )
+            val controls: @Composable (Modifier) -> Unit = { modifier ->
+                PlayerOsd(
+                    state = ui,
+                    progress = current::progress,
+                    onAction = current::onAction,
+                    onExit = lock::requestExit,
+                    modifier = modifier,
+                    savedForLater = savedForLater,
+                    onToggleWatchLater = { vm.toggleWatchLater(ready.stream.video) },
+                    resumedFromMs = resumedFrom,
+                    suspended = lock.suspended,
+                )
+            }
+            if (skipper != null) {
+                // SPEC §1: SponsorBlock skips over the video, with its notice (and the adult's undo) above the controls.
+                val target = remember(current) { PlaybackSkipTarget(current, ready.stream.video) }
+                SponsorSkipLayer(skipper, target, lockSuspended = lock.suspended, osd = controls)
+            } else {
+                controls(Modifier)
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.ahmadnayfeh.shasha.data.asSourceException
 import com.ahmadnayfeh.shasha.youtube.SourceException
@@ -228,6 +229,25 @@ class PlaybackController(
             is PlayerAction.SetSpeed -> player.playbackParameters = PlaybackParameters(action.speed)
             is PlayerAction.SetSubtitle -> setSubtitle(action.languageCode)
         }
+    }
+
+    /**
+     * Jumps to exactly [positionMs] (SponsorBlock: to a segment's end, or back to its start). EXACT only for this
+     * jump: a seek that snapped to a keyframe would land inside the segment it skips.
+     */
+    fun seekExactly(positionMs: Long) {
+        if (released) return
+        val before = player.seekParameters
+        player.setSeekParameters(SeekParameters.EXACT)
+        player.seekTo(positionMs.coerceAtLeast(0))
+        // Applied in order on the playback thread: the seek above still uses EXACT.
+        player.setSeekParameters(before)
+    }
+
+    /** Silences the video's sound (SponsorBlock "mute" segments) or gives it back. */
+    fun setMuted(muted: Boolean) {
+        if (released) return
+        player.volume = if (muted) 0f else 1f
     }
 
     private fun load(subtitleLanguage: String?, startPositionMs: Long) {
