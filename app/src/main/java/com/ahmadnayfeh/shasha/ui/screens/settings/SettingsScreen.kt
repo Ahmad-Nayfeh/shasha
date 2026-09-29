@@ -37,6 +37,7 @@ import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.BuildConfig
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
+import com.ahmadnayfeh.shasha.lock.ProtectionStatus
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
 import com.ahmadnayfeh.shasha.ui.components.FocusArea
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
@@ -70,6 +71,8 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
         onChangePin = settings.openChangePin,
         onImport = settings.openImport,
         onDiagnostics = settings.openDiagnostics,
+        protection = rememberProtectionStatus().value,
+        onProtection = settings.openProtection,
     )
     pending?.let { open ->
         PinDialog(onDismiss = { pending = null }) {
@@ -90,6 +93,7 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
 /**
  * الإعدادات: the parental sections first (they ask for the parent PIN: the adult profile may be left on
  * while a child walks by), then the general ones. «تغيير رمز PIN» asks for the current PIN itself.
+ * «حالة الحماية» sits in the header, its state at a glance ([protection]: null while it is read).
  */
 @Composable
 fun SettingsScreen(
@@ -103,17 +107,23 @@ fun SettingsScreen(
     onImport: () -> Unit,
     onDiagnostics: () -> Unit,
     modifier: Modifier = Modifier,
+    protection: ProtectionStatus? = null,
+    onProtection: () -> Unit = {},
 ) {
     val first = remember { FocusRequester() }
     TakeFocusWhenReady(focus, ready = true)
     FocusArea(focus, first, modifier.fillMaxSize().padding(GridDefaults.ContentPadding).testTag("settings")) {
         Column(Modifier.fillMaxSize()) {
             ScreenHeader(stringResource(R.string.settings_title), stringResource(R.string.settings_subtitle)) {
-                Text(
-                    stringResource(R.string.settings_version, appVersion, extractorVersion),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = ShashaColors.Muted,
-                )
+                Column(horizontalAlignment = Alignment.End) {
+                    ProtectionChip(protection, onProtection)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.settings_version, appVersion, extractorVersion),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = ShashaColors.Muted,
+                    )
+                }
             }
             Spacer(Modifier.height(20.dp))
             SectionLabel(stringResource(R.string.settings_section_parental), icon = ShashaIcons.Lock)

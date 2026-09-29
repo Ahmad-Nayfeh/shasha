@@ -249,10 +249,33 @@ class PolicyGateTest {
 
         assertThat(gate.checkPlay(other.videoId, PlayOrigin.Navigation, other)).isEqualTo(PlayCheck.Denied(DenyReason.LOCKED))
         assertThat(gate.checkPlay(locked.videoId, PlayOrigin.Navigation, locked)).isEqualTo(PlayCheck.Allowed(null))
-        // A link from the phone never replaces a locked video.
+        // A link from the phone never replaces a locked video (nor starts it again: it is on screen)...
         assertThat(gate.checkLink(YouTubeLink.Video(locked.videoId, null, null))).isEqualTo(PlayCheck.Denied(DenyReason.LOCKED))
+        // ...but a player that came from a link asks again for its own locked video (after Home, standby): it
+        // continues, and is not taken for "unavailable" (that would release its lock).
+        assertThat(gate.checkPlay(locked.videoId, PlayOrigin.Link)).isEqualTo(PlayCheck.Allowed(null))
+        extracted[other.videoId] = other
+        assertThat(gate.checkPlay(other.videoId, PlayOrigin.Link)).isEqualTo(PlayCheck.Denied(DenyReason.LOCKED))
         assertThat(withTimeout(5_000) { gate.lockState.first { it.playbackLocked } }.playbackLocked).isTrue()
         assertThat(engine.guardShouldEnforce(gate.lockState.value)).isTrue()
+    }
+
+    @Test
+    fun aChildsPlaylistLock_letsItsOwnPlaylistGoOn_whileTheEndedVideoCountsDown() = runBlocking<Unit> {
+        enterChild()
+        val first = clip("playlist001", channelId = OTHER_CHANNEL)
+        val second = clip("playlist002", channelId = OTHER_CHANNEL)
+        // The first video ended: the lock moved on to the second while the first still shows its countdown.
+        locks.set(engine.onVideoEnded(engine.lockPlayback(child, first.videoId, ALLOWED_PLAYLIST), nextVideoId = second.videoId))
+
+        // Home (or "time up") in the countdown: the first video's player asks again; it is the lock's own playlist.
+        assertThat(gate.checkPlay(first.videoId, PlayOrigin.Playlist(ALLOWED_PLAYLIST), first)).isEqualTo(PlayCheck.Allowed(null))
+        assertThat(gate.checkPlay(second.videoId, PlayOrigin.Playlist(ALLOWED_PLAYLIST), second)).isEqualTo(PlayCheck.Allowed(null))
+        // Nothing else: another playlist, the same video outside its playlist, a card of the home.
+        assertThat(gate.checkPlay(first.videoId, PlayOrigin.Playlist(OTHER_PLAYLIST), first)).isEqualTo(PlayCheck.Denied(DenyReason.NOT_IN_ALLOWLIST))
+        val allowed = clip("allowed0001")
+        assertThat(gate.checkPlay(allowed.videoId, PlayOrigin.Playlist(OTHER_PLAYLIST), allowed)).isEqualTo(PlayCheck.Denied(DenyReason.LOCKED))
+        assertThat(gate.checkPlay(allowed.videoId, PlayOrigin.Navigation, allowed)).isEqualTo(PlayCheck.Denied(DenyReason.LOCKED))
     }
 
     // ---- Profiles and the parent PIN ------------------------------------------------------------------

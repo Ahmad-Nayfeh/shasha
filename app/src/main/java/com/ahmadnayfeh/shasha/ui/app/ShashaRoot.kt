@@ -101,6 +101,7 @@ private fun ProfileScreens(profile: Profile, vm: RootViewModel, deps: RootDeps) 
                     nav = nav,
                     onSwitchProfile = vm::openPicker,
                     onExitProfile = { exiting = true },
+                    lock = deps.lock,
                 )
             }
             WarningBanner(deps.session.warningEvents, state)

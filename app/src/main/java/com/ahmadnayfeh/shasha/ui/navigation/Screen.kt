@@ -21,10 +21,18 @@ sealed interface Screen {
     /**
      * Inside a playlist, [playlistIndex] is the video's position: the next one plays when it ends.
      * [fromLink]: the video arrived as a link (the phone, another app); the policy then ignores any
-     * playlist it names and asks for the video's own channel.
+     * playlist it names and asks for the video's own channel. [diagnostic]: one of تشخيص's fixed test
+     * videos (adult only): it is not locked (SPEC §4's lock is about watching, not about checking that
+     * playback works; the live test never ends and would only leave through a surrender).
      */
     @Serializable
-    data class Player(val videoId: String, val playlistId: String? = null, val playlistIndex: Int = -1, val fromLink: Boolean = false) : Screen
+    data class Player(
+        val videoId: String,
+        val playlistId: String? = null,
+        val playlistIndex: Int = -1,
+        val fromLink: Boolean = false,
+        val diagnostic: Boolean = false,
+    ) : Screen
 
     /** Placeholder until the GitHub Releases updater arrives (SPEC phase 7). */
     @Serializable
@@ -62,4 +70,8 @@ sealed interface Screen {
     /** Settings → الإحصائيات (behind the parent PIN). */
     @Serializable
     data object Stats : Screen
+
+    /** Settings → حالة الحماية (SPEC §4): the guard's permissions and its measured returns. */
+    @Serializable
+    data object Protection : Screen
 }

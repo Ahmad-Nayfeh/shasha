@@ -178,15 +178,39 @@ class PolicyEngine(private val clock: Clock) {
         )
 
     /**
-     * The current video finished by itself. When a playlist continues with [nextVideoId], the lock
-     * moves to it. Otherwise a child's lock stays until the parent PIN (SPEC: "الخروج بـ PIN فقط"),
-     * while the adult's ends: only leaving *before* the end needs the exit challenge.
+     * The current video reached its end (owner's decision: a natural end releases the lock).
+     *
+     * - A child's playlist that continues with [nextVideoId] keeps the child locked: the lock moves to
+     *   that video, so the countdown to it cannot be used to leave. After the last video of the
+     *   playlist, or at the end of a single video, the lock ends and the child goes back to the child
+     *   home (still inside the child profile, its allowlist and its quota).
+     * - The adult's lock is per video (SPEC: leaving *before the video ends* needs the challenge): it
+     *   ends with every video, [nextVideoId] or not. The next playlist video locks itself again when
+     *   it starts ([lockPlayback]).
+     * - Only an end the video reached by itself counts ([played], see [PlayedPart.endedByItself]): a
+     *   video skipped to its end stays locked, so its end card still asks for the PIN or the challenge
+     *   (a child's playlist still moves on: the child stays locked on the next video anyway). Without a
+     *   measurement ([played] null) the end counts.
      */
-    fun onVideoEnded(lock: PlaybackLock, nextVideoId: String? = null): PlaybackLock? = when {
-        nextVideoId != null -> lock.copy(videoId = nextVideoId)
-        lock.unlock == UnlockMethod.PARENT_PIN -> lock
+    fun onVideoEnded(lock: PlaybackLock, nextVideoId: String? = null, played: PlayedPart? = null): PlaybackLock? = when {
+        nextVideoId != null && lock.unlock == UnlockMethod.PARENT_PIN -> lock.copy(videoId = nextVideoId)
+        played != null && !played.endedByItself -> lock
         else -> null
     }
+
+    /**
+     * The locked video can no longer play here: YouTube no longer serves it (removed, private, age or
+     * region restricted, 360p only, the extractor broken), or the rules changed meanwhile (a parent
+     * removed its channel from the allowlist). Nothing is left to watch, so the lock ends as at a
+     * natural end, instead of keeping the viewer on an error screen that only the PIN or the exit
+     * challenge would open. It is not a surrender: the viewer did not choose it.
+     *
+     * Not for failures the viewer can cause or that pass (no network, which a child can cause by pulling
+     * a cable or by switching the TV on before its Wi-Fi is up; YouTube's rate limits and blocks): the
+     * lock stays and the video is tried again. Not for "time up" and "outside schedule" either: those
+     * screens only pause the video, which continues, still locked, once the parent adds time.
+     */
+    fun onVideoUnavailable(lock: PlaybackLock): PlaybackLock? = null
 
     /**
      * Call only after the parent PIN was verified (TV or phone). It ends a child's lock. The adult's
@@ -194,6 +218,23 @@ class PolicyEngine(private val clock: Clock) {
      */
     fun unlockWithPin(lock: PlaybackLock): PlaybackLock? =
         if (lock.unlock == UnlockMethod.PARENT_PIN) null else lock
+
+    /**
+     * The phone's «فك قفل فيديو» in the parent section (reached only with the parent PIN): ends any
+     * lock, the adult's included (the owner is the parent, and this is his way out when the remote
+     * cannot do the challenge). For the adult it is still leaving before the end: record
+     * [surrenderOf] first (owner's decision to confirm: the alternative is refusing the adult's lock).
+     */
+    fun unlockByParent(lock: PlaybackLock): PlaybackLock? = null
+
+    /**
+     * What an early end of [lock] other than the exit challenge leaves in the stats: the adult's lock
+     * ended from the phone ([unlockByParent]), or left behind when another profile takes the TV at the
+     * start, is a surrender (SPEC §4: leaving before the end "يُسجَّل استسلاماً"); a child's lock is not
+     * (only the parent can end it, with the PIN). Store it before the lock is released.
+     */
+    fun surrenderOf(lock: PlaybackLock): SurrenderEvent? =
+        if (lock.unlock == UnlockMethod.EXIT_CHALLENGE) SurrenderEvent(lock.profileId, nowEpochMs(), lock.videoId) else null
 
     /**
      * The adult leaves early: when the button was held for [AdultExitChallenge.HOLD_MILLIS] and

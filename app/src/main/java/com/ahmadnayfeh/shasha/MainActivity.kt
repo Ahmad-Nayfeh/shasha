@@ -13,6 +13,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModelProvider
+import com.ahmadnayfeh.shasha.lock.GuardService
 import com.ahmadnayfeh.shasha.ui.app.RootScreen
 import com.ahmadnayfeh.shasha.ui.app.RootViewModel
 import com.ahmadnayfeh.shasha.ui.app.ShashaRoot
@@ -27,14 +28,20 @@ class MainActivity : ComponentActivity() {
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
         val root = ViewModelProvider(this, RootViewModel.factory(appContainer))[RootViewModel::class.java]
+        val visibility = appContainer.appVisibility
         // Back from HOME or the TV's standby, the adult profile asks for the PIN again (RootViewModel.onAppShown).
+        // The guard (SPEC §4) follows whether this activity is in front, and is started from here too: the
+        // ADB permissions may have been granted while the app was running.
         lifecycle.addObserver(
             LifecycleEventObserver { _, event ->
                 when (event) {
                     Lifecycle.Event.ON_START -> {
                         root.onAppShown(ownRequest = awaitingResult)
                         awaitingResult = false
+                        GuardService.start(this)
                     }
+                    Lifecycle.Event.ON_RESUME -> visibility.onResumed()
+                    Lifecycle.Event.ON_PAUSE -> visibility.onPaused()
                     Lifecycle.Event.ON_STOP -> if (!isChangingConfigurations) root.onAppHidden()
                     else -> Unit
                 }

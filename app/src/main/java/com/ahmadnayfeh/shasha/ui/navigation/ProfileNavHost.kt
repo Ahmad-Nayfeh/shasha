@@ -28,6 +28,7 @@ import androidx.tv.material3.Icon
 import com.ahmadnayfeh.shasha.BuildConfig
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
+import com.ahmadnayfeh.shasha.lock.LockController
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.ui.components.CardMenuHost
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
@@ -35,6 +36,7 @@ import com.ahmadnayfeh.shasha.ui.components.ParentalActions
 import com.ahmadnayfeh.shasha.ui.components.ProfileAvatar
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.components.containerViewModel
+import com.ahmadnayfeh.shasha.ui.lock.KeepLockedVideoOnScreen
 import com.ahmadnayfeh.shasha.ui.main.MainScreen
 import com.ahmadnayfeh.shasha.ui.main.RailAction
 import com.ahmadnayfeh.shasha.ui.main.SELECT_TAB
@@ -59,6 +61,7 @@ import com.ahmadnayfeh.shasha.ui.screens.settings.ChangePinRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.ImportRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.ProfileEditRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.ProfilesRoute
+import com.ahmadnayfeh.shasha.ui.screens.settings.ProtectionRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.SettingsRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.StatsRoute
 import com.ahmadnayfeh.shasha.ui.screens.updates.UpdatesPlaceholderScreen
@@ -89,6 +92,9 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.popExit(): ExitTra
  *
  * [onSwitchProfile] is the adult's «تبديل الملف»; [onExitProfile] a child's «خروج» (the caller asks for
  * the parent PIN). [tabsNav] and [tabContent] are for tests.
+ *
+ * [lock] (SPEC §4): every video the player starts is locked, and while this profile has a locked video
+ * nothing but its player is shown ([KeepLockedVideoOnScreen]; it also brings it back after a restart).
  */
 @Composable
 fun ProfileNavHost(
@@ -99,6 +105,7 @@ fun ProfileNavHost(
     modifier: Modifier = Modifier,
     tabsNav: NavHostController? = null,
     tabContent: TabContent? = null,
+    lock: LockController? = null,
 ) {
     val kids = profile.isChild
     val actions = remember(nav) { browseActions(nav) }
@@ -130,9 +137,10 @@ fun ProfileNavHost(
                 val tabs = tabsNav ?: rememberNavController()
                 MainScreen(if (kids) Tab.Kids else Tab.Adult, entry.savedStateHandle, railActions, tabs, content)
             }
-            browsingDestinations(nav, actions, adult = !kids)
+            browsingDestinations(nav, actions, profile, lock)
             if (!kids) adultDestinations(nav, actions, settings)
         }
+        if (lock != null) KeepLockedVideoOnScreen(lock.lock, profile.id, nav)
     }
     if (kids) {
         graph()
@@ -154,7 +162,8 @@ fun ProfileNavHost(
 }
 
 /** Channel and playlist pages, the player and the updater: every profile has them. */
-private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions: BrowseActions, adult: Boolean) {
+private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions: BrowseActions, profile: Profile, lock: LockController?) {
+    val adult = profile.isAdult
     composable<Screen.Channel> { entry ->
         val route = entry.toRoute<Screen.Channel>()
         ChannelRoute(
@@ -196,6 +205,11 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
                     popUpTo<Screen.Player> { inclusive = true }
                 }
             },
+            profile = profile,
+            // تشخيص's test videos are not watched: nothing locks them.
+            lock = lock.takeUnless { route.diagnostic },
+            // A child's video or playlist that ended frees the child: back to the child home (SPEC §4).
+            onKidsHome = if (adult) null else dropUnlessResumed { nav.showHome() },
         )
     }
     composable<Screen.Updates> {
@@ -208,19 +222,20 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
     }
 }
 
+/** Back to the rail's home tab, whatever was opened on the way (a channel, a playlist). */
+private fun NavHostController.showHome() {
+    getBackStackEntry<Screen.Main>().savedStateHandle[SELECT_TAB] = Tab.HOME.name
+    popBackStack(Screen.Main, inclusive = false)
+}
+
 /** Diagnostics, the import and the parent's settings: the adult profile only. */
 private fun NavGraphBuilder.adultDestinations(nav: NavHostController, actions: BrowseActions, settings: SettingsActions) {
     composable<Screen.Diagnostics> {
-        DiagnosticsRoute(onOpen = { videoId -> nav.navigate(Screen.Player(videoId)) { launchSingleTop = true } })
+        DiagnosticsRoute(onOpen = { videoId -> nav.navigate(Screen.Player(videoId, diagnostic = true)) { launchSingleTop = true } })
     }
     composable<Screen.ImportSubscriptions> {
         // «إلى الرئيسية»: back to the rail's home tab, where the imported channels' videos arrive.
-        ImportRoute(
-            onDone = dropUnlessResumed {
-                nav.getBackStackEntry<Screen.Main>().savedStateHandle[SELECT_TAB] = Tab.HOME.name
-                nav.popBackStack(Screen.Main, inclusive = false)
-            },
-        )
+        ImportRoute(onDone = dropUnlessResumed { nav.showHome() })
     }
     composable<Screen.Profiles> { ProfilesRoute(onOpenProfile = settings.openProfile) }
     composable<Screen.ProfileEdit> { entry ->
@@ -236,6 +251,7 @@ private fun NavGraphBuilder.adultDestinations(nav: NavHostController, actions: B
     composable<Screen.Blocklist> { BlocklistRoute() }
     composable<Screen.ChangePin> { ChangePinRoute(onDone = dropUnlessResumed { nav.popBackStack() }) }
     composable<Screen.Stats> { StatsRoute() }
+    composable<Screen.Protection> { ProtectionRoute() }
 }
 
 @Composable
@@ -278,4 +294,5 @@ private fun settingsActions(nav: NavHostController) = SettingsActions(
     openStats = { nav.navigate(Screen.Stats) { launchSingleTop = true } },
     openImport = { nav.navigate(Screen.ImportSubscriptions) { launchSingleTop = true } },
     openDiagnostics = { nav.navigate(Screen.Diagnostics) { launchSingleTop = true } },
+    openProtection = { nav.navigate(Screen.Protection) { launchSingleTop = true } },
 )

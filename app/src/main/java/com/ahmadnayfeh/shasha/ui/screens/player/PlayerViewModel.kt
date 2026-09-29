@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmadnayfeh.shasha.data.StreamRepository
 import com.ahmadnayfeh.shasha.data.asSourceException
+import com.ahmadnayfeh.shasha.player.PlaybackLocking
 import com.ahmadnayfeh.shasha.player.PlaybackProgress
+import com.ahmadnayfeh.shasha.player.PlayedMeter
 import com.ahmadnayfeh.shasha.player.ResumeState
 import com.ahmadnayfeh.shasha.player.StreamFreshness
 import com.ahmadnayfeh.shasha.player.WatchSession
@@ -41,6 +43,16 @@ sealed interface PlaybackEnd {
 /** The next playlist video that may play here, and its position in the playlist. */
 data class NextVideo(val video: VideoItem, val index: Int)
 
+/**
+ * A failure that means the video cannot play here (SPEC §4 lock: it ends, [PlaybackLocking.onUnavailable]):
+ * whatever YouTube answered. Not [SourceErrorKind.NETWORK]: no network is the TV's side, it passes, and a
+ * child can cause it; the lock stays and the video is tried again.
+ */
+internal val SourceErrorKind.endsTheLock: Boolean get() = this != SourceErrorKind.NETWORK
+
+/** Refusals that leave the lock as it is: the session's screens pause the video; "locked" is another video's lock. */
+private val KEEPS_THE_LOCK = setOf(DenyReason.TIME_UP, DenyReason.OUTSIDE_SCHEDULE, DenyReason.LOCKED)
+
 /** Asks the policy whether this video may start now ([com.ahmadnayfeh.shasha.policy.PolicyGate.checkPlay]). */
 fun interface PlayGate {
     /** @throws SourceException when the check had to extract the video and that failed. */
@@ -56,6 +68,11 @@ fun interface PlayGate {
  * [gate] is asked before anything plays (SPEC §3): before the first extraction, before every fresh one,
  * and before a released player starts again (back from Home, the "time up" screen, a lock): the rules
  * may have changed meanwhile (an allowlist edited from the phone). A refusal is [Load.Denied]: no player.
+ *
+ * [lock] (SPEC §4) hears how the video goes: every start (not after the end, until a replay), the end
+ * with the playlist video that follows ([playlistId]) and how much of the video was really played
+ * ([PlayedMeter]: skipped to its end, it stays locked), and a video that cannot play here any more (not
+ * for a lost network: the lock stays and the video is tried again, [retry]).
  */
 class PlayerViewModel(
     private val videoId: String,
@@ -65,6 +82,8 @@ class PlayerViewModel(
     private val gate: PlayGate? = null,
     private val elapsedClock: () -> Long = SystemClock::elapsedRealtime,
     private val wallClock: () -> Long = System::currentTimeMillis,
+    private val lock: PlaybackLocking? = null,
+    private val playlistId: String? = null,
 ) : ViewModel() {
 
     sealed interface Load {
@@ -99,6 +118,16 @@ class PlayerViewModel(
     private val _end = MutableStateFlow<PlaybackEnd?>(null)
     val end: StateFlow<PlaybackEnd?> = _end.asStateFlow()
 
+    /**
+     * The video reached its end by a jump, not by playing ([com.ahmadnayfeh.shasha.policy.PlayedPart.endedByItself]):
+     * its lock stays, so the end card does not send a child home by itself.
+     */
+    private val _skippedToEnd = MutableStateFlow(false)
+    val skippedToEnd: StateFlow<Boolean> = _skippedToEnd.asStateFlow()
+
+    /** What the players of this visit really played (SPEC §4). */
+    private val played = PlayedMeter()
+
     private var extraction: Job? = null
     private var resumeLookedUp = false
 
@@ -118,8 +147,13 @@ class PlayerViewModel(
         if (_load.value !== ready) return false
         if (recheck && gate != null) {
             recheck = false
-            checkAgain(ready)
-            return false
+            // A video that already ended only shows its end card: nothing plays, so nothing is asked (a
+            // child's lock has moved on to the next playlist video meanwhile: asked again, this one would
+            // be refused as "locked" and the countdown lost). The next video's own player asks for it.
+            if (_end.value == null) {
+                checkAgain(ready)
+                return false
+            }
         }
         if (!ready.freshness.refreshBeforeStart(elapsedClock())) return true
         extract(fresh = true)
@@ -143,7 +177,7 @@ class PlayerViewModel(
     /** Show the error screen, and do not reuse this stream's (probably refused) URLs. */
     fun fail(error: SourceException) {
         extraction?.cancel()
-        _load.value = Load.Failed(error)
+        show(Load.Failed(error))
         viewModelScope.launch { streams.invalidate(videoId) }
     }
 
@@ -155,11 +189,25 @@ class PlayerViewModel(
         resume = at
         _resumedFromMs.value = null
         recheck = true
+        played.stoppedAt(at.positionMs)
     }
 
-    /** A player started for this video: it goes into the history. */
+    /**
+     * A player started for this video: it goes into the history, and it is locked (SPEC §4). Not a player
+     * that comes back on the end card (after Home, say): the video that ended stays as its end left it
+     * until a replay.
+     */
     fun onPlaybackStarted(video: VideoItem) {
         session?.onStarted(video)
+        if (_end.value == null) {
+            played.startedAt(resume.positionMs)
+            lock?.onStarted(videoId, playlistId)
+        }
+    }
+
+    /** The player's position jumped (a seek, from anywhere): that part was not played. */
+    fun onJumped(fromMs: Long, toMs: Long) {
+        played.jumped(fromMs, toMs)
     }
 
     /** Every 10 s while playing, on pause, and when the player is released. */
@@ -167,18 +215,28 @@ class PlayerViewModel(
         session?.save(progress)
     }
 
-    /** The video played to its end: mark it watched and decide what comes next. */
+    /**
+     * The video reached its end: mark it watched and decide what comes next. The lock hears it once that
+     * is known, with how much of it was really played: a child's playlist keeps it locked on the next
+     * video; a video skipped to its end stays locked; anything else releases it.
+     */
     fun onEnded(progress: PlaybackProgress) {
         if (_end.value != null) return
         session?.onEnded(progress)
+        val end = if (progress.durationMs > 0) maxOf(progress.positionMs, progress.durationMs) else progress.positionMs
+        val part = played.endedAt(end, progress.durationMs, progress.isLive)
+        _skippedToEnd.value = !part.endedByItself
         val next = nextInPlaylist
         if (next == null) {
             _end.value = PlaybackEnd.Finished
+            lock?.onEnded(videoId, nextVideoId = null, played = part)
             return
         }
         viewModelScope.launch {
             try {
-                _end.value = next()?.let { PlaybackEnd.UpNext(it.video, it.index) } ?: PlaybackEnd.PlaylistFinished
+                val ending = next()?.let { PlaybackEnd.UpNext(it.video, it.index) } ?: PlaybackEnd.PlaylistFinished
+                _end.value = ending
+                lock?.onEnded(videoId, nextVideoId = (ending as? PlaybackEnd.UpNext)?.next?.videoId, played = part)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -187,9 +245,25 @@ class PlayerViewModel(
         }
     }
 
-    /** «إعادة التشغيل» from the end card. */
+    /** «إعادة التشغيل» from the end card: the video starts again from the beginning, and so does its lock. */
     fun onReplay() {
         _end.value = null
+        _skippedToEnd.value = false
+        played.reset()
+        lock?.onStarted(videoId, playlistId)
+    }
+
+    /**
+     * «إعادة المحاولة» on the error screen, or the network is back: a video that failed is asked for and
+     * extracted again (its lock stayed: a lost network does not end it).
+     */
+    fun retry() {
+        if (_load.value is Load.Failed) extract(fresh = true)
+    }
+
+    /** The network came back: a video that failed for the lack of it is tried again by itself. */
+    fun retryAfterNetwork() {
+        if ((_load.value as? Load.Failed)?.error?.kind == SourceErrorKind.NETWORK) extract(fresh = true)
     }
 
     fun toggleWatchLater(video: VideoItem) {
@@ -202,15 +276,35 @@ class PlayerViewModel(
         val check = gate ?: return
         extraction?.cancel()
         extraction = viewModelScope.launch {
-            _load.value = try {
-                when (val result = check.check(videoId)) {
-                    is PlayCheck.Denied -> Load.Denied(result.reason)
-                    is PlayCheck.Allowed -> Load.Ready(ready.stream, ready.freshness)
-                }
-            } catch (e: SourceException) {
-                Load.Failed(e)
-            }
+            show(
+                try {
+                    when (val result = check.check(videoId)) {
+                        is PlayCheck.Denied -> Load.Denied(result.reason)
+                        is PlayCheck.Allowed -> Load.Ready(ready.stream, ready.freshness)
+                    }
+                } catch (e: SourceException) {
+                    Load.Failed(e)
+                },
+            )
         }
+    }
+
+    /**
+     * [next] replaces what is shown. A video that cannot play here any more releases its lock
+     * ([endsTheLock]): YouTube no longer serves it, or the rules now say no. Not a lost network (a child
+     * can pull a cable, and a TV that restarts often opens the locked video before its Wi-Fi is up): the
+     * lock stays and the video is tried again. Nor "time up" and "outside schedule": the session's own
+     * screen covers the player then, and the video continues, still locked, once the parent adds time.
+     * Nor "locked": that is another lock's answer, never this video's.
+     */
+    private fun show(next: Load) {
+        _load.value = next
+        val unavailable = when (next) {
+            is Load.Failed -> next.error.kind.endsTheLock
+            is Load.Denied -> next.reason !in KEEPS_THE_LOCK
+            else -> false
+        }
+        if (unavailable) lock?.onUnavailable(videoId)
     }
 
     private fun extract(fresh: Boolean) {
@@ -221,11 +315,11 @@ class PlayerViewModel(
             // The saved position is read while the stream is extracted (only once: later extractions
             // continue from where this visit got to).
             val savedPosition = if (session != null && !resumeLookedUp) async { runCatching { session.resumePositionMs() }.getOrDefault(0L) } else null
-            _load.value = try {
+            val next = try {
                 // The policy first: nothing is prepared for a video that may not play here.
                 val stream = when (val check = gate?.check(videoId)) {
                     is PlayCheck.Denied -> {
-                        _load.value = Load.Denied(check.reason)
+                        show(Load.Denied(check.reason))
                         return@launch
                     }
                     is PlayCheck.Allowed -> check.stream ?: streams.stream(videoId)
@@ -242,6 +336,7 @@ class PlayerViewModel(
             } catch (e: SourceException) {
                 Load.Failed(e)
             }
+            show(next)
         }
     }
 }

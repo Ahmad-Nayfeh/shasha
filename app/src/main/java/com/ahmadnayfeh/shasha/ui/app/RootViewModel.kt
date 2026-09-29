@@ -11,6 +11,7 @@ import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.data.ActiveProfile
 import com.ahmadnayfeh.shasha.data.ParentPinRepository
 import com.ahmadnayfeh.shasha.data.ProfileRepository
+import com.ahmadnayfeh.shasha.lock.LockController
 import com.ahmadnayfeh.shasha.policy.PolicyGate
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.SessionController
@@ -67,6 +68,8 @@ class RootDeps(
     val session: SessionController,
     /** True while a profile's screens are on screen (not the setup or the picker): its time counts then. */
     val profileScreensShown: MutableStateFlow<Boolean> = MutableStateFlow(false),
+    /** SPEC §4's playback lock (null: nothing is ever locked, e.g. in tests of the profiles alone). */
+    val lock: LockController? = null,
 )
 
 /**
@@ -75,7 +78,8 @@ class RootDeps(
  * current profile's screens. Every switch goes through [PolicyGate.switchProfile] (the engine's PIN rules);
  * this only adds when the TV itself must ask again:
  *
- * - At start, the adult profile always asks for the PIN, even when it is the one the TV was left in.
+ * - At start, the adult profile always asks for the PIN, even when it is the one the TV was left in. A
+ *   child's locked video (SPEC §4) skips the picker instead: the TV goes straight back to it.
  * - The same when the app comes back after [RELOCK_AFTER_MS] or more out of sight (HOME, the TV's
  *   standby): the process, and the adult profile with it, may have stayed up all night ([onAppHidden],
  *   [onAppShown]).
@@ -126,6 +130,8 @@ class RootViewModel(
             val profile = deps.active.awaitProfile()
             val first = when {
                 !pinSet -> RootScreen.Setup
+                // A child's locked video goes on after a restart or a reboot (SPEC §4): straight back to it.
+                profile.isChild && deps.lock?.current()?.profileId == profile.id -> RootScreen.Browse
                 deps.profiles.all().any { it.isChild } -> RootScreen.Picker(PickerMode.START)
                 else -> RootScreen.Browse
             }
@@ -251,6 +257,8 @@ class RootViewModel(
     /**
      * Enters [target] ([pin] when [needsPin] asked for it). Staying in the current profile checks the PIN
      * itself where it is needed (the adult at start); everything else is a [PolicyGate.switchProfile].
+     * On the start picker another profile also ends a locked adult video left behind (the TV was switched
+     * off mid-video), as a surrender: nobody is kept from the TV by it (SPEC §4).
      */
     suspend fun choose(target: Profile, pin: String?): PinCheck {
         val deps = _deps.value ?: return PinCheck.Refused(R.string.pin_check_failed)
@@ -258,10 +266,11 @@ class RootViewModel(
         if (pinNeeded && pin == null) return PinCheck.Refused(R.string.pin_required)
         val usePin = pin ?: exitPinFor(target)
         val current = deps.active.awaitProfile()
+        val atStart = (_screen.value as? RootScreen.Picker)?.mode == PickerMode.START
         // Trusted before the switch: the new profile arrives (onProfile) before the switch returns.
         trusted = target.id
         val result = when {
-            target.id != current.id -> deps.gate.switchProfile(target.id, usePin).toCheck()
+            target.id != current.id -> deps.gate.switchProfile(target.id, usePin, fromStartPicker = atStart).toCheck()
             pinNeeded -> deps.gate.verifyParentPin(checkNotNull(usePin)).toCheck()
             else -> PinCheck.Accepted
         }
@@ -295,6 +304,7 @@ class RootViewModel(
                             container.policy,
                             container.session,
                             container.profileScreensShown,
+                            container.lock,
                         )
                     }
                 })

@@ -33,11 +33,23 @@ class PlayQueues(private val max: Int = 2) {
 class NextInPlaylist(private val queues: PlayQueues, private val source: VideoSource) {
 
     /** @return null at the end of the playlist. @throws com.ahmadnayfeh.shasha.youtube.SourceException */
-    suspend fun after(playlistId: String, index: Int): VideoItem? {
+    suspend fun after(playlistId: String, index: Int): VideoItem? =
+        load(playlistId) { index + 1 <= it.videos.lastIndex }.videos.getOrNull(index + 1)
+
+    /**
+     * Where [videoId] is in the playlist, loading more of it when needed; null when it is not there. For a
+     * video that comes back without its position (the playback lock restores it after a restart).
+     * @throws com.ahmadnayfeh.shasha.youtube.SourceException
+     */
+    suspend fun indexOf(playlistId: String, videoId: String): Int? =
+        load(playlistId) { queue -> queue.videos.any { it.videoId == videoId } }.videos.indexOfFirst { it.videoId == videoId }.takeIf { it >= 0 }
+
+    /** The playlist as known so far, with pages added until [enough] (or its end). */
+    private suspend fun load(playlistId: String, enough: (PlayQueue) -> Boolean): PlayQueue {
         var queue = queues.get(playlistId)
             ?: source.playlist(playlistId).let { PlayQueue(playlistId, it.videos.distinctBy { v -> v.videoId }, it.next) }
         var pages = 0
-        while (index + 1 > queue.videos.lastIndex && queue.next != null && pages < MAX_PAGES) {
+        while (!enough(queue) && queue.next != null && pages < MAX_PAGES) {
             val more = source.playlist(playlistId, queue.next)
             val known = queue.videos.mapTo(HashSet()) { it.videoId }
             // Same rule as the playlist page: a video already listed is not listed twice.
@@ -45,7 +57,7 @@ class NextInPlaylist(private val queues: PlayQueues, private val source: VideoSo
             pages++
         }
         queues.put(queue)
-        return queue.videos.getOrNull(index + 1)
+        return queue
     }
 
     private companion object {

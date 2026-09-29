@@ -1,15 +1,18 @@
 package com.ahmadnayfeh.shasha.policy
 
+import android.util.Log
 import androidx.annotation.StringRes
 import com.ahmadnayfeh.shasha.data.ActiveProfile
 import com.ahmadnayfeh.shasha.data.ParentPinRepository
 import com.ahmadnayfeh.shasha.data.PinResult
 import com.ahmadnayfeh.shasha.data.PlaybackLockStore
 import com.ahmadnayfeh.shasha.data.ProfileRepository
+import com.ahmadnayfeh.shasha.lock.SurrenderLog
 import com.ahmadnayfeh.shasha.youtube.SourceItem
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.YouTubeLink
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -97,6 +100,8 @@ class PolicyGate(
     private val parentPin: ParentPinRepository,
     private val lookup: VideoLookup,
     scope: CoroutineScope,
+    /** Where an adult lock left behind at the start is recorded as a surrender (null: nowhere, in tests). */
+    private val surrenders: SurrenderLog? = null,
 ) {
     private val switching = Mutex()
 
@@ -139,8 +144,11 @@ class PolicyGate(
     /**
      * May [videoId] start now? Content first (a forbidden video never even shows "time up"), then the
      * schedule and the quota, then the playback lock: while a video is locked nothing else starts,
-     * except the locked video itself (back after a restart, or the playlist's next video that the lock
-     * moved to).
+     * except what the lock holds itself, whatever [origin] the player has: the locked video (back after
+     * Home, standby, "time up" or a restart; a player that came from a link too), and, for a player of
+     * the lock's own playlist ([PlayOrigin.Playlist]), that playlist's videos (a child's lock moves on to
+     * the next video while the ended one still shows its countdown, and «شغّل الآن» may come before the
+     * move is stored).
      *
      * [known] is the list item that was chosen, when there is one: with its channel (and, where shorts
      * are hidden, its duration) no extraction is needed. Otherwise, and always for a [PlayOrigin.Link],
@@ -149,7 +157,19 @@ class PolicyGate(
      * @throws com.ahmadnayfeh.shasha.youtube.SourceException when the video had to be extracted and that
      *   failed: show the unified error screen, like the player does.
      */
-    suspend fun checkPlay(videoId: String, origin: PlayOrigin, known: VideoItem? = null): PlayCheck {
+    suspend fun checkPlay(videoId: String, origin: PlayOrigin, known: VideoItem? = null): PlayCheck =
+        check(videoId, origin, known, lockedPasses = true)
+
+    /**
+     * A video link from the phone (or shared from another app), before anything navigates to it. Its
+     * playlist (`&list=`) is ignored on purpose: in a child profile the video's own channel must be
+     * allowlisted (SPEC acceptance: a channel outside the allowlist never plays, even through a link). To
+     * play a playlist, open the playlist. While a video is locked no link starts (LOCKED), the locked
+     * video's own link included: it is already on screen.
+     */
+    suspend fun checkLink(link: YouTubeLink.Video): PlayCheck = check(link.id, PlayOrigin.Link, known = null, lockedPasses = false)
+
+    private suspend fun check(videoId: String, origin: PlayOrigin, known: VideoItem?, lockedPasses: Boolean): PlayCheck {
         val current = active.awaitProfile()
         val trusted = known?.takeIf { origin != PlayOrigin.Link && it.videoId == videoId && it.channelId != null && !needsDuration(current, it) }
         val found = if (trusted == null) lookup.lookup(videoId) else null
@@ -157,23 +177,16 @@ class PolicyGate(
         val candidate = video.toCandidate(viaPlaylistId = (origin as? PlayOrigin.Playlist)?.playlistId)
         val state = session.current()
         val lock = locks.current()
-        val decision = when {
-            origin == PlayOrigin.Link -> engine.canPlayLink(current, candidate, LockState.of(lock, state))
-            lock != null && lock.profileId == current.id && lock.videoId == videoId -> engine.canPlay(current, candidate, state)
-            else -> engine.canPlay(current, candidate, LockState.of(lock, state))
-        }
+        val held = lockedPasses && lock != null && lock.profileId == current.id &&
+            (lock.videoId == videoId || (lock.playlistId != null && (origin as? PlayOrigin.Playlist)?.playlistId == lock.playlistId))
+        // What the lock holds is judged without it (the content and time rules still apply to it).
+        val lockState = LockState.of(lock.takeUnless { held }, state)
+        val decision = if (origin == PlayOrigin.Link) engine.canPlayLink(current, candidate, lockState) else engine.canPlay(current, candidate, lockState)
         return when (decision) {
             Decision.Allow -> PlayCheck.Allowed(found?.stream)
             is Decision.Deny -> PlayCheck.Denied(decision.reason)
         }
     }
-
-    /**
-     * A video link from the phone (or shared from another app). Its playlist (`&list=`) is ignored on
-     * purpose: in a child profile the video's own channel must be allowlisted (SPEC acceptance: a channel
-     * outside the allowlist never plays, even through a link). To play a playlist, open the playlist.
-     */
-    suspend fun checkLink(link: YouTubeLink.Video): PlayCheck = checkPlay(link.id, PlayOrigin.Link)
 
     /** The parent PIN, through the one shared attempt limiter (TV and phone alike). */
     suspend fun verifyParentPin(pin: String): PinResult = parentPin.verify(pin)
@@ -188,15 +201,21 @@ class PolicyGate(
      * Makes [profileId] current when the engine's rules allow it: the parent PIN to leave a child
      * profile or to enter the adult one ([pin] null when none was typed). A child's playback lock ends
      * with the PIN (the parent is there); the adult's needs its exit challenge first.
+     *
+     * [fromStartPicker]: the choice is made on the picker the TV shows when it starts or comes back after
+     * a while ([com.ahmadnayfeh.shasha.ui.app.PickerMode.START]). An adult's locked video left there (the
+     * TV was switched off mid-video) must not keep the others from the TV: choosing another profile ends
+     * it, recorded as a surrender ([PolicyEngine.surrenderOf]). Choosing the same adult keeps it.
      */
-    suspend fun switchProfile(profileId: String, pin: String?): SwitchResult = switching.withLock {
+    suspend fun switchProfile(profileId: String, pin: String?, fromStartPicker: Boolean = false): SwitchResult = switching.withLock {
         val target = profiles.get(profileId) ?: return@withLock SwitchResult.NotFound
         val current = active.awaitProfile()
         if (target.id == current.id) return@withLock SwitchResult.Switched
         val needsPin = needsPin(current, target)
         if ((needsPin || target.isChild) && !parentPin.isSet()) return@withLock SwitchResult.PinNotSet
         val lock = locks.current()
-        if (lock != null && (!needsPin || engine.unlockWithPin(lock) != null)) return@withLock SwitchResult.PlaybackLocked
+        val leftBehind = lock?.takeIf { fromStartPicker && it.unlock == UnlockMethod.EXIT_CHALLENGE && it.profileId == current.id }
+        if (lock != null && leftBehind == null && (!needsPin || engine.unlockWithPin(lock) != null)) return@withLock SwitchResult.PlaybackLocked
         if (needsPin) {
             if (pin == null) return@withLock SwitchResult.PinRequired
             when (val result = parentPin.verify(pin)) {
@@ -206,8 +225,25 @@ class PolicyGate(
                 PinResult.NotSet -> return@withLock SwitchResult.PinNotSet
             }
         }
-        if (lock != null) locks.set(null) // the verified PIN ended a child's lock (engine.unlockWithPin)
+        if (leftBehind != null) recordLeftBehind(leftBehind)
+        // The verified PIN ended a child's lock (engine.unlockWithPin), or the adult's was left behind.
+        if (lock != null) locks.set(null)
         if (active.switchTo(target.id)) SwitchResult.Switched else SwitchResult.NotFound
+    }
+
+    /**
+     * The surrender of an adult lock left behind at the start. A failure to store it is logged and the
+     * switch goes on: whoever sits at the TV must never be kept out by it.
+     */
+    private suspend fun recordLeftBehind(lock: PlaybackLock) {
+        val surrender = engine.surrenderOf(lock) ?: return
+        try {
+            surrenders?.record(surrender)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not record the surrender of a lock left behind", e)
+        }
     }
 
     private fun needsPin(from: Profile, to: Profile): Boolean =
@@ -215,4 +251,8 @@ class PolicyGate(
 
     /** The shorts rule needs a duration the item lacks (RSS items): the extraction has it. */
     private fun needsDuration(profile: Profile, video: VideoItem): Boolean = engine.needsDuration(profile, video.toCandidate())
+
+    private companion object {
+        const val TAG = "PolicyGate"
+    }
 }

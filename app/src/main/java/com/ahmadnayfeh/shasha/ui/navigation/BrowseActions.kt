@@ -35,4 +35,5 @@ class SettingsActions(
     val openStats: () -> Unit,
     val openImport: () -> Unit,
     val openDiagnostics: () -> Unit,
+    val openProtection: () -> Unit = {},
 )

@@ -19,6 +19,9 @@ import com.ahmadnayfeh.shasha.data.UsageRepository
 import com.ahmadnayfeh.shasha.data.WatchRepository
 import com.ahmadnayfeh.shasha.data.db.ShashaDatabase
 import com.ahmadnayfeh.shasha.feed.FeedSyncScheduler
+import com.ahmadnayfeh.shasha.lock.AppVisibility
+import com.ahmadnayfeh.shasha.lock.GuardReturnTimes
+import com.ahmadnayfeh.shasha.lock.LockController
 import com.ahmadnayfeh.shasha.player.PlayQueues
 import com.ahmadnayfeh.shasha.policy.DeviceClock
 import com.ahmadnayfeh.shasha.policy.DeviceUptime
@@ -138,6 +141,31 @@ class AppContainer(context: Context) {
     /** SPEC §4's playback lock, persisted (phase 4 drives it). */
     val playbackLock: PlaybackLockStore by lazy { PlaybackLockStore(policyStore, appScope) }
 
+    /**
+     * SPEC §4's in-app lock over [playbackLock]: the player locks every video it starts, the lock screens
+     * open it (the parent PIN, the adult's exit challenge), and the phone's parent section ends it
+     * ([LockController.unlockByParent]).
+     */
+    val lock: LockController by lazy {
+        LockController(
+            engine = policyEngine,
+            store = playbackLock,
+            profile = currentProfile.profile,
+            verifyPin = { pin -> policy.verifyParentPin(pin) },
+            pinLockMillis = { parentPin.remainingLockMillis() },
+            surrenders = { event -> usage.recordSurrender(event) },
+            scope = appScope,
+        )
+    }
+
+    // ---- The guard outside the app (SPEC §4): lock/GuardService. ---------------------------------------
+
+    /** Whether Shasha's activity is in front (MainActivity reports it): the guard acts only when it is not. */
+    val appVisibility: AppVisibility = AppVisibility()
+
+    /** The guard's last returns, measured on the TV (SPEC acceptance: Home → back ≤ 2 s). */
+    val guardReturnTimes: GuardReturnTimes by lazy { GuardReturnTimes.create(appContext) }
+
     val session: SessionController by lazy {
         SessionController(policyEngine, currentProfile.profile, usage, overrides, appScope, onNewDay = ::dailyCleanup)
     }
@@ -164,6 +192,7 @@ class AppContainer(context: Context) {
             parentPin = parentPin,
             lookup = VideoLookup { videoId -> streams.stream(videoId).let { LookedUpVideo(it.video, it) } },
             scope = appScope,
+            surrenders = { event -> usage.recordSurrender(event) },
         )
     }
 

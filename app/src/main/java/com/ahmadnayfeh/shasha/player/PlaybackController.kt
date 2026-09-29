@@ -36,6 +36,9 @@ import kotlinx.coroutines.flow.update
  * so the track selector applies the same cap ([withAutoQualityCap]). A fixed quality is a
  * TrackSelectionOverride on the same source, so switching does not reload the video.
  *
+ * [onJump] hears every jump of the position (a seek from anywhere: the controls, the phone, a replay),
+ * from where to where: what was skipped was not played ([PlayedMeter], SPEC §4).
+ *
  * Main thread only.
  */
 @OptIn(UnstableApi::class)
@@ -43,6 +46,7 @@ class PlaybackController(
     context: Context,
     private val factory: YouTubeMediaSourceFactory,
     private val stream: StreamDetails,
+    private val onJump: (fromMs: Long, toMs: Long) -> Unit = { _, _ -> },
     private val onError: (SourceException) -> Unit,
 ) {
     private val trackSelector = DefaultTrackSelector(context)
@@ -115,6 +119,11 @@ class PlaybackController(
 
         override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) =
             _state.update { it.copy(speed = playbackParameters.speed) }
+
+        // Every reason, not only seeks: whatever moved the position was not played through.
+        override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
+            if (!stream.video.isLive) onJump(oldPosition.positionMs, newPosition.positionMs)
+        }
 
         override fun onPlayerError(error: PlaybackException) {
             if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {

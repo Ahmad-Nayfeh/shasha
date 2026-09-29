@@ -119,6 +119,9 @@ private val OK_KEYS = setOf(KEYCODE_DPAD_CENTER, KEYCODE_ENTER, KEYCODE_NUMPAD_E
  *
  * [savedForLater] (null = hidden) adds the «شاهد لاحقاً» chip; [resumedFromMs] shows "استُكمل من 12:34"
  * for [resumeHintMs] once playback runs.
+ *
+ * [suspended]: the lock (SPEC §4) has something in front, its exit ring or a lock screen. The controls step
+ * back (nothing stays half-pressed under the ring) and, when it is over, the focus comes back here.
  */
 @Composable
 fun PlayerOsd(
@@ -134,6 +137,7 @@ fun PlayerOsd(
     onToggleWatchLater: () -> Unit = {},
     resumedFromMs: Long? = null,
     resumeHintMs: Long = RESUME_HINT_MS,
+    suspended: Boolean = false,
 ) {
     var visible by remember { mutableStateOf(initiallyVisible || initialMenu != null) }
     var menu by remember { mutableStateOf(initialMenu) }
@@ -272,8 +276,9 @@ fun PlayerOsd(
         return false
     }
 
-    // Safety net: the D-pad keys are normally consumed above; if focus was lost, BACK still behaves.
-    BackHandler { back() }
+    // Safety net: the D-pad keys are normally consumed above; if focus was lost, BACK still behaves. Not while
+    // the lock has something in front: BACK is its own then.
+    BackHandler(enabled = !suspended) { back() }
 
     // While the title shows, the top of the screen is the player's: the 5-minute notice waits below it.
     val clearance = LocalTopClearance.current
@@ -309,6 +314,17 @@ fun PlayerOsd(
         }
     }
     LaunchedEffect(state.isEnded) { if (state.isEnded) show() }
+    var wasSuspended by remember { mutableStateOf(false) }
+    LaunchedEffect(suspended) {
+        if (suspended) {
+            // The key that started a hold was taken over before its release: forget waiting for it.
+            swallowUp[0] = NO_KEY
+            hide()
+        } else if (wasSuspended) {
+            runCatching { rootFocus.requestFocus() }
+        }
+        wasSuspended = suspended
+    }
     LaunchedEffect(refocusChip) {
         val chip = refocusChip ?: return@LaunchedEffect
         withFrameNanos { }

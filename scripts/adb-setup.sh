@@ -9,7 +9,7 @@ set -euo pipefail
 readonly PKG=com.ahmadnayfeh.shasha
 readonly ACTIVITY="$PKG/.MainActivity"
 readonly YT_PKG=com.google.android.youtube.tv
-# The app starts its guard itself; this script only reports whether it is running.
+# The app starts its guard itself (at its start and after a reboot); this script only reports whether it runs.
 readonly GUARD="$PKG/.lock.GuardService"
 # SYSTEM_ALERT_WINDOW: the guard draws over other apps. GET_USAGE_STATS: it sees which app is in
 # front. REQUEST_INSTALL_PACKAGES: the in-app updater may open the system installer.
@@ -272,9 +272,11 @@ setup() {
     "Guard / الحارس:            $guard" \
     "YouTube / يوتيوب الرسمي:  $YOUTUBE_STATUS" \
     "Undo / للتراجع:            $0 --undo $SERIAL"
-  info "" "The app starts its guard when protection is needed. To double-check, open" \
-    "Shasha > Settings > Protection status on the TV." \
-    "التطبيق يشغّل الحارس عند الحاجة. للتأكد: افتح تطبيق شاشة > الإعدادات > حالة الحماية."
+  info "" "The app runs its guard from its first start and after every reboot; it acts only while" \
+    "a video is locked, time is up or it is outside the schedule. To double-check, open" \
+    "Shasha > Settings > Protection status on the TV (it also shows how fast the app came back)." \
+    "التطبيق يشغّل الحارس من أول تشغيل وبعد كل إعادة تشغيل للشاشة، ولا يتدخل إلا أثناء قفل فيديو أو بعد انتهاء الوقت أو خارج الجدول." \
+    "للتأكد: افتح تطبيق شاشة > الإعدادات > حالة الحماية (وفيها سرعة العودة المقيسة)."
   [ "$ops_ok" = true ] || exit 1
 }
 

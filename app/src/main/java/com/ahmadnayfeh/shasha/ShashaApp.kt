@@ -11,6 +11,7 @@ import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
+import com.ahmadnayfeh.shasha.lock.GuardService
 import com.ahmadnayfeh.shasha.policy.spendingTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,6 +29,8 @@ class ShashaApp : Application(), SingletonImageLoader.Factory {
         // The two-hourly feed sync (SPEC §2); an existing schedule is kept.
         container.feedSyncScheduler.ensurePeriodic()
         startPolicy()
+        // SPEC §4's guard, whenever its ADB permissions are granted (also when a job or the boot started us).
+        GuardService.start(this)
     }
 
     /**

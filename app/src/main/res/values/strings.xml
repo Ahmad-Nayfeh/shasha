@@ -561,4 +561,110 @@
     <string name="import_error_no_csv">لا يوجد ملف CSV داخل ملف zip.</string>
     <string name="import_error_no_channels">لم نجد أي قناة في الملف. تأكّد أنه subscriptions.csv من Takeout.</string>
     <string name="import_error_read">تعذّرت قراءة الملف.</string>
+
+    <!-- The in-app lock (SPEC §4): a child leaves a video with the parent PIN; the adult holds a button
+         for 10 seconds, then types a phrase on the app's own keyboard (recorded as a surrender). -->
+    <string name="lock_child_title">الخروج يحتاج رمز الوالدين</string>
+    <string name="lock_child_body">هذا الفيديو مقفل حتى ينتهي. اطلب من أحد والديك إدخال الرمز.</string>
+    <string name="lock_back_to_video">«رجوع» يعيدك إلى الفيديو</string>
+    <string name="lock_pin_not_for_adult">هذا القفل لا يُفتح بالرمز، بل بالضغط المطوّل ثم كتابة الجملة.</string>
+    <string name="lock_adult_hint">للخروج قبل نهاية الفيديو: اضغط مطوّلاً على «رجوع» أو «&#x2068;OK&#x2069;» لمدة 10 ثوانٍ</string>
+    <string name="lock_hold_title">واصل الضغط للخروج</string>
+    <string name="lock_hold_body">أفلِت الزر لتبقى مع الفيديو</string>
+    <string name="lock_hold_key_back">زر «رجوع»</string>
+    <string name="lock_hold_key_ok">زر «&#x2068;OK&#x2069;»</string>
+    <!-- The word under the seconds left in the ring (the number is drawn above it). -->
+    <string-array name="lock_hold_seconds">
+        <item>ثانية</item>
+        <item>ثانيتان</item>
+        <item>ثوانٍ</item>
+        <item>ثانية</item>
+        <item>ثانية</item>
+    </string-array>
+    <string name="lock_phrase_step">الخطوة الأخيرة</string>
+    <string name="lock_phrase_title">اكتب هذه الجملة للخروج</string>
+    <string name="lock_phrase_placeholder">اكتب بلوحة المفاتيح أدناه</string>
+    <string name="lock_phrase_mismatch">الجملة غير مطابقة. اكتبها كما تظهر تماماً.</string>
+    <string name="lock_phrase_exit">خروج</string>
+    <string name="lock_phrase_cancel">متابعة المشاهدة</string>
+    <string name="lock_phrase_note">يُسجَّل الخروج قبل نهاية الفيديو استسلاماً في الإحصائيات.</string>
+    <string name="lock_phrase_failed">تعذّر الخروج. حاول مرة أخرى.</string>
+    <string name="lock_key_space">مسافة</string>
+    <string name="lock_key_delete">حذف حرف</string>
+    <string name="lock_surrendered">خرجت قبل نهاية الفيديو، وسُجّل ذلك استسلاماً.</string>
+
+    <!-- A locked video reached by fast-forwarding to its end (not watched): its lock stays. -->
+    <string name="player_skipped_still_locked">الوصول إلى النهاية بالتقديم لا يُنهي القفل: الفيديو ما زال مقفلاً.</string>
+
+    <!-- A child's video (or playlist) that ended: its lock is released and the child goes back home. -->
+    <string name="player_kids_home">الرئيسية</string>
+    <string-array name="back_home_in_seconds">
+        <item>نعود إلى الرئيسية خلال ثانية</item>
+        <item>نعود إلى الرئيسية خلال ثانيتين</item>
+        <item>نعود إلى الرئيسية خلال %1$s ثوانٍ</item>
+        <item>نعود إلى الرئيسية خلال %1$s ثانية</item>
+        <item>نعود إلى الرئيسية خلال %1$s ثانية</item>
+    </string-array>
+
+    <!-- SPEC §4, the guard outside the app: its cover over another app, and its (quiet) notification. -->
+    <string name="guard_cover_text">لحظة… نعود إلى «شاشة»</string>
+    <string name="guard_channel_name">الحماية</string>
+    <string name="guard_notification_title">الحماية تعمل</string>
+    <string name="guard_notification_text">تعيد «شاشة» إلى المقدمة أثناء القفل وعند انتهاء الوقت.</string>
+
+    <!-- «حالة الحماية» (Settings, SPEC §4 and §7): what the guard has, what is missing and how to grant it. -->
+    <string name="protection_title">حالة الحماية</string>
+    <string name="protection_subtitle">الحارس يعيد «شاشة» إلى المقدمة أثناء قفل فيديو، وعند انتهاء الوقت، وخارج الجدول</string>
+    <string name="protection_all_good">الحماية تعمل</string>
+    <string-array name="protection_missing_count">
+        <item>ينقص شيء واحد</item>
+        <item>ينقص شيئان</item>
+        <item>ينقص %1$s أشياء</item>
+        <item>ينقص %1$s شيئاً</item>
+        <item>ينقص %1$s شيء</item>
+    </string-array>
+    <string name="protection_checking">جارٍ الفحص…</string>
+    <string name="protection_section_guard">ما يحتاجه الحارس</string>
+    <string name="protection_section_other">إعدادات أخرى</string>
+    <string name="protection_section_returns">سرعة العودة</string>
+    <string name="protection_section_limits">حدود الحماية</string>
+    <string name="protection_commands_note">الأوامر تُنفَّذ من حاسوب على شبكة الشاشة نفسها بعد «&#x2068;adb connect&#x2069;»، أو أعد تشغيل سكربت «&#x2068;adb-setup&#x2069;».</string>
+    <string name="protection_overlay_title">العرض فوق التطبيقات</string>
+    <string name="protection_overlay_body">ليغطي أي تطبيق آخر فوراً ويعيد «شاشة» إلى المقدمة.</string>
+    <string name="protection_usage_title">الوصول إلى بيانات الاستخدام</string>
+    <string name="protection_usage_body">ليعرف أي تطبيق في المقدمة.</string>
+    <string name="protection_guard_title">خدمة الحارس</string>
+    <string name="protection_guard_body_running">تعمل من بدء التطبيق، وتعود وحدها بعد كل إعادة تشغيل للشاشة.</string>
+    <string name="protection_guard_body_waiting">تبدأ وحدها حين تُمنح الصلاحيتان أعلاه.</string>
+    <string name="protection_guard_body_stopped">متوقفة. افتح التطبيق من جديد أو أعد تشغيل الشاشة.</string>
+    <string name="protection_install_title">تثبيت التحديثات</string>
+    <string name="protection_install_body">ليفتح «فحص التحديثات» مثبّت النظام بالإصدار الجديد.</string>
+    <string name="protection_youtube_title">يوتيوب الرسمي</string>
+    <string name="protection_youtube_body_enabled">زرّه في الريموت يفتحه متى لم يكن في «شاشة» قفل. تعطيله اختياري:</string>
+    <string name="protection_youtube_body_disabled">معطّل، فلا يفتحه زرّ الريموت.</string>
+    <string name="protection_youtube_body_missing">غير مثبّت على هذه الشاشة.</string>
+    <string name="protection_time_title">الوقت التلقائي</string>
+    <string name="protection_time_body_on">تاريخ الشاشة ووقتها من الشبكة، فلا يُغيَّر الجدول ولا الحصة بتغيير الساعة.</string>
+    <string name="protection_time_body_off">الحصة والجدول يتبعان ساعة الشاشة: من يغيّر التاريخ أو الوقت في الإعدادات يغيّرهما. فعّله من الإعدادات أو:</string>
+    <string name="protection_state_granted">ممنوحة</string>
+    <string name="protection_state_missing">ناقصة</string>
+    <string name="protection_state_running">تعمل</string>
+    <string name="protection_state_stopped">متوقفة</string>
+    <string name="protection_state_disabled">معطّل</string>
+    <string name="protection_state_enabled">مفعّل</string>
+    <string name="protection_state_not_installed">غير مثبّت</string>
+    <string name="protection_state_on">مفعّل</string>
+    <string name="protection_state_off">مطفأ</string>
+    <string name="protection_returns_empty">لم تُقَس بعد. للتجربة: شغّل فيديو في ملف طفل، ثم اضغط زر Home في الريموت.</string>
+    <string name="protection_returns_goal">المطلوب: أن تعود «شاشة» خلال ثانيتين على الأكثر.</string>
+    <string name="protection_return_seconds">%1$s ث</string>
+    <string name="protection_return_from">من &#x2068;%1$s&#x2069; · %2$s</string>
+    <string name="protection_return_unknown_app">تطبيق غير معروف</string>
+    <string name="protection_limits_outside">خارج القفل (في الرئيسية، أو قبل بدء فيديو) لا يتدخل الحارس: من يصل إلى إعدادات الشاشة يستطيع إيقاف التطبيق أو مسح بياناته أو إزالته، أو سحب هاتين الصلاحيتين، أو إعادة يوتيوب.</string>
+    <string name="protection_limits_force_stop">«فرض الإيقاف» من الإعدادات يوقف الحارس حتى يُفتح التطبيق من جديد أو تُعاد الشاشة.</string>
+    <string name="protection_limits_keys">أثناء القفل لا يُمنع زر Home، ولا أزرار التطبيقات في الريموت، ولا الأوامر الصوتية، ولا البث من الجوال، ولا مصدر HDMI: يُغطّى ما يظهر وتعود «شاشة» خلال ثانية أو اثنتين.</string>
+    <string name="protection_limits_owner">منع ذلك كله يحتاج وضع «مالك الجهاز» (&#x2068;Device Owner&#x2069;)، وقد استُبعد عمداً: القفل ليس منيعاً.</string>
+
+    <!-- Settings: the protection status chip in the header. -->
+    <string name="settings_protection">حالة الحماية</string>
 </resources>

@@ -32,6 +32,8 @@ import com.ahmadnayfeh.shasha.Fixtures
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.data.ImportResult
 import com.ahmadnayfeh.shasha.data.SyncHealth
+import com.ahmadnayfeh.shasha.lock.ProtectionStatus
+import com.ahmadnayfeh.shasha.lock.YouTubeAppState
 import com.ahmadnayfeh.shasha.player.PlaybackProgress
 import com.ahmadnayfeh.shasha.ui.UiFixtures.NOW
 import com.ahmadnayfeh.shasha.ui.components.ConfirmPanel
@@ -286,6 +288,7 @@ class BrowseScreenshotTest {
                 onChangePin = {},
                 onImport = {},
                 onDiagnostics = {},
+                protection = ProtectionStatus(overlay = true, usageAccess = true, installPackages = true, guardRunning = true, youtube = YouTubeAppState.DISABLED),
             )
         }
     }

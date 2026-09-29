@@ -14,7 +14,7 @@ chcp 65001 >nul
 
 set "PKG=com.ahmadnayfeh.shasha"
 set "ACTIVITY=com.ahmadnayfeh.shasha/.MainActivity"
-rem The app starts its guard itself; this script only reports whether it is running.
+rem The app starts its guard itself (at its start and after a reboot); this script only reports whether it runs.
 set "GUARD=com.ahmadnayfeh.shasha/.lock.GuardService"
 set "YT_PKG=com.google.android.youtube.tv"
 rem SYSTEM_ALERT_WINDOW: the guard draws over other apps. GET_USAGE_STATS: it sees which app is
@@ -220,9 +220,11 @@ echo(    Guard / الحارس:            %GUARD_STATUS%
 echo(    YouTube / يوتيوب الرسمي:  %YOUTUBE_STATUS%
 echo(    Undo / للتراجع:            "%SELF%" --undo %SERIAL%
 echo(
-call :info "The app starts its guard when protection is needed. To double-check, open"
-call :info "Shasha, Settings, Protection status on the TV."
-call :info "التطبيق يشغّل الحارس عند الحاجة. للتأكد: افتح تطبيق شاشة، ثم الإعدادات، ثم حالة الحماية."
+call :info "The app runs its guard from its first start and after every reboot; it acts only while"
+call :info "a video is locked, time is up or it is outside the schedule. To double-check, open"
+call :info "Shasha, Settings, Protection status on the TV (it also shows how fast the app came back)."
+call :info "التطبيق يشغّل الحارس من أول تشغيل وبعد كل إعادة تشغيل للشاشة، ولا يتدخل إلا أثناء قفل فيديو أو بعد انتهاء الوقت أو خارج الجدول."
+call :info "للتأكد: افتح تطبيق شاشة، ثم الإعدادات، ثم حالة الحماية (وفيها سرعة العودة المقيسة)."
 if "%OPS_OK%"=="0" goto fail
 goto finish
 
