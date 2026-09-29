@@ -14,6 +14,10 @@ readonly GUARD="$PKG/.lock.GuardService"
 # SYSTEM_ALERT_WINDOW: the guard draws over other apps. GET_USAGE_STATS: it sees which app is in
 # front. REQUEST_INSTALL_PACKAGES: the in-app updater may open the system installer.
 OPS=(SYSTEM_ALERT_WINDOW GET_USAGE_STATS REQUEST_INSTALL_PACKAGES)
+# The guard's two permissions behind those app-ops. They are "development" permissions: an install with
+# "-g" (older versions of this script) grants them for good, and an app-op reset to default then falls
+# back to them, so --undo revokes them too.
+GUARD_PERMS=(android.permission.SYSTEM_ALERT_WINDOW android.permission.PACKAGE_USAGE_STATS)
 readonly CONNECT_TIMEOUT=60
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -29,13 +33,13 @@ usage() {
   cat <<'EOF'
 Usage:
   adb-setup.sh <TV_IP> [path/to/shasha.apk]   install Shasha and grant its permissions
-  adb-setup.sh --undo <TV_IP>                 re-enable YouTube and reset the permissions
+  adb-setup.sh --undo <TV_IP>                 re-enable YouTube, reset the permissions, stop the guard
 TV_IP may carry a port (default 5555): 192.168.1.50 or 192.168.1.50:5555.
 Without an APK path, the newest shasha-*.apk next to this script or in the current folder is used.
 
 الاستخدام:
   adb-setup.sh <عنوان IP للشاشة> [مسار ملف APK]   تثبيت شاشة ومنح الصلاحيات
-  adb-setup.sh --undo <عنوان IP للشاشة>           التراجع: إعادة يوتيوب وإلغاء الصلاحيات
+  adb-setup.sh --undo <عنوان IP للشاشة>           التراجع: إعادة يوتيوب وإلغاء الصلاحيات وإيقاف الحارس
 EOF
 }
 
@@ -131,8 +135,9 @@ connect_tv() {
 install_apk() {
   say "Installing $(basename "$APK") ..." "تثبيت التطبيق على الشاشة (قد يستغرق دقيقة) ..."
   local out
+  # No "-g": it would grant the guard's permissions for good, beyond the app-ops below and beyond --undo.
   # Old adb versions exit 0 even when the install fails: require the "Success" line too.
-  if out=$("$ADB" -s "$SERIAL" install -r -g "$APK" < /dev/null 2>&1) && grep -q '^Success' <<< "$out"; then
+  if out=$("$ADB" -s "$SERIAL" install -r "$APK" < /dev/null 2>&1) && grep -q '^Success' <<< "$out"; then
     info "$(tail -n 1 <<< "$out")"
     return 0
   fi
@@ -227,6 +232,21 @@ guard_status() {
   fi
 }
 
+# Prints one line per permission in GUARD_PERMS; returns non-zero if any is still granted.
+check_perms_revoked() {
+  local all_ok=0 out perm
+  out=$(tv_shell dumpsys package "$PKG" 2>&1 || true)
+  for perm in "${GUARD_PERMS[@]}"; do
+    if grep -Fq "$perm: granted=true" <<< "$out"; then
+      info "[!!] $perm: granted=true"
+      all_ok=1
+    else
+      info "[OK] $perm: not granted"
+    fi
+  done
+  return "$all_ok"
+}
+
 # Prints one line per op; returns non-zero if any op is not in the expected mode.
 check_ops() {
   local expected=$1 all_ok=0 op out
@@ -288,22 +308,35 @@ undo() {
       die "Could not re-enable YouTube (see above)." "تعذّرت إعادة تفعيل يوتيوب (انظر الرسالة أعلاه)."
     YOUTUBE_STATUS="enabled / مفعّل"
   fi
-  local ops_ok=true
+  local ops_ok=true guard="-"
   if is_installed "$PKG"; then
     say "Resetting Shasha's permissions to default ..." "إرجاع صلاحيات شاشة إلى الوضع الافتراضي ..."
-    local op
+    local op perm
+    # Revoked first: a guard that sees its app-ops change then finds nothing left and stops by itself.
+    # "Not granted" is not an error here, and a real failure shows in the verification below.
+    for perm in "${GUARD_PERMS[@]}"; do
+      tv_shell pm revoke "$PKG" "$perm" > /dev/null 2>&1 || true
+    done
     for op in "${OPS[@]}"; do
       tv_shell appops set "$PKG" "$op" default ||
         die "appops set $op default failed (see above)." "فشل إرجاع الصلاحية $op (انظر الرسالة أعلاه)."
     done
+    say "Stopping Shasha so its guard stops now ..." "إيقاف تطبيق شاشة ليتوقف الحارس الآن ..."
+    info "It starts again only once its permissions are granted again (run this script without --undo)." \
+      "لا يعود الحارس حتى تُمنح صلاحيتاه من جديد (بتشغيل هذا السكربت دون --undo)."
+    tv_shell am force-stop "$PKG" || true
     say "Verification" "التحقق"
     check_ops default || ops_ok=false
+    check_perms_revoked || ops_ok=false
+    guard=$(guard_status)
+    info "Guard service / خدمة الحارس: $guard"
   else
     info "Shasha is not installed; no permissions to reset." "تطبيق شاشة غير مثبّت؛ لا صلاحيات لإرجاعها."
   fi
   say "Summary" "الملخص"
   info "TV / الشاشة:              $SERIAL" \
     "Permissions / الصلاحيات:   $([ "$ops_ok" = true ] && echo "default / افتراضية" || echo "CHECK ABOVE / راجع أعلاه")" \
+    "Guard / الحارس:            $guard" \
     "YouTube / يوتيوب الرسمي:  $YOUTUBE_STATUS" \
     "Shasha stays installed. To remove it: / التطبيق باقٍ. لحذفه:" \
     "    \"$ADB\" -s $SERIAL uninstall $PKG"

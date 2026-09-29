@@ -1,5 +1,6 @@
 package com.ahmadnayfeh.shasha.lock
 
+import android.app.AppOpsManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.usage.UsageStatsManager
@@ -35,10 +36,12 @@ import kotlinx.coroutines.withContext
  * back ([MainActivity]); every return is measured ([GuardReturnTimes], «حالة الحماية»). The decisions are
  * [GuardDecider]'s; the app in front comes from UsageStats ([UsageStatsProbe]).
  *
- * It runs whenever it can work (usage access and "display over other apps", [ProtectionChecks.guardCanRun]):
+ * It runs only while it can work (usage access and "display over other apps", [ProtectionChecks.guardCanRun]):
  * started with the app, after a reboot and after an update ([BootReceiver]), and restarted by the system if
- * it is killed (START_STICKY). Idle while nothing is enforced or Shasha is in front: it looks at nothing
- * then, it only follows the app's state. A foreground service ("specialUse"): its notification is quiet.
+ * it is killed (START_STICKY). When either permission is taken back (adb-setup --undo, the TV's settings) it
+ * stops itself instead of acting without it. Idle while nothing is enforced, Shasha is in front, the screen
+ * is off or the screensaver shows: it looks at nothing then, it only follows the app's state. A foreground
+ * service ("specialUse"): its notification is quiet.
  */
 class GuardService : LifecycleService() {
     private val handler = Handler(Looper.getMainLooper())
@@ -51,71 +54,141 @@ class GuardService : LifecycleService() {
 
     private var enforced = false
     private var enforcedSinceMs = 0L
+
+    /** The screensaver is showing (between its two broadcasts; PowerManager counts it as interactive). */
+    private var dreaming = false
+
+    /** The screen was on at the last look. */
+    private var interactive = false
+
+    /** When the screen last became usable: on, the screensaver ended, or the guard started with it on. */
+    private var activeSinceMs: Long? = null
+
+    /** Stopping itself (its permissions are gone): no more looks. */
+    private var stopping = false
+
     private val nextStep = Runnable { step() }
     private val screenChanges = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) = step()
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_SCREEN_ON -> becameActive()
+                Intent.ACTION_DREAMING_STARTED -> dreaming = true
+                Intent.ACTION_DREAMING_STOPPED -> becameActive()
+            }
+            step()
+        }
     }
+    private val checkPermissions = Runnable { if (!ProtectionChecks.guardCanRun(this)) stopGuard() }
+
+    // Called on a binder thread.
+    private val opsChanged = AppOpsManager.OnOpChangedListener { _, _ -> handler.post(checkPermissions) }
 
     override fun onCreate() {
         super.onCreate()
         running = true
+        // First, even to stop at once: a service started with startForegroundService must call startForeground.
         startInForeground()
         power = getSystemService(PowerManager::class.java)
         decider = GuardDecider(packageName, timing)
         probe = UsageStatsProbe(getSystemService(UsageStatsManager::class.java), clock)
         overlay = GuardOverlay(this, handler) { decider.onCovered(clock.elapsedMs()) }
+        if (!ProtectionChecks.guardCanRun(this)) {
+            // Restarted by the system (START_STICKY) after its permissions were taken back.
+            stopGuard()
+            return
+        }
+        interactive = power.isInteractive
+        if (interactive) activeSinceMs = clock.elapsedMs()
         ContextCompat.registerReceiver(
             this,
             screenChanges,
             IntentFilter().apply {
                 addAction(Intent.ACTION_SCREEN_ON)
                 addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(Intent.ACTION_DREAMING_STARTED)
+                addAction(Intent.ACTION_DREAMING_STOPPED)
             },
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
+        watchPermissions()
         val container = appContainer
         lifecycleScope.launch {
             // The current profile is read from disk the first time: never on the main thread.
             withContext(Dispatchers.IO) { container.currentProfile }
-            launch { container.appVisibility.state.collect { step() } }
+            // MainActivity reports its pause from onPause, and the next app resumes only once that returns: the
+            // look (a UsageStats query) comes right after, never inside it.
+            launch { container.appVisibility.state.collect { stepSoon() } }
             combine(container.lock.lock, container.session.state) { lock, state -> container.policyEngine.guardShouldEnforce(LockState.of(lock, state)) }
                 .distinctUntilChanged()
                 .collect { now ->
-                    if (now && !enforced) enforcedSinceMs = clock.elapsedMs()
+                    if (now && !enforced) {
+                        enforcedSinceMs = clock.elapsedMs()
+                        if (container.appVisibility.state.value.resumed) seedProbe()
+                    }
                     enforced = now
-                    step()
+                    stepSoon()
                 }
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+        if (stopping || !ProtectionChecks.guardCanRun(this)) {
+            stopGuard()
+            return START_NOT_STICKY
+        }
         return START_STICKY
     }
 
     override fun onDestroy() {
         running = false
+        stopping = true
         handler.removeCallbacks(nextStep)
-        overlay.hide()
+        handler.removeCallbacks(checkPermissions)
+        if (::overlay.isInitialized) overlay.hide()
         runCatching { unregisterReceiver(screenChanges) }
+        runCatching { getSystemService(AppOpsManager::class.java)?.stopWatchingMode(opsChanged) }
         super.onDestroy()
+    }
+
+    private fun becameActive() {
+        dreaming = false
+        activeSinceMs = clock.elapsedMs()
+    }
+
+    /** A look at the next turn of the main loop, replacing any look already planned. */
+    private fun stepSoon() {
+        handler.removeCallbacks(nextStep)
+        handler.post(nextStep)
     }
 
     /** One look: what the decider says now, carried out; the next look scheduled when it asks for one. */
     private fun step() {
-        if (!::decider.isInitialized) return
+        if (stopping || !::decider.isInitialized) return
         handler.removeCallbacks(nextStep)
-        val visible = appContainer.appVisibility.state.value
+        val now = clock.elapsedMs()
         val screenOn = power.isInteractive
-        val needsFront = enforced && screenOn && !visible.resumed
+        // The screen came on since the last look (its broadcast may still be on its way).
+        if (screenOn && !interactive) becameActive()
+        interactive = screenOn
+        val visible = appContainer.appVisibility.state.value
+        val needsFront = enforced && screenOn && !dreaming && !visible.resumed
+        // About to act: only with both permissions (one may have been taken back without an app-op change,
+        // `pm revoke`, and without usage access UsageStats answers with nothing rather than an error).
+        if (needsFront && !ProtectionChecks.guardCanRun(this)) {
+            stopGuard()
+            return
+        }
         val input = GuardInput(
-            nowMs = clock.elapsedMs(),
+            nowMs = now,
             enforced = enforced,
             enforcedSinceMs = enforcedSinceMs,
             appResumed = visible.resumed,
             appLeftAtMs = visible.leftAtMs,
             screenOn = screenOn,
             front = if (needsFront) probe.front() else null,
+            dreaming = dreaming,
+            activeSinceMs = activeSinceMs,
         )
         val out = decider.step(input)
         if (out.hideOverlay) overlay.hide()
@@ -123,6 +196,36 @@ class GuardService : LifecycleService() {
         if (out.launchApp) bringBack()
         out.returned?.let(::record)
         out.nextCheckMs?.let { handler.postDelayed(nextStep, it) }
+    }
+
+    /**
+     * The probe's first look can read hours of usage events. When enforcement starts while Shasha is in front,
+     * that reading is done now, off the main thread: the look when Shasha leaves then reads only what came since.
+     */
+    private fun seedProbe() {
+        val probe = probe
+        lifecycleScope.launch(Dispatchers.IO) { probe.front() }
+    }
+
+    /** Both app-ops watched: taking one back in the TV's settings or with adb stops the guard at once. */
+    private fun watchPermissions() {
+        val ops = getSystemService(AppOpsManager::class.java) ?: return
+        try {
+            ops.startWatchingMode(AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW, packageName, opsChanged)
+            ops.startWatchingMode(AppOpsManager.OPSTR_GET_USAGE_STATS, packageName, opsChanged)
+        } catch (e: RuntimeException) {
+            Log.w(TAG, "Cannot watch the guard's permissions", e)
+        }
+    }
+
+    /** Its permissions are gone: the guard stops rather than act without them («حالة الحماية» shows it stopped). */
+    private fun stopGuard() {
+        if (stopping) return
+        stopping = true
+        Log.i(TAG, "Stopping: display over other apps or usage access is no longer granted")
+        handler.removeCallbacks(nextStep)
+        if (::overlay.isInitialized) overlay.hide()
+        stopSelf()
     }
 
     /** Shasha's activity to the front (allowed from the background: SYSTEM_ALERT_WINDOW is granted). */
@@ -189,6 +292,15 @@ class GuardService : LifecycleService() {
             } catch (e: RuntimeException) {
                 // ForegroundServiceStartNotAllowedException (API 31+) or a SecurityException.
                 Log.w(TAG, "Could not start the guard", e)
+            }
+        }
+
+        /** Stops a guard that runs without its permissions (it also stops itself when it notices). */
+        fun stop(context: Context) {
+            try {
+                context.stopService(Intent(context, GuardService::class.java))
+            } catch (e: RuntimeException) {
+                Log.w(TAG, "Could not stop the guard", e)
             }
         }
     }

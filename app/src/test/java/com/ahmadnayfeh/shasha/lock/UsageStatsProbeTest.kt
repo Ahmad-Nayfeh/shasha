@@ -74,7 +74,24 @@ class UsageStatsProbeTest {
         assertThat(probe.front()?.packageName).isEqualTo(LAUNCHER)
     }
 
+    @Test
+    fun aLookMoreThanSixHoursLater_forgetsWhatItKept() {
+        // 08:00, a return from Netflix: the guard looks and sees it. Shasha is back two seconds later and stays in
+        // front all day (the guard does not look while it is).
+        clock.wall = at(8, 0)
+        resumed(NETFLIX, "Main", at(7, 59))
+        val probe = UsageStatsProbe(usage, clock)
+        assertThat(probe.front()?.packageName).isEqualTo(NETFLIX)
+        resumed(OWN, "com.ahmadnayfeh.shasha.MainActivity", at(8, 0) + 2_000)
+
+        // 15:00, Shasha leaves: its own return is older than anything read now, and Netflix, kept from before
+        // it, is not in front any more. Nothing is known rather than Netflix.
+        clock.wall = at(15, 0)
+        assertThat(probe.front()).isNull()
+    }
+
     private companion object {
+        const val OWN = "com.ahmadnayfeh.shasha"
         const val NETFLIX = "com.netflix.ninja"
         const val LAUNCHER = "com.google.android.apps.tv.launcherx"
         const val DREAM_PACKAGE = "com.google.android.backdrop"

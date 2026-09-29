@@ -68,7 +68,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Parental controls: while a video is locked or viewing time is over, keeps this app in front of other apps (the owner granted display over other apps and usage access over ADB)." />
+                android:value="Parental controls: while a video is locked, viewing time is over, or it is outside the allowed viewing hours, keeps this app in front of other apps (the owner granted display over other apps and usage access over ADB)." />
         </service>
 
         <!-- Starts the guard after a reboot and after an update (system broadcasts reach it unexported). -->

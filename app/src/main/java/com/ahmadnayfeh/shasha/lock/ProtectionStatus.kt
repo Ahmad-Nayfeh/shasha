@@ -132,6 +132,9 @@ object ProtectionCommands {
 
     fun startApp(packageName: String) = "adb shell am start -n $packageName/.MainActivity"
 
+    /** The owner's emergency exit: the guard stops until Shasha is opened again (a reboot does not restart it). */
+    fun forceStop(packageName: String) = "adb shell am force-stop $packageName"
+
     val disableYouTube = "adb shell pm disable-user --user 0 ${ProtectionChecks.YOUTUBE_TV_PACKAGE}"
 
     val enableYouTube = "adb shell pm enable ${ProtectionChecks.YOUTUBE_TV_PACKAGE}"

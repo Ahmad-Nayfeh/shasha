@@ -86,7 +86,8 @@ fun ProtectionRoute() {
 
 /**
  * What the system says about the protection right now, read again every [PROTECTION_REFRESH_MS] while
- * shown: adb-setup may be granting the permissions meanwhile. When they arrive, the guard is started.
+ * shown: adb-setup may be granting the permissions meanwhile. When they arrive, the guard is started; when
+ * they are taken back, a guard still running is stopped (what is shown is what it does).
  */
 @Composable
 fun rememberProtectionStatus(): State<ProtectionStatus?> {
@@ -97,6 +98,7 @@ fun rememberProtectionStatus(): State<ProtectionStatus?> {
             while (true) {
                 val status = withContext(Dispatchers.Default) { ProtectionChecks.read(context, GuardService.running) }
                 if (status.guardCanRun && !status.guardRunning) GuardService.start(context)
+                if (!status.guardCanRun && status.guardRunning) GuardService.stop(context)
                 value = status
                 delay(PROTECTION_REFRESH_MS)
             }
@@ -229,7 +231,7 @@ fun ProtectionScreen(
         Spacer(Modifier.height(20.dp))
         SectionLabel(stringResource(R.string.protection_section_limits), icon = ShashaIcons.Info)
         Spacer(Modifier.height(8.dp))
-        LimitsCard()
+        LimitsCard(packageName)
     }
 }
 
@@ -400,9 +402,12 @@ private fun ReturnLine(back: ReturnTime, times: TimeTexts, zone: ZoneId) {
     }
 }
 
-/** SPEC: «القفل ليس منيعاً» — what the guard cannot prevent, said plainly. */
+/**
+ * SPEC: «القفل ليس منيعاً» — what the guard cannot prevent, said plainly; and the one way it can shut the
+ * owner out (the parent PIN locked out while a restriction lasts), with its way out.
+ */
 @Composable
-private fun LimitsCard() {
+private fun LimitsCard(packageName: String) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val shape = RoundedCornerShape(18.dp)
@@ -416,11 +421,18 @@ private fun LimitsCard() {
             .testTag("protection_limits"),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        for (line in listOf(R.string.protection_limits_outside, R.string.protection_limits_force_stop, R.string.protection_limits_keys, R.string.protection_limits_owner)) {
+        val lines = listOf(
+            stringResource(R.string.protection_limits_outside),
+            stringResource(R.string.protection_limits_force_stop),
+            stringResource(R.string.protection_limits_keys),
+            stringResource(R.string.protection_limits_owner),
+            stringResource(R.string.protection_limits_pin_lockout, ProtectionCommands.forceStop(packageName)),
+        )
+        for (line in lines) {
             Row {
                 Text("•", style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Secondary)
                 Spacer(Modifier.width(10.dp))
-                Text(stringResource(line), style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Text, modifier = Modifier.weight(1f))
+                Text(line, style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Text, modifier = Modifier.weight(1f))
             }
         }
     }

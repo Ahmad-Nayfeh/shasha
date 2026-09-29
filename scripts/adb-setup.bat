@@ -20,6 +20,10 @@ set "YT_PKG=com.google.android.youtube.tv"
 rem SYSTEM_ALERT_WINDOW: the guard draws over other apps. GET_USAGE_STATS: it sees which app is
 rem in front. REQUEST_INSTALL_PACKAGES: the in-app updater may open the system installer.
 set "OPS=SYSTEM_ALERT_WINDOW GET_USAGE_STATS REQUEST_INSTALL_PACKAGES"
+rem The guard's two permissions behind those app-ops. They are development permissions: an install
+rem with -g, as older versions of this script did, grants them for good, and an app-op reset to
+rem default then falls back to them, so --undo revokes them too.
+set "GUARD_PERMS=android.permission.SYSTEM_ALERT_WINDOW android.permission.PACKAGE_USAGE_STATS"
 set "CONNECT_TIMEOUT=60"
 set "SELF=%~f0"
 set "SCRIPT_DIR=%~dp0"
@@ -33,6 +37,7 @@ set "OPS_OK=1"
 set "OPS_FAILED=0"
 set "YOUTUBE_STATUS=not installed / غير مثبّت"
 set "GUARD_STATUS=not running now / لا تعمل الآن"
+set "UNDO_GUARD=-"
 
 rem ---------------------------------------------------------------- arguments
 :parse
@@ -110,7 +115,8 @@ call :connect
 if errorlevel 1 goto fail
 
 call :say "Installing the APK ..." "تثبيت التطبيق على الشاشة، قد يستغرق دقيقة ..."
-"%ADB%" -s %SERIAL% install -r -g "%APK%" <nul >"%TMPOUT%" 2>&1
+rem No -g: it would grant the guard's permissions for good, beyond the app-ops below and beyond --undo.
+"%ADB%" -s %SERIAL% install -r "%APK%" <nul >"%TMPOUT%" 2>&1
 if errorlevel 1 goto install_failed
 rem Old adb versions exit 0 even when the install fails: require the "Success" line too.
 findstr /l /b /c:"Success" "%TMPOUT%" >nul || goto install_failed
@@ -248,18 +254,31 @@ set "OPS_TEXT=app not installed / التطبيق غير مثبّت"
 call :find_package all %PKG%
 if "%FOUND%"=="0" goto undo_summary
 call :say "Resetting Shasha's permissions to default ..." "إرجاع صلاحيات شاشة إلى الوضع الافتراضي ..."
+rem Revoked first: a guard that sees its app-ops change then finds nothing left and stops by itself.
+rem Not granted is not an error here, and a real failure shows in the verification below.
+for %%p in (%GUARD_PERMS%) do "%ADB%" -s %SERIAL% shell pm revoke %PKG% %%p <nul >nul 2>&1
 for %%o in (%OPS%) do call :appops_set %%o default
 if "%OPS_FAILED%"=="1" goto fail
+call :say "Stopping Shasha so its guard stops now ..." "إيقاف تطبيق شاشة ليتوقف الحارس الآن ..."
+call :info "It starts again only once its permissions are granted again: run this script without --undo."
+call :info "لا يعود الحارس حتى تُمنح صلاحيتاه من جديد: شغّل هذا السكربت دون --undo."
+"%ADB%" -s %SERIAL% shell am force-stop %PKG% <nul
 call :say "Verification" "التحقق"
 set "OPS_OK=1"
 for %%o in (%OPS%) do call :check_op %%o default
+call :check_perms
 set "OPS_TEXT=default / افتراضية"
 if "%OPS_OK%"=="0" set "OPS_TEXT=CHECK ABOVE / راجع أعلاه"
+"%ADB%" -s %SERIAL% shell dumpsys activity services %GUARD% <nul >"%TMPOUT%" 2>&1
+set "UNDO_GUARD=%GUARD_STATUS%"
+findstr /l /c:"ServiceRecord{" "%TMPOUT%" >nul && set "UNDO_GUARD=running / تعمل"
+echo(    Guard service / خدمة الحارس: %UNDO_GUARD%
 
 :undo_summary
 call :say "Summary" "الملخص"
 echo(    TV / الشاشة:              %SERIAL%
 echo(    Permissions / الصلاحيات:   %OPS_TEXT%
+echo(    Guard / الحارس:            %UNDO_GUARD%
 echo(    YouTube / يوتيوب الرسمي:  %YOUTUBE_STATUS%
 call :info "Shasha stays installed. To remove it: / التطبيق باقٍ. لحذفه:"
 echo(        "%ADB%" -s %SERIAL% uninstall %PKG%
@@ -324,13 +343,13 @@ exit /b 0
 :usage_text
 echo Usage:
 echo   adb-setup.bat TV_IP [path\to\shasha.apk]   install Shasha and grant its permissions
-echo   adb-setup.bat --undo TV_IP                 re-enable YouTube and reset the permissions
+echo   adb-setup.bat --undo TV_IP                 re-enable YouTube, reset the permissions, stop the guard
 echo TV_IP may carry a port, default 5555: 192.168.1.50 or 192.168.1.50:5555
 echo Without an APK path: the newest shasha-*.apk next to this script, else in the current folder.
 echo(
 echo الاستخدام:
 echo   adb-setup.bat TV_IP [مسار ملف APK]    تثبيت شاشة ومنح الصلاحيات
-echo   adb-setup.bat --undo TV_IP            التراجع: إعادة يوتيوب وإلغاء الصلاحيات
+echo   adb-setup.bat --undo TV_IP            التراجع: إعادة يوتيوب وإلغاء الصلاحيات وإيقاف الحارس
 exit /b 0
 
 :connect
@@ -404,6 +423,20 @@ if errorlevel 1 (
 )
 echo(    %1: %2
 exit /b 0
+
+rem Clears OPS_OK when one of GUARD_PERMS is still granted, per dumpsys package.
+:check_perms
+"%ADB%" -s %SERIAL% shell dumpsys package %PKG% <nul >"%TMPOUT%" 2>&1
+for %%p in (%GUARD_PERMS%) do call :check_perm %%p
+exit /b 0
+:check_perm
+findstr /l /c:"%1: granted=true" "%TMPOUT%" >nul && goto check_perm_bad
+echo(    [OK] %1: not granted
+exit /b 0
+:check_perm_bad
+set "OPS_OK=0"
+echo(    [!!] %1: granted=true
+exit /b 1
 
 rem %1 = op, %2 = expected mode, allow or default. Clears OPS_OK when it does not match.
 rem Matches "OP: mode" anywhere in a line, like "Uid mode: OP: allow".

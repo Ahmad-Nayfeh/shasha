@@ -610,7 +610,7 @@
     <string name="guard_cover_text">لحظة… نعود إلى «شاشة»</string>
     <string name="guard_channel_name">الحماية</string>
     <string name="guard_notification_title">الحماية تعمل</string>
-    <string name="guard_notification_text">تعيد «شاشة» إلى المقدمة أثناء القفل وعند انتهاء الوقت.</string>
+    <string name="guard_notification_text">تعيد «شاشة» إلى المقدمة أثناء قفل فيديو، وعند انتهاء الوقت، وخارج أوقات المشاهدة.</string>
 
     <!-- «حالة الحماية» (Settings, SPEC §4 and §7): what the guard has, what is missing and how to grant it. -->
     <string name="protection_title">حالة الحماية</string>
@@ -636,7 +636,7 @@
     <string name="protection_guard_title">خدمة الحارس</string>
     <string name="protection_guard_body_running">تعمل من بدء التطبيق، وتعود وحدها بعد كل إعادة تشغيل للشاشة.</string>
     <string name="protection_guard_body_waiting">تبدأ وحدها حين تُمنح الصلاحيتان أعلاه.</string>
-    <string name="protection_guard_body_stopped">متوقفة. افتح التطبيق من جديد أو أعد تشغيل الشاشة.</string>
+    <string name="protection_guard_body_stopped">متوقفة. تبدأ حين يُفتح التطبيق من جديد.</string>
     <string name="protection_install_title">تثبيت التحديثات</string>
     <string name="protection_install_body">ليفتح «فحص التحديثات» مثبّت النظام بالإصدار الجديد.</string>
     <string name="protection_youtube_title">يوتيوب الرسمي</string>
@@ -661,9 +661,10 @@
     <string name="protection_return_from">من &#x2068;%1$s&#x2069; · %2$s</string>
     <string name="protection_return_unknown_app">تطبيق غير معروف</string>
     <string name="protection_limits_outside">خارج القفل (في الرئيسية، أو قبل بدء فيديو) لا يتدخل الحارس: من يصل إلى إعدادات الشاشة يستطيع إيقاف التطبيق أو مسح بياناته أو إزالته، أو سحب هاتين الصلاحيتين، أو إعادة يوتيوب.</string>
-    <string name="protection_limits_force_stop">«فرض الإيقاف» من الإعدادات يوقف الحارس حتى يُفتح التطبيق من جديد أو تُعاد الشاشة.</string>
+    <string name="protection_limits_force_stop">«فرض الإيقاف» من الإعدادات يوقف الحارس حتى يُفتح التطبيق من جديد، ولا تعيده إعادة تشغيل الشاشة.</string>
     <string name="protection_limits_keys">أثناء القفل لا يُمنع زر Home، ولا أزرار التطبيقات في الريموت، ولا الأوامر الصوتية، ولا البث من الجوال، ولا مصدر HDMI: يُغطّى ما يظهر وتعود «شاشة» خلال ثانية أو اثنتين.</string>
     <string name="protection_limits_owner">منع ذلك كله يحتاج وضع «مالك الجهاز» (&#x2068;Device Owner&#x2069;)، وقد استُبعد عمداً: القفل ليس منيعاً.</string>
+    <string name="protection_limits_pin_lockout">عند انتهاء الوقت وخارج أوقات المشاهدة لا يفتح الشاشة إلا رمز الوالدين. إن قُفل الرمز بعد محاولات خاطئة (من 5 دقائق حتى 4 ساعات، ولا تنهي إعادة التشغيل المهلة) أو نُسي، تبقى الشاشة كلها على «شاشة» حتى تنتهي المهلة أو المنع. المخرج: من الحاسوب الذي جهّزها، وتصحيح الأخطاء ما زال مفعّلاً، نفّذ &#x2068;%1$s&#x2069; (يتوقف الحارس حتى يُفتح التطبيق من جديد).</string>
 
     <!-- Settings: the protection status chip in the header. -->
     <string name="settings_protection">حالة الحماية</string>

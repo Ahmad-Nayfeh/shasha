@@ -37,8 +37,11 @@ fun interface ForegroundProbe {
  * was: the guard only looks while something is enforced and Shasha is not in front, so hours may pass
  * between two looks (bedtime starts while a child has been in another app since long before), and a
  * fixed short window would miss the app that came to the front meanwhile. The first call, one after more
- * than [maxLookbackMs], and one after the wall clock went back, look back step by step instead
+ * than [maxLookbackMs], and one after the wall clock went back, start over: they forget what was kept
+ * (Shasha's own return may have come and gone before the window, unseen) and look back step by step
  * ([seedLookbacksMs]: most of the time the front changed recently, and a long window reads many events).
+ *
+ * Thread-safe: the guard may take its first (long) look off the main thread.
  */
 class UsageStatsProbe(
     private val usage: UsageStatsManager,
@@ -53,12 +56,14 @@ class UsageStatsProbe(
 
     private class Seen(val packageName: String, val className: String?, val wallMs: Long)
 
+    @Synchronized
     override fun front(): FrontApp? {
         val now = clock.wallMs()
         val last = scannedUntil
         if (last == null || now < last || now - last > maxLookbackMs) {
-            // A wall clock set back leaves the kept event "in the future": it would hide every newer one.
-            if (last != null && now < last) latest = null
+            // What was kept is no longer known to be in front: whatever came after it may be older than the
+            // window. And a wall clock set back leaves it "in the future", where it would hide every newer one.
+            latest = null
             for (window in seedLookbacksMs) {
                 if (scan(now - window, now)) break
             }
