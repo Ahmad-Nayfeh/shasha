@@ -4,12 +4,16 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.R
+import com.ahmadnayfeh.shasha.policy.PinAttemptLimiter
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-/** «حول»: SponsorBlock's attribution word for word, the terms-of-use note, and a licence for every library. */
+/**
+ * «حول»: SponsorBlock's attribution word for word, the terms-of-use note, and a licence for every library; and the
+ * settings' own notes say what the rules really do.
+ */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
 class AboutTest {
@@ -17,9 +21,19 @@ class AboutTest {
 
     @Test
     fun sponsorBlocksAttribution_isItsOwnSentenceExactly() {
+        // SponsorBlock's attribution template (gist ajayyy/4b27dfc66e33941a45aeaadccb51de71), final period included.
         assertThat(context.getString(R.string.sponsorblock_attribution_exact))
-            .isEqualTo("Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/")
+            .isEqualTo("Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/.")
         assertThat(context.getString(R.string.sponsorblock_attribution)).contains("CC BY-NC-SA 4.0")
+    }
+
+    @Test
+    fun thePinNote_namesTheRealLockouts_fromFiveMinutesToFourHours() {
+        val steps = PinAttemptLimiter.LOCKOUT_STEPS_MILLIS
+        assertThat(steps.first()).isEqualTo(5 * 60_000L)
+        assertThat(steps.last()).isEqualTo(4 * 60 * 60_000L)
+        assertThat(context.getString(R.string.hub_pin_note)).contains("من 5 دقائق حتى 4 ساعات")
+        assertThat(context.getString(R.string.protection_limits_pin_lockout)).contains("من 5 دقائق حتى 4 ساعات")
     }
 
     @Test

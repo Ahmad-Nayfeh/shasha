@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -41,6 +43,9 @@ internal fun SponsorBlockPane(state: SettingsHubState, actions: SettingsHubActio
         PaneColumn { Loading() }
         return
     }
+    // The row above «العودة إلى الاختيار الافتراضي»: that row goes once it did its work, and the focus must not go
+    // with it (it would drop to the top of the pane).
+    val lastSwitch = remember { FocusRequester() }
     PaneColumn {
         if (selected.isEmpty()) NothingSkipped()
         SponsorCategory.entries.forEachIndexed { index, category ->
@@ -50,13 +55,19 @@ internal fun SponsorBlockPane(state: SettingsHubState, actions: SettingsHubActio
                 body = stringResource(category.description),
                 checked = on,
                 onToggle = { actions.setSponsorCategory(category, !on) },
-                modifier = Modifier.firstIf(index == 0, first).paneItem("hub_sponsor_${category.apiKey}"),
+                modifier = Modifier
+                    .firstIf(index == 0, first)
+                    .then(if (index == SponsorCategory.entries.lastIndex) Modifier.focusRequester(lastSwitch) else Modifier)
+                    .paneItem("hub_sponsor_${category.apiKey}"),
             )
         }
         if (selected != SponsorCategory.DEFAULTS) {
             PaneRow(
                 title = stringResource(R.string.hub_sponsor_defaults),
-                onClick = actions.resetSponsorCategories,
+                onClick = {
+                    runCatching { lastSwitch.requestFocus() }
+                    actions.resetSponsorCategories()
+                },
                 modifier = Modifier.paneItem("hub_sponsor_reset"),
                 icon = ShashaIcons.Refresh,
                 body = SponsorCategory.DEFAULTS.map { stringResource(it.label) }.joinToString("، "),

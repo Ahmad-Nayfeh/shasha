@@ -106,6 +106,15 @@ class SettingsHubScreenshotTest {
     @Test
     fun protection() = snap("settings_hub_protection", SettingsCategory.PROTECTION, SettingsHubFixtures.state().copy(protection = SettingsHubFixtures.protectionMissing))
 
+    /** DOWN onto the status card, the pane's last element: all of it comes into view, under the return and its goal. */
+    @Test
+    fun protectionCard() = snap(
+        "settings_hub_protection_card",
+        SettingsCategory.PROTECTION,
+        SettingsHubFixtures.state().copy(protection = SettingsHubFixtures.protectionMissing),
+        keys = listOf(Key.DirectionDown),
+    )
+
     @Test
     fun remoteLocked() = snap("settings_hub_remote", SettingsCategory.REMOTE, SettingsHubFixtures.state(unlocked = false))
 

@@ -33,6 +33,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.lock.ProtectionStatus
+import com.ahmadnayfeh.shasha.lock.ReturnTime
 import com.ahmadnayfeh.shasha.lock.YouTubeAppState
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
@@ -46,8 +47,9 @@ import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import java.util.Locale
 
 /**
- * «حالة الحماية» at a glance (SPEC §4, §7): each thing the guard needs and the advice, granted or not, the last
- * measured return; the full screen (the adb commands, the limits) is one OK away.
+ * «حالة الحماية» at a glance (SPEC §4, §7): the last measured return and the goal it is measured against, then
+ * each thing the guard needs and the advice, granted or not; the full screen (the adb commands, the limits) is one
+ * OK away.
  */
 @Composable
 internal fun ProtectionPane(state: SettingsHubState, actions: SettingsHubActions, first: FocusRequester) {
@@ -60,10 +62,13 @@ internal fun ProtectionPane(state: SettingsHubState, actions: SettingsHubActions
             icon = ShashaIcons.Shield,
             body = stringResource(R.string.hub_protection_open_body),
         )
+        // The number to compare on the TV, in view from the start. Not under the card: nothing below the pane's last
+        // element could take the focus and scroll it into view.
+        ReturnLines(state.lastReturn)
         if (status == null) {
             Loading()
         } else {
-            // Focusable too (OK opens the same details): moving onto it scrolls the lines below it into view.
+            // Focusable too (OK opens the same details): moving onto it brings all of it into view.
             StatusCard(onClick = actions.openProtection, modifier = Modifier.paneItem("hub_protection_status")) {
                 val granted = stringResource(R.string.protection_state_granted)
                 val missing = stringResource(R.string.protection_state_missing)
@@ -84,13 +89,17 @@ internal fun ProtectionPane(state: SettingsHubState, actions: SettingsHubActions
                 )
             }
         }
-        val back = state.lastReturn
-        if (back != null) {
-            val seconds = String.format(Locale.ROOT, "%.1f", back.backMs / 1000.0)
-            InfoLine(ShashaIcons.Timer, stringResource(R.string.hub_protection_last_return, seconds), tint = LocalAccent.current.bright, textColor = ShashaColors.Text)
-        }
-        InfoLine(ShashaIcons.Info, stringResource(R.string.protection_returns_goal))
     }
+}
+
+/** The guard's last measured return to «شاشة» after another app took the screen, and the goal (SPEC §4: ≤ 2 s). */
+@Composable
+private fun ReturnLines(back: ReturnTime?) {
+    if (back != null) {
+        val seconds = String.format(Locale.ROOT, "%.1f", back.backMs / 1000.0)
+        InfoLine(ShashaIcons.Timer, stringResource(R.string.hub_protection_last_return, seconds), tint = LocalAccent.current.bright, textColor = ShashaColors.Text)
+    }
+    InfoLine(ShashaIcons.Info, stringResource(R.string.protection_returns_goal), modifier = Modifier.testTag("hub_protection_goal"))
 }
 
 @Composable

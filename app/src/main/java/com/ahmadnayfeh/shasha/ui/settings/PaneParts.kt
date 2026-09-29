@@ -24,6 +24,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.focus.FocusEventModifierNode
 import androidx.compose.ui.focus.FocusRequesterModifierNode
@@ -36,11 +39,14 @@ import androidx.compose.ui.node.currentValueOf
 import androidx.compose.ui.node.observeReads
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.InspectorInfo
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -94,19 +100,46 @@ internal fun PaneHeader(category: SettingsCategory, modifier: Modifier = Modifie
 
 /**
  * A pane's scrolling body. The padding leaves room for the focused row's zoom and glow; the focus scrolls the
- * rows below the fold into view.
+ * rows below the fold into view. Rows beyond either edge fade into the screen instead of being cut straight
+ * through under the pane's title (like the list beside it); the padding alone never brings a fade.
  */
 @Composable
 internal fun PaneColumn(modifier: Modifier = Modifier, spacing: Dp = 10.dp, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(PaddingValues(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 40.dp)),
-        verticalArrangement = Arrangement.spacedBy(spacing),
-        content = content,
-    )
+    val scroll = rememberScrollState()
+    val density = LocalDensity.current
+    val hiddenAbove by remember(scroll, density) {
+        derivedStateOf { scroll.value > with(density) { PaneTopPadding.roundToPx() } }
+    }
+    val hiddenBelow by remember(scroll, density) {
+        derivedStateOf {
+            // Int.MAX_VALUE: not measured yet.
+            scroll.maxValue != Int.MAX_VALUE && scroll.maxValue - scroll.value > with(density) { PaneBottomPadding.roundToPx() }
+        }
+    }
+    Box(modifier.fillMaxSize().testTag("settings_pane_body")) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(scroll)
+                .padding(PaddingValues(start = 8.dp, end = 8.dp, top = PaneTopPadding, bottom = PaneBottomPadding)),
+            verticalArrangement = Arrangement.spacedBy(spacing),
+            content = content,
+        )
+        if (hiddenAbove) PaneEdgeFade(Modifier.align(Alignment.TopCenter), toBottom = false)
+        if (hiddenBelow) PaneEdgeFade(Modifier.align(Alignment.BottomCenter), toBottom = true)
+    }
 }
+
+/** From the screen's own colour to nothing: what scrolls under it fades out (the screen behind is plain). */
+@Composable
+private fun PaneEdgeFade(modifier: Modifier, toBottom: Boolean) {
+    val colors = if (toBottom) listOf(Color.Transparent, ShashaColors.Background) else listOf(ShashaColors.Background, Color.Transparent)
+    Box(modifier.fillMaxWidth().height(PaneFadeHeight).testTag(if (toBottom) "pane_fade_bottom" else "pane_fade_top").drawWithContent { drawRect(Brush.verticalGradient(colors)) })
+}
+
+private val PaneTopPadding = 6.dp
+private val PaneBottomPadding = 40.dp
+private val PaneFadeHeight = 36.dp
 
 /**
  * A row that opens something or changes a setting: [icon] (or [leading]), the title and a line about it, the

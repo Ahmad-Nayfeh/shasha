@@ -28,14 +28,13 @@
     <string name="sponsor_category_music_offtopic_body">في مقاطع الموسيقى: الأجزاء التي ليست موسيقى.</string>
 
     <!-- Settings → SponsorBlock. -->
-    <string name="sponsor_settings_title">تخطي المقاطع (SponsorBlock)</string>
     <string name="sponsor_settings_subtitle">تتخطى «شاشة» هذه الأجزاء تلقائياً في كل الملفات، مع رسالة صغيرة.</string>
-    <string name="sponsor_settings_on">مفعّل</string>
-    <string name="sponsor_settings_off">متوقف</string>
     <string name="sponsor_settings_default">الافتراضي</string>
     <string name="sponsor_settings_none">لا يُتخطى شيء: لن تسأل «شاشة» SponsorBlock عن أي فيديو.</string>
 
-    <!-- The data's licence (SPEC: attribution in «حول»). The English sentence is SponsorBlock's own wording. -->
+    <!-- The data's licence (SPEC: attribution in «حول» and the SponsorBlock pane). The English sentence is SponsorBlock's
+         own attribution template, word for word with its final period (gist ajayyy/4b27dfc66e33941a45aeaadccb51de71, linked
+         from the API docs; the link on the licence's name may be left out). -->
     <string name="sponsorblock_attribution">بيانات التخطي من SponsorBlock على sponsor.ajay.app، يساهم بها مجتمعه، ومرخّصة بموجب CC BY-NC-SA 4.0.</string>
-    <string name="sponsorblock_attribution_original" translatable="false">Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/.</string>
+    <string name="sponsorblock_attribution_exact" translatable="false">Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/.</string>
 </resources>

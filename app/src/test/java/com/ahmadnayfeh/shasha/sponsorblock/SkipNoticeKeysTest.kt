@@ -48,11 +48,10 @@ class SkipNoticeKeysTest {
         override val isPlaying = true
         override val isLive = false
         override val isEnded = false
-        override fun seekExactly(positionMs: Long) {
+        override fun seekExactly(positionMs: Long, automatic: Boolean) {
             seeks += positionMs
             position = positionMs
         }
-        override fun setMuted(muted: Boolean) = Unit
     }
 
     private fun show(adult: Boolean, controlsVisible: Boolean = false): SkipController {

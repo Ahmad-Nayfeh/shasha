@@ -16,6 +16,8 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -32,12 +34,15 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
+import com.ahmadnayfeh.shasha.ui.main.MainShell
+import com.ahmadnayfeh.shasha.ui.main.Tab
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /**
  * The settings with the remote only: every entry is reached with UP/DOWN and shows its pane; LEFT or OK goes into
@@ -71,7 +76,11 @@ class SettingsHubNavigationTest {
         setQuota = { id, minutes -> calls += "quota:$id=$minutes" },
         setSchedule = { id, schedule -> calls += "schedule:$id=$schedule" },
         setSponsorCategory = { category, on -> calls += "sponsor:${category.apiKey}=$on" },
-        resetSponsorCategories = { calls += "sponsor_reset" },
+        resetSponsorCategories = {
+            calls += "sponsor_reset"
+            // As the view model does, a moment later: the categories are the defaults again.
+            state = state.copy(sponsorCategories = SponsorCategory.DEFAULTS)
+        },
         setMaxQuality = { calls += "quality:$it" },
         setRemoteEnabled = { calls += "remote_enabled:$it" },
     )
@@ -235,6 +244,51 @@ class SettingsHubNavigationTest {
         press(Key.DirectionCenter)
         assertThat(calls).containsExactly("sponsor:sponsor=false", "sponsor_reset").inOrder()
         assertThat(exists("sponsorblock_attribution")).isTrue()
+
+        // The row did its work and is gone: the focus is on the row above it, not dropped to the pane's top.
+        assertThat(exists("hub_sponsor_reset")).isFalse()
+        focused("hub_sponsor_music_offtopic")
+        press(Key.DirectionUp)
+        focused("hub_sponsor_filler")
+        press(Key.DirectionDown)
+        focused("hub_sponsor_music_offtopic")
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE) // real text measuring: the lines wrap, and the pane fills, as on the TV
+    fun theProtectionPane_showsTheReturnGoal_whenTheRemoteReachesItsLastElement() {
+        state = SettingsHubFixtures.state().copy(protection = SettingsHubFixtures.protectionMissing)
+        compose.setContent {
+            ShashaTheme {
+                // Beside the rail, as on the TV (the pane's width decides how its lines wrap).
+                var selected by remember { mutableStateOf(SettingsCategory.PROTECTION) }
+                val itemFocus = remember { Tab.entries.associateWith { FocusRequester() } }
+                MainShell(Tab.SETTINGS, {}, itemFocus) {
+                    SettingsHubScreen(state, selected, { selected = it }, actions, remember { ContentFocus() })
+                }
+            }
+        }
+        compose.waitForIdle()
+        press(Key.DirectionLeft)
+        focused("hub_protection_open")
+        // The 2-second goal, the number to compare on the TV, is in view from the start…
+        assertWhollyInPane("hub_protection_goal")
+        press(Key.DirectionDown)
+        focused("hub_protection_status") // the pane's last element
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.waitForIdle()
+        // …and at the pane's end both it and the whole status card are (nothing is left below the last element).
+        assertWhollyInPane("hub_protection_goal")
+        assertWhollyInPane("hub_protection_status")
+    }
+
+    private fun assertWhollyInPane(tag: String) {
+        val pane = compose.onNodeWithTag("settings_pane_body").getBoundsInRoot()
+        val root = compose.onRoot().getBoundsInRoot()
+        val node = compose.onNodeWithTag(tag, useUnmergedTree = true).getUnclippedBoundsInRoot()
+        assertThat(node.top).isAtLeast(pane.top)
+        assertThat(node.bottom).isAtMost(pane.bottom)
+        assertThat(node.bottom).isAtMost(root.bottom)
     }
 
     @Test

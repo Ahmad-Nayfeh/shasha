@@ -33,7 +33,7 @@ class SponsorBlockParsingTest {
     }
 
     @Test
-    fun theRequest_namesOnlyThePrefix_everyCategory_andSkipAndMute() {
+    fun theRequest_namesOnlyThePrefix_everyCategory_andOnlySkips() {
         val url = SponsorBlockClient(OkHttpClient()).requestUrl("lC3h3Lm3q54")
         assertThat(url.toString()).doesNotContain("lC3h3Lm3q54")
         assertThat(url.scheme).isEqualTo("https")
@@ -41,7 +41,8 @@ class SponsorBlockParsingTest {
         assertThat(url.encodedPath).isEqualTo("/api/skipSegments/a16c")
         assertThat(url.queryParameter("categories"))
             .isEqualTo("[\"sponsor\",\"selfpromo\",\"interaction\",\"intro\",\"outro\",\"preview\",\"hook\",\"filler\",\"music_offtopic\"]")
-        assertThat(url.queryParameter("actionTypes")).isEqualTo("[\"skip\",\"mute\"]")
+        // SPEC §1 asks for skips (with a message): "mute" segments would silence the sound without one.
+        assertThat(url.queryParameter("actionTypes")).isEqualTo("[\"skip\"]")
         assertThat(url.querySize).isEqualTo(2)
         // The brackets and quotes travel encoded.
         assertThat(url.encodedQuery).contains("%5B%22sponsor%22")
@@ -79,9 +80,8 @@ class SponsorBlockParsingTest {
     @Test
     fun entriesThisAppCannotUse_areLeftOutOneByOne() {
         val segments = SponsorBlockClient.parseSegments(BROKEN_ENTRIES, "abcdefghijk")
-        assertThat(segments.map { it.id }).containsExactly("mute-ok", "no-duration", "skip-ok").inOrder()
-        val mute = segments.first { it.id == "mute-ok" }
-        assertThat(mute.action).isEqualTo(SegmentAction.MUTE)
+        assertThat(segments.map { it.id }).containsExactly("no-duration", "skip-ok").inOrder()
+        assertThat(segments.map { it.action }.toSet()).containsExactly(SegmentAction.SKIP)
         assertThat(segments.first { it.id == "no-duration" }.videoDurationMs).isEqualTo(0)
     }
 
@@ -94,8 +94,7 @@ class SponsorBlockParsingTest {
 
     @Test
     fun theCache_keepsSegmentsAsTheyWere_andForgetsKindsItDoesNotKnow() {
-        val segments = SponsorBlockClient.parseSegments(ANSWER, "_5YXQirYxUo") +
-            SponsorSegment("m", SponsorCategory.MUSIC_OFFTOPIC, SegmentAction.MUTE, 1, 2)
+        val segments = SponsorBlockClient.parseSegments(ANSWER, "_5YXQirYxUo")
         val text = SegmentCache.encode(segments)
         assertThat(SegmentCache.decode(text)).isEqualTo(segments)
         assertThat(SegmentCache.decode("[]")).isEmpty()
@@ -104,6 +103,8 @@ class SponsorBlockParsingTest {
             SegmentCache.decode(
                 """[{"id":"x","category":"chapter","action":"skip","startMs":1,"endMs":2},""" +
                     """{"id":"y","category":"intro","action":"poi","startMs":1,"endMs":2},""" +
+                    // A "mute" entry an earlier version stored: never skipped by mistake.
+                    """{"id":"m","category":"sponsor","action":"mute","startMs":3,"endMs":4},""" +
                     """{"id":"z","category":"intro","action":"skip","startMs":5,"endMs":9}]""",
             ),
         ).containsExactly(SponsorSegment("z", SponsorCategory.INTRO, SegmentAction.SKIP, 5, 9))

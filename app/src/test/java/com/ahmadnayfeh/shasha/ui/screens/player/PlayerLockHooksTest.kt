@@ -7,7 +7,10 @@ import com.ahmadnayfeh.shasha.player.PlaybackProgress
 import com.ahmadnayfeh.shasha.player.ResumeState
 import com.ahmadnayfeh.shasha.policy.DenyReason
 import com.ahmadnayfeh.shasha.policy.PlayCheck
+import com.ahmadnayfeh.shasha.policy.PlaybackLock
 import com.ahmadnayfeh.shasha.policy.PlayedPart
+import com.ahmadnayfeh.shasha.policy.PolicyEngine
+import com.ahmadnayfeh.shasha.policy.UnlockMethod
 import com.ahmadnayfeh.shasha.ui.FakeUiSource
 import com.ahmadnayfeh.shasha.ui.UiFixtures
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
@@ -26,6 +29,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 /**
  * What the player tells the playback lock (SPEC §4): every start, the natural end (with the playlist video
@@ -127,12 +133,44 @@ class PlayerLockHooksTest {
         // Home at 5:00; back later, a new player continues there.
         vm.onReleased(ResumeState(positionMs = 300_000))
         vm.onPlaybackStarted(video)
-        // A sponsor segment skipped (6:00 → 6:40), then the rest played to the end.
+        // The viewer jumped over 6:00 → 6:40, then the rest played to the end.
         vm.onJumped(360_000, 400_000)
         vm.onEnded(end)
         assertThat(playedParts.single()).isEqualTo(PlayedPart(playedMs = 180_000 + 60_000 + 200_000, leftMs = 480_000))
         assertThat(playedParts.single()!!.endedByItself).isTrue()
         assertThat(vm.skippedToEnd.value).isFalse()
+    }
+
+    @Test
+    fun sponsorBlocksSkips_nearTheEndOfAResumedVideo_stillLetItEndByItself() {
+        // A 20:00 video resumed at 18:30 (a child's single video). SponsorBlock skips its end screen, 18:40 → 19:59
+        // (self-promotion, a like reminder and the outro), the last second plays: nobody skipped anything.
+        val twentyMinutes = PlaybackProgress(1_200_000, 1_200_000, 1_200_000)
+        val vm = player()
+        vm.resume = ResumeState(positionMs = 1_110_000)
+        vm.onPlaybackStarted(video)
+        vm.onAutoSkipped(1_120_000, 1_199_000)
+        vm.onEnded(twentyMinutes)
+        val part = playedParts.single()!!
+        assertThat(part).isEqualTo(PlayedPart(playedMs = 11_000, leftMs = 11_000))
+        assertThat(part.endedByItself).isTrue()
+        assertThat(vm.skippedToEnd.value).isFalse()
+        // So the lock ends as at any natural end: the child goes home without the PIN, the adult without a surrender.
+        val engine = PolicyEngine(Clock.fixed(Instant.parse("2026-09-29T18:00:00Z"), ZoneOffset.UTC))
+        val childLock = PlaybackLock("kid", UnlockMethod.PARENT_PIN, id, sinceEpochMs = 0)
+        assertThat(engine.onVideoEnded(childLock, nextVideoId = null, played = part)).isNull()
+        assertThat(engine.onVideoEnded(childLock.copy(profileId = "adult", unlock = UnlockMethod.EXIT_CHALLENGE), played = part)).isNull()
+
+        // The same minute skipped by the viewer's own jump is leaving before the end: the lock stays.
+        playedParts.clear()
+        val skipper = player()
+        skipper.resume = ResumeState(positionMs = 1_110_000)
+        skipper.onPlaybackStarted(video)
+        skipper.onJumped(1_120_000, 1_199_000)
+        skipper.onEnded(twentyMinutes)
+        assertThat(playedParts.single()!!.endedByItself).isFalse()
+        assertThat(engine.onVideoEnded(childLock, nextVideoId = null, played = playedParts.single())).isEqualTo(childLock)
+        assertThat(skipper.skippedToEnd.value).isTrue()
     }
 
     @Test

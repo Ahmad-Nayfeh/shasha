@@ -130,16 +130,18 @@ fun PlayerScreen(
             }
         },
     )
-    // SPEC §1: SponsorBlock's segments are looked up now, beside the extraction; the adult may take a skip back.
+    // SPEC §1: SponsorBlock's segments are looked up now, beside the extraction (again later if that failed); the
+    // adult may take a skip back.
     val sponsor: SponsorSkipsViewModel = viewModel(
         key = "sponsor:$videoId",
         factory = viewModelFactory {
             initializer {
                 SponsorSkipsViewModel(
                     videoId = videoId,
-                    segments = container.sponsorBlock::segments,
+                    lookup = container.sponsorBlock::lookup,
                     categories = container.sponsorBlockSettings.categories,
                     undoAllowed = profile?.let { container.policyEngine.features(it).undoSponsorSkip } ?: false,
+                    online = container.network.online,
                 )
             }
         },
@@ -284,7 +286,14 @@ private fun VideoPlayer(
             if (controller != null) return
             if (!vm.canStart(ready)) return // a fresh extraction replaces this one; its player starts then
             lateinit var created: PlaybackController
-            created = PlaybackController(context, factory(), ready.stream, maxQuality = maxQuality(), onJump = vm::onJumped) { error ->
+            created = PlaybackController(
+                context,
+                factory(),
+                ready.stream,
+                maxQuality = maxQuality(),
+                onJump = vm::onJumped,
+                onAutoSkip = vm::onAutoSkipped,
+            ) { error ->
                 vm.onPlaybackError(ready, error, created.resumeState())
             }
             try {

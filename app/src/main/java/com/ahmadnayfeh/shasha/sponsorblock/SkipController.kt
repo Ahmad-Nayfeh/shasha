@@ -17,10 +17,12 @@ interface SkipTarget {
     val isLive: Boolean
     val isEnded: Boolean
 
-    /** Jumps to exactly [positionMs] (never to a keyframe before it, which could be inside the segment). */
-    fun seekExactly(positionMs: Long)
-
-    fun setMuted(muted: Boolean)
+    /**
+     * Jumps to exactly [positionMs] (never to a keyframe before it, which could be inside the segment).
+     * [automatic]: SponsorBlock's own skip, which the lock does not hold against the viewer (SPEC §4,
+     * [com.ahmadnayfeh.shasha.player.PlayedMeter]); false for the adult's undo, an ordinary jump back.
+     */
+    fun seekExactly(positionMs: Long, automatic: Boolean)
 }
 
 /**
@@ -46,16 +48,19 @@ data class SkipNotice(
  * releases a player, a new one continues). [tick] is called about every [TICK_MS]; while the video plays and
  * the position is inside a segment to skip, it jumps to the segment's end and shows a [notice].
  *
- * - Every segment is skipped at most once per viewing: after a skip, seeking back into it plays it (and a jump
- *   that landed a little short can never loop). Once the video has ended, a replay skips again ([onReplay]).
+ * - A skipped segment is not skipped again while playback stays past its start: seeking back into it plays it
+ *   (and a jump that landed a little short can never loop, [LANDING_SLACK_MS]). Playback seen before its start
+ *   again (the viewer went back to watch something earlier) skips it again when it comes. Once the video has
+ *   ended, a replay skips everything again ([onReplay]).
  * - [undoAllowed] (the adult, `Features.undoSponsorSkip`): the notice offers «تراجع عن التخطي» for
  *   [UNDO_WINDOW_MS]; [undo] goes back to the segment's start and never skips it again. A child only sees
  *   the message, for [NOTICE_MS].
- * - Nothing is skipped in a live stream, nor a segment shorter than [MIN_SEGMENT_MS], nor one that ends within
- *   [END_GUARD_MS] of the video's end (the jump would end the video: its end card, lock and playlist would
- *   follow, and an undo could not bring it back).
+ * - A jump never reaches the video's end: a segment that runs to the end (an outro, an end screen) is skipped
+ *   to [END_GUARD_MS] before it, and that last moment plays, so the video ends by itself (its end card, the
+ *   lock and the playlist follow the video as always, never a jump).
+ * - Nothing is skipped in a live stream, nor a segment shorter than [MIN_SEGMENT_MS], nor by a jump shorter
+ *   than [MIN_JUMP_MS] (the last moments of a segment that runs to the end simply play).
  * - Segments that touch or overlap (up to [MERGE_GAP_MS] apart) are one jump and one notice.
- * - "mute" segments silence the sound while playback is inside them.
  *
  * Main thread only.
  */
@@ -66,14 +71,14 @@ class SkipController(
 ) {
     private var segments: List<SponsorSegment> = emptyList()
 
-    /** Skipped during this visit: never again (until a replay). */
+    /** Skipped, and playback has not been before their start since: not again. */
     private val skipped = HashSet<String>()
 
     /** Taken back by the adult: they play, now and after a replay. */
     private val suppressed = HashSet<String>()
 
-    /** The player this controller muted, if any (a new player starts with its sound on). */
-    private var mutedOn: SkipTarget? = null
+    /** Where the last skip was aimed: playback just short of it is that jump landing, not the viewer going back. */
+    private var lastLanding = NO_LANDING
     private var nextNoticeId = 0L
 
     private val _notice = MutableStateFlow<SkipNotice?>(null)
@@ -86,10 +91,10 @@ class SkipController(
         segments = list.sortedWith(compareBy({ it.startMs }, { it.endMs }))
     }
 
-    /** One look at [target]: expire the notice, mute or unmute, and skip when playback entered a segment. */
+    /** One look at [target]: expire the notice, re-arm what playback went back before, and skip when it entered a segment. */
     fun tick(target: SkipTarget) {
         // Most videos have no segments (or none selected): then the player is not even looked at.
-        if (segments.isEmpty() && _notice.value == null && mutedOn == null) return
+        if (segments.isEmpty() && _notice.value == null) return
         val now = clock()
         if (target.isEnded) {
             // This viewing is over: whatever starts it again (the end card's replay, the controls' own button)
@@ -98,27 +103,30 @@ class SkipController(
             _notice.value = null
         }
         _notice.value?.let { if (now >= it.untilMs) _notice.value = null }
-        if (target.isLive) {
-            applyMute(target, false)
-            return
-        }
+        if (target.isLive) return
         val position = target.positionMs
-        applyMute(target, segments.any { it.action == SegmentAction.MUTE && it.id !in suppressed && position in it })
+        if (skipped.isNotEmpty() && position !in lastLanding - LANDING_SLACK_MS..lastLanding) {
+            segments.forEach { if (position < it.startMs) skipped -= it.id }
+        }
         if (!target.isPlaying) return
         val duration = target.durationMs ?: return
-        val first = segments.firstOrNull { position in it && isSkippable(it, duration) } ?: return
+        val first = segments.firstOrNull { position in it && isSkippable(it) } ?: return
 
         val chain = mutableListOf(first)
-        var landing = first.endMs
+        var chainEnd = first.endMs
         while (true) {
             val next = segments.firstOrNull {
-                it !in chain && isSkippable(it, duration) && it.startMs <= landing + MERGE_GAP_MS && it.endMs > landing
+                it !in chain && isSkippable(it) && it.startMs <= chainEnd + MERGE_GAP_MS && it.endMs > chainEnd
             } ?: break
             chain += next
-            landing = next.endMs
+            chainEnd = next.endMs
         }
+        val landing = minOf(chainEnd, duration - END_GUARD_MS)
+        // Too close to the end, or to where the chain ends: the rest simply plays.
+        if (landing - position < MIN_JUMP_MS) return
         chain.mapTo(skipped) { it.id }
-        target.seekExactly(landing)
+        lastLanding = landing
+        target.seekExactly(landing, automatic = true)
         _notice.value = SkipNotice(
             id = ++nextNoticeId,
             category = first.category,
@@ -140,7 +148,7 @@ class SkipController(
         if (!shown.undoable || clock() >= shown.untilMs) return false
         suppressed += shown.segmentIds
         _notice.value = null
-        target.seekExactly(shown.fromMs)
+        target.seekExactly(shown.fromMs, automatic = false)
         return true
     }
 
@@ -152,29 +160,15 @@ class SkipController(
     /** «إعادة التشغيل» from the end card: a new viewing skips again (except what the adult chose to watch). */
     fun onReplay() {
         skipped.clear()
+        lastLanding = NO_LANDING
         _notice.value = null
     }
 
-    private fun isSkippable(segment: SponsorSegment, durationMs: Long): Boolean =
+    private fun isSkippable(segment: SponsorSegment): Boolean =
         segment.action == SegmentAction.SKIP &&
             segment.id !in skipped &&
             segment.id !in suppressed &&
-            segment.lengthMs >= MIN_SEGMENT_MS &&
-            durationMs - segment.endMs >= END_GUARD_MS
-
-    /**
-     * A new player starts with its sound on (after Home, a fresh extraction): it is silenced again when needed.
-     * Once a mute is over, the player looked at now gets its sound back, whichever view of it muted it.
-     */
-    private fun applyMute(target: SkipTarget, mute: Boolean) {
-        if (mute && mutedOn !== target) {
-            target.setMuted(true)
-            mutedOn = target
-        } else if (!mute && mutedOn != null) {
-            target.setMuted(false)
-            mutedOn = null
-        }
-    }
+            segment.lengthMs >= MIN_SEGMENT_MS
 
     companion object {
         /** How often the player is looked at while the video is on screen (a few field reads). */
@@ -187,7 +181,20 @@ class SkipController(
         const val UNDO_WINDOW_MS = 5_000L
 
         const val MIN_SEGMENT_MS = 1_000L
+
+        /** A shorter jump is not worth one (and its notice): what is left of the segment plays. */
+        const val MIN_JUMP_MS = 500L
+
+        /** A skip lands at least this long before the video's end: the video ends by itself, never by a jump. */
         const val END_GUARD_MS = 1_000L
         const val MERGE_GAP_MS = 1_000L
+
+        /**
+         * Up to this much short of a skip's aim, playback is that skip landing (a keyframe, should the exact seek
+         * ever snap to one), not the viewer going back: what it skipped is not armed again, so it cannot loop.
+         */
+        const val LANDING_SLACK_MS = 5_000L
+
+        private const val NO_LANDING = Long.MIN_VALUE / 2
     }
 }

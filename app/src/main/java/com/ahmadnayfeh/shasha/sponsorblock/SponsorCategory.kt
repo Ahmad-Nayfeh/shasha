@@ -38,13 +38,14 @@ enum class SponsorCategory(
     }
 }
 
-/** What SponsorBlock says to do with a segment. Only these two are asked for (actionTypes). */
+/**
+ * What SponsorBlock says to do with a segment; only these are asked for (actionTypes). SPEC §1 asks for skips
+ * (each with a small message, and the adult's undo): "mute" segments, which would silence the sound with no
+ * message, are neither asked for nor kept (an older cache entry of that kind is dropped when read).
+ */
 enum class SegmentAction(val apiKey: String) {
     /** Jump over it. */
     SKIP("skip"),
-
-    /** Keep the picture, silence the sound (a sponsor read over the content). */
-    MUTE("mute"),
     ;
 
     companion object {

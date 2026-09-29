@@ -36,7 +36,7 @@ fun interface SegmentFetcher {
 
 /**
  * SponsorBlock's API, the privacy-preserving way (SPEC §1): the request names only the first 4 hex characters
- * of the video id's SHA-256 (`GET /api/skipSegments/a16c?categories=[…]&actionTypes=["skip","mute"]`), the
+ * of the video id's SHA-256 (`GET /api/skipSegments/a16c?categories=[…]&actionTypes=["skip"]`), the
  * server answers for every video sharing that prefix, and the video's own entry is picked here.
  *
  * Every category the app knows is asked for, whatever is selected: the cache then serves any selection, and a

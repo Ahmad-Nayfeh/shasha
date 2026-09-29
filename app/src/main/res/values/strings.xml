@@ -833,7 +833,7 @@
     <!-- الملفات ورمز الوالدين -->
     <string name="hub_profiles_manage">إدارة الملفات</string>
     <string name="hub_profiles_manage_body">إضافة ملف طفل، والأسماء والصور، وإخفاء المقاطع القصيرة، وحذف ملف</string>
-    <string name="hub_pin_note">رمز الوالدين يفتح ملفك وهذه الإعدادات، ويُخرج الأطفال من ملفاتهم، ويمنح وقتاً إضافياً. وخمس محاولات خاطئة توقفه دقائق.</string>
+    <string name="hub_pin_note">رمز الوالدين يفتح ملفك وهذه الإعدادات، ويُخرج الأطفال من ملفاتهم، ويمنح وقتاً إضافياً. وخمس محاولات خاطئة توقفه من 5 دقائق حتى 4 ساعات.</string>
 
     <!-- قوائم السماح والحظر -->
     <string name="hub_blocklist_section">الحظر · في كل الملفات</string>
@@ -859,9 +859,8 @@
     <string name="hub_stats_open">التفاصيل</string>
     <string name="hub_stats_open_body">آخر 7 أيام يوماً بيوم، وأكثر القنوات مشاهدة، والاستسلام</string>
 
-    <!-- فئات SponsorBlock. The attribution is SponsorBlock's own sentence, exactly (its licence asks for it). -->
+    <!-- فئات SponsorBlock (the attribution's strings are in strings_sponsorblock.xml). -->
     <string name="hub_sponsor_defaults">العودة إلى الاختيار الافتراضي</string>
-    <string name="sponsorblock_attribution_exact" translatable="false">Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/</string>
 
     <!-- الجودة الافتراضية; %1$s: 2160, 1440, 1080, 720 or 480. -->
     <string name="hub_quality_option">تلقائي حتى %1$sp</string>

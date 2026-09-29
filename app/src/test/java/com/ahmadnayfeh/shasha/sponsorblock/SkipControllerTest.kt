@@ -15,18 +15,17 @@ class SkipControllerTest {
         var ended: Boolean = false,
     ) : SkipTarget {
         val seeks = mutableListOf<Long>()
-        val mutes = mutableListOf<Boolean>()
+
+        /** For each seek: SponsorBlock's own skip (true) or the adult's undo (false). */
+        val automatic = mutableListOf<Boolean>()
         override val isPlaying: Boolean get() = playing && !ended
         override val isLive: Boolean get() = live
         override val isEnded: Boolean get() = ended
 
-        override fun seekExactly(positionMs: Long) {
+        override fun seekExactly(positionMs: Long, automatic: Boolean) {
             seeks += positionMs
+            this.automatic += automatic
             this.positionMs = positionMs
-        }
-
-        override fun setMuted(muted: Boolean) {
-            mutes += muted
         }
     }
 
@@ -89,6 +88,8 @@ class SkipControllerTest {
 
         assertThat(skipper.undo(player)).isTrue()
         assertThat(player.seeks).containsExactly(162_837L, 119_513L).inOrder()
+        // The skip is SponsorBlock's own (the lock does not count it against the viewer); the undo is a plain jump.
+        assertThat(player.automatic).containsExactly(true, false).inOrder()
         assertThat(skipper.notice.value).isNull()
 
         // The whole sponsor plays now, and past it.
@@ -139,22 +140,57 @@ class SkipControllerTest {
         skipper.tick(player)
         skipper.dismiss()
 
-        player.positionMs = 150_000 // BACK 10 s, three times
+        player.positionMs = 150_000 // BACK 10 s, a few times: into the segment, which then plays
         skipper.play(20_000)
-        player.positionMs = 100_000 // or from well before it
-        skipper.play(30_000)
         assertThat(player.seeks).containsExactly(162_837L)
+    }
+
+    @Test
+    fun goingBackToBeforeASkippedSegment_skipsItAgainWhenItComes() {
+        val skipper = controller(undo = false, SPONSOR_SEGMENT)
+        player.positionMs = 115_000
+        skipper.play(5_000)
+        assertThat(player.seeks).containsExactly(162_837L)
+
+        // Back to 1:40 to watch something again (a child who rewinds): the sponsor the parent turned off stays off.
+        player.positionMs = 100_000
+        skipper.play(25_000)
+        assertThat(player.seeks).containsExactly(162_837L, 162_837L).inOrder()
+        assertThat(player.automatic).containsExactly(true, true)
+        assertThat(player.positionMs).isGreaterThan(162_837L)
     }
 
     @Test
     fun aSeekThatLandsShort_neverLoops() {
         val skipper = controller(undo = true, SPONSOR_SEGMENT)
         val keyframePlayer = object : SkipTarget by player {
-            override fun seekExactly(positionMs: Long) = player.seekExactly(positionMs - 1_500) // a keyframe before the end
+            override fun seekExactly(positionMs: Long, automatic: Boolean) =
+                player.seekExactly(positionMs - 1_500, automatic) // a keyframe before the end
         }
         player.positionMs = 119_600
         skipper.tick(keyframePlayer)
         repeat(20) { skipper.tick(keyframePlayer) }
+        assertThat(player.seeks).hasSize(1)
+    }
+
+    @Test
+    fun aShortSegment_whoseSkipLandsBeforeItsStart_neverLoopsEither() {
+        // Should an exact seek ever snap to a keyframe 3 s early, it lands before this 2-second segment began.
+        val short = segment("short", 60_000, 62_000, SponsorCategory.INTERACTION)
+        val skipper = controller(undo = false, short)
+        val keyframePlayer = object : SkipTarget by player {
+            override fun seekExactly(positionMs: Long, automatic: Boolean) = player.seekExactly(positionMs - 3_000, automatic)
+        }
+        player.positionMs = 60_100
+        skipper.tick(keyframePlayer)
+        assertThat(player.positionMs).isEqualTo(59_000)
+        var left = 10_000L
+        while (left > 0) {
+            player.positionMs += SkipController.TICK_MS
+            now += SkipController.TICK_MS
+            left -= SkipController.TICK_MS
+            skipper.tick(keyframePlayer)
+        }
         assertThat(player.seeks).hasSize(1)
     }
 
@@ -195,19 +231,43 @@ class SkipControllerTest {
     }
 
     @Test
-    fun segmentsEndingWithinOneSecondOfTheEnd_areNotSkipped() {
-        val outro = segment("outro", VIDEO_MS - 20_000, VIDEO_MS - 400, SponsorCategory.OUTRO)
+    fun aSegmentThatRunsToTheEnd_isSkippedToTheLastSecond_soTheVideoEndsByItself() {
+        // SponsorBlock's outros usually run to the end, or past the player's own length.
+        val outro = segment("outro", VIDEO_MS - 20_000, VIDEO_MS + 500, SponsorCategory.OUTRO)
         val skipper = controller(undo = true, outro)
-        player.positionMs = VIDEO_MS - 19_000
-        skipper.play(3_000)
-        assertThat(player.seeks).isEmpty()
+        player.positionMs = VIDEO_MS - 19_900
+        skipper.tick(player)
+        assertThat(player.seeks).containsExactly(VIDEO_MS - SkipController.END_GUARD_MS)
+        val notice = skipper.notice.value!!
+        assertThat(notice.category).isEqualTo(SponsorCategory.OUTRO)
+        assertThat(notice.toMs).isEqualTo(VIDEO_MS - SkipController.END_GUARD_MS)
 
-        // One that leaves a whole second is skipped.
-        val lastSecondLeft = segment("sponsor-late", VIDEO_MS - 20_000, VIDEO_MS - 1_000)
-        val other = controller(undo = true, lastSecondLeft)
-        player.positionMs = VIDEO_MS - 19_000
-        other.tick(player)
+        // The last second plays (still inside the outro): never a second jump, and the video ends by itself.
+        skipper.play(750)
+        assertThat(player.seeks).hasSize(1)
+    }
+
+    @Test
+    fun anEndScreenChain_isOneJumpToTheLastSecond() {
+        val selfPromo = segment("promo", VIDEO_MS - 60_000, VIDEO_MS - 30_000, SponsorCategory.SELF_PROMO)
+        val interaction = segment("like", VIDEO_MS - 30_000, VIDEO_MS - 10_000, SponsorCategory.INTERACTION)
+        val outro = segment("outro", VIDEO_MS - 10_000, VIDEO_MS, SponsorCategory.OUTRO)
+        val skipper = controller(undo = false, selfPromo, interaction, outro)
+        player.positionMs = VIDEO_MS - 59_900
+        skipper.tick(player)
         assertThat(player.seeks).containsExactly(VIDEO_MS - 1_000)
+        assertThat(skipper.notice.value!!.segmentIds).containsExactly("promo", "like", "outro")
+    }
+
+    @Test
+    fun theLastMomentsOfASegmentThatRunsToTheEnd_simplyPlay() {
+        val outro = segment("outro", VIDEO_MS - 20_000, VIDEO_MS, SponsorCategory.OUTRO)
+        val skipper = controller(undo = true, outro)
+        // Resumed 1.3 s before the end: a jump of 0.3 s is not worth one (nor its notice).
+        player.positionMs = VIDEO_MS - 1_300
+        skipper.tick(player)
+        assertThat(player.seeks).isEmpty()
+        assertThat(skipper.notice.value).isNull()
     }
 
     @Test
@@ -329,54 +389,6 @@ class SkipControllerTest {
         skipper.tick(counted)
         assertThat(reads).isGreaterThan(0)
         assertThat(player.seeks).containsExactly(162_837L)
-    }
-
-    @Test
-    fun aMuteInProgress_endsWhenItsCategoryIsSwitchedOff() {
-        val mute = SponsorSegment("m", SponsorCategory.SPONSOR, SegmentAction.MUTE, 10_000, 20_000)
-        val skipper = controller(undo = true, mute)
-        player.positionMs = 12_000
-        skipper.tick(player)
-        assertThat(player.mutes).containsExactly(true)
-
-        skipper.setSegments(emptyList())
-        skipper.tick(player)
-        assertThat(player.mutes).containsExactly(true, false).inOrder()
-        skipper.tick(player)
-        assertThat(player.mutes).containsExactly(true, false).inOrder()
-    }
-
-    @Test
-    fun muteSegments_silenceOnlyWhilePlaybackIsInside() {
-        val mute = SponsorSegment("m", SponsorCategory.SPONSOR, SegmentAction.MUTE, 10_000, 20_000)
-        val skipper = controller(undo = true, mute)
-        player.positionMs = 9_000
-        skipper.play(1_000)
-        assertThat(player.mutes).containsExactly(true)
-        skipper.play(9_750)
-        assertThat(player.mutes).containsExactly(true)
-        skipper.play(500)
-        assertThat(player.mutes).containsExactly(true, false).inOrder()
-        assertThat(player.seeks).isEmpty() // a mute segment is never jumped over
-        assertThat(skipper.notice.value).isNull()
-
-        // A seek back into it (paused, too) silences it again.
-        player.playing = false
-        player.positionMs = 15_000
-        skipper.tick(player)
-        assertThat(player.mutes).containsExactly(true, false, true).inOrder()
-
-        // A new player (after Home) starts with its sound on: it is silenced too.
-        val next = FakePlayer(positionMs = 15_000)
-        skipper.tick(next)
-        assertThat(next.mutes).containsExactly(true)
-
-        // Another view of that same player (the controls rebuilt after the end card) gets the sound back.
-        val sameAgain = FakePlayer(positionMs = 0)
-        skipper.tick(sameAgain)
-        assertThat(sameAgain.mutes).containsExactly(false)
-        skipper.tick(sameAgain)
-        assertThat(sameAgain.mutes).containsExactly(false)
     }
 
     private companion object {

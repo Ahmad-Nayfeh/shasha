@@ -7,7 +7,7 @@ import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 /**
  * The screen's [PlaybackController] as [SkipController] sees it: a few reads of ExoPlayer's state per look, and
- * the controller's exact seek and mute. The length falls back to the extraction's while ExoPlayer does not know it.
+ * the controller's exact seek. The length falls back to the extraction's while ExoPlayer does not know it.
  */
 class PlaybackSkipTarget(private val controller: PlaybackController, private val video: VideoItem) : SkipTarget {
     private val player: Player get() = controller.player
@@ -24,7 +24,5 @@ class PlaybackSkipTarget(private val controller: PlaybackController, private val
 
     override val isEnded: Boolean get() = player.playbackState == Player.STATE_ENDED
 
-    override fun seekExactly(positionMs: Long) = controller.seekExactly(positionMs)
-
-    override fun setMuted(muted: Boolean) = controller.setMuted(muted)
+    override fun seekExactly(positionMs: Long, automatic: Boolean) = controller.seekExactly(positionMs, automatic)
 }

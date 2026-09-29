@@ -37,8 +37,9 @@ import kotlinx.coroutines.flow.update
  * manifests come from YouTube uncapped, so the track selector applies the same cap ([withAutoQualityCap]). A
  * fixed quality is a TrackSelectionOverride on the same source, so switching does not reload the video.
  *
- * [onJump] hears every jump of the position (a seek from anywhere: the controls, the phone, a replay),
- * from where to where: what was skipped was not played ([PlayedMeter], SPEC §4).
+ * [onJump] hears every jump of the position (a seek from anywhere: the controls, the phone, a replay, the
+ * adult's «تراجع عن التخطي»), from where to where: what was skipped was not played ([PlayedMeter], SPEC §4).
+ * SponsorBlock's own skips ([seekExactly] with `automatic`) go to [onAutoSkip] instead: nobody chose them.
  *
  * Main thread only.
  */
@@ -49,6 +50,7 @@ class PlaybackController(
     private val stream: StreamDetails,
     private val maxQuality: Int = MAX_AUTO_HEIGHT,
     private val onJump: (fromMs: Long, toMs: Long) -> Unit = { _, _ -> },
+    private val onAutoSkip: (fromMs: Long, toMs: Long) -> Unit = onJump,
     private val onError: (SourceException) -> Unit,
 ) {
     private val trackSelector = DefaultTrackSelector(context)
@@ -80,6 +82,9 @@ class PlaybackController(
     /** Subtitle language baked into the current MediaSource (the factory merges one language). */
     private var sourceSubtitle: String? = null
     private var released = false
+
+    /** Set while [seekExactly] makes SponsorBlock's own jump: its discontinuity goes to [onAutoSkip]. */
+    private var automaticSeek = false
 
     private val listener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) = _state.update { it.copy(isPlaying = isPlaying) }
@@ -125,7 +130,13 @@ class PlaybackController(
 
         // Every reason, not only seeks: whatever moved the position was not played through.
         override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
-            if (!stream.video.isLive) onJump(oldPosition.positionMs, newPosition.positionMs)
+            if (stream.video.isLive) return
+            if (automaticSeek && reason == Player.DISCONTINUITY_REASON_SEEK) {
+                automaticSeek = false
+                onAutoSkip(oldPosition.positionMs, newPosition.positionMs)
+            } else {
+                onJump(oldPosition.positionMs, newPosition.positionMs)
+            }
         }
 
         override fun onPlayerError(error: PlaybackException) {
@@ -235,21 +246,23 @@ class PlaybackController(
 
     /**
      * Jumps to exactly [positionMs] (SponsorBlock: to a segment's end, or back to its start). EXACT only for this
-     * jump: a seek that snapped to a keyframe would land inside the segment it skips.
+     * jump: a seek that snapped to a keyframe would land inside the segment it skips. [automatic]: SponsorBlock's
+     * own skip, reported to [onAutoSkip]; the adult's undo is an ordinary jump ([onJump]).
      */
-    fun seekExactly(positionMs: Long) {
+    fun seekExactly(positionMs: Long, automatic: Boolean = false) {
         if (released) return
         val before = player.seekParameters
         player.setSeekParameters(SeekParameters.EXACT)
-        player.seekTo(positionMs.coerceAtLeast(0))
+        // ExoPlayer tells its listeners about the seek before seekTo returns (this is never called from one of
+        // them), so the flag covers exactly this jump; it never outlives the call.
+        automaticSeek = automatic
+        try {
+            player.seekTo(positionMs.coerceAtLeast(0))
+        } finally {
+            automaticSeek = false
+        }
         // Applied in order on the playback thread: the seek above still uses EXACT.
         player.setSeekParameters(before)
-    }
-
-    /** Silences the video's sound (SponsorBlock "mute" segments) or gives it back. */
-    fun setMuted(muted: Boolean) {
-        if (released) return
-        player.volume = if (muted) 0f else 1f
     }
 
     private fun load(subtitleLanguage: String?, startPositionMs: Long) {

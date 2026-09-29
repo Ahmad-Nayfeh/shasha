@@ -55,13 +55,23 @@ class SponsorBlockRepositoryTest {
     }
 
     @Test
-    fun noSegments_isAnAnswerAndIsKeptToo() {
+    fun noSegments_isAnAnswerAndIsKeptToo_butOnlyForAnHour() {
         answer = { emptyList() } // HTTP 404
         assertThat(lookup().segments).isEmpty()
-        now += 12 * HOUR_MS
-        assertThat(lookup()).isEqualTo(SponsorBlockRepository.Lookup.Cached(emptyList(), ageMs = 12 * HOUR_MS))
+        now += 50 * MINUTE_MS
+        assertThat(lookup()).isEqualTo(SponsorBlockRepository.Lookup.Cached(emptyList(), ageMs = 50 * MINUTE_MS))
         assertThat(asked).hasSize(1)
         assertThat(runBlocking { dao.get(VIDEO) }?.segments).isEqualTo("[]")
+
+        // A new upload opened in its first minutes, resumed hours later: the sponsor submitted meanwhile is found.
+        now += 3 * HOUR_MS
+        answer = { listOf(SPONSOR) }
+        assertThat(lookup()).isEqualTo(SponsorBlockRepository.Lookup.Fetched(listOf(SPONSOR)))
+        assertThat(asked).hasSize(2)
+        // Segments, once found, are kept the whole day.
+        now += 23 * HOUR_MS
+        assertThat(lookup()).isInstanceOf(SponsorBlockRepository.Lookup.Cached::class.java)
+        assertThat(asked).hasSize(2)
     }
 
     @Test
@@ -115,6 +125,7 @@ class SponsorBlockRepositoryTest {
     }
 
     private companion object {
+        const val MINUTE_MS = 60_000L
         const val VIDEO = "lC3h3Lm3q54"
         val SPONSOR = SponsorSegment("607daf45", SponsorCategory.SPONSOR, SegmentAction.SKIP, 119_513, 162_837, 465_000)
     }

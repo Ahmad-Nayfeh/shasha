@@ -11,7 +11,9 @@ import kotlinx.serialization.json.Json
 
 /**
  * A video's SponsorBlock segments, fetched once and kept in Room ([SponsorSegmentDao]) for [ttlMs] (24 hours):
- * opening the video again in that time asks nobody. "No segments" is an answer and is kept too.
+ * opening the video again in that time asks nobody. "No segments" is an answer and is kept too, but only for
+ * [emptyTtlMs] (an hour): the home feed is the newest uploads, and their segments are submitted in their first
+ * hours, so a video half watched soon after it came out is asked again when it is resumed.
  *
  * Never fails: a video whose segments cannot be had plays without skipping. When SponsorBlock cannot be reached
  * an older answer (up to [keepMs]) is used rather than none, and nothing new is stored, so the next start asks
@@ -24,6 +26,7 @@ class SponsorBlockRepository(
     private val now: () -> Long,
     private val ttlMs: Long = TTL_MS,
     private val keepMs: Long = KEEP_MS,
+    private val emptyTtlMs: Long = EMPTY_TTL_MS,
 ) {
     /** How a lookup went, for the log and the tests. */
     sealed interface Lookup {
@@ -54,7 +57,8 @@ class SponsorBlockRepository(
         val asked = now()
         val age = stored?.let { asked - it.fetchedAtMs }
         // An answer "from the future" means the clock went back: it is not trusted to be fresh.
-        if (cached != null && age != null && age in 0 until ttlMs) return Lookup.Cached(cached, age)
+        val freshFor = if (cached.isNullOrEmpty()) emptyTtlMs else ttlMs
+        if (cached != null && age != null && age in 0 until freshFor) return Lookup.Cached(cached, age)
 
         val fetched = try {
             fetcher.fetch(videoId)
@@ -79,6 +83,9 @@ class SponsorBlockRepository(
     companion object {
         /** SPEC: reuse for 24 hours. */
         const val TTL_MS = 24 * 60 * 60 * 1000L
+
+        /** "No segments (yet)": asked again after an hour (SponsorBlock's own client never keeps it at all). */
+        const val EMPTY_TTL_MS = 60 * 60 * 1000L
 
         /** An older answer still beats none when SponsorBlock is down; older rows are deleted. */
         const val KEEP_MS = 7 * TTL_MS

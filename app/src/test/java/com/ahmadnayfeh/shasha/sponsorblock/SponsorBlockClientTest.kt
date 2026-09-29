@@ -50,7 +50,7 @@ class SponsorBlockClientTest {
             .containsExactly(Triple(SponsorCategory.SPONSOR, 119_513L, 162_837L))
         val request = server.requests.single()
         assertThat(request).startsWith("GET /api/skipSegments/a16c?categories=")
-        assertThat(request).contains("actionTypes=%5B%22skip%22%2C%22mute%22%5D")
+        assertThat(request).contains("actionTypes=%5B%22skip%22%5D")
         assertThat(request).doesNotContain("lC3h3Lm3q54")
     }
 

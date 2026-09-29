@@ -71,8 +71,9 @@ fun interface PlayGate {
  *
  * [lock] (SPEC §4) hears how the video goes: every start (not after the end, until a replay), the end
  * with the playlist video that follows ([playlistId]) and how much of the video was really played
- * ([PlayedMeter]: skipped to its end, it stays locked), and a video that cannot play here any more (not
- * for a lost network: the lock stays and the video is tried again, [retry]).
+ * ([PlayedMeter]: skipped to its end, it stays locked; what SponsorBlock skipped is not held against it), and
+ * a video that cannot play here any more (not for a lost network: the lock stays and the video is tried
+ * again, [retry]).
  *
  * [startAtMs]: where a shared link asks the video to start (`t=`); it replaces the saved position (past the
  * video's end, the video starts from the beginning).
@@ -215,6 +216,14 @@ class PlayerViewModel(
     /** The player's position jumped (a seek, from anywhere): that part was not played. */
     fun onJumped(fromMs: Long, toMs: Long) {
         played.jumped(fromMs, toMs)
+    }
+
+    /**
+     * SponsorBlock skipped [fromMs] to [toMs] by itself: nobody chose it, so it is not a skip towards the end
+     * either (SPEC §4); it simply is not part of what was left to watch.
+     */
+    fun onAutoSkipped(fromMs: Long, toMs: Long) {
+        played.autoSkipped(fromMs, toMs)
     }
 
     /** Every 10 s while playing, on pause, and when the player is released. */
