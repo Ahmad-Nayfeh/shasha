@@ -18,7 +18,13 @@ interface VideoSource {
 
     suspend fun playlist(playlistId: String, page: PageKey? = null): PlaylistPage
 
-    suspend fun stream(videoId: String): StreamDetails
+    /**
+     * [allowLowQuality]: a video that only offers a muxed file of 360p or less (e.g. "made for kids" videos
+     * with this extractor) comes back playable, marked with [StreamDetails.lowQualityHeight], instead of
+     * failing with [SourceErrorKind.LOW_QUALITY_ONLY]. The caller must then say so on screen: it never plays
+     * silently at 360p.
+     */
+    suspend fun stream(videoId: String, allowLowQuality: Boolean = false): StreamDetails
 
     /** Latest uploads for the home feed: RSS first, channel Videos tab as fallback. */
     suspend fun recentVideos(channelId: String): List<VideoItem>

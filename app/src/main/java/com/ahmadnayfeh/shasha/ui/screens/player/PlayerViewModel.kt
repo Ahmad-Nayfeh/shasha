@@ -77,6 +77,10 @@ fun interface PlayGate {
  *
  * [startAtMs]: where a shared link asks the video to start (`t=`); it replaces the saved position (past the
  * video's end, the video starts from the beginning).
+ *
+ * [allowLowQuality] (owner decision, a child profile): a video YouTube only offers as a muxed file of 360p or
+ * less plays that file (the player shows a "360p" badge) instead of the error screen. Otherwise that is
+ * [SourceErrorKind.LOW_QUALITY_ONLY], and the adult may still choose it for this visit ([playLowQuality]).
  */
 class PlayerViewModel(
     private val videoId: String,
@@ -89,6 +93,7 @@ class PlayerViewModel(
     private val lock: PlaybackLocking? = null,
     private val playlistId: String? = null,
     startAtMs: Long? = null,
+    allowLowQuality: Boolean = false,
 ) : ViewModel() {
 
     sealed interface Load {
@@ -141,6 +146,10 @@ class PlayerViewModel(
 
     /** A link's start, for the first extraction only (then playback goes on from where it is). */
     private var linkStartMs: Long? = startAtMs?.coerceAtLeast(0)
+
+    /** Whether a low-quality (muxed ≤360p) stream may play: the profile's rule, or the adult's choice ([playLowQuality]). */
+    var lowQualityAllowed: Boolean = allowLowQuality
+        private set
 
     init {
         extract(fresh = false)
@@ -277,6 +286,16 @@ class PlayerViewModel(
         if (_load.value is Load.Failed) extract(fresh = true)
     }
 
+    /**
+     * «شغّل بجودة 360p على أي حال» on the adult's error screen: the same video again, its muxed ≤360p file allowed
+     * for the rest of this visit (the player then shows the "360p" badge). Policy checks are asked as always.
+     */
+    fun playLowQuality() {
+        if ((_load.value as? Load.Failed)?.error?.kind != SourceErrorKind.LOW_QUALITY_ONLY) return
+        lowQualityAllowed = true
+        extract(fresh = false)
+    }
+
     /** The network came back: a video that failed for the lack of it is tried again by itself. */
     fun retryAfterNetwork() {
         if ((_load.value as? Load.Failed)?.error?.kind == SourceErrorKind.NETWORK) extract(fresh = true)
@@ -342,8 +361,10 @@ class PlayerViewModel(
                         show(Load.Denied(check.reason))
                         return@launch
                     }
-                    is PlayCheck.Allowed -> check.stream ?: streams.stream(videoId)
-                    null -> streams.stream(videoId)
+                    // The check's own look-up may be low quality: only taken when that may play here.
+                    is PlayCheck.Allowed -> check.stream?.takeIf { lowQualityAllowed || it.lowQualityHeight == null }
+                        ?: streams.stream(videoId, lowQualityAllowed)
+                    null -> streams.stream(videoId, lowQualityAllowed)
                 }
                 savedPosition?.await()?.let { position ->
                     resumeLookedUp = true

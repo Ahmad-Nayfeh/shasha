@@ -73,6 +73,11 @@ class RootDeps(
     val lock: LockController? = null,
     /** The profiles the phone chose («اختيار الملف», SPEC §5), once PolicyGate allowed them. */
     val phoneChoices: Flow<String> = emptyFlow(),
+    /**
+     * True while the parent PIN has let the current child profile out (its «خروج»: the picker chooses who comes
+     * next). The guard, which keeps a child profile inside the app, stands down meanwhile (owner decision).
+     */
+    val childLetOut: MutableStateFlow<Boolean> = MutableStateFlow(false),
 )
 
 /**
@@ -90,6 +95,9 @@ class RootDeps(
  *   profile was deleted, the phone switched), the picker comes back first.
  * - While the picker asks who is watching, a child profile the phone chose ([RootDeps.phoneChoices]) opens:
  *   the choice is made (nobody needs a PIN to enter a child profile). The adult profile is still asked for here.
+ * - The guard keeps a current child profile inside the app (owner decision); a child's «خروج» with the parent
+ *   PIN lets it out until the picker's choice, BACK or the relock ([RootDeps.childLetOut]): the TV is never kept
+ *   on a picker the parent has already opened.
  *
  * [elapsed] is a clock the viewer cannot set (elapsedRealtime).
  */
@@ -206,6 +214,8 @@ class RootViewModel(
         if (result == PinCheck.Accepted) {
             exitPin = pin
             exitPinOpensAdult = opensAdult
+            // «خروج»: the parent asked to leave, so the guard lets go. Not after "time up" (the time still rules).
+            deps.childLetOut.value = opensAdult
             _screen.value = RootScreen.Picker(PickerMode.FROM_CHILD_EXIT)
         }
         return result
@@ -257,6 +267,12 @@ class RootViewModel(
     private fun forgetExitPin() {
         exitPin = null
         exitPinOpensAdult = false
+        _deps.value?.childLetOut?.value = false
+    }
+
+    override fun onCleared() {
+        // Nothing on screen can be choosing any more: whoever is current is guarded as such.
+        _deps.value?.childLetOut?.value = false
     }
 
     /** The PIN given to leave a child profile, when it also opens [target]. */
@@ -326,6 +342,7 @@ class RootViewModel(
                             container.profileScreensShown,
                             container.lock,
                             container.phoneProfileChoices.chosen,
+                            container.childLetOut,
                         )
                     }
                 })

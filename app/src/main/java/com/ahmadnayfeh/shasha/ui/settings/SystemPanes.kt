@@ -242,8 +242,8 @@ internal fun DataPane(state: SettingsHubState, actions: SettingsHubActions, firs
 }
 
 /**
- * «فحص التحديثات» (SPEC §6): the installed version and the check itself. Phase 7 wires the GitHub Releases
- * updater behind [SettingsHubActions.openUpdates]; until then it opens the placeholder that says so.
+ * «فحص التحديثات» (SPEC §6): the installed version and the check itself: [SettingsHubActions.openUpdates] opens
+ * the GitHub Releases updater (ui/screens/updates).
  */
 @Composable
 internal fun UpdatesPane(state: SettingsHubState, actions: SettingsHubActions, first: FocusRequester) {

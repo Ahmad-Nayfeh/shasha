@@ -573,6 +573,11 @@ private fun ControlsRow(
                 modifier = Modifier.testTag("osd_time"),
             )
         }
+        // Owner decision: a "made for kids" video that only has its 360p file plays it, and says so.
+        state.lowQualityHeight?.let { height ->
+            Spacer(Modifier.width(16.dp))
+            LowQualityBadge(height)
+        }
         Spacer(Modifier.weight(1f))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             if (savedForLater != null) {

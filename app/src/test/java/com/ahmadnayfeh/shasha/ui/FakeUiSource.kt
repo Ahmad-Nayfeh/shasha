@@ -39,7 +39,7 @@ class FakeUiSource : VideoSource {
         return PlaylistPage(PlaylistItem(playlistId, "Playlist", null, null, null), videos, playlistNext[page])
     }
 
-    override suspend fun stream(videoId: String): StreamDetails =
+    override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails =
         throw SourceException(SourceErrorKind.CONTENT_UNAVAILABLE, "NotInTests", "StreamDetails cannot be built outside :youtube", null)
 
     override suspend fun channel(channelId: String): ChannelDetails = error("unused")

@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.sync.Mutex
@@ -39,7 +40,11 @@ sealed interface PlayOrigin {
 }
 
 sealed interface PlayCheck {
-    /** [stream] is the extraction the check needed (null when the list item said enough): the player may use it. */
+    /**
+     * [stream] is the extraction the check needed (null when the list item said enough): the player may use it.
+     * It may be a low-quality one ([StreamDetails.lowQualityHeight]: the look-up allows it, the rules only need the
+     * video's facts): a player that does not allow low quality extracts for itself instead.
+     */
     data class Allowed(val stream: StreamDetails?) : PlayCheck
 
     data class Denied(val reason: DenyReason) : PlayCheck {
@@ -102,6 +107,8 @@ class PolicyGate(
     scope: CoroutineScope,
     /** Where an adult lock left behind at the start is recorded as a surrender (null: nowhere, in tests). */
     private val surrenders: SurrenderLog? = null,
+    /** The parent PIN has let the current child profile out (AppContainer.childLetOut): see [lockState]. */
+    childLetOut: Flow<Boolean> = flowOf(false),
 ) {
     private val switching = Mutex()
 
@@ -116,9 +123,14 @@ class PolicyGate(
         .map { ContentFilter.of(engine, it) }
         .stateIn(scope, SharingStarted.Eagerly, ContentFilter.of(engine, active.profile.value))
 
-    /** Playback lock + session, for the guard: `engine.guardShouldEnforce(lockState.value)`. */
-    val lockState: StateFlow<LockState> = combine(locks.lock, session.state) { lock, state -> LockState.of(lock, state) }
-        .stateIn(scope, SharingStarted.Eagerly, LockState.of(locks.lock.value, session.state.value))
+    /**
+     * Playback lock, session and current profile (a child is guarded until the parent lets it out), for the guard:
+     * `engine.guardShouldEnforce(lockState.value)`. The guard itself (lock/GuardService) reads the same through
+     * [com.ahmadnayfeh.shasha.lock.guardDemand], with the LockController's lock (updated sooner).
+     */
+    val lockState: StateFlow<LockState> =
+        combine(locks.lock, session.state, active.profile, childLetOut) { lock, state, profile, letOut -> LockState.of(lock, state, profile, letOut) }
+            .stateIn(scope, SharingStarted.Eagerly, LockState.of(locks.lock.value, session.state.value, active.profile.value))
 
     /** False on a first start: the owner sets up the parent PIN before anything needs it. */
     val pinIsSet: Flow<Boolean> get() = parentPin.isSet

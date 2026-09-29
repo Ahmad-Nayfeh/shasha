@@ -28,7 +28,8 @@ data class FrontApp(val packageName: String, val className: String?, val atMs: L
 /**
  * What the guard knows at one moment. Times are elapsed-realtime milliseconds.
  *
- * @property enforced the engine's `guardShouldEnforce` (a locked video, time up or outside the schedule).
+ * @property enforced the engine's `guardShouldEnforce` (a locked video, time up, outside the schedule, or a child
+ *   profile current and not let out with the parent PIN: [guardDemand]).
  * @property enforcedSinceMs when [enforced] last became true.
  * @property appResumed Shasha's activity is resumed (MainActivity reports it): Shasha is in front.
  * @property appLeftAtMs when Shasha's activity last paused (when the process started, if it never was

@@ -25,7 +25,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import androidx.tv.material3.Icon
-import com.ahmadnayfeh.shasha.BuildConfig
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.lock.LockController
@@ -63,7 +62,7 @@ import com.ahmadnayfeh.shasha.ui.screens.settings.ProfileEditRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.ProfilesRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.ProtectionRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.StatsRoute
-import com.ahmadnayfeh.shasha.ui.screens.updates.UpdatesPlaceholderScreen
+import com.ahmadnayfeh.shasha.ui.screens.updates.UpdatesRoute
 import com.ahmadnayfeh.shasha.ui.settings.SettingsRoute
 import com.ahmadnayfeh.shasha.ui.settings.backup.BackupRoute
 import com.ahmadnayfeh.shasha.ui.settings.remote.RemoteRoute
@@ -218,12 +217,8 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
         )
     }
     composable<Screen.Updates> {
-        val context = LocalContext.current
-        UpdatesPlaceholderScreen(
-            appVersion = BuildConfig.VERSION_NAME,
-            extractorVersion = context.appContainer.videoSource.extractorVersion,
-            onBack = dropUnlessResumed { nav.popBackStack() },
-        )
+        // SPEC §6: the updater is the adult's; a child's «فحص التحديثات» (on the error screen) says who can update.
+        UpdatesRoute(adult = adult, onBack = dropUnlessResumed { nav.popBackStack() })
     }
 }
 

@@ -173,6 +173,45 @@ class PlaybackPlannerTest {
     }
 
     @Test
+    fun muxed360PlaysOnlyWhenLowQualityIsAllowed() {
+        val kids = info(videoOnly = emptyList(), audio = emptyList(), muxed = listOf(muxed(18, 360)))
+        assertThat(planner().plan(kids, 1080, null, allowLowQuality = true).parts)
+            .containsExactly(MediaPart.Progressive(PlaybackFixtures.url(18), "muxed 360p"))
+        val refused = assertThrows(SourceException::class.java) { planner().plan(kids, 1080, null, allowLowQuality = false) }
+        assertThat(refused.kind).isEqualTo(SourceErrorKind.LOW_QUALITY_ONLY)
+        // Allowed or not, a video with its ladder plays the ladder.
+        assertThat(planner().plan(info(), 1080, null, allowLowQuality = true).parts.single()).isInstanceOf(MediaPart.Dash::class.java)
+    }
+
+    /**
+     * The owner's decision for "made for kids" videos: VideoSource.stream(allowLowQuality = true) turns the muxed-only
+     * shape into a playable handle, marked with its height; asked without it, the same answer is LOW_QUALITY_ONLY, and
+     * a video with a ladder is never marked.
+     */
+    @Test
+    fun muxedOnlyShapesGetAPlayableHandleOnlyWhenAllowed() {
+        val kids = info(videoOnly = emptyList(), audio = emptyList(), muxed = listOf(muxed(18, 360))).apply { uploaderUrl = PlaybackFixtures.CHANNEL_URL }
+        val refused = assertThrows(SourceException::class.java) { StreamMapper.toDetails(kids) }
+        assertThat(refused.kind).isEqualTo(SourceErrorKind.LOW_QUALITY_ONLY)
+        assertThat(refused.technicalName).isEqualTo("MuxedOnly360p")
+
+        val allowed = StreamMapper.toDetails(kids, allowLowQuality = true)
+        assertThat(allowed.lowQualityHeight).isEqualTo(360)
+        assertThat(allowed.playback.allowLowQuality).isTrue()
+        assertThat(allowed.videoTracks.map { it.height }).containsExactly(360)
+        assertThat(planner().plan(allowed.playback.info, 1080, null, allowed.playback.allowLowQuality).parts)
+            .containsExactly(MediaPart.Progressive(PlaybackFixtures.url(18), "muxed 360p"))
+
+        val normal = StreamMapper.toDetails(info().apply { uploaderUrl = PlaybackFixtures.CHANNEL_URL }, allowLowQuality = true)
+        assertThat(normal.lowQualityHeight).isNull()
+        assertThat(normal.playback.allowLowQuality).isFalse()
+        // Broken stays broken: nothing to play is not "low quality".
+        val empty = info(videoOnly = emptyList(), audio = emptyList(), muxed = emptyList()).apply { uploaderUrl = PlaybackFixtures.CHANNEL_URL }
+        assertThat(assertThrows(SourceException::class.java) { StreamMapper.toDetails(empty, allowLowQuality = true) }.kind)
+            .isEqualTo(SourceErrorKind.EXTRACTION_BROKEN)
+    }
+
+    @Test
     fun hlsIsPreferredOverMuxedWhenThereIsNoAdaptiveVideo() {
         // E.g. visionOS formats turned SABR-only (no URLs) while its HLS manifest stays.
         val hls = "https://manifest.googlevideo.com/api/manifest/hls_variant/expire/1790655988/x"
@@ -206,7 +245,8 @@ class PlaybackPlannerTest {
     /**
      * StreamMapper.checkPlayable decides at extraction time (e.g. for the diagnostics screen) what the
      * planner decides when the player opens: for every shape of streams, both accept, or both reject
-     * with the same error. And whatever is played has sound and is more than a muxed 360p file.
+     * with the same error. And whatever is played has sound and is more than a muxed 360p file, unless
+     * low quality was allowed and the details say so (StreamDetails.lowQualityHeight: the app shows it).
      */
     @Test
     fun extractionCheckAndPlannerAgreeOnEveryShape() {
@@ -220,11 +260,14 @@ class PlaybackPlannerTest {
                 add(info(type = StreamType.LIVE_STREAM, hls = hls, dash = dash))
             }
         }
-        for (info in shapes) {
+        for (info in shapes) for (allow in listOf(false, true)) {
             val shape = "${info.streamType} adaptive=${info.videoOnlyStreams.size} audio=${info.audioStreams.size} " +
-                "muxed=${info.videoStreams.map { it.height }} hls=${info.hlsUrl.isNotEmpty()} dash=${info.dashMpdUrl.isNotEmpty()}"
-            val verdict = StreamMapper.checkPlayable(StreamMapper.summaryOf(info))
-            val planned = runCatching { planner().plan(info, 1080, null) }
+                "muxed=${info.videoStreams.map { it.height }} hls=${info.hlsUrl.isNotEmpty()} dash=${info.dashMpdUrl.isNotEmpty()} allowLowQuality=$allow"
+            val summary = StreamMapper.summaryOf(info)
+            val verdict = StreamMapper.checkPlayable(summary, allow)
+            // What StreamMapper.toDetails gives the handle: the permission only for a result that is low quality.
+            val marked = allow && StreamMapper.lowQualityHeight(summary) != null
+            val planned = runCatching { planner().plan(info, 1080, null, allowLowQuality = marked) }
             assertWithMessage(shape).that(planned.isSuccess).isEqualTo(verdict == null)
             if (verdict != null) {
                 val error = planned.exceptionOrNull() as SourceException
@@ -234,7 +277,7 @@ class PlaybackPlannerTest {
             }
             val parts = planned.getOrThrow().parts
             val muxed360 = parts.any { it is MediaPart.Progressive && it.kind == "muxed 360p" }
-            assertWithMessage("$shape played $parts").that(muxed360).isFalse()
+            assertWithMessage("$shape played $parts").that(muxed360).isEqualTo(marked)
             val dash = parts.filterIsInstance<MediaPart.Dash>().map(::manifestOf)
             if (dash.isNotEmpty()) {
                 assertWithMessage("$shape: video has sound").that(dash.flatMap { it.representationIds(C.TRACK_TYPE_AUDIO) }).isNotEmpty()

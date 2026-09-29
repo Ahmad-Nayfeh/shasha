@@ -40,8 +40,6 @@
     <string name="error_short_extraction_broken">تعطّل الاستخراج</string>
 
     <!-- Updates placeholder -->
-    <string name="updates_title">المحدِّث يصل في إصدار لاحق</string>
-    <string name="updates_body">سيقرأ هذا الزر آخر إصدار من GitHub Releases ويثبّته. حتى ذلك الحين ثبّت الإصدار الجديد عبر ADB كما في README.</string>
     <string name="updates_current_version">الإصدار الحالي: %1$s · مكتبة الاستخراج %2$s</string>
 
     <!-- Diagnostics (فيديوهات تجريبية) -->
@@ -91,6 +89,9 @@
     <string name="player_watch_later_saved">محفوظ</string>
     <string name="player_watch_later_add">أضِف</string>
     <string name="player_resumed_from">استُكمل من %1$s</string>
+    <!-- Owner decision: "made for kids" videos only come as a muxed 360p file. The badge says so; the adult may choose it. -->
+    <string name="player_low_quality">جودة منخفضة: %1$sp</string>
+    <string name="player_play_low_quality">شغّل بجودة 360p على أي حال</string>
     <string name="player_ended_title">انتهى الفيديو</string>
     <string name="player_playlist_ended_title">انتهت قائمة التشغيل</string>
     <string name="player_up_next">التالي في القائمة</string>
@@ -608,11 +609,12 @@
     <string name="guard_cover_text">لحظة… نعود إلى «شاشة»</string>
     <string name="guard_channel_name">الحماية</string>
     <string name="guard_notification_title">الحماية تعمل</string>
-    <string name="guard_notification_text">تعيد «شاشة» إلى المقدمة أثناء قفل فيديو، وعند انتهاء الوقت، وخارج أوقات المشاهدة.</string>
+    <string name="guard_notification_text">تُبقي «شاشة» في المقدمة طوال ملف الطفل، وأثناء قفل فيديو، وعند انتهاء الوقت، وخارج أوقات المشاهدة.</string>
+    <string name="guard_cover_child">في ملف الطفل تبقى «شاشة» في المقدمة. الخروج منه برمز الوالدين.</string>
 
     <!-- «حالة الحماية» (Settings, SPEC §4 and §7): what the guard has, what is missing and how to grant it. -->
     <string name="protection_title">حالة الحماية</string>
-    <string name="protection_subtitle">الحارس يعيد «شاشة» إلى المقدمة أثناء قفل فيديو، وعند انتهاء الوقت، وخارج الجدول</string>
+    <string name="protection_subtitle">الحارس يُبقي «شاشة» في المقدمة: ملف الطفل، قفل فيديو، انتهاء الوقت، خارج الجدول</string>
     <string name="protection_all_good">الحماية تعمل</string>
     <string-array name="protection_missing_count">
         <item>ينقص شيء واحد</item>
@@ -638,7 +640,7 @@
     <string name="protection_install_title">تثبيت التحديثات</string>
     <string name="protection_install_body">ليفتح «فحص التحديثات» مثبّت النظام بالإصدار الجديد.</string>
     <string name="protection_youtube_title">يوتيوب الرسمي</string>
-    <string name="protection_youtube_body_enabled">زرّه في الريموت يفتحه متى لم يكن في «شاشة» قفل. تعطيله اختياري:</string>
+    <string name="protection_youtube_body_enabled">زرّه في الريموت يفتحه في ملف الكبار (وفي ملف الطفل يغطّيه الحارس ويعيد «شاشة»). تعطيله اختياري:</string>
     <string name="protection_youtube_body_disabled">معطّل، فلا يفتحه زرّ الريموت.</string>
     <string name="protection_youtube_body_missing">غير مثبّت على هذه الشاشة.</string>
     <string name="protection_time_title">الوقت التلقائي</string>
@@ -653,16 +655,16 @@
     <string name="protection_state_not_installed">غير مثبّت</string>
     <string name="protection_state_on">مفعّل</string>
     <string name="protection_state_off">مطفأ</string>
-    <string name="protection_returns_empty">لم تُقَس بعد. للتجربة: شغّل فيديو في ملف طفل، ثم اضغط زر Home في الريموت.</string>
+    <string name="protection_returns_empty">لم تُقَس بعد. للتجربة: ادخل ملف طفل، ثم اضغط زر Home في الريموت.</string>
     <string name="protection_returns_goal">المطلوب: أن تعود «شاشة» خلال ثانيتين على الأكثر.</string>
     <string name="protection_return_seconds">%1$s ث</string>
     <string name="protection_return_from">من &#x2068;%1$s&#x2069; · %2$s</string>
     <string name="protection_return_unknown_app">تطبيق غير معروف</string>
-    <string name="protection_limits_outside">خارج القفل (في الرئيسية، أو قبل بدء فيديو) لا يتدخل الحارس: من يصل إلى إعدادات الشاشة يستطيع إيقاف التطبيق أو مسح بياناته أو إزالته، أو سحب هاتين الصلاحيتين، أو إعادة يوتيوب.</string>
+    <string name="protection_limits_outside">في ملف الكبار لا يتدخل الحارس إلا أثناء قفل فيديو أو عند انتهاء الوقت، ولا بعد الخروج من ملف طفل برمز الوالدين حتى يُختار ملف آخر: من يصل عندها إلى إعدادات الشاشة يستطيع إيقاف التطبيق أو مسح بياناته أو إزالته، أو سحب هاتين الصلاحيتين، أو إعادة يوتيوب.</string>
     <string name="protection_limits_force_stop">«فرض الإيقاف» من الإعدادات يوقف الحارس حتى يُفتح التطبيق من جديد، ولا تعيده إعادة تشغيل الشاشة.</string>
-    <string name="protection_limits_keys">أثناء القفل لا يُمنع زر Home، ولا أزرار التطبيقات في الريموت، ولا الأوامر الصوتية، ولا البث من الجوال، ولا مصدر HDMI: يُغطّى ما يظهر وتعود «شاشة» خلال ثانية أو اثنتين.</string>
+    <string name="protection_limits_keys">في ملف الطفل وأثناء القفل لا يُمنع زر Home، ولا أزرار التطبيقات في الريموت، ولا الأوامر الصوتية، ولا البث من الجوال، ولا مصدر HDMI: يُغطّى ما يظهر وتعود «شاشة» خلال ثانية أو اثنتين.</string>
     <string name="protection_limits_owner">منع ذلك كله يحتاج وضع «مالك الجهاز» (&#x2068;Device Owner&#x2069;)، وقد استُبعد عمداً: القفل ليس منيعاً.</string>
-    <string name="protection_limits_pin_lockout">عند انتهاء الوقت وخارج أوقات المشاهدة لا يفتح الشاشة إلا رمز الوالدين. إن قُفل الرمز بعد محاولات خاطئة (من 5 دقائق حتى 4 ساعات، ولا تنهي إعادة التشغيل المهلة) أو نُسي، تبقى الشاشة كلها على «شاشة» حتى تنتهي المهلة أو المنع. المخرج: من الحاسوب الذي جهّزها، وتصحيح الأخطاء ما زال مفعّلاً، نفّذ &#x2068;%1$s&#x2069; (يتوقف الحارس حتى يُفتح التطبيق من جديد).</string>
+    <string name="protection_limits_pin_lockout">في ملف الطفل، وعند انتهاء الوقت وخارج أوقات المشاهدة، لا يُخرج من «شاشة» إلا رمز الوالدين (على الشاشة، أو تبديل الملف من صفحة الجوال بعدّادها المستقل). إن قُفل الرمز بعد محاولات خاطئة (من 5 دقائق حتى 4 ساعات، ولا تنهي إعادة التشغيل المهلة) أو نُسي، تبقى الشاشة كلها على «شاشة» حتى تنتهي المهلة أو المنع. المخرج: من الحاسوب الذي جهّزها، وتصحيح الأخطاء ما زال مفعّلاً، نفّذ &#x2068;%1$s&#x2069; (يتوقف الحارس حتى يُفتح التطبيق من جديد).</string>
 
     <!-- Settings: the protection category. -->
     <string name="settings_protection">حالة الحماية</string>

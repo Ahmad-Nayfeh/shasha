@@ -1,5 +1,6 @@
 package com.ahmadnayfeh.shasha.data
 
+import com.ahmadnayfeh.shasha.TestStreams
 import com.ahmadnayfeh.shasha.youtube.ChannelDetails
 import com.ahmadnayfeh.shasha.youtube.ItemsPage
 import com.ahmadnayfeh.shasha.youtube.PageKey
@@ -24,7 +25,7 @@ class StreamRepositoryTest {
         var calls = 0
         val gate = CompletableDeferred<Unit>().apply { complete(Unit) }
         override val extractorVersion = "test"
-        override suspend fun stream(videoId: String): StreamDetails {
+        override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails {
             calls++
             gate.await()
             throw failure()
@@ -63,7 +64,7 @@ class StreamRepositoryTest {
         val gate = CompletableDeferred<Unit>()
         var calls = 0
         val source = object : VideoSource by FailingSource({ error("unused") }) {
-            override suspend fun stream(videoId: String): StreamDetails {
+            override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails {
                 calls++
                 gate.await()
                 throw SourceException(SourceErrorKind.NETWORK, "UnknownHostException", null, null)
@@ -79,10 +80,58 @@ class StreamRepositoryTest {
         assertThat(calls).isEqualTo(1)
     }
 
+    /** A "made for kids" video as :youtube answers it: LOW_QUALITY_ONLY, or its 360p file when that is allowed. */
+    private class KidsSource : VideoSource by FailingSource({ error("unused") }) {
+        val asked = mutableListOf<Boolean>()
+        override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails {
+            asked += allowLowQuality
+            if (!allowLowQuality) throw SourceException(SourceErrorKind.LOW_QUALITY_ONLY, "MuxedOnly360p", "360p only", null)
+            return TestStreams.details(video(videoId), lowQualityHeight = 360)
+        }
+    }
+
+    @Test
+    fun allowLowQualityReachesTheSource_andALowQualityResultOnlyServesCallsThatAllowIt() = runTest {
+        val source = KidsSource()
+        val repo = StreamRepository(source)
+
+        assertThat(repo.stream("kids", allowLowQuality = true).lowQualityHeight).isEqualTo(360)
+        assertThat(repo.stream("kids", allowLowQuality = true).lowQualityHeight).isEqualTo(360) // cached
+        // A call that does not allow it extracts for itself, and gets the error screen's answer.
+        val refused = runCatching { repo.stream("kids") }.exceptionOrNull() as SourceException
+        assertThat(refused.kind).isEqualTo(SourceErrorKind.LOW_QUALITY_ONLY)
+        assertThat(source.asked).containsExactly(true, false).inOrder()
+        assertThat(repo.cached("kids")).isNull()
+        assertThat(repo.cached("kids", allowLowQuality = true)?.lowQualityHeight).isEqualTo(360)
+    }
+
+    @Test
+    fun aNormalResultServesEveryCall() = runTest {
+        val asked = mutableListOf<Boolean>()
+        val source = object : VideoSource by FailingSource({ error("unused") }) {
+            override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails {
+                asked += allowLowQuality
+                return TestStreams.details(video(videoId))
+            }
+        }
+        val repo = StreamRepository(source)
+        assertThat(repo.stream("normal", allowLowQuality = true).lowQualityHeight).isNull()
+        assertThat(repo.stream("normal").lowQualityHeight).isNull()
+        assertThat(asked).containsExactly(true)
+    }
+
     @Test
     fun asSourceExceptionKeepsSourceExceptions() {
         val original = SourceException(SourceErrorKind.BLOCKED_403, "HTTP 403", null, null)
         assertThat(original.asSourceException()).isSameInstanceAs(original)
         assertThrows(SourceException::class.java) { throw RuntimeException().asSourceException() }
+    }
+
+    private companion object {
+        fun video(id: String) = VideoItem(
+            videoId = id, title = "Video $id", channelId = "UCkids0000000000000000000", channelName = "Kids",
+            durationSeconds = 300, publishedAtEpochMs = null, thumbnailUrl = null, viewCount = null,
+            isLive = false, isShortForm = false, url = "https://www.youtube.com/watch?v=$id",
+        )
     }
 }

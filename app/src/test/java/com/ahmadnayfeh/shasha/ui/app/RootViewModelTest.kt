@@ -36,6 +36,7 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.resetMain
@@ -81,6 +82,9 @@ class RootViewModelTest {
     /** What the phone chose («اختيار الملف»), as TvRemoteController reports it. */
     private val choices = MutableSharedFlow<String>(extraBufferCapacity = 4)
 
+    /** AppContainer.childLetOut: the guard lets a child profile go while this is true. */
+    private val letOut = MutableStateFlow(false)
+
     @Before
     fun setUp() = runBlocking {
         Dispatchers.setMain(Dispatchers.Unconfined)
@@ -92,8 +96,11 @@ class RootViewModelTest {
         active = ActiveProfile.create(profiles, store, scope, ownerName = adult.name)
         val session = SessionController(engine, active.profile, UsageRepository(db), OverridesRepository(store), scope)
         pin = ParentPinRepository(store, clock, PinHasher(iterations = 1_000))
-        gate = PolicyGate(engine, active, profiles, session, PlaybackLockStore(store, scope), pin, VideoLookup { LookedUpVideo(clip(it), null) }, scope)
-        deps = RootDeps(profiles, active, pin, gate, session, phoneChoices = choices)
+        gate = PolicyGate(
+            engine, active, profiles, session, PlaybackLockStore(store, scope), pin, VideoLookup { LookedUpVideo(clip(it), null) }, scope,
+            childLetOut = letOut,
+        )
+        deps = RootDeps(profiles, active, pin, gate, session, phoneChoices = choices, childLetOut = letOut)
         active.awaitProfile()
         Unit
     }
@@ -197,6 +204,72 @@ class RootViewModelTest {
         assertThat(wait { vm.choose(adult, pin = null) }).isEqualTo(PinCheck.Accepted)
         vm.shows(RootScreen.Browse)
         vm.isIn(adult)
+    }
+
+    /** The guard's view of it: [gate]'s lockState, as the guard reads it (owner decision: a child is kept in). */
+    private fun guarded(expected: Boolean): Boolean =
+        wait { gate.lockState.first { engine.guardShouldEnforce(it) == expected }.let { engine.guardShouldEnforce(it) } }
+
+    @Test
+    fun aChildsExitWithThePin_letsTheGuardGo_untilTheNextChoice() {
+        withPin()
+        withChild()
+        val vm = root()
+        vm.shows(RootScreen.Picker(PickerMode.START))
+        wait { vm.choose(child, pin = null) }
+        vm.shows(RootScreen.Browse)
+        vm.isIn(child)
+        assertThat(letOut.value).isFalse()
+        assertThat(guarded(true)).isTrue()
+
+        // A wrong PIN changes nothing: still the child's, still guarded.
+        wait { vm.confirmExit("0000") }
+        assertThat(letOut.value).isFalse()
+        // «خروج» + the PIN: the picker is the parent's, the TV is not kept on it.
+        assertThat(wait { vm.confirmExit(PIN) }).isEqualTo(PinCheck.Accepted)
+        vm.shows(RootScreen.Picker(PickerMode.FROM_CHILD_EXIT))
+        assertThat(letOut.value).isTrue()
+        assertThat(guarded(false)).isFalse()
+
+        // BACK: back to the child, guarded again.
+        vm.closePicker()
+        vm.shows(RootScreen.Browse)
+        assertThat(letOut.value).isFalse()
+        assertThat(guarded(true)).isTrue()
+
+        // «خروج» again, then the adult: free, as the adult.
+        wait { vm.confirmExit(PIN) }
+        assertThat(letOut.value).isTrue()
+        assertThat(wait { vm.choose(adult, pin = null) }).isEqualTo(PinCheck.Accepted)
+        vm.shows(RootScreen.Browse)
+        vm.isIn(adult)
+        assertThat(letOut.value).isFalse()
+        assertThat(guarded(false)).isFalse()
+    }
+
+    @Test
+    fun theTimeUpSwitch_andTheRelock_neverLetAChildOut() {
+        withPin()
+        withChild()
+        val vm = root()
+        vm.shows(RootScreen.Picker(PickerMode.START))
+        wait { vm.choose(child, pin = null) }
+        vm.shows(RootScreen.Browse)
+
+        // «تبديل الملف» on "time up": the PIN was typed to add time, the child may be the one choosing next.
+        assertThat(wait { vm.switchAfterTimeUp(PIN) }).isEqualTo(PinCheck.Accepted)
+        vm.shows(RootScreen.Picker(PickerMode.FROM_CHILD_EXIT))
+        assertThat(letOut.value).isFalse()
+        vm.closePicker()
+        vm.shows(RootScreen.Browse)
+
+        // «خروج» + PIN, then the TV left alone for longer than the relock: back to the child, guarded.
+        wait { vm.confirmExit(PIN) }
+        assertThat(letOut.value).isTrue()
+        vm.awayFor(RootViewModel.RELOCK_AFTER_MS + 1_000)
+        vm.shows(RootScreen.Browse)
+        vm.isIn(child)
+        assertThat(letOut.value).isFalse()
     }
 
     @Test

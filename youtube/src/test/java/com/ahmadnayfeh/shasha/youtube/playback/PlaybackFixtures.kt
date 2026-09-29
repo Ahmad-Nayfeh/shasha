@@ -135,7 +135,8 @@ internal object PlaybackFixtures {
         this.subtitles = subtitles
     }
 
-    fun details(info: StreamInfo) = StreamDetails(
+    /** [lowQualityHeight]: as StreamMapper marks a muxed-only result extracted with allowLowQuality. */
+    fun details(info: StreamInfo, lowQualityHeight: Int? = null) = StreamDetails(
         video = VideoItem(
             videoId = info.id, title = info.name, channelId = "UCuAXFkgsw1L7xaCfnd5JJOw", channelName = "Rick Astley",
             durationSeconds = info.duration, publishedAtEpochMs = null, thumbnailUrl = null, viewCount = null,
@@ -144,8 +145,11 @@ internal object PlaybackFixtures {
         description = null,
         videoTracks = emptyList(),
         subtitles = emptyList(),
-        playback = PlaybackHandle(info),
+        playback = PlaybackHandle(info, allowLowQuality = lowQualityHeight != null),
+        lowQualityHeight = lowQualityHeight,
     )
+
+    const val CHANNEL_URL = "https://www.youtube.com/channel/UCuAXFkgsw1L7xaCfnd5JJOw"
 
     /** What VISIONOS returns for a normal video: H.264 and VP9 from 144p to 2160p. */
     fun standardLadder() = listOf(

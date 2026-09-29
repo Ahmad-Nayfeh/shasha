@@ -21,8 +21,8 @@ import com.ahmadnayfeh.shasha.ui.components.ShashaLoaderWithText
 import com.ahmadnayfeh.shasha.ui.screens.diagnostics.DiagnosticsScreen
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
 import com.ahmadnayfeh.shasha.ui.screens.player.OsdMenu
+import com.ahmadnayfeh.shasha.ui.screens.player.PlayerErrorScreen
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerOsd
-import com.ahmadnayfeh.shasha.ui.screens.updates.UpdatesPlaceholderScreen
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -104,6 +104,28 @@ class ScreenshotTest {
         }
     }
 
+    /** Owner decision: a "made for kids" video that only has its muxed 360p file plays it, with this badge. */
+    @Test
+    fun playerOsdLowQuality() = snap("player_osd_low_quality") {
+        OverFakeVideo {
+            PlayerOsd(
+                Fixtures.osd.copy(
+                    title = "أنشودة الحروف العربية للأطفال",
+                    channelName = "قناة الأطفال",
+                    qualityOptions = listOf(360),
+                    currentHeight = 360,
+                    subtitleOptions = emptyList(),
+                    subtitleLanguage = null,
+                    lowQualityHeight = 360,
+                ),
+                { Fixtures.progress },
+                {},
+                {},
+                autoHideMs = NEVER,
+            )
+        }
+    }
+
     @Test
     fun playerLoading() = snap("player_loading") {
         Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
@@ -125,8 +147,18 @@ class ScreenshotTest {
         Error(SourceErrorKind.CONTENT_UNAVAILABLE, "ContentNotAvailableException")
     }
 
+    /** The adult's player: the unified error for LOW_QUALITY_ONLY, and the choice to play the 360p file anyway. */
     @Test
-    fun updatesPlaceholder() = snap("updates_placeholder") { UpdatesPlaceholderScreen("0.1.0", "v0.26.5", onBack = {}) }
+    fun playerErrorLowQualityAdult() = snap("player_error_low_quality_adult") {
+        PlayerErrorScreen(
+            Fixtures.error(SourceErrorKind.LOW_QUALITY_ONLY, "MuxedOnly360p"),
+            extractorVersion = "v0.26.5",
+            onCheckUpdates = {},
+            onBack = {},
+            onRetry = {},
+            onPlayLowQuality = {},
+        )
+    }
 
     @Composable
     private fun Error(kind: SourceErrorKind, technical: String) =

@@ -144,11 +144,11 @@ internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
         }
     }
 
-    override suspend fun stream(videoId: String): StreamDetails {
+    override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails {
         if (!YouTubeLinkParser.isVideoId(videoId)) {
             throw SourceException(SourceErrorKind.CONTENT_UNAVAILABLE, "InvalidVideoId", "Not a video id: $videoId", null)
         }
-        return io { StreamMapper.toDetails(StreamInfo.getInfo(service, "https://www.youtube.com/watch?v=$videoId")) }
+        return io { StreamMapper.toDetails(StreamInfo.getInfo(service, "https://www.youtube.com/watch?v=$videoId"), allowLowQuality) }
     }
 
     override suspend fun recentVideos(channelId: String): List<VideoItem> {

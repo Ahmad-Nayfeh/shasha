@@ -6,10 +6,20 @@ plugins {
     alias(libs.plugins.roborazzi)
 }
 
-// Release signing and versionCode come from CI (contract documented in .github/workflows/android.yml).
-// Without them (local builds, Dependabot PRs) the release build still succeeds, unsigned.
+// Release signing, versionCode and the updater's token come from CI (contract documented at the top of
+// .github/workflows/android.yml). Without them (local builds, Dependabot PRs) the release build still succeeds,
+// unsigned, and the in-app updater explains that it has no token.
 fun ciEnv(name: String): String? = providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
-val releaseKeystore = ciEnv("SHASHA_KEYSTORE_FILE")
+
+/** All four signing values, or none of them: a half-configured key would only fail deep inside packaging. */
+val releaseSigning: List<String>? =
+    listOf("SHASHA_KEYSTORE_FILE", "SHASHA_KEYSTORE_PASSWORD", "SHASHA_KEY_ALIAS", "SHASHA_KEY_PASSWORD")
+        .map(::ciEnv)
+        .takeIf { values -> values.all { it != null } }
+        ?.map { it!! }
+
+/** A Kotlin/Java string literal for buildConfigField. */
+fun javaString(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
 android {
     namespace = "com.ahmadnayfeh.shasha"
@@ -22,16 +32,21 @@ android {
         versionCode = ciEnv("SHASHA_VERSION_CODE")
             ?.let { it.toIntOrNull() ?: error("SHASHA_VERSION_CODE must be an integer, got '$it'") }
             ?: 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
+        // SPEC §6's updater reads this repository's GitHub Releases. The repository is private, so it needs a
+        // read-only token (CI's SHASHA_UPDATE_TOKEN); empty = the updater explains that it has none.
+        buildConfigField("String", "UPDATE_REPO", javaString("Ahmad-Nayfeh/shasha"))
+        buildConfigField("String", "UPDATE_TOKEN", javaString(ciEnv("SHASHA_UPDATE_TOKEN")?.trim() ?: ""))
     }
 
     signingConfigs {
-        if (releaseKeystore != null) {
+        val signing = releaseSigning
+        if (signing != null) {
             create("release") {
-                storeFile = file(releaseKeystore)
-                storePassword = ciEnv("SHASHA_KEYSTORE_PASSWORD")
-                keyAlias = ciEnv("SHASHA_KEY_ALIAS")
-                keyPassword = ciEnv("SHASHA_KEY_PASSWORD")
+                storeFile = file(signing[0])
+                storePassword = signing[1]
+                keyAlias = signing[2]
+                keyPassword = signing[3]
             }
         }
     }
@@ -131,6 +146,7 @@ dependencies {
     testImplementation(libs.truth)
     testImplementation(libs.robolectric)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)

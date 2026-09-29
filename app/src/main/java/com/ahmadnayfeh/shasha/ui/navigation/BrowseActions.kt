@@ -38,6 +38,6 @@ class SettingsActions(
     val openProtection: () -> Unit = {},
     val openRemote: () -> Unit = {},
     val openBackup: () -> Unit = {},
-    /** «فحص التحديثات» (SPEC §6): the updater's screen (a placeholder until phase 7). */
+    /** «فحص التحديثات» (SPEC §6): the GitHub Releases updater (a child sees who can update instead). */
     val openUpdates: () -> Unit = {},
 )

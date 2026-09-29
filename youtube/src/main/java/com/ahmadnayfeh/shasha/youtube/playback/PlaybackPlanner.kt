@@ -40,7 +40,10 @@ internal data class SubtitlePart(val url: String, val mimeType: String, val lang
 
 internal data class PlaybackPlan(val parts: List<MediaPart>, val subtitle: SubtitlePart?, val isLive: Boolean)
 
-/** A muxed-only result at or below this height is a broken extraction (SPEC: "360p only" → error screen). */
+/**
+ * A muxed-only result at or below this height is a broken extraction (SPEC: "360p only" → error screen), unless
+ * the caller allowed low quality (VideoSource.stream's allowLowQuality: then it plays, and the app shows it).
+ */
 internal const val LOW_QUALITY_MAX_HEIGHT = 360
 
 internal fun lowQualityOnly(bestHeight: Int) = SourceException(
@@ -58,7 +61,8 @@ internal fun VideoStream.heightOrResolution(): Int =
  *   audio track; per-stream fallbacks (NPE manifest creators, progressive) for streams without index ranges.
  *   Without adaptive video, or without any audio for it: YouTube's HLS manifest (the ladder, with sound).
  *   Muxed progressive is the last resort, and only above 360p: muxed 360p alone is the signature of a
- *   broken extraction and must reach the error screen instead of playing silently at 360p. Video
+ *   broken extraction and must reach the error screen instead of playing silently at 360p, unless
+ *   `allowLowQuality` (the handle of a stream extracted with it, marked for the app to show). Video
  *   without audio is never played (a mute picture is a failure too).
  * - Live: HLS, else the DASH manifest URL. Ended live (post-live DVR) and OTF: NPE's manifest creators.
  *
@@ -68,12 +72,13 @@ internal fun VideoStream.heightOrResolution(): Int =
 @OptIn(UnstableApi::class)
 internal class PlaybackPlanner(private val decoders: VideoDecoderCheck) {
 
-    fun plan(info: StreamInfo, maxHeight: Int, subtitleLanguage: String?): PlaybackPlan = when (info.streamType) {
-        StreamType.LIVE_STREAM, StreamType.AUDIO_LIVE_STREAM -> livePlan(info)
-        StreamType.POST_LIVE_STREAM, StreamType.POST_LIVE_AUDIO_STREAM ->
-            PlaybackPlan(postLiveParts(info, maxHeight), subtitle(info, subtitleLanguage), isLive = false)
-        else -> PlaybackPlan(vodParts(info, maxHeight), subtitle(info, subtitleLanguage), isLive = false)
-    }
+    fun plan(info: StreamInfo, maxHeight: Int, subtitleLanguage: String?, allowLowQuality: Boolean = false): PlaybackPlan =
+        when (info.streamType) {
+            StreamType.LIVE_STREAM, StreamType.AUDIO_LIVE_STREAM -> livePlan(info)
+            StreamType.POST_LIVE_STREAM, StreamType.POST_LIVE_AUDIO_STREAM ->
+                PlaybackPlan(postLiveParts(info, maxHeight, allowLowQuality), subtitle(info, subtitleLanguage), isLive = false)
+            else -> PlaybackPlan(vodParts(info, maxHeight, allowLowQuality), subtitle(info, subtitleLanguage), isLive = false)
+        }
 
     private fun livePlan(info: StreamInfo): PlaybackPlan {
         val part = info.hlsUrl?.takeIf { it.isNotBlank() }?.let { MediaPart.Hls(it, live = true) }
@@ -82,7 +87,7 @@ internal class PlaybackPlanner(private val decoders: VideoDecoderCheck) {
         return PlaybackPlan(listOf(part), subtitle = null, isLive = true)
     }
 
-    private fun vodParts(info: StreamInfo, maxHeight: Int): List<MediaPart> {
+    private fun vodParts(info: StreamInfo, maxHeight: Int, allowLowQuality: Boolean): List<MediaPart> {
         val durationSeconds = info.duration
         val videos = selectVideos(info.videoOnlyStreams.orEmpty(), maxHeight)
         val audios = preferredAudio(info.audioStreams.orEmpty())
@@ -99,31 +104,37 @@ internal class PlaybackPlanner(private val decoders: VideoDecoderCheck) {
 
         if (hasVideo && hasAudio) return listOfNotNull(manifest(rangedVideos), separateVideo, separateAudio)
         val audioOnly = if (info.streamType == StreamType.AUDIO_STREAM && hasAudio) listOfNotNull(manifest(emptyList()), separateAudio) else emptyList()
-        return fallbackParts(info, maxHeight, videoWithoutAudio = hasVideo, audioOnly = audioOnly)
+        return fallbackParts(info, maxHeight, videoWithoutAudio = hasVideo, audioOnly = audioOnly, allowLowQuality = allowLowQuality)
     }
 
-    private fun postLiveParts(info: StreamInfo, maxHeight: Int): List<MediaPart> {
+    private fun postLiveParts(info: StreamInfo, maxHeight: Int, allowLowQuality: Boolean): List<MediaPart> {
         val durationSeconds = info.duration
         val video = selectVideos(info.videoOnlyStreams.orEmpty(), maxHeight).firstNotNullOfOrNull { postLivePart(it.stream, durationSeconds) }
         val audio = preferredAudio(info.audioStreams.orEmpty()).firstNotNullOfOrNull { postLivePart(it, durationSeconds) }
         if (video != null && audio != null) return listOf(video, audio)
         val audioOnly = if (info.streamType == StreamType.POST_LIVE_AUDIO_STREAM) listOfNotNull(audio) else emptyList()
-        return fallbackParts(info, maxHeight, videoWithoutAudio = video != null, audioOnly = audioOnly)
+        return fallbackParts(info, maxHeight, videoWithoutAudio = video != null, audioOnly = audioOnly, allowLowQuality = allowLowQuality)
     }
 
     /**
      * No adaptive video with sound. YouTube's HLS manifest (visionOS/iOS) has the whole ladder with audio;
      * without it, a picture without sound is a broken extraction; audio-only content plays as audio; muxed
-     * progressive is the last resort, above 360p only.
+     * progressive is the last resort, above 360p only (or at any height when [allowLowQuality]).
      */
-    private fun fallbackParts(info: StreamInfo, maxHeight: Int, videoWithoutAudio: Boolean, audioOnly: List<MediaPart>): List<MediaPart> {
+    private fun fallbackParts(
+        info: StreamInfo,
+        maxHeight: Int,
+        videoWithoutAudio: Boolean,
+        audioOnly: List<MediaPart>,
+        allowLowQuality: Boolean,
+    ): List<MediaPart> {
         info.hlsUrl?.takeIf { it.isNotBlank() }?.let { return listOf(MediaPart.Hls(it, live = false)) }
         if (videoWithoutAudio) throw broken("NoAudioStreams", "Video-only streams but no playable audio stream for ${info.id}")
         if (audioOnly.isNotEmpty()) return audioOnly
         val muxed = info.videoStreams.orEmpty().filter { it.isPlayableMuxed() }
         if (muxed.isNotEmpty()) {
             val best = muxed.maxOf { it.heightOrResolution() }
-            if (best <= LOW_QUALITY_MAX_HEIGHT) throw lowQualityOnly(best)
+            if (best <= LOW_QUALITY_MAX_HEIGHT && !allowLowQuality) throw lowQualityOnly(best)
             val chosen = bestMuxed(muxed, maxHeight)
             return listOf(MediaPart.Progressive(chosen.content, "muxed ${chosen.getResolution()}"))
         }

@@ -53,6 +53,11 @@ data class StreamDetails(
     val subtitles: List<SubtitleTrack>,
     /** Opaque, consumed by the playback factory of this module. */
     val playback: PlaybackHandle,
+    /**
+     * Null normally. Set only when [VideoSource.stream] was allowed to fall back to a low-quality muxed file and
+     * had to (no adaptive ladder, no HLS): the height of the best such file (≤ 360), which is what plays. Show it.
+     */
+    val lowQualityHeight: Int? = null,
 )
 
 data class VideoTrack(val height: Int, val fps: Int, val codec: String, val bitrate: Int)

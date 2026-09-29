@@ -22,19 +22,16 @@ import androidx.lifecycle.lifecycleScope
 import com.ahmadnayfeh.shasha.MainActivity
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
-import com.ahmadnayfeh.shasha.policy.LockState
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * SPEC §4's guard outside the app (best effort, ADB permissions): while something is enforced
- * ([com.ahmadnayfeh.shasha.policy.PolicyEngine.guardShouldEnforce]: a locked video, "time up", outside the
- * schedule) and another app takes the front, it covers that app at once ([GuardOverlay]) and brings Shasha
- * back ([MainActivity]); every return is measured ([GuardReturnTimes], «حالة الحماية»). The decisions are
- * [GuardDecider]'s; the app in front comes from UsageStats ([UsageStatsProbe]).
+ * SPEC §4's guard outside the app (best effort, ADB permissions): while something is enforced ([guardDemand]:
+ * a locked video, "time up", outside the schedule, or, owner decision, a child profile being current at all until
+ * the parent PIN lets it out) and another app takes the front, it covers that app at once ([GuardOverlay]) and
+ * brings Shasha back ([MainActivity]); every return is measured ([GuardReturnTimes], «حالة الحماية»). The decisions
+ * are [GuardDecider]'s; the app in front comes from UsageStats ([UsageStatsProbe]).
  *
  * It runs only while it can work (usage access and "display over other apps", [ProtectionChecks.guardCanRun]):
  * started with the app, after a reboot and after an update ([BootReceiver]), and restarted by the system if
@@ -54,6 +51,9 @@ class GuardService : LifecycleService() {
 
     private var enforced = false
     private var enforcedSinceMs = 0L
+
+    /** The cover's second line: how a child gets out, while a child profile is what is enforced. */
+    private var coverDetail: String? = null
 
     /** The screensaver is showing (between its two broadcasts; PowerManager counts it as interactive). */
     private var dreaming = false
@@ -118,16 +118,22 @@ class GuardService : LifecycleService() {
             // MainActivity reports its pause from onPause, and the next app resumes only once that returns: the
             // look (a UsageStats query) comes right after, never inside it.
             launch { container.appVisibility.state.collect { stepSoon() } }
-            combine(container.lock.lock, container.session.state) { lock, state -> container.policyEngine.guardShouldEnforce(LockState.of(lock, state)) }
-                .distinctUntilChanged()
-                .collect { now ->
-                    if (now && !enforced) {
-                        enforcedSinceMs = clock.elapsedMs()
-                        if (container.appVisibility.state.value.resumed) seedProbe()
-                    }
-                    enforced = now
-                    stepSoon()
+            guardDemand(
+                container.policyEngine,
+                container.lock.lock,
+                container.session.state,
+                container.currentProfile.profile,
+                container.childLetOut,
+            ).collect { demand ->
+                val now = demand.enforce
+                if (now && !enforced) {
+                    enforcedSinceMs = clock.elapsedMs()
+                    if (container.appVisibility.state.value.resumed) seedProbe()
                 }
+                enforced = now
+                coverDetail = if (demand.child) getString(R.string.guard_cover_child) else null
+                stepSoon()
+            }
         }
     }
 
@@ -192,7 +198,7 @@ class GuardService : LifecycleService() {
         )
         val out = decider.step(input)
         if (out.hideOverlay) overlay.hide()
-        if (out.showOverlay) overlay.show(timing.overlayTimeoutMs)
+        if (out.showOverlay) overlay.show(timing.overlayTimeoutMs, coverDetail)
         if (out.launchApp) bringBack()
         out.returned?.let(::record)
         out.nextCheckMs?.let { handler.postDelayed(nextStep, it) }

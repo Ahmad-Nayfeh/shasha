@@ -26,12 +26,18 @@ internal object StreamMapper {
 
     private val arabic = Locale.forLanguageTag("ar")
 
-    fun toDetails(info: StreamInfo): StreamDetails {
+    /**
+     * [allowLowQuality]: a muxed-only result of 360p or less is returned (marked with its height) instead of
+     * failing with LOW_QUALITY_ONLY; its handle lets the planner play that file.
+     */
+    fun toDetails(info: StreamInfo, allowLowQuality: Boolean = false): StreamDetails {
         val isLive = info.streamType.isLive()
         val adaptive = info.videoOnlyStreams.orEmpty()
         val muxed = info.videoStreams.orEmpty()
 
-        checkPlayable(summaryOf(info))?.let { throw it }
+        val summary = summaryOf(info)
+        checkPlayable(summary, allowLowQuality)?.let { throw it }
+        val lowQualityHeight = if (allowLowQuality) lowQualityHeight(summary) else null
 
         val channelId = YouTubeLinkParser.channelIdFromUrl(info.uploaderUrl)
             ?: throw SourceException(
@@ -57,7 +63,10 @@ internal object StreamMapper {
             description = info.description?.toPlainText(),
             videoTracks = videoTracks(adaptive.ifEmpty { muxed }),
             subtitles = subtitles(info.subtitles.orEmpty()),
-            playback = PlaybackHandle(info),
+            // Only a result that really is low quality lets the planner take the muxed ≤360p file: whatever
+            // plays at 360p is then marked (never silently).
+            playback = PlaybackHandle(info, allowLowQuality = lowQualityHeight != null),
+            lowQualityHeight = lowQualityHeight,
         )
     }
 
@@ -85,16 +94,26 @@ internal object StreamMapper {
      * - video without any audio is a broken extraction unless HLS (which carries sound) can replace it;
      *   muxed streams do not count as its audio source (the player never mixes them in);
      * - only ≤360p muxed streams, with no adaptive ladder and no HLS, is the signature of a broken
-     *   extraction (e.g. "made for kids" videos in v0.26.x), not a video that simply tops out at 360p.
+     *   extraction (e.g. "made for kids" videos in v0.26.x), not a video that simply tops out at 360p:
+     *   LOW_QUALITY_ONLY, unless the caller [allowLowQuality] (the planner then plays that file).
      */
-    internal fun checkPlayable(s: StreamSummary): SourceException? = when {
+    internal fun checkPlayable(s: StreamSummary, allowLowQuality: Boolean = false): SourceException? = when {
         s.isLive -> if (s.hasHls || s.hasDash) null else broken("NoLiveManifest", "Live stream without HLS or DASH manifest")
         s.adaptiveHeights.isNotEmpty() && s.hasAudio -> null
         s.hasHls -> null
         s.adaptiveHeights.isNotEmpty() -> broken("NoAudioStreams", "Video-only streams but no audio stream")
         s.muxedHeights.isEmpty() -> broken("NoPlayableStreams", "No video stream at all")
-        s.muxedHeights.max() <= LOW_QUALITY_MAX_HEIGHT -> lowQualityOnly(s.muxedHeights.max())
+        s.muxedHeights.max() <= LOW_QUALITY_MAX_HEIGHT -> if (allowLowQuality) null else lowQualityOnly(s.muxedHeights.max())
         else -> null
+    }
+
+    /**
+     * The height of the muxed file the planner falls back to when that is all there is and it is 360p or less
+     * (the LOW_QUALITY_ONLY shape of [checkPlayable]); null for every other shape.
+     */
+    internal fun lowQualityHeight(s: StreamSummary): Int? = when {
+        s.isLive || s.hasHls || s.adaptiveHeights.isNotEmpty() || s.muxedHeights.isEmpty() -> null
+        else -> s.muxedHeights.max().takeIf { it <= LOW_QUALITY_MAX_HEIGHT }
     }
 
     private fun broken(tag: String, message: String) =

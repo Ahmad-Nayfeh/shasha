@@ -38,6 +38,9 @@ object TakeoutCsvParser {
     const val MAX_ZIP_ENTRIES = 10_000
     private const val MAX_NAME_CHARS = 200
 
+    /** U+FEFF, the byte-order mark, written as an escape (the character itself is invisible in the source). */
+    private const val BOM = '﻿'
+
     private val channelId = Regex("UC[0-9A-Za-z_-]{22}")
     private val channelLink = Regex("/channel/(UC[0-9A-Za-z_-]{22})(?![0-9A-Za-z_-])")
     private val whitespaceRun = Regex("\\s+")
@@ -135,12 +138,12 @@ object TakeoutCsvParser {
             at(0) == 0xFE && at(1) == 0xFF -> String(bytes, 2, bytes.size - 2, Charsets.UTF_16BE)
             else -> String(bytes, Charsets.UTF_8)
         }
-        return text.removePrefix("﻿")
+        return text.removePrefix(BOM.toString())
     }
 
     /** Trims blanks, BOMs and invisible direction marks (Arabic spreadsheets add them). */
     private fun clean(field: String): String =
-        field.trim { it.isWhitespace() || it == '﻿' || Character.getType(it) == Character.FORMAT.toInt() }
+        field.trim { it.isWhitespace() || it == BOM || Character.getType(it) == Character.FORMAT.toInt() }
 
     private fun idIn(fields: List<String>, linksRequired: Boolean): String? {
         if (!linksRequired) fields.first().takeIf(channelId::matches)?.let { return it }

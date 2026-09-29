@@ -82,7 +82,7 @@ fun AllowlistRoute(profileId: String) {
         profile = profile,
         onRemove = { id, name ->
             vm.remove(id)
-            messages?.show(resources.getString(R.string.message_allowlist_removed, "«⁨$name⁩»", profile.name))
+            messages?.show(resources.getString(R.string.message_allowlist_removed, "«\u2068$name\u2069»", profile.name))
         },
         onAddFromSubscriptions = { picking = true },
     )
@@ -305,11 +305,11 @@ fun BlocklistRoute() {
         subscribed = subscribed,
         onUnblock = { channel ->
             vm.unblock(channel.channelId)
-            messages?.show(resources.getString(R.string.message_unblocked, "«⁨${channel.name}⁩»"))
+            messages?.show(resources.getString(R.string.message_unblocked, "«\u2068${channel.name}\u2069»"))
         },
         onUnsubscribe = { channel ->
             vm.unsubscribe(channel.channelId)
-            messages?.show(resources.getString(R.string.message_unsubscribed, "«⁨${channel.name}⁩»"))
+            messages?.show(resources.getString(R.string.message_unsubscribed, "«\u2068${channel.name}\u2069»"))
         },
         onAddKeyword = { word ->
             scope.launch {

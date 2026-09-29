@@ -50,6 +50,12 @@ import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockSettings
 import com.ahmadnayfeh.shasha.ui.navigation.NavigationRequests
 import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
 import com.ahmadnayfeh.shasha.ui.screens.kids.KidsFeed
+import com.ahmadnayfeh.shasha.update.ApkInspector
+import com.ahmadnayfeh.shasha.update.GitHubReleases
+import com.ahmadnayfeh.shasha.update.InstallEvents
+import com.ahmadnayfeh.shasha.update.InstalledVersion
+import com.ahmadnayfeh.shasha.update.UpdateInstaller
+import com.ahmadnayfeh.shasha.update.Updater
 import com.ahmadnayfeh.shasha.youtube.VideoSource
 import com.ahmadnayfeh.shasha.youtube.YouTube
 import com.ahmadnayfeh.shasha.youtube.playback.YouTubeMediaSourceFactory
@@ -63,6 +69,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
+import java.io.File
 import java.time.Clock
 import java.util.concurrent.TimeUnit
 
@@ -74,7 +81,7 @@ class AppContainer(context: Context) {
     private val appContext = context.applicationContext
 
     /**
-     * The one HTTP client of the app (thumbnails, and later SponsorBlock and GitHub). The YouTube module
+     * The one HTTP client of the app (thumbnails, SponsorBlock and GitHub Releases). The YouTube module
      * reuses its connection pool but applies its own per-client headers.
      */
     val okHttpClient: OkHttpClient by lazy {
@@ -199,6 +206,12 @@ class AppContainer(context: Context) {
      */
     val profileScreensShown = MutableStateFlow(false)
 
+    /**
+     * True while the parent PIN has let the current child profile out (its «خروج»: the picker chooses who comes
+     * next; RootViewModel sets it). The guard keeps a child profile inside the app, except then (owner decision).
+     */
+    val childLetOut = MutableStateFlow(false)
+
     /** The one door to every rule: lists, playback, profile switches, the parent PIN. */
     val policy: PolicyGate by lazy {
         PolicyGate(
@@ -208,9 +221,12 @@ class AppContainer(context: Context) {
             session = session,
             locks = playbackLock,
             parentPin = parentPin,
-            lookup = VideoLookup { videoId -> streams.stream(videoId).let { LookedUpVideo(it.video, it) } },
+            // The check needs the video's facts (channel, duration), whatever its quality: a "made for kids" video with
+            // only a 360p file is judged like any other. The player decides whether that file may play.
+            lookup = VideoLookup { videoId -> streams.stream(videoId, allowLowQuality = true).let { LookedUpVideo(it.video, it) } },
             scope = appScope,
             surrenders = { event -> usage.recordSurrender(event) },
+            childLetOut = childLetOut,
         )
     }
 
@@ -294,6 +310,26 @@ class AppContainer(context: Context) {
     /** A video's segments, asked for by the prefix of its hash and kept in Room for a day. */
     val sponsorBlock: SponsorBlockRepository by lazy {
         SponsorBlockRepository(SponsorBlockClient(okHttpClient), database.sponsorSegments(), now = clock::millis)
+    }
+
+    // ---- Updates (SPEC §6 «فحص التحديثات»). ----------------------------------------------------------------
+
+    /** Where the system installer's answers arrive (update/InstallStatusReceiver), for the updater screen. */
+    val installEvents: InstallEvents = InstallEvents()
+
+    /**
+     * The latest GitHub Release of this (private) repository, read with the build's read-only token, downloaded into
+     * cacheDir/updates, checked against the installed app and handed to the system installer. Adult profile only.
+     */
+    val updater: Updater by lazy {
+        Updater(
+            releases = GitHubReleases(okHttpClient, BuildConfig.UPDATE_REPO, BuildConfig.UPDATE_TOKEN),
+            inspector = ApkInspector(appContext),
+            installer = UpdateInstaller(appContext),
+            installed = InstalledVersion(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE.toLong()),
+            downloads = File(appContext.cacheDir, "updates"),
+            events = installEvents,
+        )
     }
 
     // ---- Playback (SPEC §7 «الجودة الافتراضية»). -------------------------------------------------------------

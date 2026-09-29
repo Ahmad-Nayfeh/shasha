@@ -80,10 +80,13 @@ class YouTubeMediaSourceFactory internal constructor(
      * Media3's loader threads, and their failures surface as player errors ([classifyPlaybackError]).
      * Safe to call from any thread.
      *
-     * @throws SourceException (EXTRACTION_BROKEN) when the stream has nothing playable.
+     * A stream extracted with `allowLowQuality` that is low quality ([StreamDetails.lowQualityHeight]) plays its
+     * muxed file; any other muxed-only ≤360p stream is LOW_QUALITY_ONLY.
+     *
+     * @throws SourceException (EXTRACTION_BROKEN, LOW_QUALITY_ONLY) when the stream has nothing playable.
      */
     fun create(stream: StreamDetails, maxHeight: Int, subtitleLanguage: String?): MediaSource {
-        val plan = planner.plan(stream.playback.info, maxHeight, subtitleLanguage)
+        val plan = planner.plan(stream.playback.info, maxHeight, subtitleLanguage, stream.playback.allowLowQuality)
         val metadata = MediaMetadata.Builder().setTitle(stream.video.title).setArtist(stream.video.channelName).build()
         // The first source's MediaItem becomes the player's current item: mediaId = the video id.
         val newItem = { MediaItem.Builder().setMediaId(stream.video.videoId).setMediaMetadata(metadata) }

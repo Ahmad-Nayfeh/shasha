@@ -108,6 +108,26 @@ class RealNetworkVideoSourceTest {
         }
     }
 
+    /** The owner's decision: in a child profile a "made for kids" video plays its muxed ≤360p file, marked. */
+    @Test
+    fun kidsVideoIsPlayableAtLowQualityWhenAllowed() = runBlocking {
+        try {
+            val details = source.stream("it3OtbTxQk0", allowLowQuality = true)
+            val info = details.playback.info
+            report(
+                "kids it3OtbTxQk0 allowLowQuality",
+                "PLAYABLE: lowQualityHeight=${details.lowQualityHeight}, ${info.videoOnlyStreams.size} video-only, " +
+                    "muxed ${info.videoStreams.map { it.getResolution() }}",
+            )
+            // Either YouTube serves the ladder again (not marked), or the muxed file is marked with its height.
+            if (info.videoOnlyStreams.isEmpty()) assertThat(details.lowQualityHeight).isAtMost(360)
+            else assertThat(details.lowQualityHeight).isNull()
+        } catch (e: SourceException) {
+            report("kids it3OtbTxQk0 allowLowQuality", "REJECTED: ${e.kind} ${e.technicalName} (${e.message})")
+            assertThat(e.kind).isNotEqualTo(SourceErrorKind.LOW_QUALITY_ONLY)
+        }
+    }
+
     @Test
     fun removedVideoIsContentUnavailable() = runBlocking {
         try {

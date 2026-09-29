@@ -1,6 +1,7 @@
 package com.ahmadnayfeh.shasha.ui.screens.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,6 +33,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
@@ -133,5 +137,26 @@ internal fun LiveBadge(text: String, modifier: Modifier = Modifier) {
         Box(Modifier.size(8.dp).background(Color.White, CircleShape))
         Spacer(Modifier.width(6.dp))
         Text(text, style = MaterialTheme.typography.labelLarge, color = Color.White)
+    }
+}
+
+/**
+ * Amber "360p" pill (owner decision): only a low-quality muxed file of [height] plays, as YouTube serves "made for
+ * kids" videos to this extractor. It is said on screen, never played silently at 360p.
+ */
+@Composable
+internal fun LowQualityBadge(height: Int, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(8.dp)
+    val description = stringResource(R.string.player_low_quality, height.toString())
+    Row(
+        modifier
+            .background(ShashaColors.Secondary.copy(alpha = 0.16f), shape)
+            .border(1.dp, ShashaColors.Secondary.copy(alpha = 0.75f), shape)
+            .padding(horizontal = 10.dp, vertical = 2.dp)
+            .semantics(mergeDescendants = true) { contentDescription = description }
+            .testTag("osd_low_quality"),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("${height}p", style = MaterialTheme.typography.labelLarge, color = ShashaColors.Secondary)
     }
 }

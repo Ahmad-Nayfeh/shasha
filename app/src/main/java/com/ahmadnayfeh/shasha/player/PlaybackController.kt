@@ -75,6 +75,7 @@ class PlaybackController(
             isLive = stream.video.isLive,
             autoQualityCap = maxQuality,
             subtitleOptions = subtitleOptions(stream.subtitles),
+            lowQualityHeight = stream.lowQualityHeight,
         ),
     )
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()

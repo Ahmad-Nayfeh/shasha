@@ -87,7 +87,7 @@ class PlayerPolicyTest {
     /** Every stream asked for in order to play it. */
     private val playStreams = CopyOnWriteArrayList<String>()
     private val source: VideoSource = object : VideoSource by FakeUiSource() {
-        override suspend fun stream(videoId: String): StreamDetails {
+        override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails {
             playStreams += videoId
             throw SourceException(SourceErrorKind.CONTENT_UNAVAILABLE, "NotInTests", "StreamDetails cannot be built outside :youtube", null)
         }

@@ -40,6 +40,11 @@ data class PlayerUiState(
     val subtitleLanguage: String? = null,
     /** Subtitle text to show now (already joined), null when nothing is on screen. */
     val cueText: String? = null,
+    /**
+     * Only a low-quality muxed file plays (StreamDetails.lowQualityHeight, owner decision for "made for kids"
+     * videos): its height, shown as a badge. Null normally.
+     */
+    val lowQualityHeight: Int? = null,
 )
 
 /** [isLive]: a live stream, whose [durationMs] is only the live window Media3 can seek in (DVR). */

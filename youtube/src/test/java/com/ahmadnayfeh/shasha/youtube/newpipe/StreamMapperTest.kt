@@ -29,6 +29,29 @@ class StreamMapperTest {
     }
 
     @Test
+    fun onlyMuxed360IsPlayableWhenLowQualityIsAllowed() {
+        val kids = vod(muxed = listOf(360, 240))
+        assertThat(StreamMapper.checkPlayable(kids, allowLowQuality = true)).isNull()
+        assertThat(StreamMapper.lowQualityHeight(kids)).isEqualTo(360)
+        assertThat(StreamMapper.lowQualityHeight(vod(muxed = listOf(144)))).isEqualTo(144)
+        // Allowing low quality changes nothing else: a broken extraction stays broken.
+        assertThat(StreamMapper.checkPlayable(vod(), allowLowQuality = true)?.technicalName).isEqualTo("NoPlayableStreams")
+        val mute = StreamMapper.checkPlayable(vod(adaptive = listOf(1080), muxed = listOf(360), audio = false), allowLowQuality = true)
+        assertThat(mute?.technicalName).isEqualTo("NoAudioStreams")
+    }
+
+    @Test
+    fun onlyTheMuxedOnlyShapeIsLowQuality() {
+        assertThat(StreamMapper.lowQualityHeight(vod(adaptive = listOf(1080, 360), muxed = listOf(360)))).isNull()
+        assertThat(StreamMapper.lowQualityHeight(vod(adaptive = listOf(360, 240), muxed = listOf(360)))).isNull()
+        assertThat(StreamMapper.lowQualityHeight(vod(muxed = listOf(360), hls = true))).isNull()
+        assertThat(StreamMapper.lowQualityHeight(vod(muxed = listOf(720, 360)))).isNull()
+        assertThat(StreamMapper.lowQualityHeight(vod())).isNull()
+        val live = StreamSummary(isLive = true, hasHls = true, hasDash = false, adaptiveHeights = emptyList(), muxedHeights = listOf(360), hasAudio = true)
+        assertThat(StreamMapper.lowQualityHeight(live)).isNull()
+    }
+
+    @Test
     fun muxedAbove360IsAcceptedAsLastResort() {
         assertThat(StreamMapper.checkPlayable(vod(muxed = listOf(720, 360)))).isNull()
     }

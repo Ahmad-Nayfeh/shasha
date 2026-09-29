@@ -43,8 +43,8 @@ class GuardOverlay(
 
     val isShown: Boolean get() = view != null
 
-    /** Covers the screen (again) for at most [timeoutMs] from now. */
-    fun show(timeoutMs: Long) {
+    /** Covers the screen (again) for at most [timeoutMs] from now; [detail] is a smaller second line (why). */
+    fun show(timeoutMs: Long, detail: String? = null) {
         handler.removeCallbacks(hideLater)
         handler.postDelayed(hideLater, timeoutMs)
         if (view != null) return
@@ -52,7 +52,7 @@ class GuardOverlay(
             Log.w(TAG, "No SYSTEM_ALERT_WINDOW: cannot cover the app in front")
             return
         }
-        val cover = coverView()
+        val cover = coverView(detail)
         try {
             windows.addView(cover, params())
         } catch (e: RuntimeException) {
@@ -88,8 +88,8 @@ class GuardOverlay(
         gravity = Gravity.CENTER
     }
 
-    /** The brand on its own background, and one calm line: nothing to press, it goes by itself. */
-    private fun coverView(): View {
+    /** The brand on its own background, and one calm line (and [detail] under it): nothing to press, it goes by itself. */
+    private fun coverView(detail: String?): View {
         val density = context.resources.displayMetrics.density
         fun dp(value: Int) = (value * density).toInt()
         val font = runCatching { ResourcesCompat.getFont(context, R.font.plex_arabic_medium) }.getOrNull()
@@ -120,6 +120,17 @@ class GuardOverlay(
             addView(logo, LinearLayout.LayoutParams(dp(300), dp(96)))
             addView(dots, LinearLayout.LayoutParams(dp(56), dp(4)).apply { topMargin = dp(28) })
             addView(line, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(22) })
+            if (detail != null) {
+                val why = TextView(context).apply {
+                    text = detail
+                    setTextColor(MUTED)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+                    typeface = font
+                    gravity = Gravity.CENTER
+                    textDirection = View.TEXT_DIRECTION_RTL
+                }
+                addView(why, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
+            }
         }
         return CoverLayout(context).apply {
             setBackgroundColor(BACKGROUND)
@@ -143,6 +154,7 @@ class GuardOverlay(
         // The brand palette (ui/theme/Color.kt), as plain ints for the views.
         const val BACKGROUND = 0xFF0B0F14.toInt()
         const val TEXT = 0xFFEAF0F6.toInt()
+        const val MUTED = 0xFF8A97A8.toInt()
         const val ACCENT = 0xFF2EC4B6.toInt()
     }
 }

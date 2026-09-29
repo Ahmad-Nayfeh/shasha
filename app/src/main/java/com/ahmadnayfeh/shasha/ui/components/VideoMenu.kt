@@ -244,7 +244,7 @@ fun CardMenuHost(
 private val NoCollectionMenu: (MenuTarget) -> Unit = {}
 
 /** «…» around a name, isolated so an English title keeps its place in the Arabic sentence. */
-private fun quote(name: String) = "«⁨$name⁩»"
+private fun quote(name: String) = "«\u2068$name\u2069»"
 
 /** One row of a context menu. [locked]: it asks for the parent PIN first (a small lock says so). */
 @Immutable

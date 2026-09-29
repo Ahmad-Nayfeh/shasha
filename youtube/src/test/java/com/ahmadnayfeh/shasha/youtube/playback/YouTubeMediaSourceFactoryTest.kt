@@ -96,6 +96,15 @@ class YouTubeMediaSourceFactoryTest {
     }
 
     @Test
+    fun aLowQualityStreamExtractedWithPermissionPlaysItsMuxedFile() {
+        val kids = info(videoOnly = emptyList(), audio = emptyList(), muxed = listOf(muxed(18, 360)))
+        val source = factory.create(details(kids, lowQualityHeight = 360), 1080, null)
+        assertThat(source).isInstanceOf(ProgressiveMediaSource::class.java)
+        assertThat(source.mediaItem.localConfiguration!!.uri.toString()).isEqualTo(PlaybackFixtures.url(18))
+        assertThat(source.mediaItem.mediaId).isEqualTo(PlaybackFixtures.VIDEO_ID)
+    }
+
+    @Test
     fun a403WhileBuildingAnOtfManifestSurfacesAsBlocked403() {
         val otfAudio = audio(140, "mp4a.40.2", 130_000, ranges = false).let {
             AudioStream.Builder().setId("140").setContent(it.content, false).setMediaFormat(it.format)

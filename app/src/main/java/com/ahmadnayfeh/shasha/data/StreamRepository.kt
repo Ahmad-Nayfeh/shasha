@@ -19,7 +19,10 @@ import kotlinx.coroutines.sync.withLock
  * Only successes are cached, only the last [MAX_CACHED], and only for a few minutes: googlevideo URLs
  * expire after some hours, a failure should always be retried for real, and each entry holds a whole
  * extraction (every stream URL, related items, storyboards) that a TV's small heap should not keep.
- * Concurrent calls for the same video share one extraction.
+ * Concurrent calls for the same video (and the same `allowLowQuality`) share one extraction.
+ *
+ * A low-quality result ([StreamDetails.lowQualityHeight], only ever returned to a call that allowed it) is
+ * never handed to a call that did not: that one extracts for itself (and gets LOW_QUALITY_ONLY).
  */
 class StreamRepository(
     private val source: VideoSource,
@@ -29,18 +32,24 @@ class StreamRepository(
     private val scope = CoroutineScope(SupervisorJob())
     private val mutex = Mutex()
     private val cache = ExpiringCache<String, StreamDetails>(MAX_CACHED, maxAgeMs, clock)
-    private val inFlight = HashMap<String, Deferred<StreamDetails>>()
+    private val inFlight = HashMap<Pair<String, Boolean>, Deferred<StreamDetails>>()
 
-    /** @throws SourceException for every failure (unexpected ones are wrapped as EXTRACTION_BROKEN). */
-    suspend fun stream(videoId: String): StreamDetails {
+    /**
+     * [allowLowQuality]: see [VideoSource.stream] (a child profile's player, the policy's look-up, the adult's
+     * «شغّل بجودة 360p على أي حال»).
+     *
+     * @throws SourceException for every failure (unexpected ones are wrapped as EXTRACTION_BROKEN).
+     */
+    suspend fun stream(videoId: String, allowLowQuality: Boolean = false): StreamDetails {
+        val key = videoId to allowLowQuality
         val job = mutex.withLock {
-            cache[videoId]?.let { return it }
-            inFlight.getOrPut(videoId) {
+            cache[videoId]?.takeIf { it.usableFor(allowLowQuality) }?.let { return it }
+            inFlight.getOrPut(key) {
                 scope.async {
                     try {
-                        source.stream(videoId).also { details -> mutex.withLock { cache[videoId] = details } }
+                        source.stream(videoId, allowLowQuality).also { details -> mutex.withLock { cache[videoId] = details } }
                     } finally {
-                        mutex.withLock { inFlight.remove(videoId) }
+                        mutex.withLock { inFlight.remove(key) }
                     }
                 }
             }
@@ -60,7 +69,10 @@ class StreamRepository(
     }
 
     /** Takes the cached stream if it is still fresh, without any network work. */
-    suspend fun cached(videoId: String): StreamDetails? = mutex.withLock { cache[videoId] }
+    suspend fun cached(videoId: String, allowLowQuality: Boolean = false): StreamDetails? =
+        mutex.withLock { cache[videoId]?.takeIf { it.usableFor(allowLowQuality) } }
+
+    private fun StreamDetails.usableFor(allowLowQuality: Boolean) = allowLowQuality || lowQualityHeight == null
 
     private companion object {
         /** The diagnostics screen's videos, checked and then played. */

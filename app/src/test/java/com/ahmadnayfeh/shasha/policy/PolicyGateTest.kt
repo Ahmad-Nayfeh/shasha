@@ -23,6 +23,7 @@ import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.YouTubeLink
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -237,6 +238,24 @@ class PolicyGateTest {
         clock.set("2026-09-28T22:30")
         assertThat(gate.checkPlay(allowed.videoId, PlayOrigin.Navigation, allowed)).isEqualTo(PlayCheck.Denied(DenyReason.OUTSIDE_SCHEDULE))
         assertThat(withTimeout(5_000) { gate.lockState.first { it.session is SessionState.OutsideSchedule } }.playbackLocked).isFalse()
+    }
+
+    @Test
+    fun theGuardsState_keepsACurrentChildIn_untilTheParentLetsItOut() = runBlocking<Unit> {
+        val letOut = MutableStateFlow(false)
+        val guarded = PolicyGate(engine, active, profiles, session, locks, pin, VideoLookup { error("unused") }, scope, childLetOut = letOut)
+        // The adult, nothing locked, no limit: the TV is free.
+        val adultState = withTimeout(5_000) { guarded.lockState.first { !it.childProfile } }
+        assertThat(engine.guardShouldEnforce(adultState)).isFalse()
+
+        enterChild()
+        val inside = withTimeout(5_000) { guarded.lockState.first { it.childProfile } }
+        assertThat(inside.playbackLocked).isFalse()
+        assertThat(engine.guardShouldEnforce(inside)).isTrue()
+
+        // «خروج» with the parent PIN (RootViewModel sets the flag): the guard lets go while the picker is up.
+        letOut.value = true
+        assertThat(engine.guardShouldEnforce(withTimeout(5_000) { guarded.lockState.first { !it.childProfile } })).isFalse()
     }
 
     @Test

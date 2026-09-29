@@ -65,6 +65,7 @@ import com.ahmadnayfeh.shasha.ui.lock.lockMethodFor
 import com.ahmadnayfeh.shasha.ui.lock.playerActions
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
+import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.playback.YouTubeMediaSourceFactory
 import kotlinx.coroutines.delay
@@ -86,6 +87,10 @@ import kotlinx.coroutines.delay
  * (a child) or the exit challenge (the adult), see [LockedPlayback]. A child whose video or playlist ended
  * goes back to the child home ([onKidsHome]). A playlist video restored by the lock after a restart comes
  * without its position ([playlistIndex] -1): it is looked up by its id.
+ *
+ * Owner decision ("made for kids" videos, which this extractor only gets as a muxed 360p file): a child
+ * profile plays that file, with a "360p" badge; the adult sees the unified error screen (LOW_QUALITY_ONLY)
+ * with «شغّل بجودة 360p على أي حال».
  */
 @Composable
 fun PlayerScreen(
@@ -126,6 +131,7 @@ fun PlayerScreen(
                     lock = locking?.playerHooks(profile!!.id),
                     playlistId = playlistId,
                     startAtMs = startSeconds?.let { it * 1000 },
+                    allowLowQuality = profile?.isChild == true,
                 )
             }
         },
@@ -175,6 +181,7 @@ fun PlayerScreen(
         onKidsHome = onKidsHome,
         skipper = sponsor.skipper,
         maxQuality = { playback.maxQuality.value },
+        offerLowQuality = profile?.isChild != true,
     )
 }
 
@@ -191,7 +198,8 @@ internal fun playOrigin(fromLink: Boolean, playlistId: String?): PlayOrigin = wh
 /**
  * What [vm] says: the loader, the error screen, the policy's refusal ([PolicyNotice], no player is ever
  * created for it: [factory] is not even asked), or the video; all inside the lock ([LockedPlayback]: with
- * [lockMethod] set, every way out goes through it).
+ * [lockMethod] set, every way out goes through it). [offerLowQuality]: the error screen of LOW_QUALITY_ONLY
+ * offers to play the 360p file anyway (the adult).
  */
 @Composable
 internal fun PlayerContent(
@@ -208,6 +216,7 @@ internal fun PlayerContent(
     onKidsHome: (() -> Unit)? = null,
     skipper: SkipController? = null,
     maxQuality: () -> Int = { MAX_AUTO_HEIGHT },
+    offerLowQuality: Boolean = false,
 ) {
     val load by vm.load.collectAsStateWithLifecycle()
     LockedPlayback(lockMethod, lockActions, onLeave = onBack, onSurrendered = onSurrendered) { lock ->
@@ -222,22 +231,14 @@ internal fun PlayerContent(
                 PlayerViewModel.Load.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     ShashaLoaderWithText(stringResource(R.string.player_loading))
                 }
-                is PlayerViewModel.Load.Failed -> ErrorScreen(
+                is PlayerViewModel.Load.Failed -> PlayerErrorScreen(
                     error = state.error,
                     extractorVersion = extractorVersion,
                     onCheckUpdates = onCheckUpdates,
                     onBack = lock::requestExit,
-                ) {
-                    // Failures that pass (the network, YouTube's rate limit) are worth another try.
-                    if (state.error.kind in RETRYABLE) {
-                        ShashaButton(
-                            stringResource(R.string.action_retry),
-                            vm::retry,
-                            icon = ShashaIcons.Refresh,
-                            modifier = Modifier.testTag("error_retry"),
-                        )
-                    }
-                }
+                    onRetry = vm::retry,
+                    onPlayLowQuality = if (offerLowQuality) vm::playLowQuality else null,
+                )
                 is PlayerViewModel.Load.Denied -> PolicyNotice(state.reason, lock::requestExit)
                 is PlayerViewModel.Load.Ready -> VideoPlayer(
                     state,
@@ -252,6 +253,41 @@ internal fun PlayerContent(
                     maxQuality = maxQuality,
                 )
             }
+        }
+    }
+}
+
+/**
+ * The player's unified [ErrorScreen]: «إعادة المحاولة» for failures that may pass by themselves ([onRetry]), and,
+ * when [onPlayLowQuality] is given (the adult), «شغّل بجودة 360p على أي حال» for LOW_QUALITY_ONLY: the error is
+ * still said (SPEC), the choice to watch the 360p file anyway is the adult's.
+ */
+@Composable
+internal fun PlayerErrorScreen(
+    error: SourceException,
+    extractorVersion: String,
+    onCheckUpdates: () -> Unit,
+    onBack: () -> Unit,
+    onRetry: () -> Unit,
+    onPlayLowQuality: (() -> Unit)?,
+) {
+    ErrorScreen(error = error, extractorVersion = extractorVersion, onCheckUpdates = onCheckUpdates, onBack = onBack) {
+        // Failures that pass (the network, YouTube's rate limit) are worth another try.
+        if (error.kind in RETRYABLE) {
+            ShashaButton(
+                stringResource(R.string.action_retry),
+                onRetry,
+                icon = ShashaIcons.Refresh,
+                modifier = Modifier.testTag("error_retry"),
+            )
+        }
+        if (error.kind == SourceErrorKind.LOW_QUALITY_ONLY && onPlayLowQuality != null) {
+            ShashaButton(
+                stringResource(R.string.player_play_low_quality),
+                onPlayLowQuality,
+                icon = ShashaIcons.Play,
+                modifier = Modifier.testTag("error_play_low_quality"),
+            )
         }
     }
 }

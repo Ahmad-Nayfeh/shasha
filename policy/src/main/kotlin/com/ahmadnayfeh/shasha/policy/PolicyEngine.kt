@@ -159,9 +159,15 @@ class PolicyEngine(private val clock: Clock) {
         }
     }
 
-    /** Playback lock, time up and outside schedule all keep the guard covering other apps (SPEC 4). */
+    /**
+     * Whether the guard keeps covering other apps (SPEC 4): a playback lock, time up, outside the schedule and,
+     * owner decision, a child profile being current at all (so a child cannot press Home and reach the TV's
+     * settings to stop the app or clear its data). Leaving the child profile with the parent PIN ends that
+     * ([LockState.of]'s `letOut`); the adult profile is free apart from its own lock and time limits.
+     */
     fun guardShouldEnforce(state: LockState): Boolean =
         state.playbackLocked ||
+            state.childProfile ||
             state.session is SessionState.TimeUp ||
             state.session is SessionState.OutsideSchedule
 

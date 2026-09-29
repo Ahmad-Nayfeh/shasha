@@ -19,8 +19,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- «فحص التحديثات» opens the system installer with a downloaded release (SPEC §6; adb-setup grants
-         the app-op). Declared now so «حالة الحماية» can tell whether it is allowed. -->
+    <!-- «فحص التحديثات» hands a downloaded release to the system installer (SPEC §6; adb-setup grants the
+         app-op, «حالة الحماية» tells whether it is allowed). -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- SPEC §5, the phone remote: a web server on the home network (INTERNET comes from :remote), in a
@@ -71,14 +71,15 @@
             </intent-filter>
         </activity>
 
-        <!-- SPEC §4's guard (the name is what scripts/adb-setup checks). -->
+        <!-- SPEC §4's guard (the name is what scripts/adb-setup checks). Owner decision: it also keeps a child
+             profile inside the app the whole time, until the parent PIN lets it out. -->
         <service
             android:name=".lock.GuardService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Parental controls: while a video is locked, viewing time is over, or it is outside the allowed viewing hours, keeps this app in front of other apps (the owner granted display over other apps and usage access over ADB)." />
+                android:value="Parental controls: while a child profile is in use, a video is locked, viewing time is over, or it is outside the allowed viewing hours, keeps this app in front of other apps (the owner granted display over other apps and usage access over ADB)." />
         </service>
 
         <!-- Starts the guard after a reboot and after an update (system broadcasts reach it unexported). -->
@@ -96,6 +97,11 @@
             android:name=".remote.RemoteService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
+
+        <!-- SPEC §6's updater: the system installer's answers for its sessions (only the system's PendingIntent reaches it). -->
+        <receiver
+            android:name=".update.InstallStatusReceiver"
+            android:exported="false" />
 
         <!-- Starts the phone remote after a reboot and after an update. -->
         <receiver

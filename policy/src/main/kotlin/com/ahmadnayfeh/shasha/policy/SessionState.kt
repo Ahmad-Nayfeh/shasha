@@ -29,12 +29,23 @@ sealed interface SessionState {
 
 /**
  * What the guard (SPEC section 4) needs to know. Build it with [LockState.of] from the persisted
- * [PlaybackLock].
+ * [PlaybackLock], the session and the current profile.
  *
  * @property playbackLocked a video was started and its [PlaybackLock] has not ended yet.
+ * @property childProfile a CHILD profile is current and the parent has not let it out with the PIN (owner
+ *   decision: a child is kept inside the app the whole time, not only during a lock). Only the guard reads it;
+ *   the play checks ([PolicyEngine.canPlay]) do not.
  */
-data class LockState(val playbackLocked: Boolean, val session: SessionState) {
+data class LockState(val playbackLocked: Boolean, val session: SessionState, val childProfile: Boolean = false) {
     companion object {
-        fun of(lock: PlaybackLock?, session: SessionState) = LockState(playbackLocked = lock != null, session = session)
+        /**
+         * [current]: the current profile (null while it loads). [letOut]: the parent PIN has just let that child
+         * profile out (its «خروج»; the app is choosing who comes next): the child rule no longer holds.
+         */
+        fun of(lock: PlaybackLock?, session: SessionState, current: Profile? = null, letOut: Boolean = false) = LockState(
+            playbackLocked = lock != null,
+            session = session,
+            childProfile = current?.isChild == true && !letOut,
+        )
     }
 }

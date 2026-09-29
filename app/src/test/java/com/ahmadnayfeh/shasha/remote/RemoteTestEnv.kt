@@ -296,7 +296,7 @@ class RemoteFakeSource : VideoSource {
     override suspend fun playlist(playlistId: String, page: PageKey?): PlaylistPage =
         playlists[playlistId] ?: throw SourceException(SourceErrorKind.CONTENT_UNAVAILABLE, "ContentNotAvailableException", playlistId, null)
 
-    override suspend fun stream(videoId: String): StreamDetails =
+    override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails =
         throw SourceException(SourceErrorKind.CONTENT_UNAVAILABLE, "NotInTests", "StreamDetails cannot be built outside :youtube", null)
 
     override suspend fun recentVideos(channelId: String): List<VideoItem> = emptyList()

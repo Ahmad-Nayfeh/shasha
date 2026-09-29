@@ -132,5 +132,5 @@ class FakeVideoSource : VideoSource {
 
     override suspend fun search(query: String, filter: SearchFilter, page: PageKey?): ItemsPage = error("unused")
     override suspend fun playlist(playlistId: String, page: PageKey?): PlaylistPage = error("unused")
-    override suspend fun stream(videoId: String): StreamDetails = error("unused")
+    override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails = error("unused")
 }
