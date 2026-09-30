@@ -69,6 +69,23 @@ class SkipControllerTest {
     }
 
     @Test
+    fun theNoticeWindows_followTheSettings() {
+        var undoMs = 12_000L
+        val adult = SkipController(undoAllowed = true, clock = { now }, undoWindowMs = { undoMs }, noticeMs = { 8_000L }).apply { setSegments(listOf(SPONSOR_SEGMENT)) }
+        player.positionMs = 119_600
+        adult.tick(player)
+        assertThat(adult.notice.value!!.untilMs - now).isEqualTo(12_000)
+        val child = SkipController(undoAllowed = false, clock = { now }, undoWindowMs = { undoMs }, noticeMs = { 8_000L }).apply { setSegments(listOf(SPONSOR_SEGMENT)) }
+        player.positionMs = 119_600
+        child.tick(player)
+        assertThat(child.notice.value!!.untilMs - now).isEqualTo(8_000)
+        // The defaults stay 5 s and 3 s.
+        assertThat(SkipController.UNDO_WINDOW_MS).isEqualTo(5_000)
+        assertThat(SkipController.NOTICE_MS).isEqualTo(3_000)
+        undoMs = 0
+    }
+
+    @Test
     fun playingFrom115s_theSkipComesWithinOneLook() {
         val skipper = controller(undo = false, SPONSOR_SEGMENT)
         player.positionMs = 115_000

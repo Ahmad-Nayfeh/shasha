@@ -5,13 +5,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isRoot
+import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.pressKey
@@ -72,8 +75,14 @@ class SettingsBehaviorPanesTest {
         press(Key.DirectionLeft)
     }
 
+    /** A key on whatever window is in front (a dialog has its own root). */
     private fun press(key: Key) {
-        compose.onRoot().performKeyInput { pressKey(key) }
+        compose.onAllNodes(isRoot()).onLast().performKeyInput { pressKey(key) }
+        compose.waitForIdle()
+    }
+
+    private fun click(tag: String) {
+        compose.onNodeWithTag(tag).performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
     }
 
@@ -123,22 +132,49 @@ class SettingsBehaviorPanesTest {
     }
 
     @Test
-    fun theCustomPhrase_isTypedAndChecked_whenNoneYet() {
-        show(SettingsCategory.SERIOUS)
-        repeat(4) { press(Key.DirectionDown) } // escape, hold, random, custom
-        compose.onNodeWithTag("serious_phrase_custom").assertIsFocused()
-        press(Key.Enter)
-        assertThat(exists("phrase_entry")).isTrue()
-        // Latin letters cannot be typed on the exit keyboard: refused with a reason.
-        compose.onNode(hasSetTextAction()).performTextReplacement("stop")
-        compose.onNodeWithTag("phrase_entry_save").performKeyInput { pressKey(Key.Enter) }
+    fun aPhrase_isFoldedForTheKeyboard_andRefusedWhenItCannotBeTyped() {
+        assertThat(checkPhrase("stop", emptyList(), "bad", "dup")).isEqualTo(Checked(null, "bad"))
+        assertThat(checkPhrase("  أنا أقرر ", emptyList(), "bad", "dup")).isEqualTo(Checked("انا اقرر", null))
+        assertThat(checkPhrase("أنا أقرر", listOf("انا اقرر"), "bad", "dup")).isEqualTo(Checked(null, "dup"))
+        assertThat(checkPort("80", "bad")).isEqualTo(Checked(null, "bad"))
+        assertThat(checkPort("70000", "bad")).isEqualTo(Checked(null, "bad"))
+        assertThat(checkPort("port", "bad")).isEqualTo(Checked(null, "bad"))
+        assertThat(checkPort(" 9000 ", "bad")).isEqualTo(Checked("9000", null))
+        assertThat(checkPort("1024", "bad")).isEqualTo(Checked("1024", null))
+    }
+
+    @Test
+    fun theTextEntry_showsTheReason_andSavesOnlyWhatPasses() {
+        val saved = mutableListOf<String>()
+        var reset = 0
+        compose.setContent {
+            ShashaTheme {
+                TextEntryPanel(
+                    title = "port",
+                    initial = "80",
+                    hint = "",
+                    check = { checkPort(it, "bad port") },
+                    onSave = { saved += it },
+                    onDismiss = {},
+                    resetLabel = "reset",
+                    onReset = { reset++ },
+                    tag = "port_entry",
+                    autoFocus = false,
+                )
+            }
+        }
         compose.waitForIdle()
-        assertThat(exists("phrase_entry_error")).isTrue()
-        assertThat(calls).isEmpty()
-        compose.onNode(hasSetTextAction()).performTextReplacement("  أنا أقرر ")
-        compose.onNodeWithTag("phrase_entry_save").performKeyInput { pressKey(Key.Enter) }
+        click("port_entry_save")
+        assertThat(exists("port_entry_error")).isTrue()
+        assertThat(saved).isEmpty()
+        compose.onNode(hasSetTextAction()).performTextReplacement("9000")
         compose.waitForIdle()
-        assertThat(calls).containsExactly("custom=انا اقرر")
+        // Typing again clears the reason.
+        assertThat(exists("port_entry_error")).isFalse()
+        click("port_entry_save")
+        assertThat(saved).containsExactly("9000")
+        click("port_entry_reset")
+        assertThat(reset).isEqualTo(1)
     }
 
     @Test
@@ -181,8 +217,7 @@ class SettingsBehaviorPanesTest {
         press(Key.Enter)
         press(Key.DirectionDown)
         press(Key.Enter)
-        compose.onNodeWithTag("extra_save").performKeyInput { pressKey(Key.Enter) }
-        compose.waitForIdle()
+        click("extra_save")
         assertThat(calls).containsExactly("extra=[5, 15, 30, 60]")
     }
 
@@ -198,20 +233,11 @@ class SettingsBehaviorPanesTest {
     }
 
     @Test
-    fun thePort_refusesPrivilegedPorts_andSavesAGoodOne() {
+    fun thePortRow_isInTheRemotePane_underThePairing() {
         show(SettingsCategory.REMOTE)
         press(Key.DirectionDown)
         press(Key.DirectionDown)
         compose.onNodeWithTag("hub_remote_port").assertIsFocused()
-        press(Key.Enter)
-        compose.onNode(hasSetTextAction()).performTextReplacement("80")
-        compose.onNodeWithTag("port_entry_save").performKeyInput { pressKey(Key.Enter) }
-        compose.waitForIdle()
-        assertThat(exists("port_entry_error")).isTrue()
-        compose.onNode(hasSetTextAction()).performTextReplacement("9000")
-        compose.onNodeWithTag("port_entry_save").performKeyInput { pressKey(Key.Enter) }
-        compose.waitForIdle()
-        assertThat(calls).containsExactly("port=9000")
     }
 
     @Test

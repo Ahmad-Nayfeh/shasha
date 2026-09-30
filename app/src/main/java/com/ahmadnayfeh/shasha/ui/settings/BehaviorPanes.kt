@@ -423,6 +423,22 @@ private fun BehaviorDialogs(editing: Editing?, behavior: Behavior, act: Behavior
     }
 }
 
+/** A phrase for the exit challenge: folded as the keyboard types it, or [invalid] / [duplicate] (already in [existing]). */
+internal fun checkPhrase(text: String, existing: List<String>, invalid: String, duplicate: String): Checked {
+    val clean = AdultExitChallenge.cleanPhrase(text)
+    return when {
+        clean == null -> Checked(null, invalid)
+        clean in existing -> Checked(null, duplicate)
+        else -> Checked(clean, null)
+    }
+}
+
+/** A port for the phone remote (1024–65535), or [invalid]. */
+internal fun checkPort(text: String, invalid: String): Checked {
+    val port = text.trim().toIntOrNull()?.takeIf { it in RemoteSettings.PORT_RANGE }
+    return if (port == null) Checked(null, invalid) else Checked(port.toString(), null)
+}
+
 /** A phrase typed by the parent, checked the way the exit keyboard needs it; the error says why it cannot be used. */
 @Composable
 internal fun PhraseEntryDialog(title: String, initial: String, existing: List<String>, onSave: (String) -> Unit, onDismiss: () -> Unit) {
@@ -434,14 +450,7 @@ internal fun PhraseEntryDialog(title: String, initial: String, existing: List<St
         hint = stringResource(R.string.serious_phrase_hint),
         maxLength = AdultExitChallenge.MAX_PHRASE_LENGTH + 10,
         note = stringResource(R.string.serious_phrases_note),
-        check = { text ->
-            val clean = AdultExitChallenge.cleanPhrase(text)
-            when {
-                clean == null -> Checked(null, invalid)
-                clean in existing -> Checked(null, duplicate)
-                else -> Checked(clean, null)
-            }
-        },
+        check = { text -> checkPhrase(text, existing, invalid, duplicate) },
         onSave = onSave,
         onDismiss = onDismiss,
         tag = "phrase_entry",
@@ -458,10 +467,7 @@ private fun PortDialog(current: Int, act: BehaviorActions, onDismiss: () -> Unit
         maxLength = 5,
         keyboardType = KeyboardType.Number,
         note = stringResource(R.string.remote_port_body),
-        check = { text ->
-            val port = text.trim().toIntOrNull()?.takeIf { it in RemoteSettings.PORT_RANGE }
-            if (port == null) Checked(null, invalid) else Checked(port.toString(), null)
-        },
+        check = { text -> checkPort(text, invalid) },
         onSave = { value ->
             onDismiss()
             act.setPort(value.toInt())

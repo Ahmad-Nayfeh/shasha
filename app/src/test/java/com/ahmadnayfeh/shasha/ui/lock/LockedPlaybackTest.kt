@@ -35,6 +35,8 @@ import com.ahmadnayfeh.shasha.data.testScope
 import com.ahmadnayfeh.shasha.lock.LockController
 import com.ahmadnayfeh.shasha.player.PlaybackProgress
 import com.ahmadnayfeh.shasha.player.PlayerAction
+import com.ahmadnayfeh.shasha.policy.AdultEscape
+import com.ahmadnayfeh.shasha.policy.PolicyConfig
 import com.ahmadnayfeh.shasha.policy.MutableClock
 import com.ahmadnayfeh.shasha.policy.PinHasher
 import com.ahmadnayfeh.shasha.policy.PolicyEngine
@@ -130,6 +132,7 @@ class LockedPlaybackTest {
                         actions = lock.playerActions(),
                         onLeave = { left++ },
                         onSurrendered = { surrendered++ },
+                        escape = escape,
                         newPhrase = { PHRASE },
                     ) { state -> content(state) }
                 }
@@ -270,6 +273,44 @@ class LockedPlaybackTest {
 
     // ---- Adult ------------------------------------------------------------------------------------------
 
+    /** The adult's way out as Settings set it (the default: 10 s and the ten phrases). */
+    private var escape: AdultEscape? = PolicyConfig.DEFAULT.escape
+
+    @Test
+    fun adult_escapeTurnedOff_aLongHoldDoesNothing_andBackSaysHowItEnds() {
+        escape = null
+        show(adult)
+        startVideo(adult, UnlockMethod.EXIT_CHALLENGE)
+        compose.onRoot().performKeyInput {
+            keyDown(Key.DirectionCenter)
+            advanceEventTime(12_000)
+            keyUp(Key.DirectionCenter)
+        }
+        compose.waitForIdle()
+        assertThat(exists("lock_hold_ring")).isFalse()
+        assertThat(exists("lock_phrase")).isFalse()
+        backTwice()
+        compose.onNodeWithTag("lock_hint").assertExists()
+        assertThat(left).isEqualTo(0)
+        assertThat(storedLock()?.videoId).isEqualTo(VIDEO)
+    }
+
+    @Test
+    fun adult_aShorterHold_whenTheParentSetOne() {
+        escape = AdultEscape(3_000, listOf(PHRASE))
+        show(adult)
+        startVideo(adult, UnlockMethod.EXIT_CHALLENGE)
+        compose.onRoot().performKeyInput {
+            keyDown(Key.Back)
+            advanceEventTime(1_000)
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("lock_hold_seconds").assertTextEquals("2")
+        compose.onRoot().performKeyInput { advanceEventTime(2_000) }
+        compose.waitForIdle()
+        assertThat(exists("lock_phrase")).isTrue()
+    }
+
     @Test
     fun adult_aShortBack_onlySaysHowToLeave() {
         show(adult)
@@ -350,7 +391,7 @@ class LockedPlaybackTest {
         // A wrong phrase stays.
         click("kb_key_س")
         click("lock_phrase_exit")
-        compose.onNodeWithTag("lock_phrase_notice").assertTextEquals("الجملة غير مطابقة. اكتبها كما تظهر تماماً.")
+        compose.onNodeWithTag("lock_phrase_notice").assertTextEquals("العبارة غير مطابقة. اكتبها كما تظهر تماماً.")
         // Back on the keyboard, on «حذف», to fix it.
         compose.onNodeWithTag("kb_delete").assertIsFocused()
         press(Key.DirectionCenter)

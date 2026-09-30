@@ -95,8 +95,9 @@ data class Behavior(
     fun pinLockout(): PinLockoutConfig = PinLockoutConfig(pinMaxFailures, pinFirstLockoutMinutes * 60_000L)
 
     companion object {
-        val DEFAULT = Behavior()
+        // Before DEFAULT: its constructor reads it.
         val DEFAULT_EXTRA_MINUTES = listOf(15, 30, 60)
+        val DEFAULT = Behavior()
     }
 }
 

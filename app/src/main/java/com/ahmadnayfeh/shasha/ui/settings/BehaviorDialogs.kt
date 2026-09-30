@@ -95,6 +95,8 @@ internal fun TextEntryPanel(
     onReset: (() -> Unit)? = null,
     tag: String = "text_entry",
     initialError: String? = null,
+    /** The field takes the focus when the panel opens (tests turn it off: a focused cursor blinks forever). */
+    autoFocus: Boolean = true,
 ) {
     var text by rememberSaveable { mutableStateOf(initial) }
     var error by remember { mutableStateOf(initialError) }
@@ -102,7 +104,7 @@ internal fun TextEntryPanel(
     val save = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         withFrameNanos { }
-        runCatching { field.requestFocus() }
+        runCatching { if (autoFocus) field.requestFocus() else save.requestFocus() }
     }
     fun trySave() {
         val result = check(text)
