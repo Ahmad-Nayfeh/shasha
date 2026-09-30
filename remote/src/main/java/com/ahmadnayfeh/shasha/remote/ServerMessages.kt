@@ -13,7 +13,7 @@ internal object ServerMessages {
     const val SEARCH_DISABLED = "البحث غير متاح في هذا الملف."
     const val EMPTY_QUERY = "اكتب ما تريد البحث عنه."
     const val QUERY_TOO_LONG = "نص البحث طويل جداً. اختصره ثم حاول من جديد."
-    const val VIDEO_LOCKED = "الفيديو مقفول حتى ينتهي. يفكّ الأب القفل من قسم الأب."
+    const val VIDEO_LOCKED = "الوضع الجاد: الفيديو يُشاهَد حتى نهايته. يُنهيه الأب من قسم الأب."
     const val EMPTY_LINK = "الصق رابط يوتيوب أولاً."
     const val EMPTY_PIN = "أدخل رمز PIN."
     const val EMPTY_FILE = "الملف فارغ."

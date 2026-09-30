@@ -86,18 +86,19 @@ import com.ahmadnayfeh.shasha.player.PlaybackProgress
 import com.ahmadnayfeh.shasha.player.PlayerAction
 import com.ahmadnayfeh.shasha.player.PlayerUiState
 import com.ahmadnayfeh.shasha.player.QualityChoice
-import com.ahmadnayfeh.shasha.player.SEEK_STEP_MS
 import com.ahmadnayfeh.shasha.player.SeekAccelerator
 import com.ahmadnayfeh.shasha.player.formatDuration
 import com.ahmadnayfeh.shasha.player.formatSpeed
 import com.ahmadnayfeh.shasha.ui.components.LocalTopClearance
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
+import com.ahmadnayfeh.shasha.ui.components.LocalBehavior
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoader
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 import kotlinx.coroutines.delay
 
+/** The controls' default wait before hiding (Settings may change it: [LocalBehavior]). */
 const val OSD_AUTO_HIDE_MS = 3_000L
 
 private val DPAD_KEYS = setOf(
@@ -132,12 +133,13 @@ fun PlayerOsd(
     modifier: Modifier = Modifier,
     initiallyVisible: Boolean = true,
     initialMenu: OsdMenu? = null,
-    autoHideMs: Long = OSD_AUTO_HIDE_MS,
+    autoHideMs: Long = LocalBehavior.current.controlsHideSeconds * 1000L,
     savedForLater: Boolean? = null,
     onToggleWatchLater: () -> Unit = {},
     resumedFromMs: Long? = null,
     resumeHintMs: Long = RESUME_HINT_MS,
     suspended: Boolean = false,
+    seekStepMs: Long = LocalBehavior.current.seekStepSeconds * 1000L,
 ) {
     var visible by remember { mutableStateOf(initiallyVisible || initialMenu != null) }
     var menu by remember { mutableStateOf(initialMenu) }
@@ -152,7 +154,7 @@ fun PlayerOsd(
     var titleBottom by remember { mutableStateOf(0.dp) }
     // Key code whose key-up must be swallowed (its key-down only revealed the controls).
     val swallowUp = remember { IntArray(1) { NO_KEY } }
-    val accelerator = remember { SeekAccelerator() }
+    val accelerator = remember(seekStepMs) { SeekAccelerator(baseStepMs = seekStepMs) }
 
     val rootFocus = remember { FocusRequester() }
     val seekFocus = remember { FocusRequester() }
@@ -434,6 +436,7 @@ fun PlayerOsd(
                         chipFocus = chipFocus,
                         onAction = onAction,
                         onSeekBy = ::seekBy,
+                        seekStepMs = seekStepMs,
                         onOpenMenu = ::openMenu,
                         savedForLater = savedForLater,
                         onToggleWatchLater = {
@@ -522,6 +525,7 @@ private fun ControlsRow(
     chipFocus: Map<OsdMenu, FocusRequester>,
     onAction: (PlayerAction) -> Unit,
     onSeekBy: (Long) -> Unit,
+    seekStepMs: Long,
     onOpenMenu: (OsdMenu) -> Unit,
     savedForLater: Boolean?,
     onToggleWatchLater: () -> Unit,
@@ -550,16 +554,16 @@ private fun ControlsRow(
         OsdIconButton(
             icon = ShashaIcons.Replay,
             contentDescription = stringResource(R.string.player_rewind),
-            onClick = { onSeekBy(-SEEK_STEP_MS) },
-            badge = "10",
+            onClick = { onSeekBy(-seekStepMs) },
+            badge = (seekStepMs / 1000).toString(),
             modifier = upToBar,
         )
         Spacer(Modifier.width(10.dp))
         OsdIconButton(
             icon = ShashaIcons.Forward,
             contentDescription = stringResource(R.string.player_forward),
-            onClick = { onSeekBy(SEEK_STEP_MS) },
-            badge = "10",
+            onClick = { onSeekBy(seekStepMs) },
+            badge = (seekStepMs / 1000).toString(),
             modifier = upToBar,
         )
         Spacer(Modifier.width(22.dp))

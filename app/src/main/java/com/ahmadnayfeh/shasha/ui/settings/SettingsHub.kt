@@ -219,14 +219,17 @@ private fun PaneBody(category: SettingsCategory, state: SettingsHubState, action
         SettingsCategory.PROFILES -> ProfilesPane(state, actions, first)
         SettingsCategory.LISTS -> ListsPane(state, actions, first)
         SettingsCategory.TIME -> TimePane(state, actions, first)
+        SettingsCategory.SERIOUS -> SeriousPane(state, actions, first)
         SettingsCategory.STATS -> StatsPane(state, actions, first)
         SettingsCategory.SPONSORBLOCK -> SponsorBlockPane(state, actions, first)
         SettingsCategory.QUALITY -> QualityPane(state, actions, first)
+        SettingsCategory.PLAYBACK -> PlaybackTimingPane(state, actions, first)
         SettingsCategory.PROTECTION -> ProtectionPane(state, actions, first)
         SettingsCategory.REMOTE -> RemotePane(state, actions, first)
         SettingsCategory.DATA -> DataPane(state, actions, first)
         SettingsCategory.UPDATES -> UpdatesPane(state, actions, first)
         SettingsCategory.DIAGNOSTICS -> DiagnosticsPane(state, actions, first)
+        SettingsCategory.RESET -> ResetPane(state, actions, first)
         SettingsCategory.ABOUT -> AboutPane(state, first)
     }
 }

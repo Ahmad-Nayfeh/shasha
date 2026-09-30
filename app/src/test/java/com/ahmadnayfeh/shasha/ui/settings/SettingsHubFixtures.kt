@@ -1,5 +1,6 @@
 package com.ahmadnayfeh.shasha.ui.settings
 
+import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.SyncHealth
 import com.ahmadnayfeh.shasha.lock.ProtectionStatus
 import com.ahmadnayfeh.shasha.lock.ReturnTime
@@ -85,7 +86,7 @@ internal object SettingsHubFixtures {
         lastError = SourceException(SourceErrorKind.NETWORK, "SocketTimeoutException", null, null),
     )
 
-    fun state(unlocked: Boolean = true) = SettingsHubState(
+    fun state(unlocked: Boolean = true, behavior: Behavior = Behavior.DEFAULT) = SettingsHubState(
         versions = AppVersions("0.1.0", 1, "v0.26.5"),
         unlocked = unlocked,
         profiles = profiles,
@@ -99,5 +100,7 @@ internal object SettingsHubFixtures {
         syncHealth = syncHealth,
         device = DeviceFacts("TCL", "Smart TV Pro", "12", 31),
         nowMs = NOW,
+        behavior = behavior,
+        remotePort = 8765,
     )
 }

@@ -151,7 +151,12 @@ class BackupManager(
                     prefs[PolicyStore.OVERRIDES] = PolicyJson.json.encodeToString(Overrides.serializer(), grants)
                 }
             }
-            for (section in sections) section.restore(backup.settings[section.name].orEmpty())
+            for (section in sections) {
+                val values = backup.settings[section.name]
+                // A file older than the section never had it: those settings stay as they are.
+                if (values == null && backup.format < section.sinceFormat) continue
+                section.restore(values.orEmpty())
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -231,6 +236,7 @@ class BackupManager(
         val surrenders: List<SurrenderRow>,
         val settings: Map<String, Map<String, JsonElement>>,
         val skipped: Int,
+        val format: Int,
     )
 
     private fun parse(bytes: ByteArray): Parsed {
@@ -292,6 +298,7 @@ class BackupManager(
             surrenders = items(KEY_SURRENDERS, SurrenderRow.serializer()) { it.valid && it.profileId in ids },
             settings = settings,
             skipped = skipped,
+            format = format,
         )
     }
 
@@ -311,8 +318,11 @@ class BackupManager(
 
         const val APP = "shasha"
 
-        /** Bump with every change a previous app could not read; [import] refuses newer ones. */
-        const val FORMAT = 1
+        /**
+         * Bump with every change a previous app could not read; [import] refuses newer ones and reads every older
+         * one. 2: the settings gained the "behavior" section (Serious Mode, timings, the PIN's brake…).
+         */
+        const val FORMAT = 2
 
         /** What the phone may upload (:remote's limit) and more than years of history take. */
         const val MAX_BYTES = 10 * 1024 * 1024

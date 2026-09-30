@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.ahmadnayfeh.shasha.AppContainer
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.data.ActiveProfile
+import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.ParentPinRepository
 import com.ahmadnayfeh.shasha.data.ProfileRepository
 import com.ahmadnayfeh.shasha.lock.LockController
@@ -78,6 +79,8 @@ class RootDeps(
      * next). The guard, which keeps a child profile inside the app, stands down meanwhile (owner decision).
      */
     val childLetOut: MutableStateFlow<Boolean> = MutableStateFlow(false),
+    /** The parent's adjustable behaviour (Settings): the screens read it through LocalBehavior. */
+    val behavior: StateFlow<Behavior> = MutableStateFlow(Behavior.DEFAULT),
 )
 
 /**
@@ -244,7 +247,9 @@ class RootViewModel(
     fun onAppShown(ownRequest: Boolean = false) {
         val since = hiddenAt ?: return
         hiddenAt = null
-        if (ownRequest || elapsed() - since < RELOCK_AFTER_MS) return
+        // Settings → رمز الوالدين may make it shorter or longer.
+        val relockAfter = _deps.value?.behavior?.value?.relockSeconds?.let { it * 1000L } ?: RELOCK_AFTER_MS
+        if (ownRequest || elapsed() - since < relockAfter) return
         forgetExitPin()
         val screen = _screen.value
         if (screen is RootScreen.Picker && screen.mode == PickerMode.FROM_CHILD_EXIT) {
@@ -343,6 +348,7 @@ class RootViewModel(
                             container.lock,
                             container.phoneProfileChoices.chosen,
                             container.childLetOut,
+                            container.behavior.values,
                         )
                     }
                 })

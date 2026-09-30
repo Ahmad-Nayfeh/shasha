@@ -93,7 +93,9 @@ internal fun ProfilesPane(state: SettingsHubState, actions: SettingsHubActions, 
             icon = ShashaIcons.Key,
             body = stringResource(R.string.settings_change_pin_body),
         )
-        InfoLine(ShashaIcons.Info, stringResource(R.string.hub_pin_note))
+        val behavior = state.behavior
+        if (state.unlocked && behavior != null) PinSettingsRows(behavior, actions)
+        InfoLine(ShashaIcons.Info, pinNote(state.behavior))
     }
 }
 

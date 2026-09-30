@@ -67,9 +67,9 @@ class ExitHold(
     val isShown: Boolean get() = shown && !completed
 
     /** 0..1 for the ring. */
-    val progress: Float get() = AdultExitChallenge.holdProgress(heldMillis)
+    val progress: Float get() = if (holdMillis <= 0) 1f else (heldMillis.toFloat() / holdMillis).coerceIn(0f, 1f)
 
-    /** Whole seconds still to hold, 10 down to 1 (rounded up: never 0 before the end). */
+    /** Whole seconds still to hold, e.g. 10 down to 1 (rounded up: never 0 before the end). */
     val secondsLeft: Int get() = ((holdMillis - heldMillis).coerceAtLeast(0) + 999).div(1000).toInt()
 
     /** The held key's code ([KeyEvent] key code), or null. */

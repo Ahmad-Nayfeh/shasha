@@ -506,7 +506,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
         <div class="sk" style="height:14px;margin-top:10px;width:45%"></div>
       </div>
       <div id="np-body" hidden>
-        <div class="thumb"><img id="np-img" alt=""><span class="tag live" id="np-live" hidden>مباشر</span><span class="tag lock" id="np-lock" hidden><svg class="i"><use href="#i-lock"/></svg>مقفول</span></div>
+        <div class="thumb"><img id="np-img" alt=""><span class="tag live" id="np-live" hidden>مباشر</span><span class="tag lock" id="np-lock" hidden><svg class="i"><use href="#i-lock"/></svg>الوضع الجاد</span></div>
         <h3 class="np-title" id="np-title" dir="auto"></h3>
         <p class="np-ch" id="np-ch" dir="auto"></p>
         <div class="prog" id="np-prog" dir="ltr">
@@ -581,7 +581,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
     <article class="card login" id="parent-login">
       <div class="shield"><svg class="i"><use href="#i-shield"/></svg></div>
       <h2>قسم الأب</h2>
-      <p>الوقت، وقفل الفيديو، وقائمة السماح، والاشتراكات، والنسخ الاحتياطي. أدخل رمز PIN الخاص بالأب.</p>
+      <p>الوقت، والوضع الجاد، وقائمة السماح، والاشتراكات، والنسخ الاحتياطي. أدخل رمز PIN الخاص بالأب.</p>
       <form id="login-form" autocomplete="off" novalidate>
         <input class="input pin" id="login-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="12" placeholder="••••" aria-label="رمز PIN" autocomplete="off">
         <button class="btn primary block" type="submit" id="login-btn"><svg class="i"><use href="#i-unlock"/></svg>دخول</button>
@@ -622,10 +622,10 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
 
       <div class="ptab" id="ptab-video" hidden>
         <article class="card">
-          <div class="card-h"><span class="badge-ico amber"><svg class="i"><use href="#i-lock"/></svg></span><h2>قفل الفيديو</h2></div>
+          <div class="card-h"><span class="badge-ico amber"><svg class="i"><use href="#i-lock"/></svg></span><h2>الوضع الجاد</h2></div>
           <div id="video-state"></div>
-          <button class="btn amber block" type="button" id="unlock-video"><svg class="i"><use href="#i-unlock"/></svg>فك قفل الفيديو</button>
-          <p class="hint">عند بدء فيديو في ملف الطفل يُقفل حتى ينتهي. فك القفل يسمح بالخروج منه الآن دون انتظار نهايته.</p>
+          <button class="btn amber block" type="button" id="unlock-video"><svg class="i"><use href="#i-unlock"/></svg>إنهاء الوضع الجاد لهذا الفيديو</button>
+          <p class="hint">في الوضع الجاد يُشاهَد الفيديو الذي بدأ حتى نهايته. إنهاؤه من هنا يسمح بالخروج منه الآن دون انتظار نهايته.</p>
         </article>
       </div>
 
@@ -1085,7 +1085,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
         meta.append(h('span', { class: 'pill' }, ic('clock'), 'بلا حد يومي'));
       }
       if (st.profileKind === 'CHILD') meta.append(h('span', { class: 'pill kid' }, ic('star'), 'ملف طفل'));
-      if (st.videoLocked) meta.append(h('span', { class: 'pill warn' }, ic('lock'), 'الفيديو مقفول حتى ينتهي'));
+      if (st.videoLocked) meta.append(h('span', { class: 'pill warn' }, ic('lock'), 'الوضع الجاد: يُشاهَد حتى نهايته'));
     }
     meta.hidden = !meta.children.length;
     renderMini();
@@ -1426,7 +1426,7 @@ ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-r
       np ? h('div', { class: 'now-line' }, h('div', { class: 'ava sq', style: 'width:72px;height:42px' }, img(np.thumbnailUrl)),
         h('div', { class: 't' }, h('b', { dir: 'auto', text: np.title }), h('span', { dir: 'auto', text: np.channelName || '' })))
         : h('div', { class: 'now-line' }, h('div', { class: 't' }, h('b', { text: 'لا شيء يُعرض الآن' }), h('span', { text: 'لا يوجد فيديو على الشاشة.' }))),
-      h('div', { class: 'meta', style: 'margin-bottom:14px' }, locked ? h('span', { class: 'pill warn' }, ic('lock'), 'مقفول حتى ينتهي') : h('span', { class: 'pill ok' }, ic('unlock'), 'غير مقفول')));
+      h('div', { class: 'meta', style: 'margin-bottom:14px' }, locked ? h('span', { class: 'pill warn' }, ic('lock'), 'الوضع الجاد: حتى نهايته') : h('span', { class: 'pill ok' }, ic('unlock'), 'لا فيديو في الوضع الجاد')));
     $('#unlock-video').disabled = !locked;
   }
   $('#unlock-video').addEventListener('click', async e => {

@@ -55,10 +55,24 @@ class RemoteSettings(private val store: DataStore<Preferences>, private val rand
     }
 
     /** The port to try first: the last one bound, else [DEFAULT_PORT]. */
-    suspend fun preferredPort(): Int = store.data.first()[PORT]?.takeIf { it in 1024..65535 } ?: DEFAULT_PORT
+    suspend fun preferredPort(): Int = store.data.first()[PORT]?.takeIf { it in PORT_RANGE } ?: DEFAULT_PORT
 
     suspend fun rememberPort(port: Int) {
-        if (port in 1024..65535) store.edit { it[PORT] = port }
+        if (port in PORT_RANGE) store.edit { it[PORT] = port }
+    }
+
+    /** The port the parent chose (Settings → التحكم من الجوال); the server moves to it at its next start. */
+    val port: Flow<Int> = store.data.map { it[PORT]?.takeIf { p -> p in PORT_RANGE } ?: DEFAULT_PORT }.distinctUntilChanged()
+
+    /** @throws IllegalArgumentException outside [PORT_RANGE]. */
+    suspend fun setPort(port: Int) {
+        require(port in PORT_RANGE) { "Port $port outside $PORT_RANGE" }
+        store.edit { it[PORT] = port }
+    }
+
+    /** Back to [DEFAULT_PORT] («إرجاع الإعداد الأصلي», «إرجاع كل الإعدادات»). */
+    suspend fun resetPort() {
+        store.edit { it.remove(PORT) }
     }
 
     /** 32 URL-safe characters (192 random bits, [SecureRandom]). */
@@ -70,6 +84,9 @@ class RemoteSettings(private val store: DataStore<Preferences>, private val rand
     companion object {
         const val FILE_NAME = "remote"
         const val DEFAULT_PORT = 8765
+
+        /** Ports a parent may choose: not the privileged ones. */
+        val PORT_RANGE = 1024..65535
         private const val TOKEN_BYTES = 24
         const val TOKEN_LENGTH = 32
 

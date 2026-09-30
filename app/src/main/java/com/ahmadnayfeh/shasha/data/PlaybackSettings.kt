@@ -45,6 +45,11 @@ class PlaybackSettings(private val store: DataStore<Preferences>, scope: Corouti
         store.edit { it[MAX_QUALITY] = height }
     }
 
+    /** Back to [DEFAULT_MAX_QUALITY] («إرجاع كل الإعدادات»). */
+    suspend fun reset() {
+        store.edit { it.remove(MAX_QUALITY) }
+    }
+
     companion object {
         const val FILE_NAME = "playback"
 

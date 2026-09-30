@@ -16,6 +16,8 @@ import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.remote.RemoteService
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
+import com.ahmadnayfeh.shasha.ui.components.LocalAppMessages
+import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.components.ParentPinPad
 import com.ahmadnayfeh.shasha.ui.components.PinDialog
 import com.ahmadnayfeh.shasha.ui.components.containerViewModel
@@ -34,7 +36,7 @@ import kotlinx.coroutines.delay
 fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
     val context = LocalContext.current
     val container = context.appContainer
-    val unlock = LocalParentUnlock.current ?: containerViewModel { ParentUnlock(it.parentPin) }
+    val unlock = LocalParentUnlock.current ?: containerViewModel { ParentUnlock(it.parentPin, unlockMs = { it.behavior.values.value.parentUnlockMinutes * 60_000L }) }
     val vm = containerViewModel { c ->
         SettingsHubViewModel(
             profileRepository = c.profiles,
@@ -48,6 +50,8 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
             engine = c.policyEngine,
             zone = { c.clock.zone },
             appScope = c.appScope,
+            behaviorSettings = c.behavior,
+            restartRemote = { c.remote.restart() },
         )
     }
     var selected by rememberSaveable { mutableStateOf(SettingsCategory.PROFILES) }
@@ -70,6 +74,10 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
     val remote by vm.remote.collectAsStateWithLifecycle()
     val syncHealth by vm.syncHealth.collectAsStateWithLifecycle()
     val usage by vm.usage.collectAsStateWithLifecycle()
+    val behavior by vm.behavior.collectAsStateWithLifecycle()
+    val remotePort by vm.remotePort.collectAsStateWithLifecycle()
+    val messages = LocalAppMessages.current
+    val resetDone = stringResource(R.string.reset_done)
     // Read every 2 s while shown (the list's dot, the pane); starts the guard when it can run, as «حالة الحماية» does.
     val protection by rememberProtectionStatus()
     val returns by container.guardReturnTimes.times.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -98,6 +106,21 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
             resetSponsorCategories = vm::resetSponsorCategories,
             setMaxQuality = vm::setMaxQuality,
             setRemoteEnabled = { on -> gate.guarded { vm.setRemoteEnabled(on) { RemoteService.startIfWanted(context) } } },
+            behavior = BehaviorActions(
+                setSeriousMode = { on -> gate.guarded { vm.setSeriousMode(on) } },
+                setAdultEscape = { on -> gate.guarded { vm.setAdultEscape(on) } },
+                setNumber = { key, value -> gate.guarded { vm.setNumber(key, value) } },
+                setPhraseMode = { mode -> gate.guarded { vm.setPhraseMode(mode) } },
+                addPhrase = { phrase -> gate.guarded { vm.addPhrase(phrase) } },
+                removePhrase = { phrase -> gate.guarded { vm.removePhrase(phrase) } },
+                setCustomPhrase = { phrase -> gate.guarded { vm.setCustomPhrase(phrase) } },
+                setExtraMinutes = { minutes -> gate.guarded { vm.setExtraMinutes(minutes) } },
+                setDefaultSpeed = { speed -> gate.guarded { vm.setDefaultSpeed(speed) } },
+                reset = { keys -> gate.guarded { vm.resetBehavior(keys) } },
+                setPort = { port -> gate.guarded { vm.setPort(port) } },
+                resetPort = { gate.guarded { vm.resetPort() } },
+                resetEverything = { gate.guarded { vm.resetEverything { messages?.show(resetDone, ShashaIcons.Refresh) } } },
+            ),
         )
     }
 
@@ -116,6 +139,8 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
             syncHealth = syncHealth,
             device = device,
             nowMs = now,
+            behavior = behavior,
+            remotePort = remotePort,
         ),
         selected = selected,
         onSelect = { selected = it },

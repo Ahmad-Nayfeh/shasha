@@ -35,7 +35,7 @@ sealed interface PinAttemptResult {
 }
 
 /**
- * After [MAX_FAILURES] consecutive wrong PINs, every attempt is refused for a while: 5 minutes the first
+ * After [PinLockoutConfig.maxFailures] consecutive wrong PINs ([MAX_FAILURES] by default), every attempt is refused for a while: 5 minutes the first
  * time, then 15 minutes, 1 hour and 4 hours ([LOCKOUT_STEPS_MILLIS]) for as long as no correct PIN comes
  * in between. A correct PIN resets both the counter and the escalation. A child sitting on the "time up"
  * screen therefore gets a few guesses a day, not fifty an hour.
@@ -53,6 +53,8 @@ class PinAttemptLimiter(
     private val clock: Clock,
     initial: PinAttemptState = PinAttemptState(),
     private val monotonic: MonotonicClock? = null,
+    /** The parent's settings (Settings → رمز الوالدين), read at every attempt. */
+    private val config: () -> PinLockoutConfig = { PinLockoutConfig() },
 ) {
     @Volatile
     var state: PinAttemptState = initial
@@ -65,7 +67,7 @@ class PinAttemptLimiter(
     fun remainingLockMillis(): Long {
         val s = state
         val wallUntil = s.lockedUntilEpochMs ?: return 0
-        val length = lockoutMillis(s.lockouts)
+        val length = config().lockoutMillis(s.lockouts)
         val mono = monotonic
         val elapsedUntil = s.lockedUntilElapsedMs
         if (mono != null && elapsedUntil != null && s.bootId == mono.bootId) {
@@ -85,7 +87,9 @@ class PinAttemptLimiter(
     }
 
     @Synchronized
-    fun attemptsLeft(): Int = if (isLocked()) 0 else MAX_FAILURES - state.consecutiveFailures
+    fun attemptsLeft(): Int = if (isLocked()) 0 else (maxFailures() - state.consecutiveFailures).coerceAtLeast(1)
+
+    private fun maxFailures(): Int = config().maxFailures.coerceAtLeast(1)
 
     /**
      * Checks the PIN through [verify] unless locked out; [verify] is not called while locked,
@@ -115,9 +119,9 @@ class PinAttemptLimiter(
     fun recordFailure(): PinAttemptState {
         if (isLocked()) return state
         val failures = state.consecutiveFailures + 1
-        state = if (failures >= MAX_FAILURES) {
+        state = if (failures >= maxFailures()) {
             val lockouts = state.lockouts + 1
-            val length = lockoutMillis(lockouts)
+            val length = config().lockoutMillis(lockouts)
             // The counter restarts so the owner gets a fresh set of tries once the lockout ends; the next
             // lockout, if it comes before a correct PIN, is longer.
             PinAttemptState(
@@ -142,7 +146,10 @@ class PinAttemptLimiter(
         /** The first, second, third and every later lockout in a row: 5 min, 15 min, 1 h, 4 h. */
         val LOCKOUT_STEPS_MILLIS: List<Long> = listOf(LOCKOUT_MILLIS, 15 * 60_000L, 60 * 60_000L, 4 * 60 * 60_000L)
 
-        /** How long lockout number [lockouts] (1 = the first) lasts; an older saved state without a count is the first. */
+        /**
+         * How long lockout number [lockouts] (1 = the first) lasts with the default settings; an older saved state
+         * without a count is the first. [PinLockoutConfig.lockoutMillis] is the same with the parent's settings.
+         */
         fun lockoutMillis(lockouts: Int): Long = LOCKOUT_STEPS_MILLIS[(lockouts - 1).coerceIn(0, LOCKOUT_STEPS_MILLIS.lastIndex)]
     }
 }

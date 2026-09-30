@@ -40,6 +40,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
+import com.ahmadnayfeh.shasha.ui.components.LocalBehavior
 import com.ahmadnayfeh.shasha.player.formatDuration
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
@@ -70,11 +71,11 @@ fun EndCard(
     onReplay: () -> Unit,
     onPlayNext: (VideoItem) -> Unit,
     modifier: Modifier = Modifier,
-    countdownSeconds: Int = UP_NEXT_SECONDS,
+    countdownSeconds: Int = LocalBehavior.current.upNextSeconds,
     tickMs: Long = 1_000L,
     paused: Boolean = false,
     kidsHome: (() -> Unit)? = null,
-    homeSeconds: Int = KIDS_HOME_SECONDS,
+    homeSeconds: Int = LocalBehavior.current.kidsHomeSeconds,
     stillLocked: Boolean = false,
 ) {
     val home = kidsHome.takeIf { end !is PlaybackEnd.UpNext }
@@ -225,7 +226,8 @@ private fun UpNext(
     val formats = rememberFormats()
     var left by remember(next.videoId) { mutableIntStateOf(countdownSeconds) }
     LaunchedEffect(next.videoId, paused) {
-        if (paused) return@LaunchedEffect
+        // 0: the parent turned the countdown off; the next video waits for «شغّل الآن».
+        if (paused || countdownSeconds <= 0) return@LaunchedEffect
         while (left > 1) {
             delay(tickMs)
             left--
@@ -255,12 +257,14 @@ private fun UpNext(
         )
         next.channelName?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Muted, maxLines = 1) }
         Spacer(Modifier.height(10.dp))
-        Text(
-            formats.count(R.array.starts_in_seconds, left.toLong()),
-            style = MaterialTheme.typography.titleMedium,
-            color = ShashaColors.Secondary,
-            modifier = Modifier.testTag("up_next_countdown"),
-        )
+        if (countdownSeconds > 0) {
+            Text(
+                formats.count(R.array.starts_in_seconds, left.toLong()),
+                style = MaterialTheme.typography.titleMedium,
+                color = ShashaColors.Secondary,
+                modifier = Modifier.testTag("up_next_countdown"),
+            )
+        }
         Spacer(Modifier.height(22.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             ShashaButton(
@@ -275,8 +279,8 @@ private fun UpNext(
     }
 }
 
-/** The countdown before the next playlist video. */
+/** The countdown before the next playlist video (Settings may change it: [LocalBehavior]). */
 const val UP_NEXT_SECONDS = 5
 
-/** The countdown before a child whose video ended is back on the child home. */
+/** The countdown before a child whose video ended is back on the child home (Settings may change it). */
 const val KIDS_HOME_SECONDS = 10

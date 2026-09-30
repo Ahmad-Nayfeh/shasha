@@ -17,6 +17,7 @@ import com.ahmadnayfeh.shasha.policy.MutableClock
 import com.ahmadnayfeh.shasha.policy.PinHasher
 import com.ahmadnayfeh.shasha.policy.PlaybackLock
 import com.ahmadnayfeh.shasha.policy.PlayedPart
+import com.ahmadnayfeh.shasha.policy.PolicyConfig
 import com.ahmadnayfeh.shasha.policy.PolicyEngine
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.SurrenderEvent
@@ -56,7 +57,9 @@ class LockControllerTest {
     private lateinit var usage: UsageRepository
     private val scope = testScope()
     private val clock = MutableClock(instantAt("2026-09-28T12:00"))
-    private val engine = PolicyEngine(clock)
+    /** «الوضع الجاد» (Settings): on unless a test turns it off. */
+    private val serious = MutableStateFlow(true)
+    private val engine = PolicyEngine(clock) { PolicyConfig(seriousMode = serious.value) }
     private val adult = owner()
     private val child = kid()
     private val current = MutableStateFlow<Profile?>(child)
@@ -95,12 +98,43 @@ class LockControllerTest {
                 usage.recordSurrender(it)
             },
             scope = scope,
+            seriousMode = serious,
         )
     }
 
     private fun <T> wait(block: suspend () -> T): T = runBlocking { withTimeout(5_000) { block() } }
 
     private fun LockController.shows(expected: PlaybackLock?) = wait { lock.first { it == expected } }
+
+    // ---- «الوضع الجاد» off ------------------------------------------------------------------------------
+
+    @Test
+    fun seriousModeOff_nothingIsLocked_inEitherProfile() = runBlocking<Unit> {
+        serious.value = false
+        val lock = controller()
+        lock.onVideoStarted(child.id, "v1", null)
+        assertThat(lock.current()).isNull()
+        current.value = adult
+        lock.onVideoStarted(adult.id, "v2", ALLOWED_PLAYLIST)
+        assertThat(lock.current()).isNull()
+        assertThat(lock.lock.value).isNull()
+    }
+
+    @Test
+    fun turningSeriousModeOff_endsTheLockThatHolds_withoutASurrender() = runBlocking<Unit> {
+        current.value = adult
+        val lock = controller()
+        lock.onVideoStarted(adult.id, "v1", null)
+        assertThat(lock.current()).isNotNull()
+        serious.value = false
+        lock.shows(null)
+        assertThat(lock.current()).isNull()
+        assertThat(usage.surrenders(adult.id, 0)).isEmpty()
+        // On again: the next video locks as before.
+        serious.value = true
+        lock.onVideoStarted(adult.id, "v2", null)
+        assertThat(lock.current()?.videoId).isEqualTo("v2")
+    }
 
     // ---- Child ------------------------------------------------------------------------------------
 

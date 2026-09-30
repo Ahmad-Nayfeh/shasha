@@ -199,7 +199,7 @@ fun SkipNoticeHost(notice: SkipNotice?, highlighted: Boolean, modifier: Modifier
             exit = fadeOut(tween(260)) + slideOutHorizontally(tween(320)) { it / 4 },
         ) {
             if (shown != null) {
-                val window = if (shown.undoable) SkipController.UNDO_WINDOW_MS else SkipController.NOTICE_MS
+                val window = (shown.untilMs - shown.shownAtMs).coerceAtLeast(1)
                 val remaining = remember(shown.id) {
                     Animatable(((shown.untilMs - now()).toFloat() / window).coerceIn(0f, 1f))
                 }

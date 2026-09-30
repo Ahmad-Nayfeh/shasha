@@ -143,6 +143,22 @@ fun ProfileEditScreen(
                     { onUpdate { it.copy(hideShorts = !it.hideShorts) } },
                     Modifier.testTag("edit_shorts"),
                 )
+                if (profile.isAdult) {
+                    ToggleRow(
+                        ShashaIcons.VisibilityOff,
+                        stringResource(R.string.profile_hide_comments),
+                        profile.hideComments,
+                        { onUpdate { it.copy(hideComments = !it.hideComments) } },
+                        Modifier.testTag("edit_comments"),
+                    )
+                } else {
+                    Text(
+                        stringResource(R.string.profile_comments_child_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ShashaColors.Muted,
+                        modifier = Modifier.padding(horizontal = 18.dp).testTag("edit_comments_note"),
+                    )
+                }
                 if (profile.isChild) {
                     SettingRow(ShashaIcons.Shield, stringResource(R.string.profile_allowlist), allowlistText(profile), onOpenAllowlist, Modifier.testTag("edit_allowlist"))
                 }

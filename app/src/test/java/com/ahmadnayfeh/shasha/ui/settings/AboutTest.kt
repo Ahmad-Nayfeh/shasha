@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.R
+import com.ahmadnayfeh.shasha.data.Behavior
+import com.ahmadnayfeh.shasha.ui.format.Formats
+import com.ahmadnayfeh.shasha.ui.format.TimeTexts
 import com.ahmadnayfeh.shasha.policy.PinAttemptLimiter
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -32,14 +35,25 @@ class AboutTest {
         val steps = PinAttemptLimiter.LOCKOUT_STEPS_MILLIS
         assertThat(steps.first()).isEqualTo(5 * 60_000L)
         assertThat(steps.last()).isEqualTo(4 * 60 * 60_000L)
-        assertThat(context.getString(R.string.hub_pin_note)).contains("من 5 دقائق حتى 4 ساعات")
+        val texts = BehaviorTexts(context.resources, Formats(context.resources), TimeTexts(context.resources, Formats(context.resources)))
+        assertThat(texts.pinNote(Behavior.DEFAULT)).contains("و5 محاولات خاطئة متتالية توقفه من 5 دقائق حتى 4 ساعات")
+        // The parent's own brake: 3 wrong, first lockout 10 minutes, the longest 48 times that.
+        assertThat(texts.pinNote(Behavior(pinMaxFailures = 3, pinFirstLockoutMinutes = 10))).contains("و3 محاولات خاطئة متتالية توقفه من 10 دقائق حتى 8 ساعات")
         assertThat(context.getString(R.string.protection_limits_pin_lockout)).contains("من 5 دقائق حتى 4 ساعات")
     }
 
     @Test
-    fun theTermsNote_saysPersonalUseOnly_andThatItBreaksYouTubesTerms() {
-        assertThat(context.getString(R.string.hub_about_terms_title)).isEqualTo("للاستخدام الشخصي فقط")
-        assertThat(context.getString(R.string.hub_about_terms_body)).contains("يخالف شروط خدمة يوتيوب")
+    fun noTextSpeaksOfYouTubesTerms_orOfPersonalUseOnly() {
+        // Owner decision (v1.1): the app's own texts say nothing about YouTube's terms of service.
+        val fields = R.string::class.java.fields
+        val texts = fields.map { context.getString(it.getInt(null)) }
+        assertThat(texts).isNotEmpty()
+        for (text in texts) {
+            assertThat(text).doesNotContain("شروط خدمة")
+            assertThat(text).doesNotContain("للاستخدام الشخصي")
+            assertThat(text).doesNotContain("الاستخدام الشخصي")
+            assertThat(text.lowercase()).doesNotContain("terms of service")
+        }
     }
 
     @Test

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.work.WorkManager
 import com.ahmadnayfeh.shasha.backup.BackupManager
 import com.ahmadnayfeh.shasha.data.ActiveProfile
+import com.ahmadnayfeh.shasha.data.BehaviorSettings
 import com.ahmadnayfeh.shasha.data.FeedRepository
 import com.ahmadnayfeh.shasha.data.NetworkStatus
 import com.ahmadnayfeh.shasha.data.OverridesRepository
@@ -67,7 +68,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import java.io.File
 import java.time.Clock
@@ -142,7 +145,15 @@ class AppContainer(context: Context) {
     /** The TV's clock, in the TV's current time zone. */
     val clock: Clock = DeviceClock
 
-    val policyEngine: PolicyEngine by lazy { PolicyEngine(clock) }
+    private val behaviorStore: DataStore<Preferences> by lazy { BehaviorSettings.createStore(appContext) }
+
+    /**
+     * The parent's adjustable behaviour (Settings, behind the parent PIN): «الوضع الجاد», the time warnings, the
+     * PIN's brake, the player's timings. Every consumer reads it when it acts, so a change applies at once.
+     */
+    val behavior: BehaviorSettings by lazy { BehaviorSettings(behaviorStore, appScope) }
+
+    val policyEngine: PolicyEngine by lazy { PolicyEngine(clock) { behavior.policyConfig() } }
 
     private val policyStore: DataStore<Preferences> by lazy { PolicyStore.create(appContext) }
 
@@ -157,7 +168,9 @@ class AppContainer(context: Context) {
     }
 
     /** Lockouts count down on the TV's uptime: setting its clock forward does not end one. */
-    val parentPin: ParentPinRepository by lazy { ParentPinRepository(policyStore, clock, uptime = DeviceUptime.of(appContext)) }
+    val parentPin: ParentPinRepository by lazy {
+        ParentPinRepository(policyStore, clock, uptime = DeviceUptime.of(appContext), lockout = { behavior.pinLockout() })
+    }
 
     val overrides: OverridesRepository by lazy { OverridesRepository(policyStore) }
 
@@ -180,6 +193,7 @@ class AppContainer(context: Context) {
             pinLockMillis = { parentPin.remainingLockMillis() },
             surrenders = { event -> usage.recordSurrender(event) },
             scope = appScope,
+            seriousMode = behavior.values.map { it.seriousMode }.distinctUntilChanged(),
         )
     }
 
@@ -252,6 +266,7 @@ class AppContainer(context: Context) {
                 RemoteSettings.backupSection(remoteStore),
                 SponsorBlockSettings.backupSection(sponsorStore),
                 PlaybackSettings.backupSection(playbackStore),
+                BehaviorSettings.backupSection(behaviorStore),
             ),
             clock = clock,
             appVersion = BuildConfig.VERSION_NAME,
@@ -268,7 +283,7 @@ class AppContainer(context: Context) {
      * The parent PIN as the phone checks it: its own attempt count, saved like the TV's (a restart grants no new
      * guesses), never the TV's (owner decision: guesses on the TV never close the parent's phone route).
      */
-    val phonePin: PhonePin by lazy { PhonePin(policyStore, clock, uptime = DeviceUptime.of(appContext)) }
+    val phonePin: PhonePin by lazy { PhonePin(policyStore, clock, uptime = DeviceUptime.of(appContext), lockout = { behavior.pinLockout() }) }
 
     /** The profile the phone chose («اختيار الملف»), after PolicyGate allowed it: the TV's picker follows it. */
     val phoneProfileChoices: PhoneProfileChoices = PhoneProfileChoices()
@@ -343,6 +358,12 @@ class AppContainer(context: Context) {
      * Starts the session state and the usage tracker ([foreground]: [spendingTime], the app visible and a
      * profile's screens shown). Main thread; the current profile must have been created (see [currentProfile]).
      */
+    /** Waits (a moment at most) for the parent's settings to be read. */
+    suspend fun awaitSettings() {
+        withTimeoutOrNull(SETTINGS_WAIT_MS) { behavior.awaitLoaded() }
+    }
+
+
     fun startPolicy(foreground: Flow<Boolean>) {
         session.start()
         usageTracker.start(foreground)
@@ -363,6 +384,7 @@ class AppContainer(context: Context) {
 
     private companion object {
         const val TAG = "AppContainer"
+        const val SETTINGS_WAIT_MS = 3_000L
         const val USER_AGENT = "Shasha/${BuildConfig.VERSION_NAME} (Android TV)"
     }
 }

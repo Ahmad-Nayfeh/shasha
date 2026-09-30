@@ -194,6 +194,7 @@ internal fun RemotePane(state: SettingsHubState, actions: SettingsHubActions, fi
             body = stringResource(R.string.hub_remote_pairing_body),
             locked = !state.unlocked,
         )
+        PortRow(state, actions)
         val address = remote?.address
         if (address != null) {
             InfoLine(RemoteIcons.Wifi, stringResource(R.string.hub_remote_address, address), tint = LocalAccent.current.bright, textColor = ShashaColors.Text)

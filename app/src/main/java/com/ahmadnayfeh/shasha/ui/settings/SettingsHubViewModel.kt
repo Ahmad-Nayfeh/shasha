@@ -3,7 +3,11 @@ package com.ahmadnayfeh.shasha.ui.settings
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.datastore.preferences.core.Preferences
+import com.ahmadnayfeh.shasha.data.Behavior
+import com.ahmadnayfeh.shasha.data.BehaviorSettings
 import com.ahmadnayfeh.shasha.data.FeedRepository
+import com.ahmadnayfeh.shasha.data.PhraseMode
 import com.ahmadnayfeh.shasha.data.PlaybackSettings
 import com.ahmadnayfeh.shasha.data.ProfileRepository
 import com.ahmadnayfeh.shasha.data.SubscriptionRepository
@@ -45,6 +49,9 @@ class SettingsHubViewModel(
     private val engine: PolicyEngine,
     private val zone: () -> ZoneId,
     private val appScope: CoroutineScope,
+    private val behaviorSettings: BehaviorSettings? = null,
+    /** The phone remote listens again (a new port). */
+    private val restartRemote: suspend () -> Unit = {},
 ) : ViewModel() {
 
     val profiles: StateFlow<List<Profile>?> = profileRepository.observeAll().stateIn(viewModelScope, WHILE_SHOWN, null)
@@ -54,6 +61,10 @@ class SettingsHubViewModel(
     val sponsorCategories: StateFlow<Set<SponsorCategory>?> = sponsorBlock.categories.stateIn(viewModelScope, WHILE_SHOWN, null)
 
     val maxQuality: StateFlow<Int> = playback.maxQuality
+
+    val behavior: StateFlow<Behavior?> = behaviorSettings?.values ?: MutableStateFlow(null)
+
+    val remotePort: StateFlow<Int?> = remoteSettings.port.stateIn(viewModelScope, WHILE_SHOWN, null)
 
     val remote: StateFlow<RemoteSummary?> = combine(remoteSettings.enabled, remoteState) { enabled, state -> RemoteSummary.of(enabled, state) }
         .stateIn(viewModelScope, WHILE_SHOWN, null)
@@ -94,6 +105,55 @@ class SettingsHubViewModel(
     fun setRemoteEnabled(enabled: Boolean, afterEnabling: () -> Unit) = write {
         remoteSettings.setEnabled(enabled)
         if (enabled) afterEnabling()
+    }
+
+    fun setSeriousMode(on: Boolean) = behave { it.setSeriousMode(on) }
+
+    fun setAdultEscape(on: Boolean) = behave { it.setAdultEscape(on) }
+
+    fun setNumber(key: Preferences.Key<Int>, value: Int) = behave { it.setNumber(key, value) }
+
+    fun setPhraseMode(mode: PhraseMode) = behave { it.setPhraseMode(mode) }
+
+    fun addPhrase(phrase: String) = behave { it.addPhrase(phrase) }
+
+    fun removePhrase(phrase: String) = behave { it.removePhrase(phrase) }
+
+    fun setCustomPhrase(phrase: String) = behave { it.setCustomPhrase(phrase) }
+
+    fun setExtraMinutes(minutes: List<Int>) = behave { it.setExtraMinutes(minutes) }
+
+    fun setDefaultSpeed(speed: Float) = behave { it.setDefaultSpeed(speed) }
+
+    fun resetBehavior(keys: List<Preferences.Key<*>>) = behave { it.reset(*keys.toTypedArray()) }
+
+    /** A new port: stored, then the server moves to it (when it runs). */
+    fun setPort(port: Int) = write {
+        remoteSettings.setPort(port)
+        restartRemote()
+    }
+
+    fun resetPort() = write {
+        remoteSettings.resetPort()
+        restartRemote()
+    }
+
+    /**
+     * «إرجاع كل الإعدادات إلى وضعها الأصلي»: every adjustable setting, the SponsorBlock categories, the quality cap
+     * and the server's port. Never the profiles, the PIN itself, the subscriptions, the history or the lists.
+     */
+    fun resetEverything(afterDone: () -> Unit = {}) = write {
+        behaviorSettings?.resetAll()
+        sponsorBlock.reset()
+        playback.reset()
+        remoteSettings.resetPort()
+        restartRemote()
+        afterDone()
+    }
+
+    private fun behave(block: suspend (BehaviorSettings) -> Unit) {
+        val settings = behaviorSettings ?: return
+        write { block(settings) }
     }
 
     private fun write(block: suspend () -> Unit) {

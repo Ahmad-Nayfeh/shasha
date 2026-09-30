@@ -26,6 +26,7 @@ import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.ui.components.AppMessageHost
 import com.ahmadnayfeh.shasha.ui.components.AppMessages
 import com.ahmadnayfeh.shasha.ui.components.LocalAppMessages
+import com.ahmadnayfeh.shasha.ui.components.LocalBehavior
 import com.ahmadnayfeh.shasha.ui.components.LocalTopClearance
 import com.ahmadnayfeh.shasha.ui.components.TopClearance
 import com.ahmadnayfeh.shasha.ui.components.ParentPinPad
@@ -76,10 +77,13 @@ private fun BrowseRoot(vm: RootViewModel, deps: RootDeps) {
         onDispose { deps.profileScreensShown.value = false }
     }
     val profile = vm.current.collectAsStateWithLifecycle().value ?: return
-    // A new profile gets new screens (and a new back stack): nothing carries over from the last one.
-    key(profile.id, profile.kind) {
-        ProfileScope {
-            if (profile.isChild) KidsAccent { ProfileScreens(profile, vm, deps) } else ProfileScreens(profile, vm, deps)
+    val behavior by deps.behavior.collectAsStateWithLifecycle()
+    CompositionLocalProvider(LocalBehavior provides behavior) {
+        // A new profile gets new screens (and a new back stack): nothing carries over from the last one.
+        key(profile.id, profile.kind) {
+            ProfileScope {
+                if (profile.isChild) KidsAccent { ProfileScreens(profile, vm, deps) } else ProfileScreens(profile, vm, deps)
+            }
         }
     }
 }

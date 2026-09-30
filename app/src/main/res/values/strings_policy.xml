@@ -12,5 +12,5 @@
     <string name="policy_deny_shorts_hidden">المقاطع القصيرة (Shorts) مخفية في هذا الملف.</string>
     <string name="policy_deny_time_up">انتهى وقت المشاهدة لهذا اليوم.</string>
     <string name="policy_deny_outside_schedule">المشاهدة غير مسموحة في هذا الوقت.</string>
-    <string name="policy_deny_locked">فيديو مقفول قيد المشاهدة، ولا يبدأ غيره حتى ينتهي أو يُفتح قفله.</string>
+    <string name="policy_deny_locked">الوضع الجاد مفعّل: لا يبدأ فيديو آخر حتى ينتهي الحالي أو يُخرج منه.</string>
 </resources>

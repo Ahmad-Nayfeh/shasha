@@ -122,6 +122,21 @@ class RemoteRuntime(
         }
     }
 
+    /**
+     * Listens again from scratch, on the preferred port (the parent just chose another one): the old QR code and
+     * saved links stop working. Nothing happens while the server is not running (it binds the new port when it starts).
+     */
+    suspend fun restart(): RemoteState = binding.withLock {
+        withContext(io) {
+            if (_state.value !is RemoteState.Running) return@withContext _state.value
+            val address = findAddress()
+            stopLocked()
+            _state.value = if (address == null) RemoteState.NoNetwork else RemoteState.Starting
+            if (address != null) _state.value = bind(address)
+            _state.value
+        }
+    }
+
     /** Stops listening and the announcement. Idempotent. */
     suspend fun stop() = binding.withLock {
         withContext(io) {

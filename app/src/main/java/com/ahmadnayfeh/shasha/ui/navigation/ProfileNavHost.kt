@@ -150,7 +150,7 @@ fun ProfileNavHost(
     } else {
         val container = LocalContext.current.appContainer
         // One parent unlock for this adult session (its ViewModel store): the settings and the card menus share it.
-        val unlock = containerViewModel { ParentUnlock(it.parentPin) }
+        val unlock = containerViewModel { ParentUnlock(it.parentPin, unlockMs = { it.behavior.values.value.parentUnlockMinutes * 60_000L }) }
         val parental = remember(unlock) { ParentalActions(container.profiles.observeAll(), ParentalLists(container.profiles), unlock) }
         CompositionLocalProvider(LocalParentUnlock provides unlock) {
             CardMenuHost(

@@ -345,11 +345,10 @@ class SettingsHubNavigationTest {
         press(Key.DirectionCenter)
         press(Key.Back)
 
+        press(Key.DirectionDown) // إعادة الضبط
         press(Key.DirectionDown) // حول
         press(Key.DirectionLeft)
         focused("about_version")
-        press(Key.DirectionDown)
-        focused("about_terms")
         press(Key.DirectionDown)
         focused("about_sponsorblock")
         press(Key.DirectionDown)

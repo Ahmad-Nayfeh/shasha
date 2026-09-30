@@ -37,8 +37,10 @@ class SponsorSkipsViewModel(
     private val online: Flow<Boolean> = flowOf(true),
     clock: () -> Long = SystemClock::elapsedRealtime,
     private val retryDelaysMs: List<Long> = RETRY_DELAYS_MS,
+    undoWindowMs: () -> Long = { SkipController.UNDO_WINDOW_MS },
+    noticeMs: () -> Long = { SkipController.NOTICE_MS },
 ) : ViewModel() {
-    val skipper = SkipController(undoAllowed, clock)
+    val skipper = SkipController(undoAllowed, clock, undoWindowMs, noticeMs)
 
     /** Every segment of the video, in every category; null until SponsorBlock (or the cache) answered. */
     private val known = MutableStateFlow<List<SponsorSegment>?>(null)

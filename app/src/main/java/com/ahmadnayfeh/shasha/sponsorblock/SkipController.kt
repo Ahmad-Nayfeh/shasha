@@ -68,6 +68,10 @@ class SkipController(
     val undoAllowed: Boolean,
     /** Elapsed milliseconds (a clock that never jumps). */
     private val clock: () -> Long,
+    /** How long the adult may take a skip back (Settings; [UNDO_WINDOW_MS] by default). */
+    private val undoWindowMs: () -> Long = { UNDO_WINDOW_MS },
+    /** How long the notice stays without an undo (Settings; [NOTICE_MS] by default). */
+    private val noticeMs: () -> Long = { NOTICE_MS },
 ) {
     private var segments: List<SponsorSegment> = emptyList()
 
@@ -134,7 +138,7 @@ class SkipController(
             fromMs = first.startMs,
             toMs = landing,
             shownAtMs = now,
-            untilMs = now + if (undoAllowed) UNDO_WINDOW_MS else NOTICE_MS,
+            untilMs = now + if (undoAllowed) undoWindowMs() else noticeMs(),
             segmentIds = chain.mapTo(LinkedHashSet()) { it.id },
         )
     }

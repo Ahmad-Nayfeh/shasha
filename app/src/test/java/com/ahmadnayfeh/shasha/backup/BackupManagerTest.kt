@@ -4,6 +4,9 @@ import android.app.Application
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.ahmadnayfeh.shasha.data.Behavior
+import com.ahmadnayfeh.shasha.data.BehaviorKeys
+import com.ahmadnayfeh.shasha.data.BehaviorSettings
 import com.ahmadnayfeh.shasha.data.OverridesRepository
 import com.ahmadnayfeh.shasha.data.ParentPinRepository
 import com.ahmadnayfeh.shasha.data.PinResult
@@ -13,6 +16,8 @@ import com.ahmadnayfeh.shasha.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.data.TestDataStores
 import com.ahmadnayfeh.shasha.data.UsageRepository
 import com.ahmadnayfeh.shasha.data.WatchRepository
+import com.ahmadnayfeh.shasha.data.cancelAndWait
+import com.ahmadnayfeh.shasha.data.testScope
 import com.ahmadnayfeh.shasha.data.FixedProfile
 import com.ahmadnayfeh.shasha.data.db.FeedItemEntity
 import com.ahmadnayfeh.shasha.data.db.ShashaDatabase
@@ -75,11 +80,12 @@ class BackupManagerTest {
         val stores = TestDataStores(dir)
         val policy: DataStore<Preferences> = stores.open()
         val remote: DataStore<Preferences> = stores.open(RemoteSettings.FILE_NAME)
+        val behaviorStore: DataStore<Preferences> = stores.open(BehaviorSettings.FILE_NAME)
         val restored = mutableListOf<RestoreReport>()
         val backup = BackupManager(
             db = db,
             policyStore = policy,
-            sections = listOf(RemoteSettings.backupSection(remote)),
+            sections = listOf(RemoteSettings.backupSection(remote), BehaviorSettings.backupSection(behaviorStore)),
             clock = clock,
             appVersion = "test",
             filesDir = { dir },
@@ -90,10 +96,13 @@ class BackupManagerTest {
         val overrides = OverridesRepository(policy)
         val usage = UsageRepository(db)
         val remoteSettings = RemoteSettings(remote)
+        val scope = testScope()
+        val behavior = BehaviorSettings(behaviorStore, scope)
 
         fun watch(profileId: String) = WatchRepository(db, FixedProfile(profileId), clock = { clock.millis() })
 
         fun close() {
+            scope.cancelAndWait()
             stores.closeAll()
             db.close()
         }
@@ -137,6 +146,15 @@ class BackupManagerTest {
         usage.recordSurrender(SurrenderEvent("adult", clock.millis() - 60_000, "seen0000001"))
         remoteSettings.setEnabled(false)
         remoteSettings.rememberPort(8766)
+        behavior.setSeriousMode(false)
+        behavior.setNumber(BehaviorKeys.WARNING_MINUTES, 10)
+        behavior.setDefaultSpeed(1.25f)
+        behavior.addPhrase("وقتي لعملي")
+    }
+
+    private suspend fun Tv.behaviorNow(): Behavior {
+        behavior.awaitLoaded()
+        return BehaviorSettings.decode(behaviorStore.data.first())
     }
 
     private fun ByteArray.json(): JsonObject = Json.parseToJsonElement(decodeToString()).jsonObject
@@ -152,7 +170,8 @@ class BackupManagerTest {
 
         val file = exported.json()
         assertThat(file["app"].toString()).isEqualTo("\"shasha\"")
-        assertThat(file["format"].toString()).isEqualTo("1")
+        assertThat(file["format"].toString()).isEqualTo("2")
+        assertThat(file["settings"]!!.jsonObject.keys).contains(BehaviorSettings.FILE_NAME)
         // The PIN's hash travels (a restore keeps the same PIN), never the PIN; the pairing token never.
         assertThat(exported.decodeToString()).contains("pbkdf2$")
         assertThat(exported.decodeToString()).doesNotContain("1357")
@@ -177,8 +196,45 @@ class BackupManagerTest {
         assertThat(second.watch("kid").resumePositionMs("kidseen0001")).isEqualTo(30_000)
         assertThat(second.remoteSettings.enabled.first()).isFalse()
         assertThat(second.remoteSettings.preferredPort()).isEqualTo(8766)
+        // v1.1's settings (format 2) come back too.
+        val restoredBehavior = second.behaviorNow()
+        assertThat(restoredBehavior).isEqualTo(first.behaviorNow())
+        assertThat(restoredBehavior.seriousMode).isFalse()
+        assertThat(restoredBehavior.warningMinutes).isEqualTo(10)
+        assertThat(restoredBehavior.defaultSpeed).isEqualTo(1.25f)
+        assertThat(restoredBehavior.phrases).contains("وقتي لعملي")
         // The second TV keeps its own pairing: its phones are paired again from its QR code.
         assertThat(second.remoteSettings.token()).isNotEqualTo(token)
+    }
+
+    @Test
+    fun aFormatOneFile_stillRestores_andLeavesTheNewSettingsAsTheyAre() = runBlocking<Unit> {
+        val first = tv("first").apply { fill() }
+        // What v1.0 wrote: format 1, no "behavior" section.
+        val file = first.backup.export().json()
+        val settings = JsonObject(file["settings"]!!.jsonObject - BehaviorSettings.FILE_NAME)
+        val old = JsonObject(file + ("format" to JsonPrimitive(1)) + ("settings" to settings)).toString().toByteArray()
+
+        val second = tv("second")
+        second.profiles.ensureOwner("أنا")
+        second.behavior.setNumber(BehaviorKeys.SEEK_STEP_SECONDS, 30)
+        val report = second.backup.import(old)
+        assertThat(report.profiles).isEqualTo(2)
+        assertThat(second.pin.verify("1357")).isEqualTo(PinResult.Success)
+        assertThat(second.remoteSettings.preferredPort()).isEqualTo(8766)
+        // Not in the file: this TV's own choices stay.
+        val kept = second.behaviorNow()
+        assertThat(kept.seekStepSeconds).isEqualTo(30)
+        assertThat(kept.seriousMode).isTrue()
+    }
+
+    @Test
+    fun aFormatTwoFile_withoutTheSection_bringsTheDefaultsBack() = runBlocking<Unit> {
+        val first = tv("first").apply { fill() }
+        val file = first.backup.export().json()
+        val settings = JsonObject(file["settings"]!!.jsonObject - BehaviorSettings.FILE_NAME)
+        first.backup.import(JsonObject(file + ("settings" to settings)).toString().toByteArray())
+        assertThat(first.behaviorNow()).isEqualTo(Behavior.DEFAULT)
     }
 
     @Test
@@ -206,7 +262,7 @@ class BackupManagerTest {
 
         assertThat(problem("not json at all")).isEqualTo(BackupProblem.NOT_A_BACKUP)
         assertThat(problem("""{"app":"other","format":1}""")).isEqualTo(BackupProblem.NOT_A_BACKUP)
-        assertThat(problem("""{"app":"shasha","format":2,"profiles":[]}""")).isEqualTo(BackupProblem.NEWER_VERSION)
+        assertThat(problem("""{"app":"shasha","format":3,"profiles":[]}""")).isEqualTo(BackupProblem.NEWER_VERSION)
         val childOnly = """{"app":"shasha","format":1,"profiles":[${PolicyJsonFor.kid()}]}"""
         assertThat(problem(childOnly)).isEqualTo(BackupProblem.NO_ADULT)
         assertThat(tv.backup.export().content()).isEqualTo(before)

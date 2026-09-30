@@ -26,6 +26,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import com.ahmadnayfeh.shasha.ui.components.LocalBehavior
+import androidx.compose.ui.unit.Dp
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -80,14 +83,25 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 
-/** What the parent gives after the PIN on the "time up" screens. */
-enum class UnlockChoice(val minutes: Int?) {
-    PLUS_15(15),
-    PLUS_30(30),
-    PLUS_60(60),
+/**
+ * What the parent gives after the PIN on the "time up" screens: [minutes] more (the choices are the parent's,
+ * Settings → الوقت والتنبيهات; +15, +30, +60 by default), or null for no limit until the end of the day (the phone's
+ * «فتح انتهى الوقت» without minutes).
+ */
+@Immutable
+data class UnlockChoice(val minutes: Int?) {
+    /** "PLUS_15", "REST_OF_TODAY": the tiles' test tags. */
+    val name: String get() = minutes?.let { "PLUS_$it" } ?: "REST_OF_TODAY"
 
-    /** No limit until the end of the day (the phone's «فتح انتهى الوقت» without minutes). */
-    REST_OF_TODAY(null),
+    companion object {
+        val PLUS_15 = UnlockChoice(15)
+        val PLUS_30 = UnlockChoice(30)
+        val PLUS_60 = UnlockChoice(60)
+        val REST_OF_TODAY = UnlockChoice(null)
+
+        /** The tiles for these minute choices, then «بقية اليوم». */
+        fun of(minutes: List<Int>): List<UnlockChoice> = minutes.map(::UnlockChoice) + REST_OF_TODAY
+    }
 }
 
 /**
@@ -341,9 +355,13 @@ private fun UnlockChoices(unlock: TimeUnlock, pin: String?, onCancel: () -> Unit
         )
         Spacer(Modifier.height(30.dp))
         Row(Modifier.focusRestorer(first).focusGroup(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-            UnlockChoice.entries.forEachIndexed { index, choice ->
+            val choices = UnlockChoice.of(LocalBehavior.current.extraMinutes)
+            // Up to five tiles in the row: narrower when there are more than four.
+            val tileWidth = if (choices.size > 4) 128.dp else 156.dp
+            choices.forEachIndexed { index, choice ->
                 ChoiceTile(
                     choice = choice,
+                    width = tileWidth,
                     onClick = { pick(choice) },
                     modifier = (if (index == 0) Modifier.focusRequester(first) else Modifier).testTag("unlock_${choice.name}"),
                 )
@@ -370,11 +388,11 @@ private fun UnlockChoices(unlock: TimeUnlock, pin: String?, onCancel: () -> Unit
 }
 
 @Composable
-private fun ChoiceTile(choice: UnlockChoice, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ChoiceTile(choice: UnlockChoice, onClick: () -> Unit, modifier: Modifier = Modifier, width: Dp = 156.dp) {
     val accent = LocalAccent.current
     FocusSurface(
         onClick = onClick,
-        modifier = modifier.size(width = 156.dp, height = 132.dp),
+        modifier = modifier.size(width = width, height = 132.dp),
         shape = RoundedCornerShape(24.dp),
         containerColor = ShashaColors.Surface,
         focusedContainerColor = accent.main,

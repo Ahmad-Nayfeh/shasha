@@ -40,7 +40,13 @@ enum class SettingType(val tag: String) {
  *
  * A later settings screen (SPEC §7: SponsorBlock categories, the default quality) adds its own section.
  */
-class SettingsSection(val name: String, private val store: DataStore<Preferences>, val keys: Map<String, SettingType>) {
+class SettingsSection(
+    val name: String,
+    private val store: DataStore<Preferences>,
+    val keys: Map<String, SettingType>,
+    /** The backup format that introduced this section: an older file without it leaves these settings alone. */
+    val sinceFormat: Int = 1,
+) {
 
     suspend fun export(): Map<String, JsonElement> {
         val prefs = store.data.first().asMap()
