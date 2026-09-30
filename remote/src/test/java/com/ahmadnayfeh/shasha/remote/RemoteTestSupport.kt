@@ -46,6 +46,16 @@ val PARENT_ROUTES = listOf(
     Triple("POST", "/api/parent/subscriptions/remove", """{"channelId":"UCx"}"""),
     Triple("GET", "/api/parent/backup", null),
     Triple("POST", "/api/parent/backup", """{"v":1}"""),
+    Triple("GET", "/api/parent/settings", null),
+    Triple("POST", "/api/parent/settings", """{"key":"serious_mode","value":false}"""),
+    Triple("POST", "/api/parent/settings/reset", """{"group":"serious"}"""),
+    Triple("GET", "/api/parent/profiles", null),
+    Triple("POST", "/api/parent/profile/flags", """{"profileId":"c1","hideShorts":true}"""),
+    Triple("POST", "/api/parent/schedule", """{"profileId":"c1","fromMinute":420,"untilMinute":1320}"""),
+    Triple("GET", "/api/parent/blocklist", null),
+    Triple("POST", "/api/parent/blocklist/add", """{"kind":"keyword","value":"رعب"}"""),
+    Triple("POST", "/api/parent/blocklist/remove", """{"kind":"channel","value":"UCbad"}"""),
+    Triple("GET", "/api/parent/stats", null),
 )
 
 internal class Harness(val controller: FakeController = FakeController()) {

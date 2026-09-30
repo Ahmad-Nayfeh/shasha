@@ -22,6 +22,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import java.time.LocalDate
 
 internal const val PARENT_SESSION_HEADER = "X-Parent-Session"
@@ -38,11 +39,19 @@ internal const val PARENT_SESSION_HEADER = "X-Parent-Session"
 @Serializable internal data class AllowlistRemoveRequest(val profileId: String, val id: String)
 @Serializable internal data class LinkRequest(val link: String)
 @Serializable internal data class ChannelRequest(val channelId: String)
+@Serializable internal data class SettingRequest(val key: String, val value: JsonElement)
+@Serializable internal data class SettingsResetRequest(val group: String? = null)
+@Serializable internal data class ProfileFlagsRequest(val profileId: String, val hideShorts: Boolean? = null, val hideComments: Boolean? = null)
+// No defaults: a request that forgets the times must not mean "all day".
+@Serializable internal data class ScheduleRequest(val profileId: String, val fromMinute: Int?, val untilMinute: Int?)
+@Serializable internal data class BlockRequest(val kind: String, val value: String)
 
 private const val MAX_TEXT = 2048
 private const val MAX_QUERY = 200
 private const val MAX_MINUTES = 24 * 60
 private const val MAX_SEEK_SECONDS = 24 * 60 * 60
+private const val MAX_KEY = 64
+private const val MAX_KEYWORD = 100
 
 internal fun Application.remoteModule(
     controller: RemoteController,
@@ -234,6 +243,81 @@ internal fun Application.remoteModule(
                     call.requireParent(sessions)
                     val upload = call.receiveUpload(Limits.BACKUP_BYTES)
                     call.respondJson(controller.importBackup(upload.bytes))
+                }
+                get("/settings") {
+                    call.requireParent(sessions)
+                    call.respondJson(controller.settings())
+                }
+                post("/settings") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<SettingRequest>()
+                    if (req.key.isBlank() || req.key.length > MAX_KEY) throw badRequest()
+                    call.respondJson(controller.changeSetting(req.key, req.value))
+                }
+                post("/settings/reset") {
+                    call.requireParent(sessions)
+                    val group = call.receiveJson<SettingsResetRequest>().group
+                    if (group != null && (group.isBlank() || group.length > MAX_KEY)) throw badRequest()
+                    call.respondJson(controller.resetSettings(group))
+                }
+                get("/profiles") {
+                    call.requireParent(sessions)
+                    call.respondJson(controller.profileDetails())
+                }
+                post("/profile/flags") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<ProfileFlagsRequest>()
+                    requireText(req.profileId)
+                    if (req.hideShorts == null && req.hideComments == null) throw badRequest()
+                    call.respondJson(controller.setProfileFlags(req.profileId, req.hideShorts, req.hideComments))
+                }
+                post("/schedule") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<ScheduleRequest>()
+                    requireText(req.profileId)
+                    val from = req.fromMinute
+                    val until = req.untilMinute
+                    if ((from == null) != (until == null)) throw badRequest()
+                    if (from != null && (from !in 0 until MAX_MINUTES || until!! !in 0 until MAX_MINUTES)) throw badRequest()
+                    call.respondJson(controller.setSchedule(req.profileId, from, until))
+                }
+                get("/blocklist") {
+                    call.requireParent(sessions)
+                    call.respondJson(controller.blocklist())
+                }
+                post("/blocklist/add") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<BlockRequest>()
+                    val value = req.value.trim()
+                    call.respondJson(
+                        when (req.kind) {
+                            "keyword" -> {
+                                if (value.isEmpty() || value.length > MAX_KEYWORD) throw badRequest(ServerMessages.BAD_KEYWORD)
+                                controller.blockKeyword(value)
+                            }
+                            "channel" -> {
+                                requireText(value, ServerMessages.EMPTY_LINK)
+                                controller.blockChannel(value)
+                            }
+                            else -> throw badRequest()
+                        },
+                    )
+                }
+                post("/blocklist/remove") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<BlockRequest>()
+                    requireText(req.value)
+                    call.respondJson(
+                        when (req.kind) {
+                            "keyword" -> controller.unblockKeyword(req.value)
+                            "channel" -> controller.unblockChannel(req.value)
+                            else -> throw badRequest()
+                        },
+                    )
+                }
+                get("/stats") {
+                    call.requireParent(sessions)
+                    call.respondJson(controller.stats())
                 }
             }
         }

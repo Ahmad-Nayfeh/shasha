@@ -237,6 +237,15 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
         loaded.first { it }
     }
 
+    /** What the file holds right now (after a write returns, this already has it; [values] follows a moment later). */
+    suspend fun current(): Behavior = decode(
+        try {
+            store.data.first()
+        } catch (e: IOException) {
+            emptyPreferences()
+        },
+    )
+
     suspend fun setSeriousMode(on: Boolean) = put(BehaviorKeys.SERIOUS_MODE, on)
 
     suspend fun setAdultEscape(on: Boolean) = put(BehaviorKeys.ADULT_ESCAPE, on)

@@ -77,7 +77,7 @@ class UpdatesScreenshotTest {
                 - **Build:** [Android #42](https://github.com/Ahmad-Nayfeh/shasha/actions/runs/1) (push)
                 - **Signing certificate SHA-256:** `5d41402abc4b2a76b9719d911017c592ae8f3c1e2b4d6f8091a2b3c4d5e6f708`
 
-                التثبيت: زر «فحص التحديثات» في التطبيق، أو من الحاسوب (انظر scripts/README.md).
+                التثبيت: زر «فحص التحديثات» في التطبيق، أو من الحاسوب بتشغيل المثبّت من جديد (انظر «دليل شاشة»).
                 """.trimIndent(),
             ),
             apk = ReleaseAsset(7, "shasha-1.0.0-1042.apk", 18_874_368, "https://api.github.com/repos/Ahmad-Nayfeh/shasha/releases/assets/7"),

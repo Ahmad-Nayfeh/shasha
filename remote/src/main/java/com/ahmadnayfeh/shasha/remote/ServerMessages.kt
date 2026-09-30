@@ -16,6 +16,7 @@ internal object ServerMessages {
     const val VIDEO_LOCKED = "الوضع الجاد: الفيديو يُشاهَد حتى نهايته. يُنهيه الأب من قسم الأب."
     const val EMPTY_LINK = "الصق رابط يوتيوب أولاً."
     const val EMPTY_PIN = "أدخل رمز PIN."
+    const val BAD_KEYWORD = "اكتب كلمة من 1 إلى 100 حرف."
     const val EMPTY_FILE = "الملف فارغ."
     const val NO_FILE = "لم يصل أي ملف."
     const val TAKEOUT_TYPE = "اختر ملف subscriptions.csv أو ملف Takeout المضغوط (zip)."

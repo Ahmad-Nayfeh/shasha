@@ -628,7 +628,7 @@
     <string name="protection_section_other">إعدادات أخرى</string>
     <string name="protection_section_returns">سرعة العودة</string>
     <string name="protection_section_limits">حدود الحماية</string>
-    <string name="protection_commands_note">الأوامر تُنفَّذ من حاسوب على شبكة الشاشة نفسها بعد «&#x2068;adb connect&#x2069;»، أو أعد تشغيل سكربت «&#x2068;adb-setup&#x2069;».</string>
+    <string name="protection_commands_note">الأوامر تُنفَّذ من حاسوب على شبكة الشاشة نفسها بعد «&#x2068;adb connect&#x2069;»، أو شغّل المثبّت من جديد كما في «دليل شاشة».</string>
     <string name="protection_overlay_title">العرض فوق التطبيقات</string>
     <string name="protection_overlay_body">ليغطي أي تطبيق آخر فوراً ويعيد «شاشة» إلى المقدمة.</string>
     <string name="protection_usage_title">الوصول إلى بيانات الاستخدام</string>
@@ -686,7 +686,7 @@
     <string name="remote_link_not_youtube">هذا ليس رابطاً من يوتيوب. أرسل رابط فيديو أو قائمة تشغيل أو قناة.</string>
     <string name="remote_playlist_nothing_allowed">لا يوجد في قائمة التشغيل فيديو مسموح في هذا الملف.</string>
     <string name="remote_screen_off">الشاشة في وضع الاستعداد. شغّلها ثم أعد الإرسال.</string>
-    <string name="remote_not_in_front">افتح «شاشة» على التلفاز ثم أعد الإرسال. ليفتح وحده يحتاج إذن «العرض فوق التطبيقات» من سكربت &#x2068;adb-setup&#x2069;.</string>
+    <string name="remote_not_in_front">افتح «شاشة» على التلفاز ثم أعد الإرسال. ليفتح وحده يحتاج إذن «العرض فوق التطبيقات»: شغّل المثبّت من جديد كما في «دليل شاشة».</string>
     <string name="remote_no_profile">اختر الملف على الشاشة أولاً، ثم أعد الإرسال.</string>
     <string name="remote_profile_changed">تغيّر الملف على الشاشة قبل أن يُفتح الرابط. أعد الإرسال.</string>
     <string name="remote_show_failed">لم تستجب الشاشة. أعد المحاولة.</string>
@@ -895,7 +895,7 @@
     <string name="hub_build_line">رقم البناء %1$s · مكتبة الاستخراج %2$s</string>
     <string name="hub_updates_how">يقرأ آخر إصدار من GitHub Releases، وينزّله ويفتح مثبّت النظام: أندرويد لا يسمح بتحديث صامت.</string>
     <string name="hub_updates_when">حين يتعطّل يوتيوب فالحل غالباً إصدار أحدث من مكتبة الاستخراج.</string>
-    <string name="hub_updates_adb">وبديلاً: ثبّت الإصدار الجديد عبر ADB كما في README.</string>
+    <string name="hub_updates_adb">وبديلاً: ثبّت الإصدار الجديد بتشغيل المثبّت من جديد، كما في «دليل شاشة».</string>
 
     <!-- تشخيص -->
     <string name="hub_diag_videos_body">عادي، وبث مباشر، ومصنّف للأطفال، ومحذوف، وفيه إعلان يتخطاه SponsorBlock: تعرف في ثوانٍ ما الذي تعطّل</string>

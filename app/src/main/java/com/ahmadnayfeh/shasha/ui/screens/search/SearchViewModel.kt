@@ -50,7 +50,7 @@ class SearchViewModel(
     private val source: VideoSource,
     private val subscriptions: SubscriptionRepository,
     watch: WatchRepository,
-    private val filter: StateFlow<ContentFilter>,
+    private val contentRules: StateFlow<ContentFilter>,
     private val history: RecentSearches? = null,
     private val debounceMs: Long = SUGGEST_DEBOUNCE_MS,
 ) : ViewModel() {
@@ -68,7 +68,7 @@ class SearchViewModel(
         Page(result.items.map { it.toUi() }, result.next)
     }
 
-    val results: StateFlow<PagedState<ItemUi>> = combine(loader.state, filter) { state, rules ->
+    val results: StateFlow<PagedState<ItemUi>> = combine(loader.state, contentRules) { state, rules ->
         state.copy(items = state.items.filter { rules.items(listOf(it.source())).isNotEmpty() })
     }.stateIn(viewModelScope, SharingStarted.Eagerly, loader.state.value)
 
@@ -88,10 +88,10 @@ class SearchViewModel(
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<String>>?) = size > CACHE_SIZE
     }
 
-    private val searchAllowed: Boolean get() = filter.value.features?.search == true
+    private val searchAllowed: Boolean get() = contentRules.value.features?.search == true
 
     /** Up to 8 suggestions for the text in the box; none for an empty box, a profile without search, or offline. */
-    val suggestions: StateFlow<List<String>> = combine(typed, filter) { text, rules -> text.trim() to rules }
+    val suggestions: StateFlow<List<String>> = combine(typed, contentRules) { text, rules -> text.trim() to rules }
         .distinctUntilChanged { a, b -> a.first == b.first && a.second === b.second }
         .mapLatest { (text, rules) ->
             if (text.isEmpty() || rules.features?.search != true) return@mapLatest emptyList()
@@ -113,11 +113,11 @@ class SearchViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** The profile's recent searches (newest first), shown while the box is empty. */
-    val recent: StateFlow<List<String>> = filter
+    val recent: StateFlow<List<String>> = contentRules
         .map { it.profile?.id?.takeIf { _ -> it.features?.search == true } }
         .distinctUntilChanged()
         .flatMapLatest { id -> if (id == null || history == null) flowOf(emptyList()) else history.observe(id) }
-        .combine(filter) { list, rules -> list.filter(rules::allowsText) }
+        .combine(contentRules) { list, rules -> list.filter(rules::allowsText) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _voiceAlternatives = MutableStateFlow<List<String>>(emptyList())
@@ -136,7 +136,7 @@ class SearchViewModel(
      * text searched (the box shows it), or null when nothing usable was heard.
      */
     fun onVoiceResults(words: List<String>): String? {
-        val rules = filter.value
+        val rules = contentRules.value
         if (rules.features?.search != true) return null
         val allowed = words.map { it.trim() }.filter { it.isNotEmpty() && rules.allowsText(it) }.distinct()
         val best = allowed.firstOrNull() ?: return null
@@ -164,14 +164,14 @@ class SearchViewModel(
     }
 
     fun clearRecent() {
-        val id = filter.value.profile?.id ?: return
+        val id = contentRules.value.profile?.id ?: return
         viewModelScope.launch { history?.clear(id) }
     }
 
     fun submit(text: String) {
         val q = text.trim()
         if (q.isEmpty()) return
-        if (searchAllowed) filter.value.profile?.id?.let { id -> viewModelScope.launch { history?.add(id, q) } }
+        if (searchAllowed) contentRules.value.profile?.id?.let { id -> viewModelScope.launch { history?.add(id, q) } }
         if (q == _query.value && results.value.error == null && !results.value.loadingFirst && results.value.items.isNotEmpty()) return
         _query.value = q
         loader.start()

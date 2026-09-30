@@ -304,7 +304,19 @@ internal fun PlaybackTimingPane(state: SettingsHubState, actions: SettingsHubAct
                 NumberRow(NumberSettings.Notice, behavior, texts, { editing = it })
                 Spacer(Modifier.height(4.dp))
                 SectionLabel(stringResource(R.string.playback_section_kids), icon = ShashaIcons.Group)
-XX, { act.reset(NumberSettings.PlaybackKeys) })
+                NumberRow(NumberSettings.Shorts, behavior, texts, { editing = it })
+                Spacer(Modifier.height(4.dp))
+                SectionLabel(stringResource(R.string.playback_section_search), icon = ShashaIcons.Search)
+                PaneRow(
+                    title = stringResource(R.string.playback_voice_language),
+                    onClick = { editing = Editing.VoiceLanguage },
+                    modifier = Modifier.paneItem("behavior_voice_language"),
+                    icon = ShashaIcons.Mic,
+                    body = stringResource(R.string.playback_voice_language_body),
+                    value = stringResource(voiceLanguageLabel(behavior.voiceLanguage)),
+                )
+                Spacer(Modifier.height(4.dp))
+                ResetRow("playback_reset", { act.reset(NumberSettings.PlaybackKeys) })
             }
         }
     }

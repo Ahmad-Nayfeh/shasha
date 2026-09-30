@@ -1,5 +1,7 @@
 package com.ahmadnayfeh.shasha.remote
 
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 import java.util.concurrent.CopyOnWriteArrayList
 
 /** Records every call as a readable string and returns canned answers. */
@@ -70,4 +72,40 @@ class FakeController : RemoteController {
         lastBytes = bytes
         return record("importBackup(${bytes.size})", result)
     }
+
+    var settingsPage = RemoteSettingsPage(
+        listOf(
+            RemoteSettingGroup(
+                "serious", "الوضع الجاد",
+                listOf(RemoteSetting("serious_mode", "الوضع الجاد", RemoteSettingKind.SWITCH, JsonPrimitive(true), JsonPrimitive(true))),
+            ),
+        ),
+    )
+    var settingsResult: RemoteSettingsResult? = null
+
+    override suspend fun settings() = record("settings", settingsPage)
+    override suspend fun changeSetting(key: String, value: JsonElement) =
+        record("changeSetting($key,$value)", settingsResult ?: RemoteSettingsResult(true, "حُفظ", settingsPage))
+    override suspend fun resetSettings(group: String?) =
+        record("resetSettings($group)", settingsResult ?: RemoteSettingsResult(true, "أُرجع", settingsPage))
+    override suspend fun profileDetails() = record(
+        "profileDetails",
+        listOf(
+            RemoteProfileDetails("a", "أحمد", RemoteProfileKind.ADULT, "person", true, null, null, null, hideShorts = false, hideComments = false),
+            RemoteProfileDetails("c1", "سارة", RemoteProfileKind.CHILD, "star", false, 60, 420, 1320, hideShorts = true, hideComments = true),
+        ),
+    )
+    override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?) =
+        record("setProfileFlags($profileId,$hideShorts,$hideComments)", result)
+    override suspend fun setSchedule(profileId: String, fromMinute: Int?, untilMinute: Int?) =
+        record("setSchedule($profileId,$fromMinute,$untilMinute)", result)
+    override suspend fun blocklist() = record("blocklist", RemoteBlocklist(listOf(RemoteListEntry("UCbad", "قناة")), listOf("رعب")))
+    override suspend fun blockKeyword(keyword: String) = record("blockKeyword($keyword)", result)
+    override suspend fun unblockKeyword(keyword: String) = record("unblockKeyword($keyword)", result)
+    override suspend fun blockChannel(link: String) = record("blockChannel($link)", result)
+    override suspend fun unblockChannel(channelId: String) = record("unblockChannel($channelId)", result)
+    override suspend fun stats() = record(
+        "stats",
+        listOf(RemoteStats("c1", "سارة", RemoteProfileKind.CHILD, listOf(10, 20, 0, 30, 40, 5, 12), 117, 90, 30, listOf(RemoteChannelUsage("قناة", 50)), 0)),
+    )
 }

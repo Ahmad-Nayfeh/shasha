@@ -1,5 +1,7 @@
 package com.ahmadnayfeh.shasha.remote
 
+import kotlinx.serialization.json.JsonElement
+
 /**
  * What the phone can ask the TV to do. Implemented by :app.
  *
@@ -75,6 +77,38 @@ interface RemoteController {
     suspend fun exportBackup(): ByteArray
 
     suspend fun importBackup(bytes: ByteArray): RemoteResult
+
+    // v1.1: every setting of the TV's Settings, with the TV's own choices and checks.
+
+    suspend fun settings(): RemoteSettingsPage
+
+    /** [value] as [RemoteSetting.value] has it; refused (ok = false, the page as it is) when the TV would not offer it. */
+    suspend fun changeSetting(key: String, value: JsonElement): RemoteSettingsResult
+
+    /** [group]: one [RemoteSettingGroup.id] back to its defaults; null: every setting («إرجاع كل الإعدادات»). */
+    suspend fun resetSettings(group: String?): RemoteSettingsResult
+
+    suspend fun profileDetails(): List<RemoteProfileDetails>
+
+    /** null leaves that switch as it is. */
+    suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult
+
+    /** Minutes since midnight (0..1439); both null = all day. The same time twice also means all day. */
+    suspend fun setSchedule(profileId: String, fromMinute: Int?, untilMinute: Int?): RemoteResult
+
+    /** The household's blocklist (it applies to every profile). */
+    suspend fun blocklist(): RemoteBlocklist
+
+    suspend fun blockKeyword(keyword: String): RemoteResult
+
+    suspend fun unblockKeyword(keyword: String): RemoteResult
+
+    /** Any channel link. */
+    suspend fun blockChannel(link: String): RemoteResult
+
+    suspend fun unblockChannel(channelId: String): RemoteResult
+
+    suspend fun stats(): List<RemoteStats>
 }
 
 /** Thrown by a [RemoteController] to refuse a request; the phone shows [userMessage] (HTTP 403). */
