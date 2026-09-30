@@ -1,6 +1,9 @@
 # Windows cmd needs CRLF line endings or labels/goto can break.
 *.bat text eol=crlf
 *.cmd text eol=crlf
-# Keep the Unix scripts LF.
+# Keep the Unix scripts LF (the Mac installer in Shasha-Setup/ is a bash .command file).
 *.sh text eol=lf
+*.command text eol=lf
 gradlew text eol=lf
+# Never convert line endings inside these, even when a PDF looks like text at its start.
+*.pdf binary

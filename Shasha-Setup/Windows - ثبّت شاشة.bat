@@ -181,7 +181,9 @@ call :find_package all %YT_PKG%
 if "%FOUND%"=="0" goto youtube_absent
 call :find_package disabled %YT_PKG%
 if "%FOUND%"=="1" goto youtube_already_disabled
-call :say "Disable the official YouTube app on the TV? It can be re-enabled any time." "هل تريد تعطيل تطبيق يوتيوب الرسمي على الشاشة؟ يمكن إعادته في أي وقت."
+echo(
+echo(==^> Disable the official YouTube app on the TV? (it can be re-enabled any time)
+echo(    هل تريد تعطيل تطبيق يوتيوب الرسمي على الشاشة؟ (يمكن إعادته في أي وقت)
 rem set /p, not choice: a plain Enter must mean No.
 call :ask_yes_no "Disable YouTube? [y/N] "
 if "%YES%"=="1" goto youtube_disable
