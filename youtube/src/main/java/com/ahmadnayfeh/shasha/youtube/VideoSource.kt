@@ -12,6 +12,13 @@ interface VideoSource {
 
     suspend fun search(query: String, filter: SearchFilter = SearchFilter.ALL, page: PageKey? = null): ItemsPage
 
+    /**
+     * YouTube's search suggestions for what was typed so far, best first, at most [MAX_SUGGESTIONS], without
+     * duplicates or blanks ([language]: "ar" or "en", YouTube's interface language for them). An empty query
+     * gives none. Unfiltered YouTube text: the app decides who may see it.
+     */
+    suspend fun suggestions(query: String, language: String = "ar"): List<String> = emptyList()
+
     suspend fun channel(channelId: String): ChannelDetails
 
     suspend fun channelVideos(channelId: String, page: PageKey? = null): ItemsPage
@@ -35,6 +42,9 @@ interface VideoSource {
     /** Returns the "UC…" id for any channel link (handles, /c/ and /user/ need one network call). */
     suspend fun resolveChannelId(link: YouTubeLink.Channel): String
 }
+
+/** At most this many from [VideoSource.suggestions]. */
+const val MAX_SUGGESTIONS = 8
 
 enum class SearchFilter { ALL, VIDEOS, CHANNELS, PLAYLISTS }
 

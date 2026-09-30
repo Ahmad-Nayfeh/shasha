@@ -426,3 +426,12 @@ b.btn, bdi { unicode-bidi: plaintext; }
 .row { grid-template-columns: 92mm 1fr; margin: 7mm 0; }
 .row ul li, .row p { font-size: 10.8pt; }
 .step .txt, .row > div, .card { min-width: 0; }
+.page.spread { display: flex; flex-direction: column; justify-content: space-around; }
+.page.spread > * { margin-top: 0; margin-bottom: 0; }
+.page.spread > .sec { margin-bottom: 0; }
+.step { grid-template-columns: 1fr 94mm; gap: 8mm; }
+.step .shot { width: 94mm; }
+code, bdi { white-space: nowrap; }
+.qa .q { margin-bottom: 7mm; }
+.qa .q h3 { font-size: 11.4pt; margin-bottom: 1.2mm; }
+.qa .q p { font-size: 10.5pt; }

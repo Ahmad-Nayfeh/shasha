@@ -57,6 +57,16 @@ class RealNetworkVideoSourceTest {
     }
 
     @Test
+    fun suggestionsInArabicAndEnglish() = runBlocking {
+        val arabic = source.suggestions("قرآن", "ar")
+        val english = source.suggestions("minecraft", "en")
+        report("suggestions", "ar ${arabic.size}: ${arabic.take(3)} · en ${english.size}: ${english.take(3)}")
+        assertThat(arabic).isNotEmpty()
+        assertThat(english).isNotEmpty()
+        assertThat(english.size).isAtMost(MAX_SUGGESTIONS)
+    }
+
+    @Test
     fun searchWithoutResultsIsAnEmptyListNotAnError() = runBlocking {
         // YouTube answers these with "no results" (NPE: NothingFoundException); a typo must not open the
         // "YouTube changed something" screen.
