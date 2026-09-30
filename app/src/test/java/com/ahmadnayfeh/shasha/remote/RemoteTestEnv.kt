@@ -7,6 +7,9 @@ import androidx.test.core.app.ApplicationProvider
 import com.ahmadnayfeh.shasha.backup.BackupManager
 import com.ahmadnayfeh.shasha.backup.RestoreReport
 import com.ahmadnayfeh.shasha.data.ActiveProfile
+import com.ahmadnayfeh.shasha.data.BehaviorSettings
+import com.ahmadnayfeh.shasha.data.PlaybackSettings
+import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockSettings
 import com.ahmadnayfeh.shasha.data.OverridesRepository
 import com.ahmadnayfeh.shasha.data.ParentPinRepository
 import com.ahmadnayfeh.shasha.data.PlaybackLockStore
@@ -81,12 +84,19 @@ const val ADULT_VIDEO = "adultvideo1"
  */
 class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {}) {
     val clock = MutableClock(instantAt("2026-09-28T12:00"))
-    val engine = PolicyEngine(clock)
+    // The household's behaviour (v1.1): the engine reads it as the app's does.
+    val engine = PolicyEngine(clock) { behavior.policyConfig() }
     val scope = testScope()
     val db: ShashaDatabase = inMemoryDatabase()
     val stores = TestDataStores(File(dir, "stores").apply { mkdirs() })
     val policyStore: DataStore<Preferences> = stores.open()
     val remoteStore: DataStore<Preferences> = stores.open(RemoteSettings.FILE_NAME)
+    val behavior = BehaviorSettings(stores.open(BehaviorSettings.FILE_NAME), scope)
+    val sponsorSettings = SponsorBlockSettings(stores.open(SponsorBlockSettings.FILE_NAME))
+    val playbackSettings = PlaybackSettings(stores.open(PlaybackSettings.FILE_NAME), scope)
+
+    /** Server restarts the phone settings asked for (a new port). */
+    @Volatile var restarts = 0
     val filesDir = File(dir, "files").apply { mkdirs() }
 
     val source = RemoteFakeSource()
@@ -169,7 +179,29 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
         playQueues = PlayQueues(),
         texts = texts,
         main = Dispatchers.Unconfined,
+        seriousMode = { behavior.policyConfig().seriousMode },
         profileChoices = profileChoices,
+        settings = PhoneSettings(
+            behavior = behavior,
+            sponsorBlock = sponsorSettings,
+            playback = playbackSettings,
+            remote = remoteSettings,
+            resources = ApplicationProvider.getApplicationContext<Context>().resources,
+            scope = scope,
+            restartRemote = { restarts++ },
+            restartDelayMs = 50,
+        ),
+        parental = PhoneParental(
+            profiles = profiles,
+            lists = ParentalLists(profiles),
+            usage = usage,
+            engine = engine,
+            zone = { clock.zone },
+            source = source,
+            resources = ApplicationProvider.getApplicationContext<Context>().resources,
+            errors = texts::sourceError,
+            currentId = { active.awaitProfile().id },
+        ),
     )
 
     fun close() {
