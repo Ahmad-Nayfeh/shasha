@@ -1,0 +1,9 @@
+.venv/
+bin/
+audio/
+remotion/node_modules/
+remotion/out/
+remotion/public/audio/
+remotion/public/screens/
+tts/cache/
+tts/models/

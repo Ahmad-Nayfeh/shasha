@@ -1,0 +1,8 @@
+edge-tts==7.2.8
+faster-whisper==1.2.1
+numpy
+soundfile
+jiwer
+librosa
+scipy
+pillow
