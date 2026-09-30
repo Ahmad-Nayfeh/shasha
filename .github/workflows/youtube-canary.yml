@@ -1,0 +1,112 @@
+# إنذار مبكر: «يوتيوب غيّر شيئاً».
+# يشغّل اختبارات :youtube الحقيقية فقط (RealNetwork*: فيديو عادي، بث مباشر، فيديو «للأطفال»، فيديو محذوف،
+# بحث، قناة، قائمة تشغيل، RSS، ملف MPD) على يوتيوب نفسه: مرتين أسبوعياً، ويدوياً من تبويب Actions، وعلى كل
+# PR يغيّر :youtube أو إصدارات المكتبات (مثل PR من Dependabot لرفع NewPipeExtractor).
+# إذا فشل صار التشغيل أحمر وأرسل GitHub بريداً: غالباً تغيّر شيء في يوتيوب قبل أن يظهر على الشاشة.
+# اقرأ سطور REAL-RESULT في ملخص التشغيل ثم اتبع MAINTENANCE.md (رفع إصدار NewPipeExtractor ثم البناء).
+# خوادم GitHub عناوين مراكز بيانات ويوتيوب أشد معها (403 أو «Sign in to confirm you're not a bot»):
+# أعد التشغيل قبل الاستنتاج؛ الحكم الأخير للشاشة.
+# بريد الفشل يصل لمن عدّل سطر cron آخر مرة أو لمن أعاد تفعيل الـ workflow. إن لم يصلك:
+# Actions > YouTube canary > «…» > Disable workflow ثم Enable workflow.
+
+name: YouTube canary
+
+on:
+  schedule:
+    - cron: '41 4 * * 2,5' # Tuesday and Friday 04:41 UTC
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - gradle/libs.versions.toml
+      - youtube/**
+      - .github/workflows/youtube-canary.yml
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  ANDROID_PLATFORM: platforms;android-37.0
+  ANDROID_BUILD_TOOLS: 37.0.0
+
+# An explicit `bash` runs steps with -eo pipefail (the implicit default is only -e): without it
+# `./gradlew | tee` below would take tee's exit code and the canary could never fail.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  real-network:
+    name: Real YouTube tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK packages
+        run: |
+          : "${ANDROID_HOME:?ANDROID_HOME is not set on this runner}"
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          { yes || true; } | "$sdkmanager" --licenses > /dev/null
+          "$sdkmanager" --install "$ANDROID_PLATFORM" "build-tools;$ANDROID_BUILD_TOOLS" > /dev/null
+
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+          cache-read-only: true
+
+      # One retry after a pause, so a single network hiccup does not send an email.
+      - name: Run real-network :youtube tests
+        run: |
+          for attempt in 1 2; do
+            if ./gradlew --stacktrace :youtube:testDebugUnitTest --tests '*RealNetwork*' \
+              -Dyoutube.realNetwork=true 2>&1 | tee "$RUNNER_TEMP/canary.log"; then
+              exit 0
+            fi
+            if [ "$attempt" = 1 ]; then
+              echo "::warning::Attempt 1 failed; retrying once in 90 s."
+              sleep 90
+            fi
+          done
+          echo "::error title=YouTube changed something?::Failed twice." \
+            "Read REAL-RESULT in the run summary, then MAINTENANCE.md."
+          exit 1
+
+      - name: Summary
+        if: always()
+        run: |
+          log="$RUNNER_TEMP/canary.log"
+          {
+            echo "### REAL-RESULT"
+            echo
+            if [ -f "$log" ] && grep -q 'REAL-RESULT' "$log"; then
+              grep -h 'REAL-RESULT' "$log" | sed -E 's/^[[:space:]]*/- /'
+            else
+              echo "(no REAL-RESULT lines: the tests did not get that far)"
+            fi
+            echo
+            extractor=$(sed -nE 's/^newpipeExtractor *= *"([^"]+)".*/\1/p' gradle/libs.versions.toml)
+            echo "NewPipeExtractor: \`${extractor:-unknown}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: youtube-canary-reports
+          path: |
+            youtube/build/reports/tests/
+            youtube/build/test-results/
+          retention-days: 14
+          if-no-files-found: ignore

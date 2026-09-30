@@ -1,0 +1,1333 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>كتيّب شاشة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="catalog.css">
+</head>
+<body>
+
+<!-- Icons (drawn for this catalog) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.9" fill="currentColor"/></symbol>
+    <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M12 2.5c3.6 2.6 5 6.6 4.4 11.2L14 16.5h-4l-2.4-2.8C7 9.1 8.4 5.1 12 2.5z"/><circle cx="12" cy="9.3" r="1.8"/><path d="M9.6 16.8 7.5 20.8M14.4 16.8l2.1 4"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></symbol>
+    <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="3"/><circle cx="12" cy="8.6" r="2.4"/><path d="M10 14.5h4M10 17.5h4"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.8 9.5V20h12.4V9.5"/><path d="M10 20v-5h4v5"/></symbol>
+    <symbol id="i-rss" viewBox="0 0 24 24"><path d="M5 5a14 14 0 0 1 14 14"/><path d="M5 11a8 8 0 0 1 8 8"/><circle cx="6" cy="18" r="1.3" fill="currentColor"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="3.5"/><path d="M10 9.2v5.6l4.6-2.8z" fill="currentColor"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.8 12.5A8.3 8.3 0 1 0 6.2 6.3"/><path d="M3.6 4.2v4h4"/><path d="M12 8v4.2l2.8 1.8"/></symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 5.5 15 12 5 18.5z"/><path d="M19 5.5v13"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M5.5 18.5l1.9-1.9M16.6 7.4l1.9-1.9"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9"/><path d="M10 13h4"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6"/><path d="M10.5 18.3h3"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 20a6.2 6.2 0 0 1 12.4 0"/><circle cx="17.2" cy="9" r="2.4"/><path d="M16.2 14.1a5 5 0 0 1 5.2 5.9"/></symbol>
+    <symbol id="i-user-edit" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.6"/><path d="M3.5 20a6.5 6.5 0 0 1 9.5-5.8"/><path d="m15 20 .6-2.6 4.3-4.3a1.4 1.4 0 0 1 2 2l-4.3 4.3z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.8 19.5 5.8v6c0 4.6-3.2 8.2-7.5 9.4-4.3-1.2-7.5-4.8-7.5-9.4v-6z"/></symbol>
+    <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M12 2.8 19.5 5.8v6c0 4.6-3.2 8.2-7.5 9.4-4.3-1.2-7.5-4.8-7.5-9.4v-6z"/><path d="m8.7 12 2.3 2.3 4.3-4.6"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="m3.5 6 1.6 1.6L8 4.8M3.5 12.5l1.6 1.6L8 11.3"/><path d="M11 6.5h9.5M11 13h9.5M4 19h16.5"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.6"/><path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M6.5 3h11M6.5 21h11"/><path d="M8 3v3.4c0 2.2 4 3.4 4 5.6s-4 3.4-4 5.6V21M16 3v3.4c0 2.2-4 3.4-4 5.6s4 3.4 4 5.6V21"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20.5h16.5"/><rect x="5" y="11" width="3.2" height="7" rx="0.8"/><rect x="10.4" y="5" width="3.2" height="13" rx="0.8"/><rect x="15.8" y="8.5" width="3.2" height="9.5" rx="0.8"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 21.3 20H2.7z"/><path d="M12 10v4.3"/><circle cx="12" cy="17.2" r="0.9" fill="currentColor"/></symbol>
+    <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.5 6.2a4.2 4.2 0 0 0 5.3 5.3L12.5 18.8a2.2 2.2 0 0 1-3.1-3.1L16.7 8.4"/><path d="M14.5 6.2A4.2 4.2 0 0 1 19 3.5l-2.6 2.6.6 1.9 1.9.6L21.5 6a4.2 4.2 0 0 1-1.7 5.5"/><path d="M3 21l4.5-4.5"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.4a2.6 2.6 0 1 1 3.6 2.4c-.8.4-1.1.9-1.1 1.8v.5"/><circle cx="12" cy="16.9" r="0.9" fill="currentColor"/></symbol>
+    <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3.5v17M7 20.5h10M4.5 7h15"/><path d="m6.5 7-3 6.5a3 3 0 0 0 6 0z"/><path d="m17.5 7-3 6.5a3 3 0 0 0 6 0z"/></symbol>
+    <symbol id="i-noads" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.8"/><path d="m5.8 5.8 12.4 12.4"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.2 2.6 5.5 6 .8-4.4 4.1 1.1 6L12 16.7l-5.3 2.9 1.1-6-4.4-4.1 6-.8z"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2.8" y="4" width="18.4" height="12.2" rx="2.2"/><path d="M8 20h8M12 16.2V20"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3.5v11"/><path d="m7.3 10 4.7 4.7 4.7-4.7"/><path d="M4.5 19.5h15"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6.5 3.5h11v17L12 16.6l-5.5 3.9z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  </defs>
+</svg>
+
+<!-- ============================================================ 1. COVER -->
+<section class="page cover">
+  <div class="inner">
+    <img class="logo" src="../../branding/logo-lockup.svg" alt="شاشة">
+    <div class="title">كتيّب شاشة</div>
+    <div class="subtitle">دليل مصوّر لكل أفراد البيت: كيف نشاهد، وكيف نحمي الصغار.</div>
+    <div class="chips">
+      <span class="chip a">بلا إعلانات</span>
+      <span class="chip">بلا خوارزمية</span>
+      <span class="chip">بلا تسجيل دخول</span>
+      <span class="chip k">ملفات للأطفال</span>
+      <span class="chip a">وقت محدد للمشاهدة</span>
+      <span class="chip">الجوال ريموتاً</span>
+    </div>
+    <div class="hero">
+      <div class="tvset"><img src="img/home.jpg" alt="الرئيسية في شاشة"></div>
+      <div class="tv-stand"></div><div class="tv-foot"></div>
+      <div class="phone"><img src="img/01-screen-now-playing.jpg" alt="صفحة الجوال"></div>
+    </div>
+    <div class="foot">
+      <span><b>للاستخدام الشخصي في هذا البيت فقط</b><br>تطبيق يوتيوب خاص بتلفاز TCL بنظام Google TV</span>
+      <span>الطبعة الأولى · سبتمبر 2026</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2. CONTENTS -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">المحتويات</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-list"/></svg></div>
+    <div><div class="kicker">كتيّب شاشة</div><h1>المحتويات</h1>
+      <p class="lead">اقرأ «للجميع» مرة واحدة، وارجع إلى «ركن الوالدين» حين تضبط ملفات الأطفال، وإلى «عند الحاجة» حين يتعطل شيء.</p></div>
+  </div>
+  <div class="toc">
+    <div>
+      <h2>للجميع</h2>
+      <ol>
+        <li><span class="ti">ما هي «شاشة»؟</span><span class="dots"></span><span class="no">3</span></li>
+        <li><span class="ti">البداية السريعة: التثبيت باختصار</span><span class="dots"></span><span class="no">4</span></li>
+        <li><span class="ti">أول تشغيل</span><span class="dots"></span><span class="no">5</span></li>
+        <li><span class="ti">الريموت في «شاشة»</span><span class="dots"></span><span class="no">6</span></li>
+        <li><span class="ti">الرئيسية</span><span class="dots"></span><span class="no">7</span></li>
+        <li><span class="ti">الاشتراكات والاستيراد</span><span class="dots"></span><span class="no">8</span></li>
+        <li><span class="ti">البحث والقنوات وقوائم التشغيل</span><span class="dots"></span><span class="no">9</span></li>
+        <li><span class="ti">المشغّل</span><span class="dots"></span><span class="no">10</span></li>
+        <li><span class="ti">الاستكمال، وشاهد لاحقاً، والسجل</span><span class="dots"></span><span class="no">11</span></li>
+        <li><span class="ti">فيديوهات الأطفال، وتخطي المقاطع</span><span class="dots"></span><span class="no">12</span></li>
+        <li><span class="ti">الإعدادات</span><span class="dots"></span><span class="no">13</span></li>
+        <li><span class="ti">النسخ الاحتياطي والتحديثات</span><span class="dots"></span><span class="no">14</span></li>
+        <li><span class="ti">الجوال ريموتاً</span><span class="dots"></span><span class="no">15</span></li>
+      </ol>
+    </div>
+    <div>
+      <div class="part-parents">
+        <h2>ركن الوالدين</h2>
+        <ol>
+          <li><span class="ti">الملفات وملف الطفل</span><span class="dots"></span><span class="no">18</span></li>
+          <li><span class="ti">إدارة الملفات ورمز الوالدين</span><span class="dots"></span><span class="no">19</span></li>
+          <li><span class="ti">قوائم السماح والحظر</span><span class="dots"></span><span class="no">20</span></li>
+          <li><span class="ti">الوقت: الحصة وأوقات المشاهدة</span><span class="dots"></span><span class="no">21</span></li>
+          <li><span class="ti">قفل الفيديو</span><span class="dots"></span><span class="no">22</span></li>
+          <li><span class="ti">الحارس و«حالة الحماية»</span><span class="dots"></span><span class="no">23</span></li>
+          <li><span class="ti">الإحصائيات، وقائمة المراجعة</span><span class="dots"></span><span class="no">24</span></li>
+        </ol>
+      </div>
+      <div class="part-help mt">
+        <h2>عند الحاجة</h2>
+        <ol>
+          <li><span class="ti">عندما يتعطل يوتيوب</span><span class="dots"></span><span class="no">25</span></li>
+          <li><span class="ti">أسئلة شائعة</span><span class="dots"></span><span class="no">27</span></li>
+          <li><span class="ti">تنبيه قانوني وخصوصية</span><span class="dots"></span><span class="no">28</span></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="mt">كيف تقرأ هذا الكتيّب</h2>
+  <div class="grid g2 gap-s">
+    <div class="card">
+      <p><b class="btn">تحديث</b> زر أو عنصر تختاره على الشاشة.</p>
+      <p>«انتهى الوقت» نص تكتبه الشاشة نفسها.</p>
+      <p style="margin:0"><kbd>OK</kbd> <kbd>BACK</kbd> <kbd>HOME</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> أزرار الريموت.</p>
+    </div>
+    <div class="card">
+      <p>السهم ← بين كلمتين يعني «ثم»: الإعدادات ← <b class="btn">حول</b> تعني: افتح الإعدادات، ثم اختر حول.</p>
+      <p style="margin:0">في الصور المرقّمة، شرح كل رقم تحت الصورة أو بجانبها، باللون نفسه.</p>
+    </div>
+  </div>
+  <div class="note teal mt">
+    <span class="t">الدليل الكامل</span>
+    هذا الكتيّب ملخص مصوّر. الشرح الكامل، فصلاً فصلاً، في «دليل استخدام شاشة» داخل المستودع: <code>docs/manual</code>. وخطوات التثبيت بالصور في «دليل التثبيت»: <code>docs/install-guide.md</code>.
+  </div>
+  <h2 class="mt">أربعة أشياء تكفي لتبدأ</h2>
+  <div class="tiles">
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-remote"/></svg></div><h3>تهت؟</h3><p>اضغط <kbd>BACK</kbd> عدة مرات حتى تصل إلى «الرئيسية».</p></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-bookmark"/></svg></div><h3>احفظ لوقت آخر</h3><p><kbd>OK</kbd> مطوّلاً على فيديو ← <b class="btn">شاهد لاحقاً</b></p></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-lock"/></svg></div><h3>رمز الوالدين</h3><p>للوالدين وحدهم: يفتح الوقت والإعدادات وملف الكبار.</p></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-alert"/></svg></div><h3>«يوتيوب غيّر شيئاً»؟</h3><p>جرّب فيديو آخر، ثم <b class="btn">فحص التحديثات</b> (ص&nbsp;25).</p></div>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">2</span><span>المحتويات</span></footer>
+</section>
+
+<!-- ============================================================ 3. WHAT IS SHASHA -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-info"/></svg></div>
+    <div><div class="kicker">للجميع</div><h1>ما هي «شاشة»؟</h1>
+      <p class="lead">«شاشة» تطبيق يوتيوب خاص بتلفاز بيتنا. يعرض ما تختاره أنت فقط: قنواتك، وما تبحث عنه. بلا إعلانات، وبلا اقتراحات، وبلا تسجيل دخول. واجهته عربية كلها، وتُدار بأسهم الريموت.</p></div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-noads"/></svg></div><h3>بلا إعلانات ولا اقتراحات</h3><p>«الرئيسية» فيها أحدث ما نشرته قنواتك فقط.</p></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-star"/></svg></div><h3>ملفات للأطفال</h3><p>لا يرى الطفل إلا ما في قائمة سماحه. ولا بحث عنده.</p></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-hourglass"/></svg></div><h3>وقت محدد</h3><p>حصة يومية وأوقات مشاهدة لكل ملف، وتنبيه قبل النهاية.</p></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-lock"/></svg></div><h3>قفل الفيديو</h3><p>كل فيديو يبدأ مقفولاً حتى ينتهي.</p></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-shield-check"/></svg></div><h3>الحارس</h3><p>يعيد «شاشة» إلى الواجهة ما دام ملف طفل مفتوحاً.</p></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-phone"/></svg></div><h3>الجوال ريموتاً</h3><p>أرسل الروابط، وابحث، وافتح الوقت من الجوال.</p></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-skip"/></svg></div><h3>تخطي المقاطع</h3><p>يتخطى الإعلانات المقروءة داخل الفيديو، ببيانات SponsorBlock.</p></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-monitor"/></svg></div><h3>بياناتك عندك</h3><p>كل شيء على التلفاز نفسه. لا حسابات ولا تتبّع.</p></div>
+  </div>
+
+  <div class="grid g-wide mt align-s">
+    <figure>
+      <img class="shot" src="img/rail_expanded.jpg" alt="الرئيسية والقائمة الجانبية">
+      <figcaption><b>الرئيسية:</b> أحدث ما نشرته قنواتك، من الأحدث إلى الأقدم. وعلى اليمين القائمة الجانبية.</figcaption>
+    </figure>
+    <div>
+      <h2>وما ليست «شاشة»</h2>
+      <ul class="small">
+        <li>لا تسجيل دخول بحساب غوغل، أبداً.</li>
+        <li>لا «مقترح لك»، ولا «شائع»، ولا فيديوهات ذات صلة، ولا تعليقات.</li>
+        <li>لا تشغيل تلقائي، إلا داخل قائمة تشغيل.</li>
+        <li>لا تنزيل، ولا تشغيل في الخلفية.</li>
+        <li>ليست في Google Play، ولا تُوزَّع لأحد.</li>
+        <li>ليست محصّنة من تغييرات يوتيوب: تتعطل أحياناً حتى يصدر إصلاح (ص&nbsp;25).</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>ملفّان، وقواعد مختلفة</h2>
+  <table>
+    <tr><th></th><th>ملف الكبار</th><th>ملف الطفل</th></tr>
+    <tr><td><b>الدخول</b></td><td>برمز الوالدين</td><td>بلا رمز</td></tr>
+    <tr><td><b>الخروج</b></td><td>حر</td><td>برمز الوالدين</td></tr>
+    <tr><td><b>ما يظهر</b></td><td>كل يوتيوب، عدا المحظور</td><td>قائمة سماحه فقط</td></tr>
+    <tr><td><b>البحث والإعدادات</b></td><td>نعم</td><td>لا</td></tr>
+    <tr><td><b>الخروج من فيديو قبل نهايته</b></td><td>ضغط مطوّل عشر ثوانٍ، ثم كتابة جملة</td><td>برمز الوالدين</td></tr>
+    <tr><td><b>الحصة وأوقات المشاهدة</b></td><td>إن أردت</td><td>من البداية: ساعة يومياً، من 7 صباحاً إلى 10 مساءً</td></tr>
+    <tr><td><b>الحارس</b></td><td>أثناء قفل فيديو، وعند انتهاء الوقت أو خارج أوقاته</td><td>طوال الوقت: تبقى «شاشة» في الواجهة</td></tr>
+  </table>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">3</span><span>ما هي «شاشة»؟</span></footer>
+</section>
+
+<!-- ============================================================ 4. QUICK START -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-rocket"/></svg></div>
+    <div><div class="kicker">البداية السريعة</div><h1>التثبيت باختصار</h1>
+      <p class="lead">يثبّت «شاشة» شخص واحد، مرة واحدة، من حاسوب شخصي، في نحو ربع ساعة. هذا ملخص فقط: الخطوات كاملة بالصور في «دليل التثبيت».</p></div>
+  </div>
+
+  <div class="grid g-wide gap-l align-s">
+    <ol class="steps">
+      <li><span class="st">نزّل مجلد التثبيت</span><span class="where pc">الحاسوب</span><br>
+        من صفحة مستودع «شاشة» اضغط <code>Shasha-Setup.zip</code>، ثم <span class="nowrap">«Download»</span>. فك الضغط: في ويندوز بزر الفأرة الأيمن، ثم <span class="nowrap">«Extract All»</span>. وفي ماك انقر الملف مرتين. فيه كل شيء، ولا تنزّل غيره.</li>
+      <li><span class="st">فعّل خيارات المطوّر</span><span class="where tv">التلفاز</span><br>
+        افتح Settings، ثم System، ثم About. اضغط <kbd>OK</kbd> سبع مرات على <span class="nowrap">«Android TV OS build»</span>.</li>
+      <li><span class="st">فعّل تصحيح الأخطاء</span><span class="where tv">التلفاز</span><br>
+        افتح Settings، ثم System، ثم Developer options، وفعّل <span class="nowrap">«USB debugging»</span>، و<span class="nowrap">«Network debugging»</span> إن وجدته.</li>
+      <li><span class="st">اعرف عنوان التلفاز</span><span class="where tv">التلفاز</span><br>
+        افتح Settings، ثم Network &amp; Internet، ثم اسم شبكتك، واقرأ <span class="nowrap">«IP address»</span>، مثل <code>192.168.1.50</code>. اكتبه على ورقة.</li>
+      <li><span class="st">شغّل المثبّت</span><span class="where pc">الحاسوب</span><br>
+        ويندوز: انقر مرتين على <span class="nowrap">«Windows - ثبّت شاشة»</span>. وإن حذّر SmartScreen فاختر <span class="nowrap">«More info»</span>، ثم <span class="nowrap">«Run anyway»</span>. ماك: انقر بزر الفأرة الأيمن على <span class="nowrap">«Mac - ثبّت شاشة»</span>، ثم <span class="nowrap">«Open»</span>، ثم <span class="nowrap">«Open»</span> مرة ثانية. اكتب عنوان التلفاز حين يسألك.</li>
+      <li><span class="st">وافق على التلفاز</span><span class="where tv">التلفاز</span><br>
+        تظهر <span class="nowrap">«Allow USB debugging?»</span>: فعّل <span class="nowrap">«Always allow from this computer»</span> ثم <span class="nowrap">«OK»</span>، خلال 60 ثانية.</li>
+      <li><span class="st">انتظر</span><span class="where pc">الحاسوب</span><br>
+        يثبّت المثبّت «شاشة» ويمنحه صلاحياته، ويسألك إن أردت إيقاف يوتيوب الرسمي (اختياري)، ثم يفتحه ويعرض ملخصاً.</li>
+      <li><span class="st">أول تشغيل</span><span class="where tv">التلفاز</span><br>
+        رمز الوالدين، ثم ملفك، ثم ملف لطفلك (الصفحة التالية).</li>
+      <li><span class="st">الجوال، إن أردت</span><span class="where ph">الجوال</span><br>
+        امسح رمز QR الظاهر على التلفاز بكاميرا الجوال (ص&nbsp;15).</li>
+    </ol>
+
+    <div class="stack">
+      <div class="card">
+        <h3>ما تحتاجه</h3>
+        <ul class="small" style="margin:0">
+          <li>تلفاز البيت: TCL بنظام Google TV.</li>
+          <li>حاسوب شخصي: ويندوز أو ماك.</li>
+          <li>شبكة Wi-Fi واحدة للاثنين.</li>
+          <li>ربع ساعة، مرة واحدة.</li>
+        </ul>
+      </div>
+      <div class="note">
+        <span class="t">في مجلد Shasha-Setup</span>
+        التطبيق، والمثبّت لويندوز ولماك، والأداة التي تكلّم التلفاز، ودليل التثبيت PDF: «اقرأني - طريقة التثبيت».
+      </div>
+      <div class="note plain small">
+        <span class="t">إن رُفض الاتصال</span>
+        وفي التلفاز <span class="nowrap">«Wireless debugging»</span> فقط: اختر فيه <span class="nowrap">«Pair device with pairing code»</span>، ويسألك المثبّت عن العنوان والرمز المكوّن من 6 أرقام.
+      </div>
+      <div class="note plain small">
+        <span class="t">حاسوب العمل؟</span>
+        الحاسوب الذي يمنع تشغيل البرامج لا يصلح غالباً. استعمل حاسوباً شخصياً.
+      </div>
+      <div class="note plain small">
+        <span class="t">التراجع</span>
+        شغّل المثبّت بخيار التراجع (في الدليل). أو احذف التطبيق: Settings، ثم Apps، ثم «شاشة»، ثم Uninstall.
+      </div>
+    </div>
+  </div>
+
+  <div class="note teal mt">
+    <span class="t">الدليل الكامل بالصور</span>
+    «دليل التثبيت» في المستودع: <code>docs/install-guide.md</code>. ونسخته PDF داخل مجلد التثبيت نفسه: «اقرأني - طريقة التثبيت».
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">4</span><span>البداية السريعة</span></footer>
+</section>
+
+<!-- ============================================================ 5. FIRST RUN -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-power"/></svg></div>
+    <div><div class="kicker">البداية السريعة</div><h1>أول تشغيل</h1>
+      <p class="lead">عند فتح «شاشة» أول مرة تمر بخمس خطوات قصيرة، كلها بالريموت.</p></div>
+  </div>
+
+  <div class="grid g2 gap-s">
+    <figure><img class="shot" src="img/setup_welcome.jpg" alt=""><figcaption><b>1 · «أهلاً بك في شاشة»:</b> اضغط <kbd>OK</kbd> على <b class="btn">لنبدأ</b></figcaption></figure>
+    <figure><img class="shot" src="img/setup_pin.jpg" alt=""><figcaption><b>2 · «اختر رمز الوالدين»:</b> من 4 إلى 8 أرقام، ثم <b class="btn">تأكيد</b>، ثم أعده مرة ثانية.</figcaption></figure>
+    <figure><img class="shot" src="img/setup_child.jpg" alt=""><figcaption><b>4 · «ملف لطفلك»:</b> الاسم والصورة، ثم <b class="btn">إضافة الملف</b>، أو <b class="btn">لاحقاً</b></figcaption></figure>
+    <figure><img class="shot" src="img/setup_phone.jpg" alt=""><figcaption><b>5 · «تحكّم من جوالك»:</b> امسح الرمز الآن أو لاحقاً، ثم <b class="btn">تم</b></figcaption></figure>
+  </div>
+  <p class="small mt-s"><b>3 · «ملفك»</b> بين الخطوتين 2 و4: اكتب اسمك واختر صورة، ثم <b class="btn">التالي</b>. هذا ملف الكبار، ولا يُفتح إلا بالرمز.</p>
+
+  <div class="grid g2 gap-s mt-s">
+    <div class="note">
+      <span class="t">رمز الوالدين: مفتاح البيت</span>
+      يفتح ملف الكبار وإعدادات الرقابة، ويُخرج الأطفال من ملفاتهم، ويمنح وقتاً إضافياً. احفظه جيداً، ولا تخبر به الأطفال. خمس محاولات خاطئة متتالية توقفه 5 دقائق، ثم 15 دقيقة، ثم ساعة، ثم 4 ساعات. ولا يوجد «نسيت الرمز» داخل التطبيق (ص&nbsp;27).
+    </div>
+    <div class="note kids">
+      <span class="t">ملف الطفل يبدأ هكذا</span>
+      ساعة مشاهدة يومياً، من 7 صباحاً إلى 10 مساءً، بلا مقاطع قصيرة، وبقائمة سماح فارغة: لا يرى الطفل شيئاً حتى تضيف له قنوات (ص&nbsp;20). وتضيف أطفالاً آخرين متى شئت.
+    </div>
+  </div>
+
+  <div class="grid g-narrow gap-s mt align-c">
+    <figure><img class="shot" src="img/profile_picker.jpg" alt=""></figure>
+    <div>
+      <h2>«من يشاهد الآن؟»</h2>
+      <p class="small">إن كان في «شاشة» ملف طفل، تبدأ كل مرة بهذه الشاشة. ملفات الأطفال تُفتح مباشرة بضغطة <kbd>OK</kbd>، وملف الكبار (عليه «بالرمز») يطلب رمز الوالدين.</p>
+    </div>
+  </div>
+  <div class="note teal small mt">
+    <span class="t">وبعدها؟</span>
+    تعلّم الريموت (ص&nbsp;6)، وانقل اشتراكاتك من يوتيوب (ص&nbsp;8)، وأضف قنوات لطفلك (ص&nbsp;20)، واضبط وقت المشاهدة (ص&nbsp;21)، واقرن جوالك (ص&nbsp;15).
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">5</span><span>أول تشغيل</span></footer>
+</section>
+
+<!-- ============================================================ 6. REMOTE -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-remote"/></svg></div>
+    <div><div class="kicker">الأساسيات</div><h1>الريموت في «شاشة»</h1>
+      <p class="lead">كل شيء يصل إليه بالأسهم وزر <kbd>OK</kbd>. العنصر المختار عليه إطار فيروزي مضيء (أصفر في ملف الطفل): حرّكه بالأسهم، ثم اضغط <kbd>OK</kbd>.</p></div>
+  </div>
+
+  <div class="grid g-narrow gap-l align-c">
+    <svg class="remote-draw" viewBox="0 0 300 330" xmlns="http://www.w3.org/2000/svg" font-family="Plex Arabic" role="img" aria-label="رسم توضيحي للريموت">
+      <rect x="150" y="6" width="76" height="318" rx="30" fill="#151B24"/>
+      <circle cx="188" cy="32" r="7.5" fill="#232C38"/>
+      <path d="M188 27.8v4.4M184.9 29.6a4.3 4.3 0 1 0 6.2 0" stroke="#FF6B6B" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <circle cx="188" cy="92" r="30" fill="#232C38"/>
+      <path d="M188 66l-4.6 6h9.2zM188 118l-4.6-6h9.2zM162 92l6-4.6v9.2zM214 92l-6-4.6v9.2z" fill="#8A97A8"/>
+      <circle cx="188" cy="92" r="13.5" fill="#2EC4B6"/>
+      <text x="188" y="95.6" font-size="9.5" font-weight="700" text-anchor="middle" fill="#04201D">OK</text>
+      <circle cx="168" cy="146" r="10.5" fill="#232C38"/>
+      <path d="M172.5 149.5v-2.2a3.5 3.5 0 0 0-3.5-3.5h-7M164.5 140.8l-3 3 3 3" stroke="#EAF0F6" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="208" cy="146" r="10.5" fill="#232C38"/>
+      <path d="M202.6 146.5l5.4-4.6 5.4 4.6M204.2 145.3v5.2h7.6v-5.2" stroke="#EAF0F6" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="168" cy="178" r="9.5" fill="none" stroke="#5A6878" stroke-width="1.3" stroke-dasharray="2.4 2"/>
+      <path d="M163.5 174.8h9M163.5 178h9M163.5 181.2h9" stroke="#8A97A8" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="208" cy="178" r="9.5" fill="#232C38"/>
+      <path d="M203.5 174.2v7.6l5-3.8zM210.5 174.4v7.2M213.2 174.4v7.2" stroke="#EAF0F6" stroke-width="1.3" fill="#EAF0F6" stroke-linejoin="round"/>
+      <g fill="#232C38">
+        <rect x="160" y="202" width="15" height="12" rx="4"/><rect x="180.5" y="202" width="15" height="12" rx="4"/><rect x="201" y="202" width="15" height="12" rx="4"/>
+        <rect x="160" y="220" width="15" height="12" rx="4"/><rect x="180.5" y="220" width="15" height="12" rx="4"/><rect x="201" y="220" width="15" height="12" rx="4"/>
+        <rect x="160" y="238" width="15" height="12" rx="4"/><rect x="180.5" y="238" width="15" height="12" rx="4"/><rect x="201" y="238" width="15" height="12" rx="4"/>
+        <rect x="180.5" y="256" width="15" height="12" rx="4"/>
+      </g>
+      <g font-size="7.5" font-weight="600" fill="#B9C6D3" text-anchor="middle">
+        <text x="167.5" y="210.8">1</text><text x="188" y="210.8">2</text><text x="208.5" y="210.8">3</text>
+        <text x="167.5" y="228.8">4</text><text x="188" y="228.8">5</text><text x="208.5" y="228.8">6</text>
+        <text x="167.5" y="246.8">7</text><text x="188" y="246.8">8</text><text x="208.5" y="246.8">9</text>
+        <text x="188" y="264.8">0</text>
+      </g>
+      <g stroke="#0B0F14" stroke-width="1.2" fill="none">
+        <path d="M112 92h46"/><path d="M262 58l-66 26"/><path d="M112 146h45"/><path d="M262 146h-43"/><path d="M112 178h46"/><path d="M262 178h-44"/><path d="M112 235h46"/>
+      </g>
+      <g font-size="10" font-weight="700" text-anchor="middle" fill="#0B0F14">
+        <circle cx="104" cy="92" r="9" fill="#FFB547" stroke="#0B0F14" stroke-width="1"/><text x="104" y="95.6">1</text>
+        <circle cx="270" cy="55" r="9" fill="#FFB547" stroke="#0B0F14" stroke-width="1"/><text x="270" y="58.6">2</text>
+        <circle cx="104" cy="146" r="9" fill="#FFB547" stroke="#0B0F14" stroke-width="1"/><text x="104" y="149.6">3</text>
+        <circle cx="270" cy="146" r="9" fill="#FFB547" stroke="#0B0F14" stroke-width="1"/><text x="270" y="149.6">4</text>
+        <circle cx="104" cy="178" r="9" fill="#FFB547" stroke="#0B0F14" stroke-width="1"/><text x="104" y="181.6">5</text>
+        <circle cx="270" cy="178" r="9" fill="#FFB547" stroke="#0B0F14" stroke-width="1"/><text x="270" y="181.6">6</text>
+        <circle cx="104" cy="235" r="9" fill="#FFB547" stroke="#0B0F14" stroke-width="1"/><text x="104" y="238.6">7</text>
+      </g>
+    </svg>
+    <div>
+      <ol class="legend">
+        <li><b class="t">الأسهم <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd>:</b> تحرّك الإطار بين البطاقات والأزرار.</li>
+        <li><b class="t"><kbd>OK</kbd>:</b> يختار ما عليه الإطار. ومطوّلاً: قائمة البطاقة (في ملف الكبار).</li>
+        <li><b class="t"><kbd>BACK</kbd>:</b> يرجع خطوة. من المحتوى إلى القائمة الجانبية، ثم إلى «الرئيسية»، ثم خارج «شاشة».</li>
+        <li><b class="t"><kbd>HOME</kbd>:</b> إلى واجهة التلفاز. وفي ملف الطفل يعيد الحارس «شاشة» خلال ثانية أو ثانيتين.</li>
+        <li><b class="t"><kbd>MENU</kbd>، إن كان في ريموتك:</b> مثل <kbd>OK</kbd> المطوّل.</li>
+        <li><b class="t">أزرار التشغيل:</b> تشغّل وتوقف وتقدّم في المشغّل، ولو كانت الأدوات مخفية.</li>
+        <li><b class="t">الأرقام:</b> تكتب رمز الوالدين مباشرة.</li>
+      </ol>
+      <p class="small muted" style="margin:1mm 0 0">رسم توضيحي: أماكن الأزرار في ريموت التلفاز قد تختلف.</p>
+      <div class="note teal mt-s small">
+        <span class="t">تهت؟</span>
+        اضغط <kbd>BACK</kbd> عدة مرات حتى تصل إلى «الرئيسية». أثناء فيديو «مقفول» لا يُخرجك <kbd>BACK</kbd> منه، عمداً (ص&nbsp;22).
+      </div>
+    </div>
+  </div>
+
+  <h2 class="mt">القائمة الجانبية</h2>
+  <p class="small" style="margin-bottom:1.5mm">اضغط <kbd>→</kbd> حتى يصل الإطار إلى عمود الأيقونات على اليمين، فيتسع وتظهر الأسماء. اختر بالسهمين <kbd>↑</kbd> <kbd>↓</kbd>، ثم <kbd>OK</kbd>. و<kbd>←</kbd> يعيدك إلى المحتوى.</p>
+  <div class="grid g-wide gap-s align-s">
+    <figure><img class="shot" src="../manual/images/rail.jpg" alt="القائمة الجانبية مفتوحة"></figure>
+    <div>
+      <ol class="legend" style="margin-top:0">
+        <li><b class="t">الرئيسية:</b> أحدث فيديوهات قنواتك.</li>
+        <li><b class="t">البحث</b> في يوتيوب.</li>
+        <li><b class="t">الاشتراكات:</b> قنواتك.</li>
+        <li><b class="t">شاهد لاحقاً:</b> ما حفظته.</li>
+        <li><b class="t">السجل:</b> ما شاهدته.</li>
+        <li><b class="t">تبديل الملف.</b></li>
+        <li><b class="t">الإعدادات.</b></li>
+      </ol>
+      <p class="small muted" style="margin:0">في ملف الطفل القائمة أقصر: الرئيسية، والقنوات المسموحة، وخروج.</p>
+    </div>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">6</span><span>الريموت</span></footer>
+</section>
+
+<!-- ============================================================ 7. HOME -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-home"/></svg></div>
+    <div><div class="kicker">المشاهدة</div><h1>الرئيسية</h1>
+      <p class="lead">لا اقتراحات ولا «شائع»: فيها أحدث ما نشرته القنوات التي اشتركت فيها أنت، من الأحدث إلى الأقدم. فقط.</p></div>
+  </div>
+  <figure><img class="shot" src="../manual/images/home.jpg" alt="الرئيسية"></figure>
+  <ol class="legend two" style="--rows:4">
+    <li><b class="t">القائمة الجانبية:</b> اضغط <kbd>→</kbd> لتفتحها.</li>
+    <li><b class="t">«آخر تحديث»:</b> متى جُلبت أحدث الفيديوهات.</li>
+    <li><b class="t"><b class="btn">تحديث</b>:</b> يجلب الجديد الآن.</li>
+    <li><b class="t">البطاقة المختارة:</b> <kbd>OK</kbd> لتشاهدها.</li>
+    <li><b class="t">شريط المشاهدة:</b> كم شاهدت من الفيديو.</li>
+    <li><b class="t">«مباشر»:</b> بث مباشر.</li>
+    <li><b class="t">مدة الفيديو.</b></li>
+    <li><b class="t">القناة،</b> ومتى نُشر الفيديو.</li>
+  </ol>
+
+  <h2>كيف تتحدّث؟</h2>
+  <div class="grid g2 gap-s">
+    <ul class="small" style="margin:0">
+      <li><strong>وحدها كل ساعتين</strong> ما دام التلفاز متصلاً بالإنترنت، ومتى شئت بزر <b class="btn">تحديث</b></li>
+      <li>تُجلب القنوات <strong>ثلاثاً ثلاثاً</strong>، ولا يبدأ التحديث <strong>أثناء تشغيل فيديو</strong>: هكذا لا يتقطّع الفيديو.</li>
+    </ul>
+    <ul class="small" style="margin:0">
+      <li>من كل قناة آخر 15 فيديو. ويُحفظ لكل قناة أحدث 30 فيديو، ولا شيء أقدم من 90 يوماً.</li>
+      <li>المقاطع القصيرة تُخفى أو تظهر حسب إعداد كل ملف. وملف الطفل له «رئيسية» خاصة بقنواته المسموحة.</li>
+    </ul>
+  </div>
+  <div class="grid g2 gap-s mt align-c">
+    <figure><img class="shot" src="img/home_sync_failing.jpg" alt=""></figure>
+    <div class="note small">
+      <span class="t">«تعذّر تحديث 18 من القنوات»</span>
+      إن فشل جلب قنوات كثيرة تظهر هذه الرسالة فوق الفيديوهات، مع اسم الخطأ وزر <b class="btn">فحص التحديثات</b>. الفيديوهات القديمة تبقى. انظر «عندما يتعطل يوتيوب» (ص&nbsp;25).
+    </div>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">7</span><span>الرئيسية</span></footer>
+</section>
+
+<!-- ============================================================ 8. SUBSCRIPTIONS -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-rss"/></svg></div>
+    <div><div class="kicker">المشاهدة</div><h1>الاشتراكات والاستيراد</h1>
+      <p class="lead">«شاشة» لا يسجّل الدخول إلى يوتيوب، فاشتراكاتك محفوظة على التلفاز نفسه. تنقلها مرة واحدة من Google، أو تشترك في القنوات واحدة واحدة.</p></div>
+  </div>
+
+  <div class="grid g2 gap-s align-s">
+    <figure><img class="shot" src="img/subscriptions.jpg" alt=""><figcaption>القائمة الجانبية ← <b class="btn">الاشتراكات</b>: قنواتك مرتبة بالاسم، وزر <b class="btn">استيراد</b> في الأعلى.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">الاشتراك في قناة</h3>
+      <p class="small">ابحث عنها، ثم اضغط <b class="btn">اشتراك</b> بجانب نتيجتها، أو في صفحتها. يصير الزر <b class="btn">مشترك</b>، وتصل فيديوهاتها إلى «الرئيسية» خلال دقائق.</p>
+      <h3>إلغاء الاشتراك</h3>
+      <p class="small">افتح صفحة القناة واضغط <b class="btn">مشترك</b>. تختفي فيديوهاتها من «الرئيسية». ومن الجوال: «الأب» ← «الاشتراكات»، وأيقونة الحذف بجانب القناة.</p>
+    </div>
+  </div>
+
+  <h2>الاستيراد من Google Takeout</h2>
+  <div class="grid g-phone gap-l align-s">
+    <figure><div class="phone"><img src="img/17-parent-subscriptions.jpg" alt=""></div><figcaption class="center">من الجوال: الأسهل.</figcaption></figure>
+    <div>
+      <div class="card">
+        <h3>أولاً: صدّر الملف (من حاسوب أو جوال)</h3>
+        <ol class="small" style="margin:0">
+          <li>افتح <code>takeout.google.com</code> بحساب غوغل الذي فيه اشتراكاتك.</li>
+          <li>«إلغاء تحديد الكل» (Deselect all)، ثم حدّد <span class="nowrap">«YouTube and YouTube Music»</span> وحده.</li>
+          <li>زر <span class="nowrap">«All YouTube data included»</span>: أبقِ «الاشتراكات» (subscriptions) وحدها، ثم OK.</li>
+          <li><span class="nowrap">«Next step»</span>، ثم التصدير مرة واحدة بملف zip، ثم <span class="nowrap">«Create export»</span>. يصلك بريد برابط التنزيل.</li>
+        </ol>
+      </div>
+      <div class="card mt-s">
+        <h3>ثانياً: أدخله إلى «شاشة»</h3>
+        <ul class="small" style="margin:0">
+          <li><strong>من الجوال:</strong> «الأب» ← «الاشتراكات» ← «استيراد من Google Takeout» ← «اختر الملف (zip أو csv)». ارفع الملف المضغوط كما هو.</li>
+          <li><strong>من التلفاز:</strong> الإعدادات ← الاستيراد والتصدير ← <b class="btn">استيراد الاشتراكات من Takeout</b>: من ملف على الشاشة، أو من حاسوبك عبر ADB.</li>
+        </ul>
+      </div>
+      <figure class="mt-s"><img class="shot" src="img/settings_import_done.jpg" alt=""><figcaption>النتيجة: «تم الاستيراد» وعدد القنوات. إعادة الاستيراد آمنة، والقنوات لا تتكرر.</figcaption></figure>
+    </div>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">8</span><span>الاشتراكات والاستيراد</span></footer>
+</section>
+
+<!-- ============================================================ 9. SEARCH / CHANNEL / PLAYLIST -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-search"/></svg></div>
+    <div><div class="kicker">المشاهدة · ملف الكبار</div><h1>البحث والقنوات وقوائم التشغيل</h1>
+      <p class="lead">البحث في ملف الكبار فقط. وما تحظره أو تخفيه لا يظهر في النتائج أصلاً.</p></div>
+  </div>
+
+  <div class="grid g-wide gap-s align-s">
+    <figure><img class="shot" src="../manual/images/search.jpg" alt="البحث"></figure>
+    <div>
+      <h3 style="margin-top:0">البحث</h3>
+      <ol class="legend">
+        <li><b class="t">الخانة:</b> <kbd>OK</kbd> تُظهر لوحة مفاتيح التلفاز. اكتب، ثم زر البحث فيها.</li>
+        <li><b class="t">النوع:</b> <b class="btn">الكل</b> أو <b class="btn">فيديوهات</b> أو <b class="btn">قنوات</b> أو <b class="btn">قوائم تشغيل</b></li>
+        <li><b class="t"><b class="btn">اشتراك</b> / <b class="btn">مشترك</b></b> بجانب كل قناة.</li>
+        <li><b class="t">قائمة تشغيل:</b> عليها عدد فيديوهاتها.</li>
+      </ol>
+      <p class="small muted" style="margin:0">الكتابة أسهل من الجوال: تبويب «بحث» (ص&nbsp;16).</p>
+    </div>
+  </div>
+
+  <div class="grid g-wide gap-s align-s mt">
+    <figure><img class="shot" src="../manual/images/channel.jpg" alt="صفحة قناة"></figure>
+    <div>
+      <h3 style="margin-top:0">صفحة القناة</h3>
+      <ol class="legend">
+        <li><b class="t">اسم القناة</b> وعدد مشتركيها.</li>
+        <li><b class="t"><b class="btn">مشترك</b>:</b> اضغطه لتلغي الاشتراك، أو <b class="btn">اشتراك</b> لتشترك.</li>
+        <li><b class="t"><b class="btn">الرقابة</b>:</b> أضف القناة إلى قائمة سماح طفل، أو احظرها (برمز الوالدين).</li>
+      </ol>
+      <p class="small muted" style="margin:0">تحت الرأس فيديوهاتها، الأحدث أولاً. انزل لتُحمَّل أقدم.</p>
+    </div>
+  </div>
+
+  <div class="grid g-wide gap-s align-s mt">
+    <figure><img class="shot" src="img/playlist.jpg" alt="قائمة تشغيل"></figure>
+    <div>
+      <h3 style="margin-top:0">قائمة التشغيل</h3>
+      <p class="small"><b class="btn">تشغيل الكل</b> يبدأ من أول فيديو، أو اضغط <kbd>OK</kbd> على أي فيديو لتبدأ منه. بعد كل فيديو يبدأ التالي وحده بعد عدّ تنازلي قصير.</p>
+      <p class="small" style="margin:0">وفيها زر <b class="btn">الرقابة</b> أيضاً، لتسمح بالقائمة كلها لطفل.</p>
+    </div>
+  </div>
+  <div class="note plain small mt">
+    <span class="t">ما ليس في «شاشة»، عمداً</span>
+    لا «مقترح لك»، ولا «شائع»، ولا فيديوهات ذات صلة، ولا تعليقات، ولا تشغيل تلقائي إلا داخل قائمة تشغيل. ولا تعمل الفيديوهات الخاصة ولا المقيّدة بالعمر ولا المدفوعة: «شاشة» لا يسجّل الدخول.
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">9</span><span>البحث والقنوات وقوائم التشغيل</span></footer>
+</section>
+
+<!-- ============================================================ 10. PLAYER -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-play"/></svg></div>
+    <div><div class="kicker">المشاهدة</div><h1>المشغّل</h1>
+      <p class="lead">اضغط <kbd>OK</kbd> على أي فيديو. تبدأ الجودة تلقائية حتى 1080p، وتهبط وحدها حين تضعف الشبكة. تظهر الأدوات بأول ضغطة، وتختفي بعد ثلاث ثوانٍ.</p></div>
+  </div>
+  <figure><img class="shot" src="../manual/images/player.jpg" alt="أدوات المشغّل"></figure>
+  <ol class="legend two" style="--rows:6">
+    <li><b class="t">العنوان والقناة.</b></li>
+    <li><b class="t">«استُكمل من …»:</b> يكمل من حيث توقفت.</li>
+    <li><b class="t">شريط التقدّم:</b> <kbd>→</kbd> يقدّم 10 ثوانٍ و<kbd>←</kbd> يرجع. أبقِ إصبعك ليسرع. و<kbd>OK</kbd> يشغّل ويوقف.</li>
+    <li><b class="t">تشغيل / إيقاف مؤقت.</b></li>
+    <li><b class="t">رجوع 10 ثوانٍ.</b></li>
+    <li><b class="t">تقديم 10 ثوانٍ.</b></li>
+    <li><b class="t">الوقت</b> من مدة الفيديو.</li>
+    <li><b class="t"><b class="btn">شاهد لاحقاً</b>:</b> «أضِف» أو «محفوظ».</li>
+    <li><b class="t"><b class="btn">الترجمة</b>:</b> لغة، أو «إيقاف».</li>
+    <li><b class="t"><b class="btn">السرعة</b>:</b> من 0.5x إلى 2x.</li>
+    <li><b class="t"><b class="btn">الجودة</b>:</b> «تلقائي» أو ثابتة.</li>
+  </ol>
+
+  <div class="grid g2 gap-s mt-s align-s">
+    <div class="card small">
+      <h3>بالريموت</h3>
+      <ul style="margin:0">
+        <li>للأزرار: من شريط التقدّم <kbd>↓</kbd>، ثم <kbd>←</kbd> <kbd>→</kbd>، ثم <kbd>OK</kbd>.</li>
+        <li><kbd>BACK</kbd>: يغلق القائمة المفتوحة، ثم يخفي الأدوات، ثم يخرج من الفيديو.</li>
+        <li>كل فيديو يبدأ مقفولاً حتى ينتهي (ص&nbsp;22).</li>
+      </ul>
+    </div>
+    <figure><img class="shot" src="img/player_osd_quality_menu.jpg" alt=""><figcaption><b class="btn">الجودة</b>: «تلقائي (حتى 1080p)»، أو 1080p، أو 720p، أو 480p، أو 360p لهذا الفيديو.</figcaption></figure>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">10</span><span>المشغّل</span></footer>
+</section>
+
+<!-- ============================================================ 11. RESUME / WATCH LATER / HISTORY / END -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-history"/></svg></div>
+    <div><div class="kicker">المشاهدة</div><h1>الاستكمال، وشاهد لاحقاً، والسجل</h1>
+      <p class="lead">«شاشة» يتذكّر أين توقفت في كل فيديو، كل عشر ثوانٍ. تفتحه من جديد فيكمل من هناك، ويظهر لحظات «استُكمل من 12:34». وإن أنهيته يبدأ من أوله.</p></div>
+  </div>
+
+  <div class="grid g2 gap-s">
+    <figure><img class="shot" src="img/watch_later.jpg" alt=""><figcaption><b>شاهد لاحقاً:</b> احفظ بزر <b class="btn">شاهد لاحقاً</b> في المشغّل، أو <kbd>OK</kbd> مطوّلاً على البطاقة. وللإزالة: <kbd>OK</kbd> مطوّلاً ← «إزالة من «شاهد لاحقاً»».</figcaption></figure>
+    <figure><img class="shot" src="img/history.jpg" alt=""><figcaption><b>السجل:</b> كل ما شاهدته، الأحدث أولاً. <b class="btn">مسح السجل</b> يمسحه كله، ومواضع الاستكمال تبقى.</figcaption></figure>
+  </div>
+  <p class="small mt-s muted">لكل ملف سجله و«شاهد لاحقاً» الخاصان به. وليس في قائمة ملف الطفل «شاهد لاحقاً» ولا «السجل».</p>
+
+  <h2>نهاية الفيديو</h2>
+  <div class="grid g3 gap-s">
+    <figure><img class="shot" src="img/player_end_card.jpg" alt=""><figcaption><b>«انتهى الفيديو»:</b> <b class="btn">إعادة التشغيل</b> أو <b class="btn">رجوع</b>. لا يبدأ غيره وحده، ولا اقتراحات.</figcaption></figure>
+    <figure><img class="shot" src="img/player_up_next.jpg" alt=""><figcaption><b>داخل قائمة تشغيل:</b> «التالي في القائمة» يبدأ بعد 5 ثوانٍ. <b class="btn">تشغيل الآن</b> أو <b class="btn">رجوع</b></figcaption></figure>
+    <figure><img class="shot" src="img/player_kids_end_card.jpg" alt=""><figcaption><b>في ملف الطفل:</b> يعود وحده إلى «الرئيسية» بعد عشر ثوانٍ.</figcaption></figure>
+  </div>
+
+  <div class="grid g2 gap-s mt align-c">
+    <figure><img class="shot" src="img/player_subtitle_controls_hidden.jpg" alt=""><figcaption><b>الترجمة</b> أسفل الصورة. الترجمة الآلية يُكتب بجانب اسمها «(تلقائية)».</figcaption></figure>
+    <figure><img class="shot" src="img/player_osd_live_buffering.jpg" alt=""><figcaption><b>البث المباشر</b> عليه شارة «مباشر» حمراء، ويبدأ من لحظته الحالية.</figcaption></figure>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">11</span><span>الاستكمال، وشاهد لاحقاً، والسجل</span></footer>
+</section>
+
+<!-- ============================================================ 12. KIDS 360p + SPONSORBLOCK -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec small">
+    <div class="badge"><svg class="i"><use href="#i-star"/></svg></div>
+    <div><div class="kicker">المشاهدة</div><h1>فيديوهات «للأطفال» وشارة 360p</h1>
+      <p class="lead">للفيديوهات المصنّفة «للأطفال» (made for kids) لا يجد «شاشة» حالياً إلا نسخة واحدة بجودة 360p.</p></div>
+  </div>
+  <div class="grid g2 gap-s">
+    <figure><img class="shot" src="../manual/images/player-360p.jpg" alt=""><figcaption><b>في ملف الطفل:</b> يعمل الفيديو بجودة 360p، مع شارة كهرمانية «360p» (1) بجانب الوقت، و«تلقائي · 360p» في الجودة (2).</figcaption></figure>
+    <figure><img class="shot" src="img/player_error_low_quality_adult.jpg" alt=""><figcaption><b>في ملف الكبار:</b> شاشة الخطأ الموحدة، وفيها زر <b class="btn">شغّل بجودة 360p على أي حال</b></figcaption></figure>
+  </div>
+  <p class="small mt-s muted">وإن رفض يوتيوب حتى نسخة 360p، تظهر شاشة الخطأ في الملفين (ص&nbsp;25).</p>
+
+  <hr class="div">
+  <div class="sec small">
+    <div class="badge"><svg class="i"><use href="#i-skip"/></svg></div>
+    <div><div class="kicker">المشاهدة</div><h1>تخطي المقاطع (SponsorBlock)</h1>
+      <p class="lead">يتخطى «شاشة» وحده الإعلانات التي يقرؤها صاحب القناة داخل الفيديو، والمقدمات الطويلة، بمعلومات يجمعها متطوعو SponsorBlock.</p></div>
+  </div>
+  <div class="grid g-wide gap-s align-s">
+    <div>
+      <figure><img class="shot" src="../manual/images/sponsor-undo.jpg" alt=""></figure>
+      <ol class="legend">
+        <li><b class="t">«تم تخطي: إعلان مموَّل»</b> ثلاث ثوانٍ في الأعلى.</li>
+        <li><b class="t"><b class="btn">تراجع عن التخطي</b>:</b> في ملف الكبار، خمس ثوانٍ: <kbd>OK</kbd> يرجع إلى بداية الجزء.</li>
+      </ol>
+    </div>
+    <div>
+      <table class="compact">
+        <tr><th>مفعّلة من البداية</th></tr>
+        <tr><td>إعلان مموَّل · ترويج ذاتي · تذكير بالتفاعل · المقدمة · الخاتمة</td></tr>
+        <tr><th>تفعّلها إن شئت</th></tr>
+        <tr><td>معاينة أو تلخيص · تحية أو تشويق · استطراد · جزء غير موسيقي</td></tr>
+      </table>
+      <p class="small mt-s">الإعدادات ← <b class="btn">فئات SponsorBlock</b>. الفئات واحدة لكل الملفات. ولا تخطي في البث المباشر.</p>
+      <p class="small" style="margin:0"><strong>خصوصية:</strong> لا يُرسل رقم الفيديو، بل أول أربعة أحرف من بصمته فقط.</p>
+    </div>
+  </div>
+  <p class="small muted mt-s" style="margin-bottom:0">بيانات التخطي من SponsorBlock (sponsor.ajay.app)، مرخّصة CC BY-NC-SA 4.0: <span class="ltr">Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/.</span></p>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">12</span><span>فيديوهات الأطفال، وتخطي المقاطع</span></footer>
+</section>
+
+<!-- ============================================================ 13. SETTINGS -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-gear"/></svg></div>
+    <div><div class="kicker">ملف الكبار</div><h1>الإعدادات</h1>
+      <p class="lead">القائمة الجانبية ← <b class="btn">الإعدادات</b>. لوحتان: القائمة على اليمين، ولوحة العنصر المختار بجانبها. <kbd>↑</kbd> <kbd>↓</kbd> بين العناصر، و<kbd>OK</kbd> أو <kbd>←</kbd> إلى اللوحة، و<kbd>→</kbd> أو <kbd>BACK</kbd> للعودة.</p></div>
+  </div>
+  <figure><img class="shot" src="../manual/images/settings.jpg" alt="الإعدادات"></figure>
+  <ol class="legend two" style="--rows:4">
+    <li><b class="t">قائمة الإعدادات</b> في أربع مجموعات.</li>
+    <li><b class="t">اسم المجموعة.</b></li>
+    <li><b class="t">القفل:</b> يُفتح برمز الوالدين.</li>
+    <li><b class="t">لوحة العنصر المختار.</b></li>
+    <li><b class="t"><b class="btn">فتح برمز الوالدين</b>:</b> يبقى مفتوحاً خمس دقائق.</li>
+    <li><b class="t">زر داخل اللوحة.</b></li>
+    <li><b class="t">الإعدادات</b> في القائمة الجانبية.</li>
+  </ol>
+  <table class="compact mt-s">
+    <tr><th>المجموعة</th><th>العناصر</th><th>ص</th></tr>
+    <tr><td><b>الرقابة الأبوية</b> (برمز)</td><td>الملفات ورمز الوالدين · قوائم السماح والحظر · الحصص والجداول · الإحصائيات</td><td>18 إلى 24</td></tr>
+    <tr><td><b>المشاهدة</b></td><td>فئات SponsorBlock · الجودة الافتراضية</td><td>12، 13</td></tr>
+    <tr><td><b>الشاشة والجوال</b></td><td>حالة الحماية · الخادم المحلي (عنصراه برمز) · الاستيراد والتصدير</td><td>14، 15، 23</td></tr>
+    <tr><td><b>التطبيق</b></td><td>فحص التحديثات · تشخيص · حول</td><td>14، 26، 28</td></tr>
+  </table>
+  <h2 class="mt">الجودة الافتراضية</h2>
+  <div class="grid g-narrow gap-s align-s">
+    <figure><img class="shot" src="img/settings_hub_quality.jpg" alt=""><figcaption>أعلى جودة يبلغها المشغّل وحده. تسري من الفيديو التالي.</figcaption></figure>
+    <table class="compact">
+      <tr><th>الاختيار</th><th>متى تختاره</th></tr>
+      <tr><td><b>حتى 2160p</b></td><td>شاشة 4K وإنترنت سريع جداً.</td></tr>
+      <tr><td><b>حتى 1440p</b></td><td>أوضح على شاشات 4K، بإنترنت سريع.</td></tr>
+      <tr><td><b>حتى 1080p</b> (الافتراضي)</td><td>صورة حادة بلا تقطيع على معظم الشبكات.</td></tr>
+      <tr><td><b>حتى 720p</b></td><td>شبكة بطيئة، وتوفير في البيانات.</td></tr>
+      <tr><td><b>حتى 480p</b></td><td>شبكة ضعيفة جداً.</td></tr>
+    </table>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">13</span><span>الإعدادات</span></footer>
+</section>
+
+<!-- ============================================================ 14. BACKUP & UPDATES -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec small">
+    <div class="badge"><svg class="i"><use href="#i-archive"/></svg></div>
+    <div><div class="kicker">البيانات</div><h1>النسخ الاحتياطي</h1>
+      <p class="lead">كل بيانات «شاشة» على التلفاز وحده. احفظ نسخة من حين لآخر، وخصوصاً قبل حذف التطبيق.</p></div>
+  </div>
+  <div class="grid g-phone gap-l align-s">
+    <figure><div class="phone"><img src="img/20-parent-backup.jpg" alt=""></div><figcaption class="center">من الجوال: «الأب» ← «نسخة احتياطية».</figcaption></figure>
+    <div>
+      <ul class="small">
+        <li><strong>من الجوال (الأسهل):</strong> <b class="btn">تنزيل النسخة</b> يحفظ ملفاً في جوالك. وللاستعادة: <b class="btn">اختر ملف النسخة (JSON)</b> ← «استعادة النسخة؟» ← <b class="btn">استعادة</b></li>
+        <li><strong>من التلفاز:</strong> الإعدادات ← الاستيراد والتصدير ← <b class="btn">النسخة الاحتياطية</b> ← <b class="btn">تصدير الآن</b>. يُحفظ في مجلد التطبيق، وتعرض الشاشة أمر نقله إلى الحاسوب.</li>
+      </ul>
+      <table class="compact">
+        <tr><th>في النسخة</th><th>ليس فيها</th></tr>
+        <tr><td>الملفات وقواعدها، والقوائم، وبصمة رمز الوالدين، والاشتراكات، و«شاهد لاحقاً»، والسجل، ومواضع الاستكمال، والإحصائيات، والإعدادات</td><td>فيديوهات «الرئيسية» (تُجلب من جديد)، وقفل الفيديو الحالي، ورمز اقتران الجوال</td></tr>
+      </table>
+      <div class="note red small mt-s">
+        <span class="t">الاستعادة تستبدل كل بيانات التلفاز</span>
+        ولا تُقبل أثناء فيديو مقفول، ولا من إصدار أحدث من «شاشة». وحذف التطبيق يحذف مجلد النسخ معه: احفظ نسخة خارج التلفاز.
+      </div>
+    </div>
+  </div>
+
+  <hr class="div">
+  <div class="sec small">
+    <div class="badge"><svg class="i"><use href="#i-download"/></svg></div>
+    <div><div class="kicker">ملف الكبار</div><h1>التحديثات</h1>
+      <p class="lead">حين يتعطل يوتيوب، فالحل غالباً إصدار جديد. والتحديث يحتفظ بكل شيء.</p></div>
+  </div>
+  <div class="grid g3 gap-s">
+    <figure><img class="shot" src="img/updates_available.jpg" alt=""><figcaption><b>1</b> · الإعدادات ← <b class="btn">فحص التحديثات</b>: «يتوفر إصدار جديد» ← <b class="btn">تنزيل وتثبيت</b></figcaption></figure>
+    <figure><img class="shot" src="img/updates_downloading.jpg" alt=""><figcaption><b>2</b> · «جارٍ تنزيل الإصدار الجديد…». لا تُطفئ التلفاز.</figcaption></figure>
+    <figure><img class="shot" src="img/updates_up_to_date.jpg" alt=""><figcaption>أو: «لديك آخر إصدار».</figcaption></figure>
+  </div>
+  <p class="small mt-s"><b>3</b> · «أكّد التحديث في نافذة النظام»: وافق في نافذة أندرويد بالريموت. بعد التثبيت تُغلق «شاشة»، فافتحها من جديد. لا يوجد تحديث صامت على أندرويد.</p>
+  <p class="small muted" style="margin:0">رسائل مثل «تثبيت التحديثات غير مسموح بعد» أو «رمز القراءة مرفوض»: حدّث من الحاسوب ببرنامج التثبيت، وأخبر صاحب البيت. و«مفتاح التوقيع مختلف»: لا تثبّت.</p>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">14</span><span>النسخ الاحتياطي والتحديثات</span></footer>
+</section>
+
+<!-- ============================================================ 15. PHONE 1: PAIRING -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-phone"/></svg></div>
+    <div><div class="kicker">الجوال</div><h1>الجوال ريموتاً</h1>
+      <p class="lead">صفحة ويب على شبكة البيت، تفتحها من متصفح الجوال: ترسل منها الروابط، وتبحث، وتتحكم بالتشغيل، وتبدّل الملف. وللوالدين فيها «قسم الأب». لا تطبيق تثبّته.</p></div>
+  </div>
+
+  <h2>الاقتران (مرة واحدة)</h2>
+  <ol class="steps">
+    <li>الجوال على شبكة Wi-Fi نفسها التي عليها التلفاز.</li>
+    <li>على التلفاز: الإعدادات ← <b class="btn">الخادم المحلي</b>. تأكد أن <b class="btn">تشغيل الخادم</b> مفعّل، وأن اللوحة تقول «يعمل على …».</li>
+    <li>اختر <b class="btn">رمز الاقتران QR</b>، واكتب رمز الوالدين. تفتح شاشة «التحكم من الجوال».</li>
+    <li>امسح الرمز بكاميرا الجوال، وافتح الرابط. تفتح صفحة «شاشة». (والرمز نفسه في آخر خطوة من أول تشغيل.)</li>
+  </ol>
+  <figure class="mt"><img class="shot" src="../manual/images/remote-pairing.jpg" alt="التحكم من الجوال"></figure>
+  <ol class="legend two" style="--rows:3">
+    <li><b class="t">الحالة:</b> «يعمل»، أو «متوقف»، أو «لا شبكة محلية».</li>
+    <li><b class="t">التحكم من الجوال:</b> تشغيل وإيقاف.</li>
+    <li><b class="t">رمز QR:</b> امسحه بكاميرا الجوال.</li>
+    <li><b class="t">الرابط مكتوباً،</b> إن لم تعمل الكاميرا.</li>
+    <li><b class="t">نصائح:</b> المسح، والإضافة إلى الشاشة الرئيسية، و«مشاركة ← شاشة».</li>
+    <li><b class="t"><b class="btn">إعادة توليد الرمز</b>:</b> يلغي اقتران كل الجوالات.</li>
+  </ol>
+  <div class="note teal small mt-s">
+    <span class="t">أضف الصفحة إلى الشاشة الرئيسية للجوال</span>
+    آيفون (Safari): زر المشاركة ← «إضافة إلى الشاشة الرئيسية». أندرويد (Chrome): القائمة ⋮ ← «إضافة إلى الشاشة الرئيسية». تظهر أيقونة «شاشة» وتفتح بلمسة، والصفحة تتذكّر الاقتران.
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">15</span><span>الجوال ريموتاً</span></footer>
+</section>
+
+<!-- ============================================================ 16. PHONE 2: TABS -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <h2>أقسام الصفحة</h2>
+  <figure><img class="shot" src="../manual/images/phone-tabs.jpg" alt="تبويبات صفحة الجوال"></figure>
+  <ol class="legend two" style="--rows:2">
+    <li><b class="t">الشاشة:</b> ما يُعرض الآن، والتحكم فيه، وإرسال رابط.</li>
+    <li><b class="t">بحث:</b> ابحث من الجوال، والنتيجة على التلفاز. (لا بحث في ملف الطفل.)</li>
+    <li><b class="t">الملف:</b> «من يشاهد الآن؟»: بدّل ملف التلفاز. الخروج من ملف طفل، والانتقال إلى ملف الكبار: برمز الوالدين.</li>
+    <li><b class="t">الأب:</b> «قسم الأب»، برمز الوالدين (الصفحة التالية).</li>
+  </ol>
+
+  <h2>تبويب «الشاشة»</h2>
+  <div class="grid g-phone gap-l align-s">
+    <figure><img src="../manual/images/phone-screen.jpg" alt="" style="width:100%;display:block;border-radius:3mm;box-shadow:0 1mm 3.5mm rgba(11,15,20,.28)"></figure>
+    <div>
+      <ol class="legend">
+        <li><b class="t">الملف المفتوح على التلفاز.</b> والنقطة بجانبه: الجوال متصل.</li>
+        <li><b class="t">«الآن على الشاشة»:</b> الفيديو المعروض.</li>
+        <li><b class="t"><b class="btn">إيقاف</b>:</b> يغلق الفيديو، إلا إن كان مقفولاً.</li>
+        <li><b class="t">شريط التقدّم والوقت.</b></li>
+        <li><b class="t">التحكم:</b> رجوع 30 و10 ثوانٍ، تشغيل / إيقاف مؤقت، تقديم 10 و30 ثانية.</li>
+        <li><b class="t">الوقت الباقي:</b> «متبقٍ 38 دقيقة» أو «بلا حد يومي».</li>
+        <li><b class="t">«أرسل رابطاً إلى الشاشة»:</b> الصق رابط فيديو أو قائمة تشغيل أو قناة، ثم <b class="btn">أرسل</b></li>
+        <li><b class="t">التبويبات.</b></li>
+      </ol>
+      <div class="note small mt-s">
+        <span class="t">الجوال لا يتجاوز الرقابة</span>
+        ما دام ملف طفل مفتوحاً على التلفاز، يُرفض الرابط من خارج قائمة سماحه، ولا بحث. وعند «انتهى الوقت» لا يُقبل أي رابط. وأثناء فيديو مقفول لا يُفتح رابط جديد.
+      </div>
+    </div>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">16</span><span>الجوال ريموتاً</span></footer>
+</section>
+
+<!-- ============================================================ 17. PHONE 3: PARENT SECTION + SHARE -->
+<section class="page">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">للجميع</span></header>
+  <h2>قسم الأب</h2>
+  <p class="small">اضغط <b class="btn">الأب</b>، واكتب رمز الوالدين، ثم <b class="btn">دخول</b>. تنتهي الجلسة بعد 30 دقيقة دون استخدام، أو بزر <b class="btn">خروج</b></p>
+  <figure><img class="shot" src="../manual/images/phone-parent.jpg" alt="قسم الأب"></figure>
+  <ol class="legend two" style="--rows:2">
+    <li><b class="t">الوقت:</b> «فتح الوقت الآن» (+15 أو +30 أو +60 دقيقة، أو «بقية اليوم») للملف المفتوح. و«الحصة اليومية» لكل ملف.</li>
+    <li><b class="t">الفيديو:</b> <b class="btn">فك قفل الفيديو</b></li>
+    <li><b class="t">قائمة السماح:</b> اختر الطفل، والصق رابط قناة أو قائمة تشغيل، ثم <b class="btn">أضف</b></li>
+    <li><b class="t">الاشتراكات:</b> «إضافة اشتراك» برابط، و«استيراد من Google Takeout»، وقائمة قنواتك.</li>
+  </ol>
+  <p class="small muted">والتبويب الخامس «نسخة احتياطية»: تنزيل النسخة واستعادتها (ص&nbsp;14).</p>
+  <div class="note small">
+    <span class="t">لرمز الجوال عدّاده الخاص</span>
+    خمسة رموز خاطئة من الجوال توقف قسم الأب 5 دقائق، ثم 15 دقيقة، ثم ساعة، ثم 4 ساعات. ولا يتأثر بها رمز التلفاز، والعكس. والعدّاد واحد لكل الجوالات المقترنة: إن أوقفه جوال يخمّن، فـ <b class="btn">إعادة توليد الرمز</b> على التلفاز تنهي ذلك.
+  </div>
+
+  <h2>مشاركة ← شاشة</h2>
+  <div class="grid g-phone-r gap-l align-s">
+    <div>
+      <ol class="small">
+        <li>في تبويب <b class="btn">الشاشة</b> افتح «المشاركة من تطبيق يوتيوب مباشرة»: فيها رابط جاهز ينتهي بـ <code>&amp;v=</code>، وزر <b class="btn">نسخ</b></li>
+        <li>ضع بعد <code>&amp;v=</code> أي رابط يوتيوب وافتحه: يُعرض على التلفاز وحده، ويحفظ وقت البداية إن كان فيه.</li>
+        <li>اجعله اختصاراً للمشاركة: «الاختصارات» (Shortcuts) في آيفون، أو <span class="nowrap">«HTTP Shortcuts»</span> في أندرويد، أو إشارة مرجعية.</li>
+      </ol>
+      <p class="small">وإن وصل رابط دون رمز الاقتران تسأل الصفحة: «إرسال هذا الرابط إلى الشاشة؟». أرسله فقط إن كنت أنت من شاركه.</p>
+      <div class="note teal small">
+        <span class="t">لا تعمل الصفحة؟</span>
+        «امسح رمز QR من جديد»: أُعيد توليد الرمز أو تغيّر عنوان التلفاز. «تعذّر الوصول إلى الشاشة»: تأكد أن «شاشة» يعمل، وأن الجوال على الشبكة نفسها.
+      </div>
+    </div>
+    <figure><div class="phone bottom" style="height:52mm"><img src="img/25-share-sent.jpg" alt=""></div><figcaption class="center">«أُرسل إلى الشاشة»</figcaption></figure>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">17</span><span>الجوال ريموتاً</span></footer>
+</section>
+
+<!-- ============================================================ 18. PARENTS: PROFILES & CHILD -->
+<section class="page parents">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">ركن الوالدين</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-users"/></svg></div>
+    <div><div class="kicker">ركن الوالدين</div><h1>الملفات وملف الطفل</h1>
+      <p class="lead">ملف للكبار يُفتح برمز الوالدين، وملف لكل طفل يدخله بلا رمز ويخرج منه بالرمز. لكل طفل قائمة سماحه وحصته وأوقاته وإحصائياته.</p></div>
+  </div>
+
+  <div class="grid g-wide gap-s align-s">
+    <figure><img class="shot" src="../manual/images/kids-home.jpg" alt="رئيسية الطفل"></figure>
+    <div>
+      <h3 style="margin-top:0">ماذا يرى الطفل؟</h3>
+      <ol class="legend teal">
+        <li><b class="t">الترحيب</b> باسمه.</li>
+        <li><b class="t">قوائمك:</b> قوائم التشغيل المسموحة.</li>
+        <li><b class="t">أحدث الفيديوهات</b> من قنواته المسموحة.</li>
+        <li><b class="t">قائمته الجانبية:</b> الرئيسية، والقنوات المسموحة، وخروج.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="grid g2 gap-s mt">
+    <div class="card">
+      <h3>التبديل بين الملفات</h3>
+      <ul class="small" style="margin:0">
+        <li><strong>إلى ملف طفل:</strong> القائمة الجانبية ← <b class="btn">تبديل الملف</b> ← اختر الطفل.</li>
+        <li><strong>من ملف الطفل:</strong> <b class="btn">خروج</b> ← رمز الوالدين ← اختر ملفاً. (لا يُطلب الرمز مرة ثانية لملف الكبار.)</li>
+        <li><strong>ملف الكبار يُقفل وحده:</strong> إن غبت عنه أكثر من 15 ثانية وفي البيت ملف طفل، يُطلب الرمز عند العودة.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>ما لا يستطيعه ملف الطفل، عمداً</h3>
+      <ul class="small" style="margin:0">
+        <li>لا بحث، ولا لوحة مفاتيح في أي مكان.</li>
+        <li>لا شيء خارج قائمة سماحه، ولو برابط من الجوال.</li>
+        <li>لا إعدادات، ولا قوائم بطاقات.</li>
+        <li>لا خروج من فيديو قبل نهايته إلا بالرمز.</li>
+        <li>لا تطبيقات أخرى: الحارس يعيد «شاشة» (ص&nbsp;23).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="grid g2 gap-s mt align-c">
+    <figure><img class="shot" src="img/kids_denied.jpg" alt=""><figcaption>ما ليس مسموحاً يظهر رسالة هادئة بدل الفيديو.</figcaption></figure>
+    <div class="note kids small">
+      <span class="t">يريد أحد الكبار تطبيقاً آخر؟</span>
+      Netflix أو إعدادات التلفاز مثلاً: اخرج أولاً من ملف الطفل (<b class="btn">خروج</b> ورمز الوالدين) واختر ملف الكبار. بعدها يعمل كل شيء كالمعتاد.
+    </div>
+  </div>
+  <div class="grid g3 gap-s mt">
+    <figure><img class="shot" src="img/kids_rail.jpg" alt=""><figcaption>قائمة الطفل: الرئيسية، والقنوات المسموحة، وخروج.</figcaption></figure>
+    <figure><img class="shot" src="img/kids_allowed_channels.jpg" alt=""><figcaption>«القنوات المسموحة»: قنواته وقوائمه.</figcaption></figure>
+    <figure><img class="shot" src="img/kids_home_empty.jpg" alt=""><figcaption>قائمة سماح فارغة: «لا شيء هنا بعد».</figcaption></figure>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">18</span><span>الملفات وملف الطفل</span></footer>
+</section>
+
+<!-- ============================================================ 19. PARENTS: MANAGE PROFILES + PIN -->
+<section class="page parents">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">ركن الوالدين</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-user-edit"/></svg></div>
+    <div><div class="kicker">ركن الوالدين</div><h1>إدارة الملفات ورمز الوالدين</h1>
+      <p class="lead">الإعدادات ← <b class="btn">الملفات ورمز الوالدين</b> ← <b class="btn">فتح برمز الوالدين</b> ← <b class="btn">إدارة الملفات</b></p></div>
+  </div>
+  <div class="grid g2 gap-s align-s">
+    <figure><img class="shot" src="img/settings_profiles.jpg" alt=""><figcaption><b>الملفات:</b> بطاقة لكل ملف بحصته وأوقاته وقائمة سماحه. <b class="btn">إضافة ملف طفل</b> في الأعلى.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">إضافة ملف طفل</h3>
+      <ol class="small">
+        <li>اختر <b class="btn">إضافة ملف طفل</b></li>
+        <li>«ملف طفل جديد»: الاسم، والصورة.</li>
+        <li>ثم <b class="btn">إنشاء</b></li>
+      </ol>
+      <p class="small" style="margin:0">يبدأ بساعة يومياً بين 7 صباحاً و10 مساءً، بلا مقاطع قصيرة، وبقائمة سماح فارغة تملؤها أنت.</p>
+    </div>
+  </div>
+
+  <h2>تعديل ملف</h2>
+  <div class="grid g-wide gap-s align-s">
+    <figure><img class="shot" src="../manual/images/profile-edit.jpg" alt=""></figure>
+    <div>
+      <ol class="legend teal">
+        <li><b class="t">الاسم.</b></li>
+        <li><b class="t">الصورة.</b></li>
+        <li><b class="t">الحصة اليومية</b> (ص&nbsp;21).</li>
+        <li><b class="t">أوقات المشاهدة</b> (ص&nbsp;21).</li>
+        <li><b class="t">إخفاء المقاطع القصيرة.</b></li>
+        <li><b class="t">قائمة السماح</b> (ص&nbsp;20).</li>
+      </ol>
+      <p class="small" style="margin:0">تُحفظ التغييرات فوراً. وفي آخر الصفحة <b class="btn">حذف الملف</b>: يحذف سجله وإحصائياته أيضاً، ولا تراجع.</p>
+    </div>
+  </div>
+  <p class="small mt-s"><strong>المقطع القصير</strong> عند «شاشة»: مدته 3 دقائق أو أقل، أو رابطه فيه <code>/shorts/</code>، أو يعلّمه يوتيوب مقطعاً قصيراً.</p>
+
+  <h2>رمز الوالدين</h2>
+  <div class="grid g-narrow gap-s align-s">
+    <figure><img class="shot" src="img/pin_pad.jpg" alt=""><figcaption>لوحة الرمز: الأرقام من الريموت أو بالأسهم، ثم <b class="btn">تأكيد</b></figcaption></figure>
+    <ul class="small" style="margin:0">
+      <li><strong>تغييره:</strong> الإعدادات ← الملفات ورمز الوالدين ← <b class="btn">تغيير رمز الوالدين</b>: الرمز الحالي أولاً، ثم الجديد مرتين.</li>
+      <li><strong>الأخطاء:</strong> تقول اللوحة كم محاولة بقيت. خمس محاولات خاطئة توقفه 5 دقائق، ثم 15، ثم ساعة، ثم 4 ساعات، ولا تنهيها إعادة التشغيل. ولرمز الجوال عدّاد مستقل.</li>
+      <li><strong>نسيته؟</strong> لا يوجد «نسيت الرمز» داخل التطبيق، عمداً: لو وُجد لاستعمله الأطفال. الحل من الحاسوب الذي ثبّت «شاشة» (ص&nbsp;27).</li>
+    </ul>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">19</span><span>إدارة الملفات ورمز الوالدين</span></footer>
+</section>
+
+<!-- ============================================================ 20. PARENTS: ALLOW / BLOCK -->
+<section class="page parents">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">ركن الوالدين</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-shield"/></svg></div>
+    <div><div class="kicker">ركن الوالدين</div><h1>قوائم السماح والحظر</h1>
+      <p class="lead">الإعدادات ← <b class="btn">قوائم السماح والحظر</b> (برمز الوالدين).</p></div>
+  </div>
+  <table>
+    <tr><th></th><th>قائمة السماح</th><th>قائمة الحظر</th></tr>
+    <tr><td><b>لمن؟</b></td><td>لكل طفل قائمته</td><td>للبيت كله: كل الملفات، والكبار أيضاً</td></tr>
+    <tr><td><b>ماذا فيها؟</b></td><td>قنوات وقوائم تشغيل تختارها أنت</td><td>قنوات، وكلمات في العنوان</td></tr>
+    <tr><td><b>النتيجة</b></td><td>لا يرى الطفل <b>إلا</b> ما فيها</td><td>لا يظهر ما فيها <b>لأحد</b></td></tr>
+  </table>
+
+  <h2>أربع طرق للسماح بقناة</h2>
+  <div class="grid g-wide gap-s align-s">
+    <figure><img class="shot" src="../manual/images/card-menu.jpg" alt=""></figure>
+    <div>
+      <ol class="small" style="margin-bottom:1.5mm">
+        <li><strong>من اشتراكاتك:</strong> قائمة سماح الطفل ← <b class="btn">من اشتراكاتي</b></li>
+        <li><strong>قائمة البطاقة:</strong> <kbd>OK</kbd> مطوّلاً على بطاقة قناة أو قائمة أو فيديو.</li>
+        <li><strong>زر <b class="btn">الرقابة</b></strong> في صفحة القناة أو القائمة.</li>
+        <li><strong>من الجوال:</strong> «الأب» ← «قائمة السماح».</li>
+      </ol>
+      <ol class="legend">
+        <li>القناة أو القائمة.</li>
+        <li><b class="btn">أضف إلى قائمة سماح …</b> لكل طفل.</li>
+        <li>القفل: يطلب رمز الوالدين.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="grid g2 gap-s mt align-s">
+    <figure><img class="shot" src="img/allowlist.jpg" alt=""><figcaption><b>قائمة سماح طفل:</b> القنوات وقوائم التشغيل، وبجانب كلٍّ <b class="btn">إزالة</b></figcaption></figure>
+    <figure><img class="shot" src="img/blocklist.jpg" alt=""><figcaption><b>قائمة الحظر:</b> اكتب كلمة ثم <b class="btn">إضافة</b>. و<kbd>OK</kbd> على كلمة يزيلها. والقنوات المحظورة بجانبها <b class="btn">إلغاء الحظر</b></figcaption></figure>
+  </div>
+  <p class="small mt-s" style="margin-bottom:0">قائمة تشغيل مسموحة تعمل كل فيديوهاتها داخلها. أما رابط فيديو (من الجوال مثلاً) فيُحكم عليه بقناة الفيديو نفسه. وتُحظر القناة من قائمة بطاقتها ← <b class="btn">حظر القناة</b></p>
+  <div class="grid g2 gap-s mt">
+    <div class="note kids small">
+      <span class="t">ابدأ صغيراً</span>
+      قنوات قليلة تثق بها، ثم أضف مع الوقت. والقائمة الفارغة تعني أن الطفل لا يرى شيئاً.
+    </div>
+    <div class="note plain small">
+      <span class="t">ماذا يرى من يصل إلى محظور؟</span>
+      لا يظهر في «الرئيسية» ولا البحث. وبرابط: رسالة هادئة مثل «قناة محظورة» أو «غير مسموح في هذا الملف»، مع <b class="btn">رجوع</b>
+    </div>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">20</span><span>قوائم السماح والحظر</span></footer>
+</section>
+
+<!-- ============================================================ 21. PARENTS: TIME -->
+<section class="page parents">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">ركن الوالدين</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-hourglass"/></svg></div>
+    <div><div class="kicker">ركن الوالدين</div><h1>الوقت: الحصة وأوقات المشاهدة</h1>
+      <p class="lead">لكل ملف <strong>حصة يومية</strong> بالدقائق، و<strong>أوقات مشاهدة</strong> من ساعة إلى ساعة. قبل النهاية بخمس دقائق تنبيه هادئ، وعند النهاية تتوقف المشاهدة حتى يفتحها الوالدان.</p></div>
+  </div>
+  <div class="grid g2 gap-s align-s">
+    <figure><img class="shot" src="img/settings_hub_time.jpg" alt=""><figcaption>الإعدادات ← <b class="btn">الحصص والجداول</b>: الحصة: <b class="btn">بلا حد</b>، أو من 15 إلى 240 دقيقة.</figcaption></figure>
+    <figure><img class="shot" src="img/profile_schedule.jpg" alt=""><figcaption><b>أوقات المشاهدة:</b> <kbd>OK</kbd> على الرقم، ثم <kbd>↑</kbd> <kbd>↓</kbd>، ثم <kbd>OK</kbd>. ثم <b class="btn">حفظ</b>، أو <b class="btn">طوال اليوم</b></figcaption></figure>
+  </div>
+
+  <div class="grid g2 gap-s mt align-s">
+    <figure><img class="shot" src="img/time_warning.jpg" alt=""><figcaption><b>قبل خمس دقائق:</b> «بقيت 5 دقائق من وقت المشاهدة». لا يوقف الفيديو.</figcaption></figure>
+    <div>
+      <figure><img class="shot" src="../manual/images/time-up.jpg" alt=""></figure>
+      <ol class="legend teal two" style="--rows:2">
+        <li>لمن انتهى الوقت.</li><li>متى تعود المشاهدة.</li><li><b class="btn">فتح بالرمز</b></li><li>والفتح من الجوال أيضاً.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="grid g2 gap-s mt align-s">
+    <figure><img class="shot" src="img/time_up_unlock.jpg" alt=""><figcaption><b>«كم تضيف؟»</b> بعد الرمز: +15 أو +30 أو +60 دقيقة، أو <b class="btn">بقية اليوم</b>. أو <b class="btn">تبديل الملف</b> دون وقت.</figcaption></figure>
+    <div class="stack small">
+      <p style="margin:0">الدقائق تُحسب ما دامت شاشات الملف ظاهرة، لا على «انتهى الوقت» ولا على «من يشاهد الآن؟». وتبدأ الحصة من جديد كل يوم.</p>
+      <p style="margin:0">خارج الساعات المسموحة تظهر «خارج أوقات المشاهدة»: «حان وقت الراحة…». وتُفتح بالطريقة نفسها.</p>
+      <p style="margin:0"><strong>من الجوال:</strong> «الأب» ← «الوقت» ← «فتح الوقت الآن».</p>
+      <div class="note kids" style="margin:0">
+        <span class="t">ساعة التلفاز</span>
+        الحصة والأوقات تتبع ساعة التلفاز. أبقِ «الوقت التلقائي» مفعّلاً في إعدادات التلفاز، وإلا غيّرهما من يغيّر الساعة.
+      </div>
+    </div>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">21</span><span>الوقت</span></footer>
+</section>
+
+<!-- ============================================================ 22. PARENTS: VIDEO LOCK -->
+<section class="page parents">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">ركن الوالدين</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-lock"/></svg></div>
+    <div><div class="kicker">ركن الوالدين</div><h1>قفل الفيديو</h1>
+      <p class="lead">كل فيديو يبدأ مقفولاً حتى ينتهي، وكذلك قائمة التشغيل. تختار بتأنٍّ، ثم تكمل ما بدأت. القفل يبقى بعد إعادة تشغيل التلفاز، والتقديم إلى النهاية لا يفكّه.</p></div>
+  </div>
+
+  <h2>في ملف الطفل: الخروج برمز الوالدين</h2>
+  <div class="grid g-narrow gap-s align-c">
+    <figure><img class="shot" src="img/lock_child_pin.jpg" alt=""></figure>
+    <p class="small" style="margin:0"><kbd>BACK</kbd> لا يُخرج الطفل من الفيديو، بل تظهر «الخروج يحتاج رمز الوالدين». إن كتب أحد الوالدين الرمز خرج الطفل، و<kbd>BACK</kbd> مرة أخرى يعيده إلى الفيديو. وحين ينتهي الفيديو وحده يعود الطفل إلى «الرئيسية».</p>
+  </div>
+
+  <h2>في ملف الكبار: عشر ثوانٍ ثم جملة</h2>
+  <div class="grid g3 gap-s">
+    <figure><img class="shot" src="img/lock_adult_hint.jpg" alt=""><figcaption><b>1</b> · ضغطة قصيرة على <kbd>BACK</kbd> تُظهر التذكير فقط.</figcaption></figure>
+    <figure><img class="shot" src="img/lock_hold_ring.jpg" alt=""><figcaption><b>2</b> · اضغط مطوّلاً على <kbd>BACK</kbd> أو <kbd>OK</kbd> عشر ثوانٍ. أفلته لتبقى.</figcaption></figure>
+    <figure><img class="shot" src="img/lock_phrase_keyboard.jpg" alt=""><figcaption><b>3</b> · اكتب الجملة الظاهرة بلوحة «شاشة»، ثم <b class="btn">خروج</b></figcaption></figure>
+  </div>
+  <div class="grid g2 gap-s mt-s align-s">
+    <div class="note small">
+      <span class="t">4 · يُسجَّل «استسلاماً»</span>
+      «خرجت قبل نهاية الفيديو، وسُجّل ذلك استسلاماً.» ويظهر العدد في الإحصائيات. الجملة تتغير كل مرة، مثل «الصبر مفتاح الفرج». والزر <b class="btn">متابعة المشاهدة</b> يعيدك إلى الفيديو.
+    </div>
+    <div class="card small">
+      <h3>من الجوال</h3>
+      <p style="margin:0">«الأب» ← «الفيديو» ← <b class="btn">فك قفل الفيديو</b>. في ملف الكبار يُسجَّل ذلك استسلاماً أيضاً. وأثناء القفل: لا فيديو آخر، ولا رابط جديد، ولا استعادة نسخة؛ أما الإيقاف المؤقت والتقديم فيعملان.</p>
+    </div>
+  </div>
+  <div class="grid g2 gap-s mt">
+    <figure><img class="shot" src="img/lock_phrase_mistake.jpg" alt=""><figcaption><b>جملة غير مطابقة:</b> «الجملة غير مطابقة. اكتبها كما تظهر تماماً.»</figcaption></figure>
+    <figure><img class="shot" src="img/player_skipped_end_card.jpg" alt=""><figcaption><b>التقديم إلى النهاية:</b> «الوصول إلى النهاية بالتقديم لا يُنهي القفل: الفيديو ما زال مقفلاً.»</figcaption></figure>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">22</span><span>قفل الفيديو</span></footer>
+</section>
+
+<!-- ============================================================ 23. PARENTS: GUARD -->
+<section class="page parents">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">ركن الوالدين</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-shield-check"/></svg></div>
+    <div><div class="kicker">ركن الوالدين</div><h1>الحارس و«حالة الحماية»</h1>
+      <p class="lead">زر <kbd>HOME</kbd> لا يمنعه تطبيق عادي. لذلك في «شاشة» حارس: إن ظهر تطبيق آخر في وقت ممنوع غطّاه فوراً بـ «لحظة… نعود إلى «شاشة»»، وأعاد «شاشة» خلال ثانية أو ثانيتين.</p></div>
+  </div>
+  <div class="grid g2 gap-s">
+    <div class="card small">
+      <h3>متى يتدخل؟</h3>
+      <ul style="margin:0">
+        <li><strong>ما دام ملف طفل مفتوحاً</strong>، في أي شاشة منه.</li>
+        <li>أثناء فيديو مقفول، في أي ملف.</li>
+        <li>عند «انتهى الوقت»، وخارج أوقات المشاهدة.</li>
+        <li>وفي غير ذلك ملف الكبار حر.</li>
+      </ul>
+    </div>
+    <div class="card small">
+      <h3>ماذا يحتاج؟</h3>
+      <p style="margin:0">صلاحيتين يمنحهما المثبّت: «العرض فوق التطبيقات» و«الوصول إلى بيانات الاستخدام». ثم يعمل وحده، ويعود بعد كل إعادة تشغيل للتلفاز.</p>
+    </div>
+  </div>
+
+  <h2>«حالة الحماية»</h2>
+  <div class="grid g-wide gap-s align-s">
+    <figure><img class="shot" src="../manual/images/protection.jpg" alt=""></figure>
+    <ol class="legend">
+      <li>«الحماية تعمل»، أو ما ينقص.</li>
+      <li><b class="btn">التفاصيل وأوامر ADB</b></li>
+      <li><b class="t">آخر عودة</b> بعد <kbd>HOME</kbd>.</li>
+      <li><b class="t">المطلوب:</b> ثانيتان على الأكثر.</li>
+      <li>كل صلاحية وحالتها.</li>
+      <li>نقطة حمراء: شيء ينقص.</li>
+    </ol>
+  </div>
+  <div class="grid g2 gap-s mt align-s">
+    <div class="small">
+      <h3 style="margin-top:0">قِس سرعة العودة</h3>
+      <ol style="margin:0">
+        <li>ادخل ملف طفل، وشغّل فيديو، واضغط <kbd>HOME</kbd>. كرّر، وجرّب زر YouTube أو Netflix.</li>
+        <li>اخرج إلى ملف الكبار ← الإعدادات ← <b class="btn">حالة الحماية</b>: «آخر عودة إلى «شاشة» بعد Home».</li>
+        <li><b class="btn">التفاصيل وأوامر ADB</b> ← «سرعة العودة»: كل عودة، وزمنها، ومن أي تطبيق.</li>
+      </ol>
+    </div>
+    <div class="note red small">
+      <span class="t">القفل ليس منيعاً</span>
+      لا يمنع الحارس الأزرار نفسها، ولا مصدر HDMI، ولا فصل الكهرباء، ولا إعادة ضبط المصنع، ولا أوامر الحاسوب. وفي ملف الكبار يصل الممسك بالريموت إلى إعدادات التلفاز: لا تتركه مفتوحاً للأطفال.
+    </div>
+  </div>
+  <div class="grid g3 gap-s mt align-s">
+    <figure><img class="shot" src="img/protection_ok.jpg" alt=""><figcaption><b>«الحماية تعمل»:</b> الصلاحيتان ممنوحتان، والخدمة تعمل.</figcaption></figure>
+    <figure><img class="shot" src="img/protection_ok_limits.jpg" alt=""><figcaption><b>«سرعة العودة»:</b> الفيروزي ضمن الثانيتين، والكهرماني أبطأ.</figcaption></figure>
+    <div class="note plain small">
+      <span class="t">مخرج الطوارئ</span>
+      إن قُفل الرمز أو نُسي، يبقى التلفاز على «شاشة». المخرج الأخير من الحاسوب الذي ثبّتها: أمر مكتوب في «حدود الحماية».
+    </div>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">23</span><span>الحارس و«حالة الحماية»</span></footer>
+</section>
+
+<!-- ============================================================ 24. PARENTS: STATS + CHECKLIST -->
+<section class="page parents">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">ركن الوالدين</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-chart"/></svg></div>
+    <div><div class="kicker">ركن الوالدين</div><h1>الإحصائيات</h1>
+      <p class="lead">دقائق المشاهدة كما هي: بلا نقاط، ولا أوسمة، ولا سلاسل أيام. الإعدادات ← <b class="btn">الإحصائيات</b> ← <b class="btn">التفاصيل</b></p></div>
+  </div>
+  <figure><img class="shot" src="../manual/images/stats.jpg" alt=""></figure>
+  <ol class="legend two" style="--rows:4">
+    <li><b class="t">الملف</b> الذي تعرض إحصائياته.</li>
+    <li><b class="t">آخر 7 أيام:</b> عمود لكل يوم.</li>
+    <li><b class="t">اليوم</b> ودقائقه.</li>
+    <li><b class="t">هذا الأسبوع:</b> المجموع.</li>
+    <li><b class="t">المقارنة</b> بالأسبوع الماضي.</li>
+    <li><b class="t">الاستسلام</b> هذا الأسبوع.</li>
+    <li><b class="t">أكثر القنوات مشاهدة.</b></li>
+  </ol>
+  <div class="grid g2 gap-s mt-s align-s">
+    <figure><img class="shot" src="img/stats.jpg" alt=""><figcaption><b>ملف له حصة:</b> خط متقطّع عند الحصة، فترى الأيام التي اقتربت منها.</figcaption></figure>
+    <figure><img class="shot" src="img/settings_hub_stats.jpg" alt=""><figcaption><b>في لوحة الإعدادات:</b> اليوم وهذا الأسبوع لكل ملف. والأرقام على التلفاز وحده، لآخر 90 يوماً تقريباً.</figcaption></figure>
+  </div>
+
+  <h2>قائمة مراجعة للوالدين</h2>
+  <div class="grid g2 gap-s">
+    <ul class="small" style="margin:0">
+      <li>رمز والدين تعرفه أنت وحدك.</li>
+      <li>ملف لكل طفل، وقائمة سماح فيها قنوات تثق بها.</li>
+      <li>حصة يومية وأوقات مشاهدة مناسبة لكل طفل.</li>
+      <li>«إخفاء المقاطع القصيرة» حسب رغبتك.</li>
+    </ul>
+    <ul class="small" style="margin:0">
+      <li>«حالة الحماية» تقول «الحماية تعمل»، و«الوقت التلقائي» مفعّل.</li>
+      <li>جوالك مقترن، والصفحة على شاشته الرئيسية.</li>
+      <li>نسخة احتياطية حديثة خارج التلفاز.</li>
+      <li>لا يُترك ملف الكبار مفتوحاً للأطفال.</li>
+    </ul>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">24</span><span>الإحصائيات</span></footer>
+</section>
+
+<!-- ============================================================ 25. YOUTUBE BREAKS 1 -->
+<section class="page help">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">عند الحاجة</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-alert"/></svg></div>
+    <div><div class="kicker">عند الحاجة</div><h1>عندما يتعطل يوتيوب</h1>
+      <p class="lead">سيحدث، وليس ذنبك: يوتيوب يغيّر طريقة عمله كل شهر إلى ثلاثة أشهر، فيتعطل «شاشة» حتى يصدر إصلاح. لذلك يظهر العطل بوضوح، لا بصمت.</p></div>
+  </div>
+  <div class="grid g-wide gap-s align-s">
+    <figure><img class="shot" src="../manual/images/error-screen.jpg" alt=""></figure>
+    <ol class="legend" style="margin-top:0">
+      <li><b class="t">العنوان:</b> «يوتيوب غيّر شيئاً. حدّث التطبيق.» (أو «لا يوجد اتصال بالإنترنت»).</li>
+      <li><b class="t">سطر يشرح المشكلة.</b></li>
+      <li><b class="t">اسم الخطأ:</b> ما يحتاجه صاحب البيت.</li>
+      <li><b class="t">إصدار المكتبة</b> التي تقرأ يوتيوب.</li>
+      <li><b class="t"><b class="btn">رجوع</b></b></li>
+      <li><b class="t"><b class="btn">فحص التحديثات</b>:</b> يبحث عن إصلاح.</li>
+    </ol>
+  </div>
+  <table class="compact mt-s">
+    <tr><th>النوع</th><th>ماذا يعني</th><th>ماذا تفعل</th></tr>
+    <tr><td><b>لا اتصال</b></td><td>لا إنترنت. ليس يوتيوب.</td><td>افحص الشبكة، ثم <b class="btn">إعادة المحاولة</b></td></tr>
+    <tr><td><b>طلبات كثيرة</b></td><td>طلبات كثيرة في وقت قصير.</td><td>انتظر دقائق، ثم أعد المحاولة.</td></tr>
+    <tr><td><b>غير متاح</b></td><td>فيديو محذوف أو مخفي.</td><td>طبيعي لفيديو واحد.</td></tr>
+    <tr><td><b>خاص، مقيَّد بالعمر، مدفوع…</b></td><td>صفة في الفيديو نفسه.</td><td>طبيعي: «شاشة» لا يسجّل الدخول.</td></tr>
+    <tr><td><b>360p فقط</b></td><td>لم يعطِ يوتيوب إلا 360p.</td><td>متوقع لفيديوهات «للأطفال» (ص&nbsp;12).</td></tr>
+    <tr><td><b>مرفوض 403</b>، <b>تحقّق روبوت</b>، <b>تعطّل الاستخراج</b></td><td>يوتيوب رفض أو غيّر شيئاً.</td><td>جرّب فيديو آخر، ثم <b class="btn">فحص التحديثات</b></td></tr>
+  </table>
+  <p class="small mt-s"><strong>القاعدة:</strong> خطأ في فيديو واحد يخص ذلك الفيديو غالباً. والخطأ نفسه في كل فيديو يعني أن يوتيوب غيّر شيئاً.</p>
+  <div class="grid g3 gap-s">
+    <figure><img class="shot" src="img/error_network.jpg" alt=""><figcaption><b>«لا يوجد اتصال بالإنترنت»:</b> المشكلة في الشبكة، لا في يوتيوب.</figcaption></figure>
+    <figure><img class="shot" src="img/error_content_unavailable.jpg" alt=""><figcaption><b>فيديو محذوف:</b> «هذا الفيديو غير متاح: ربما حُذف أو أخفاه صاحبه.»</figcaption></figure>
+    <figure><img class="shot" src="img/home_sync_failed.jpg" alt=""><figcaption><b>«الرئيسية» لم تُحدَّث:</b> «تعذّر جلب أحدث الفيديوهات من قنواتك في آخر تحديث.»</figcaption></figure>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">25</span><span>عندما يتعطل يوتيوب</span></footer>
+</section>
+
+<!-- ============================================================ 26. YOUTUBE BREAKS 2 -->
+<section class="page help">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">عند الحاجة</span></header>
+  <h2>«تشخيص»: اعرف ما الذي تعطّل في ثوانٍ</h2>
+  <p class="small">من ملف الكبار: الإعدادات ← <b class="btn">تشخيص</b> ← <b class="btn">فيديوهات تجريبية</b></p>
+  <figure><img class="shot" src="../manual/images/diagnostics.jpg" alt=""></figure>
+  <ol class="legend two" style="--rows:2">
+    <li><b class="t">خمسة فيديوهات ثابتة،</b> لكل منها طريقة تعطّل مختلفة.</li>
+    <li><b class="t">النتيجة:</b> «يعمل · حتى 2160p»، أو «360p فقط»، أو «غير متاح»…</li>
+    <li><b class="t"><b class="btn">إعادة الفحص</b></b></li>
+    <li><b class="t">تفاصيل المختار:</b> <kbd>OK</kbd> يشغّله بلا قفل.</li>
+  </ol>
+  <div class="grid g2 gap-s mt-s align-s">
+    <table class="compact">
+      <tr><th>الصف</th><th>النتيجة الصحيحة الآن</th></tr>
+      <tr><td><b>عادي</b></td><td>«يعمل · حتى …p»</td></tr>
+      <tr><td><b>بث مباشر</b></td><td>«يعمل · بث مباشر»</td></tr>
+      <tr><td><b>للأطفال</b></td><td>«360p فقط»</td></tr>
+      <tr><td><b>محذوف</b></td><td>«غير متاح»: الخطأ هنا صحيح</td></tr>
+      <tr><td><b>SponsorBlock</b></td><td>«يعمل»، ويُتخطى إعلانه</td></tr>
+    </table>
+    <div class="note small">
+      <span class="t">إن فشل «عادي» بغير «لا اتصال»</span>
+      فيوتيوب غيّر شيئاً. وفي لوحة <b class="btn">تشخيص</b> أيضاً «معلومات للتشخيص»: إصدار التطبيق والمكتبة، ونوع التلفاز، وحالة تحديث الاشتراكات وآخر خطأ.
+    </div>
+  </div>
+
+  <h2>ماذا تفعل؟</h2>
+  <ol class="steps">
+    <li><span class="st">جرّب فيديو آخر.</span> إن عمل، فالمشكلة في الأول وحده.</li>
+    <li><span class="st">«لا يوجد اتصال بالإنترنت»؟</span> تأكد من Wi-Fi التلفاز، ثم <b class="btn">إعادة المحاولة</b></li>
+    <li><span class="st">اضغط <b class="btn">فحص التحديثات</b></span> إن وُجد إصدار جديد فثبّته (ص&nbsp;14).</li>
+    <li><span class="st">صوّر شاشة الخطأ بجوالك</span> وأرسلها لصاحب البيت: فيها «اسم الخطأ» و«إصدار المكتبة».</li>
+    <li><span class="st">انتظر قليلاً.</span> الإصلاح يأتي عادةً خلال أيام، ويصل بـ «فحص التحديثات». ولا تحاول تسجيل الدخول بحساب غوغل: «شاشة» لا يسجّل الدخول أبداً.</li>
+  </ol>
+  <p class="small muted mt-s" style="margin-bottom:0">لصاحب البيت: الخطوات التقنية في <code>MAINTENANCE.md</code>: رفع إصدار مكتبة NewPipeExtractor، والاختبار، ونشر إصدار جديد.</p>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">26</span><span>عندما يتعطل يوتيوب</span></footer>
+</section>
+
+<!-- ============================================================ 27. FAQ -->
+<section class="page help">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">عند الحاجة</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-help"/></svg></div>
+    <div><div class="kicker">عند الحاجة</div><h1>أسئلة شائعة</h1>
+      <p class="lead">أجوبة قصيرة. والتفصيل في «دليل استخدام شاشة».</p></div>
+  </div>
+  <div class="qa">
+    <div class="q"><h3>هل يحتاج «شاشة» حساب غوغل؟</h3><p>لا، أبداً. اشتراكاتك محفوظة على التلفاز نفسه.</p></div>
+    <div class="q"><h3>هل فيه إعلانات؟</h3><p>لا تظهر إعلانات يوتيوب. والإعلان الذي يقرؤه صاحب القناة يُتخطى وحده غالباً (SponsorBlock).</p></div>
+    <div class="q"><h3>لماذا لا أرى «مقترح لك»؟</h3><p>عمداً: «شاشة» يعرض ما تختاره أنت فقط، ولا يبدأ فيديو وحده إلا داخل قائمة تشغيل.</p></div>
+    <div class="q"><h3>«الرئيسية» فارغة</h3><p>استورد اشتراكاتك من Google Takeout، أو اشترك في قناة من البحث. ثم انتظر دقائق، أو اضغط <b class="btn">تحديث</b></p></div>
+    <div class="q"><h3>الفيديو يتقطّع</h3><p>تأكد من قوة Wi-Fi. واخفض الحد: الإعدادات ← الجودة الافتراضية ← «تلقائي حتى 720p».</p></div>
+    <div class="q"><h3>لماذا شارة «360p»؟</h3><p>فيديو مصنّف «للأطفال»: يوتيوب لا يعطي «شاشة» له إلا 360p حالياً.</p></div>
+    <div class="q"><h3>ضغطت <kbd>BACK</kbd> فلم يخرج الفيديو</h3><p>الفيديو مقفول حتى ينتهي. الطفل: رمز الوالدين. الكبار: <kbd>BACK</kbd> مطوّلاً عشر ثوانٍ، ثم الجملة.</p></div>
+    <div class="q"><h3>طفلي لا يرى قناة يحبها</h3><p>أضفها إلى قائمة سماحه. أو هي محظورة، أو في عنوانها كلمة محظورة، أو مقاطع قصيرة مخفية في ملفه.</p></div>
+    <div class="q"><h3>الطفل ضغط <kbd>HOME</kbd> فعادت «شاشة» وحدها!</h3><p>هذا الحارس، وهو مقصود: ما دام ملف طفل مفتوحاً تبقى «شاشة» في الواجهة.</p></div>
+    <div class="q"><h3>كيف أفتح Netflix أو إعدادات التلفاز؟</h3><p>اخرج من ملف الطفل: <b class="btn">خروج</b> ← الرمز ← ملف الكبار.</p></div>
+    <div class="q"><h3>انتهى الوقت ويحتاج الطفل دقائق</h3><p><b class="btn">فتح بالرمز</b> ← الرمز ← +15 مثلاً. أو من الجوال: «الأب» ← «الوقت».</p></div>
+    <div class="q"><h3>«محاولات خاطئة كثيرة. حاول بعد …»</h3><p>انتظر حتى ينتهي العدّ. المهلة تطول مع كل مرة. والجوال له عدّاد مستقل.</p></div>
+    <div class="q"><h3>نسيت رمز الوالدين</h3><p>لا يوجد «نسيت الرمز» في التطبيق، عمداً. الحل عند صاحب البيت من الحاسوب الذي ثبّت «شاشة»: حفظ النسخة، ومسح بيانات التطبيق، ورمز جديد، ثم استعادة الباقي. الخطوات في <code>MAINTENANCE.md</code>.</p></div>
+    <div class="q"><h3>طلب «شاشة» الرمز حين عدت إليه</h3><p>ملف الكبار يُقفل وحده بعد 15 ثانية من الغياب، إن كان في البيت ملف طفل.</p></div>
+    <div class="q"><h3>صفحة الجوال لا تفتح</h3><p>الشبكة نفسها؟ «شاشة» يعمل؟ تغيّر عنوان التلفاز؟ امسح رمز QR من جديد من «الخادم المحلي».</p></div>
+    <div class="q"><h3>أرسلت رابطاً فلم يُعرض</h3><p>الجوال يقول السبب: خارج قائمة السماح، أو انتهى الوقت، أو فيديو مقفول، أو «من يشاهد الآن؟» على التلفاز.</p></div>
+    <div class="q"><h3>هل يبقى كل شيء بعد إعادة تشغيل التلفاز؟</h3><p>نعم. والحارس وخادم الجوال يعودان وحدهما، والفيديو المقفول يعود كما كان.</p></div>
+    <div class="q"><h3>كيف أعيد يوتيوب الرسمي؟</h3><p>شغّل المثبّت من الحاسوب بخيار التراجع، كما في «دليل التثبيت». يعيد يوتيوب ويوقف الحارس، ويبقى «شاشة» ببياناته.</p></div>
+    <div class="q"><h3>كيف أحذف «شاشة»؟</h3><p>احفظ نسخة احتياطية أولاً. ثم على التلفاز: Settings، ثم Apps، ثم «شاشة»، ثم Uninstall. الحذف يمسح كل بياناته.</p></div>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">27</span><span>أسئلة شائعة</span></footer>
+</section>
+
+<!-- ============================================================ 28. LEGAL -->
+<section class="page help">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">كتيّب شاشة</span><span class="part">عند الحاجة</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-scale"/></svg></div>
+    <div><div class="kicker">اقرأه مرة واحدة</div><h1>تنبيه قانوني وخصوصية</h1></div>
+  </div>
+  <div class="note red">
+    <span class="t">«شاشة» يخالف شروط خدمة يوتيوب</span>
+    صُنع للاستخدام الشخصي في هذا البيت فقط. لا تنشره ولا تبعه، ولا تعطِ ملف التطبيق ولا مجلد التثبيت لأحد، وأبقِ مستودعه على GitHub خاصاً.
+  </div>
+
+  <div class="grid g2 gap-s mt align-s">
+    <div>
+      <h2>القفل ليس منيعاً</h2>
+      <p class="small">القفل داخل «شاشة» مضمون: قفل الفيديو، وملف الطفل، وانتهاء الوقت. أما الحارس الذي يعيده إلى الواجهة فـ «أفضل جهد»، ويمكن تجاوزه، ومن ذلك:</p>
+      <ul class="small">
+        <li>تبديل مصدر الصورة (Input أو HDMI) إلى جهاز آخر.</li>
+        <li>فصل الكهرباء أو إعادة التشغيل: يعود الحارس بعد اكتمال التشغيل.</li>
+        <li>إعادة ضبط المصنع، أو أوامر من حاسوب مأذون له.</li>
+        <li>تغيير التاريخ والساعة يدوياً، إن أُطفئ ضبطهما التلقائي.</li>
+        <li>الثانية أو الثانيتان قبل أن يغطي الحارس تطبيقاً آخر.</li>
+      </ul>
+      <p class="small">منع ذلك كله يحتاج وضع «مالك الجهاز» (Device Owner)، وقد استُبعد عمداً. «شاشة» أداة تساعد الأسرة، لا بديل عن حضور الوالدين.</p>
+    </div>
+    <div>
+      <h2>خصوصيتك</h2>
+      <ul class="small">
+        <li>لا تسجيل دخول، ولا حسابات، ولا إعلانات، ولا تحليلات، ولا تتبّع.</li>
+        <li>كل البيانات على التلفاز نفسه، ولا تُرسل إلى أي خادم.</li>
+        <li>لا يتصل «شاشة» بالإنترنت إلا ليوتيوب، ولـ SponsorBlock (دون أن يعرف ماذا تشاهد)، ولـ GitHub حين تفحص التحديثات.</li>
+        <li>خادم الجوال على شبكة البيت وحدها، برمز اقتران.</li>
+      </ul>
+      <h2>الرخص والنسب</h2>
+      <ul class="small">
+        <li><strong>بيانات التخطي</strong> من SponsorBlock (sponsor.ajay.app)، مرخّصة CC BY-NC-SA 4.0.</li>
+        <li><strong>الخط</strong> IBM Plex Sans Arabic، حقوقه لـ IBM، برخصة SIL OFL 1.1.</li>
+        <li><strong>المكتبات</strong> مفتوحة المصدر، وأسماؤها ورخصها في الإعدادات ← <b class="btn">حول</b> ← «المكتبات ورخصها». أهمها NewPipeExtractor (GPL-3.0).</li>
+        <li><strong>يوتيوب وGoogle TV</strong> علامتان تجاريتان لـ Google، و«شاشة» غير مرتبط بهما.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="grid g2 gap-s mt align-s">
+    <figure><img class="shot" src="img/settings_hub_about.jpg" alt=""><figcaption>الإعدادات ← <b class="btn">حول</b>: التنبيه نفسه، ونسبة بيانات التخطي.</figcaption></figure>
+    <figure><img class="shot" src="img/settings_hub_about_licenses.jpg" alt=""><figcaption>«المكتبات ورخصها»: كل مكتبة، ودورها، ورخصتها.</figcaption></figure>
+  </div>
+  <div class="closing">
+    <img src="../../branding/logo-lockup-on-light.svg" alt="شاشة">
+    <p>يوتيوب لبيتك، بلا إعلانات ولا خوارزمية.</p>
+    <p class="small muted">كتيّب شاشة · الطبعة الأولى · سبتمبر 2026 · الدليل الكامل في <code>docs/manual</code></p>
+  </div>
+  <footer class="ftr"><span>كتيّب شاشة</span><span class="pg">28</span><span>تنبيه قانوني وخصوصية</span></footer>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,133 @@
+package com.ahmadnayfeh.shasha.ui.screens.search
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.ahmadnayfeh.shasha.data.ADULT_PROFILE_ID
+import com.ahmadnayfeh.shasha.data.MutableProfile
+import com.ahmadnayfeh.shasha.data.SubscriptionRepository
+import com.ahmadnayfeh.shasha.data.WatchRepository
+import com.ahmadnayfeh.shasha.data.db.ShashaDatabase
+import com.ahmadnayfeh.shasha.data.inMemoryDatabase
+import com.ahmadnayfeh.shasha.policy.Blocklist
+import com.ahmadnayfeh.shasha.policy.ContentFilter
+import com.ahmadnayfeh.shasha.policy.ListedChannel
+import com.ahmadnayfeh.shasha.policy.PolicyEngine
+import com.ahmadnayfeh.shasha.policy.Profile
+import com.ahmadnayfeh.shasha.ui.FakeUiSource
+import com.ahmadnayfeh.shasha.ui.UiFixtures
+import com.ahmadnayfeh.shasha.youtube.ItemsPage
+import com.ahmadnayfeh.shasha.youtube.PageKey
+import com.ahmadnayfeh.shasha.youtube.SearchFilter
+import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeout
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import java.time.Clock
+
+/** Search runs on submit or a filter change (never while typing), pages on demand, subscribes from results. */
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [35])
+class SearchViewModelTest {
+    private lateinit var db: ShashaDatabase
+    private val source = FakeUiSource()
+    private lateinit var vm: SearchViewModel
+    private val v = UiFixtures.videos
+    private val engine = PolicyEngine(Clock.systemUTC())
+    private val owner = Profile.newAdult("الكبار", id = ADULT_PROFILE_ID)
+    private val rules = MutableStateFlow(ContentFilter.of(engine, owner))
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(Dispatchers.Unconfined)
+        db = inMemoryDatabase()
+        vm = SearchViewModel(source, SubscriptionRepository(db, source), WatchRepository(db, MutableProfile()), rules)
+        source.searchResult = { call ->
+            when (call.page) {
+                null -> ItemsPage(listOf(v[0], UiFixtures.calligraphyChannel, v[1]), PageKey("2"))
+                else -> ItemsPage(listOf(v[1], v[2]), null) // v[1] again: dropped
+            }
+        }
+    }
+
+    @After
+    fun tearDown() {
+        db.close()
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun blankQueriesAreNotSent() {
+        vm.submit("   ")
+        assertThat(source.searches).isEmpty()
+        assertThat(vm.query.value).isEmpty()
+    }
+
+    @Test
+    fun submitSearchesAndMoreResultsComeOnDemand() {
+        vm.submit("  الخط العربي ")
+        assertThat(source.searches.single()).isEqualTo(FakeUiSource.SearchCall("الخط العربي", SearchFilter.ALL, null))
+        assertThat(vm.results.value.items.map { it.key }).containsExactly("v:${v[0].videoId}", "c:${UiFixtures.calligraphyChannel.channelId}", "v:${v[1].videoId}").inOrder()
+
+        vm.loadMore()
+        vm.loadMore()
+        assertThat(source.searches.map { it.page }).containsExactly(null, PageKey("2")).inOrder()
+        assertThat(vm.results.value.items.map { it.key }.last()).isEqualTo("v:${v[2].videoId}")
+        assertThat(vm.results.value.items).hasSize(4)
+        assertThat(vm.results.value.endReached).isTrue()
+    }
+
+    @Test
+    fun resultsTheProfileHides_neverShow_evenWhenBlockedAfterTheyArrived() {
+        vm.submit("x")
+        assertThat(vm.results.value.items).hasSize(3)
+        // Blocked from a card's menu while the results are on screen: they go at once.
+        val blocked = Blocklist(channels = listOf(ListedChannel(UiFixtures.calligraphyChannel.channelId, "فنون الخط"), ListedChannel(v[0].channelId!!, "x")))
+        rules.value = ContentFilter.of(engine, owner.copy(blocklist = blocked))
+        assertThat(vm.results.value.items.map { it.key }).containsExactly("v:${v[1].videoId}")
+        // Before the profile is known, nothing is shown at all.
+        rules.value = ContentFilter.NOTHING
+        assertThat(vm.results.value.items).isEmpty()
+    }
+
+    @Test
+    fun aFilterRerunsTheQueryButNotBeforeOneWasSubmitted() {
+        vm.setFilter(SearchFilter.CHANNELS)
+        assertThat(source.searches).isEmpty()
+        vm.submit("قناة")
+        vm.setFilter(SearchFilter.CHANNELS) // unchanged: nothing sent
+        vm.setFilter(SearchFilter.PLAYLISTS)
+        assertThat(source.searches.map { it.filter }).containsExactly(SearchFilter.CHANNELS, SearchFilter.PLAYLISTS).inOrder()
+    }
+
+    @Test
+    fun theErrorScreensBackLeavesAnEmptySearch() {
+        source.searchResult = { throw com.ahmadnayfeh.shasha.youtube.SourceException(com.ahmadnayfeh.shasha.youtube.SourceErrorKind.BOT_CHECK, "SignInConfirmNotBotException", null, null) }
+        vm.submit("x")
+        assertThat(vm.results.value.error?.kind).isEqualTo(com.ahmadnayfeh.shasha.youtube.SourceErrorKind.BOT_CHECK)
+        vm.clearResults()
+        assertThat(vm.query.value).isEmpty()
+        assertThat(vm.results.value.error).isNull()
+    }
+
+    @Test
+    fun subscribeFromAChannelResult(): Unit = runBlocking {
+        val channel = UiFixtures.calligraphyChannel
+        // Keep the subscribed-ids flow alive, as the screen does.
+        val collector = CoroutineScope(Dispatchers.Unconfined).launch { vm.subscribed.collect {} }
+        vm.toggleSubscription(channel)
+        withTimeout(5_000) { vm.subscribed.first { channel.channelId in it } }
+        vm.toggleSubscription(channel)
+        withTimeout(5_000) { vm.subscribed.first { channel.channelId !in it } }
+        collector.cancel()
+    }
+}

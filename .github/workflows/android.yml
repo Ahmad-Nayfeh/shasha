@@ -1,0 +1,423 @@
+# Shasha CI: unit tests -> signed release APK -> GitHub Release (read by the in-app updater).
+#
+# ─── Contract with app/build.gradle.kts ──────────────────────────────────────────────────────
+# `./gradlew :app:assembleRelease` runs with these environment variables:
+#   SHASHA_KEYSTORE_FILE      absolute path of the decoded keystore ($RUNNER_TEMP/shasha-release.jks).
+#                             Unset or EMPTY = no signing secrets (Dependabot PRs, forks). The release
+#                             build must still succeed (unsigned; CI only uses it to prove R8 works) and
+#                             CI also runs :app:assembleDebug: the debug APK becomes the artifact.
+#   SHASHA_KEYSTORE_PASSWORD  keystore password
+#   SHASHA_KEY_ALIAS          key alias
+#   SHASHA_KEY_PASSWORD       key password
+#   SHASHA_VERSION_CODE       integer = 1000 + github.run_number, so it always increases. The release
+#                             APK's versionCode MUST equal it (checked below). Unset locally -> default.
+#                             If this file is ever renamed, run_number restarts at 1: raise the 1000.
+#   SHASHA_UPDATE_TOKEN       optional fine-grained GitHub token (this repository only, Contents: read)
+#                             for the in-app updater, because Releases of a private repo need auth.
+#                             Empty when the secret is not set. It ends up inside the APK: never give
+#                             it any write permission. When it expires, "check for updates" fails:
+#                             renew it, update the secret, install the next build with the Shasha-Setup installer.
+# versionName stays in app/build.gradle.kts; CI reads it back from the APK (aapt2 dump badging).
+# Published as: tag v<versionName>-<versionCode>, asset shasha-<versionName>-<versionCode>.apk.
+#
+# ─── Repository secrets (Settings > Secrets and variables > Actions) ─────────────────────────
+#   SIGNING_KEYSTORE_BASE64    the .jks as one base64 line:
+#                                Linux:   base64 -w0 shasha-release.jks
+#                                macOS:   base64 -i shasha-release.jks
+#                                Windows: [Convert]::ToBase64String([IO.File]::ReadAllBytes("shasha-release.jks"))
+#   SIGNING_KEYSTORE_PASSWORD, SIGNING_KEY_ALIAS, SIGNING_KEY_PASSWORD
+#   UPDATE_TOKEN               optional, see SHASHA_UPDATE_TOKEN
+# Builds of main (push, weekly schedule, manual run) FAIL without the four SIGNING_* secrets: an
+# APK signed with another key cannot be installed over the previous one. Other branches and PRs
+# without them upload a debug APK and say so loudly.
+
+name: Android
+
+on:
+  push:
+    branches: ['**']
+    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**']
+  pull_request:
+    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**']
+  schedule:
+    - cron: '17 3 * * 5' # Friday 03:17 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Superseded branch/PR runs are cancelled; main runs queue so a release is never cut in half.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  ANDROID_PLATFORM: platforms;android-37.0
+  ANDROID_BUILD_TOOLS: 37.0.0
+  APPLICATION_ID: com.ahmadnayfeh.shasha
+
+# An explicit `bash` runs steps with -eo pipefail (the implicit default is only -e).
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    name: Unit tests
+    # Each commit is tested once: branch pushes via `push`; Dependabot branches and forks via
+    # `pull_request` (a PR from a branch of this repo is already covered by its push run).
+    if: >-
+      (github.event_name == 'push' && !startsWith(github.ref, 'refs/heads/dependabot/')) ||
+      (github.event_name == 'pull_request' &&
+        (startsWith(github.head_ref, 'dependabot/') ||
+         github.event.pull_request.head.repo.full_name != github.repository)) ||
+      github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK packages
+        run: |
+          : "${ANDROID_HOME:?ANDROID_HOME is not set on this runner}"
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          { yes || true; } | "$sdkmanager" --licenses > /dev/null
+          "$sdkmanager" --install "$ANDROID_PLATFORM" "build-tools;$ANDROID_BUILD_TOOLS" > /dev/null
+          test -x "$ANDROID_HOME/build-tools/$ANDROID_BUILD_TOOLS/apksigner"
+
+      # `basic` = the open-source actions/cache provider, free for private repositories.
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+
+      # :app:verifyRoborazziDebug runs all of :app's unit tests with the screenshot tests in verify mode:
+      # a screen that no longer matches its PNG in app/src/test/screenshots/ fails the build (a plain
+      # testDebugUnitTest only renders them). After an intended UI change: ./gradlew :app:recordRoborazziDebug
+      - name: Run unit tests
+        run: >-
+          ./gradlew --stacktrace --continue
+          :policy:test :youtube:testDebugUnitTest :remote:testDebugUnitTest :app:verifyRoborazziDebug
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-reports
+          path: |
+            */build/reports/tests/
+            */build/test-results/
+            app/build/outputs/roborazzi/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  build:
+    name: Release APK
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      signed: ${{ steps.apk.outputs.signed }}
+      apk_name: ${{ steps.apk.outputs.apk_name }}
+      version_name: ${{ steps.apk.outputs.version_name }}
+      version_code: ${{ steps.prep.outputs.version_code }}
+      extractor_version: ${{ steps.prep.outputs.extractor_version }}
+      cert_sha256: ${{ steps.prep.outputs.cert_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Android SDK packages
+        run: |
+          : "${ANDROID_HOME:?ANDROID_HOME is not set on this runner}"
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          { yes || true; } | "$sdkmanager" --licenses > /dev/null
+          "$sdkmanager" --install "$ANDROID_PLATFORM" "build-tools;$ANDROID_BUILD_TOOLS" > /dev/null
+          test -x "$ANDROID_HOME/build-tools/$ANDROID_BUILD_TOOLS/apksigner"
+
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+
+      - name: Prepare version and signing key
+        id: prep
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          MUST_SIGN: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          echo "version_code=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_OUTPUT"
+          extractor=$(sed -nE 's/^newpipeExtractor[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' gradle/libs.versions.toml)
+          echo "extractor_version=${extractor:-unknown}" >> "$GITHUB_OUTPUT"
+
+          missing=()
+          [ -n "$KEYSTORE_BASE64" ] || missing+=(SIGNING_KEYSTORE_BASE64)
+          [ -n "$KEYSTORE_PASSWORD" ] || missing+=(SIGNING_KEYSTORE_PASSWORD)
+          [ -n "$KEY_ALIAS" ] || missing+=(SIGNING_KEY_ALIAS)
+          [ -n "$KEY_PASSWORD" ] || missing+=(SIGNING_KEY_PASSWORD)
+          if [ "${#missing[@]}" -gt 0 ]; then
+            if [ "$MUST_SIGN" = true ]; then
+              echo "::error title=Signing secrets missing::main is released, so it must be signed. Add: ${missing[*]}"
+              exit 1
+            fi
+            echo "::warning title=DEBUG BUILD - NOT RELEASE-SIGNED::No signing secrets here (normal for" \
+              "Dependabot PRs): ${missing[*]}. The artifact is a debug APK; it cannot update the app on the TV."
+            echo "keystore_file=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          keystore="$RUNNER_TEMP/shasha-release.jks"
+          if ! printf '%s' "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 --decode > "$keystore" 2> /dev/null; then
+            echo "::error title=Bad signing secrets::SIGNING_KEYSTORE_BASE64 is not valid base64" \
+              "(see the top of android.yml)."
+            exit 1
+          fi
+          chmod 600 "$keystore"
+          # Fail here with a clear message instead of deep inside Gradle.
+          if ! keytool -list -keystore "$keystore" -storepass:env KEYSTORE_PASSWORD -alias "$KEY_ALIAS" \
+            > /dev/null; then
+            echo "::error title=Bad signing secrets::Check SIGNING_KEYSTORE_BASE64, SIGNING_KEYSTORE_PASSWORD" \
+              "and SIGNING_KEY_ALIAS."
+            exit 1
+          fi
+          cert_sha256=$(keytool -exportcert -keystore "$keystore" -storepass:env KEYSTORE_PASSWORD -alias "$KEY_ALIAS" |
+            sha256sum | cut -d' ' -f1)
+          echo "keystore_file=$keystore" >> "$GITHUB_OUTPUT"
+          echo "cert_sha256=$cert_sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Build APK
+        env:
+          SHASHA_KEYSTORE_FILE: ${{ steps.prep.outputs.keystore_file }}
+          SHASHA_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          SHASHA_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SHASHA_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SHASHA_VERSION_CODE: ${{ steps.prep.outputs.version_code }}
+          SHASHA_UPDATE_TOKEN: ${{ secrets.UPDATE_TOKEN }}
+        run: |
+          if [ -n "$SHASHA_KEYSTORE_FILE" ]; then
+            ./gradlew --stacktrace :app:assembleRelease
+          else
+            # No key: the release build still has to pass (R8), the debug APK is what gets uploaded.
+            ./gradlew --stacktrace :app:assembleRelease :app:assembleDebug
+          fi
+
+      # The error screen shows the failing exception's class name (SourceException.technicalName). R8
+      # would rename them ("l50" instead of ContentNotAvailableException); youtube/consumer-rules.pro
+      # keeps them. Fail here if that rule ever stops working.
+      - name: Check that R8 kept exception names
+        run: |
+          mapping=app/build/outputs/mapping/release/mapping.txt
+          if ! grep -q '^org\.schabi\.newpipe\.extractor\.exceptions\.ContentNotAvailableException -> ' "$mapping"; then
+            echo "::error::$mapping is missing or has an unexpected format"
+            exit 1
+          fi
+          renamed=$(grep -E '^(org\.schabi\.newpipe\.extractor\.exceptions\.|com\.ahmadnayfeh\.shasha\.)[A-Za-z0-9_.$]*(Exception|Error) -> ' "$mapping" |
+            awk '$1 ":" != $3 { print $1 " -> " $3 }')
+          if [ -n "$renamed" ]; then
+            echo "::error title=Exception names obfuscated::The error screen would show these renamed:" \
+              "${renamed//$'\n'/, }. Check -keepnames in youtube/consumer-rules.pro."
+            exit 1
+          fi
+
+      # For decoding stack traces of this exact build (retrace). Not part of the Release.
+      - name: Upload R8 mapping
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: r8-mapping-${{ steps.prep.outputs.version_code }}
+          path: app/build/outputs/mapping/release/mapping.txt
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Verify and name APK
+        id: apk
+        env:
+          VERSION_CODE: ${{ steps.prep.outputs.version_code }}
+          EXTRACTOR_VERSION: ${{ steps.prep.outputs.extractor_version }}
+          EXPECTED_CERT: ${{ steps.prep.outputs.cert_sha256 }}
+        run: |
+          tools="$ANDROID_HOME/build-tools/$ANDROID_BUILD_TOOLS"
+          shopt -s nullglob
+          only_apk() {
+            local apks=("$1"/*.apk)
+            if [ "${#apks[@]}" -ne 1 ]; then
+              echo "::error::Expected exactly one APK in $1, found ${#apks[@]}: ${apks[*]}" >&2
+              return 1
+            fi
+            printf '%s\n' "${apks[0]}"
+          }
+          # Captured first: `aapt2 | grep -m1` could die of SIGPIPE under pipefail.
+          package_line() { local b; b=$("$tools/aapt2" dump badging "$1") && grep -m1 '^package:' <<< "$b"; }
+
+          release_apk=$(only_apk app/build/outputs/apk/release)
+          line=$(package_line "$release_apk")
+          echo "$release_apk: $line"
+          package=$(sed -nE "s/^package: name='([^']+)'.*/\1/p" <<< "$line")
+          code=$(sed -nE "s/.* versionCode='([0-9]+)'.*/\1/p" <<< "$line")
+          name=$(sed -nE "s/.* versionName='([^']+)'.*/\1/p" <<< "$line")
+          if [ "$package" != "$APPLICATION_ID" ]; then
+            echo "::error::APK package is '$package', expected '$APPLICATION_ID'"
+            exit 1
+          fi
+          if [ "$code" != "$VERSION_CODE" ]; then
+            echo "::error title=versionCode not applied::APK has '$code', expected $VERSION_CODE (SHASHA_VERSION_CODE)."
+            exit 1
+          fi
+          if ! [[ "$name" =~ ^[0-9A-Za-z._-]+$ ]]; then
+            echo "::error::versionName '$name' is empty or unusable in a tag/file name"
+            exit 1
+          fi
+
+          if [ -n "$EXPECTED_CERT" ]; then
+            if ! certs=$("$tools/apksigner" verify --print-certs "$release_apk"); then
+              echo "::error title=Not signed::apksigner rejected $release_apk." \
+                "Does the release signingConfig use SHASHA_KEYSTORE_FILE?"
+              exit 1
+            fi
+            echo "$certs"
+            # "Signer #1 certificate SHA-256 digest: <hex>", one line per signer.
+            actual=$(sed -nE 's/.*[Ss]igner.* certificate SHA-256 digest: ([0-9a-f]{64})$/\1/p' <<< "$certs" | sort -u)
+            if [ "$actual" != "$EXPECTED_CERT" ]; then
+              echo "::error title=Wrong signing key::APK signed by: ${actual//$'\n'/, }. Expected only $EXPECTED_CERT."
+              exit 1
+            fi
+            apk=$release_apk
+            apk_name="shasha-$name-$code.apk"
+            signed=true
+          else
+            apk=$(only_apk app/build/outputs/apk/debug)
+            echo "$apk: $(package_line "$apk")"
+            if ! "$tools/apksigner" verify --print-certs "$apk"; then
+              echo "::error::apksigner rejected the debug APK $apk"
+              exit 1
+            fi
+            apk_name="shasha-$name-$code-debug.apk"
+            signed=false
+            echo "::warning title=Debug APK - not release-signed::$apk_name is for testing only; it cannot" \
+              "update the app installed from Releases. Run this workflow manually on the branch for a signed APK."
+          fi
+
+          mkdir -p dist
+          cp "$apk" "dist/$apk_name"
+          {
+            echo "signed=$signed"
+            echo "apk_name=$apk_name"
+            echo "version_name=$name"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "### $apk_name"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| versionName / versionCode | \`$name\` / \`$code\` |"
+            echo "| Release-signed | $signed |"
+            echo "| Certificate SHA-256 | \`${EXPECTED_CERT:-debug key}\` |"
+            echo "| NewPipeExtractor | \`$EXTRACTOR_VERSION\` |"
+            echo "| Size | $(du -h "dist/$apk_name" | cut -f1) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Uploaded as the bare .apk (not zipped). Short retention: Releases keep the signed ones.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: dist/${{ steps.apk.outputs.apk_name }}
+          archive: false
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Delete decoded keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/shasha-release.jks"
+
+  release:
+    name: GitHub Release
+    needs: build
+    if: >-
+      needs.build.outputs.signed == 'true' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.apk_name }}
+          path: dist
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          APK_NAME: ${{ needs.build.outputs.apk_name }}
+          VERSION_NAME: ${{ needs.build.outputs.version_name }}
+          VERSION_CODE: ${{ needs.build.outputs.version_code }}
+          EXTRACTOR_VERSION: ${{ needs.build.outputs.extractor_version }}
+          CERT_SHA256: ${{ needs.build.outputs.cert_sha256 }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+        run: |
+          tag="v$VERSION_NAME-$VERSION_CODE"
+          apk="dist/$APK_NAME"
+          if [ ! -f "$apk" ]; then
+            # An unzipped artifact is saved under the name the server sends: fall back to the only file.
+            files=()
+            while IFS= read -r -d '' f; do files+=("$f"); done < <(find dist -type f -print0)
+            if [ "${#files[@]}" -ne 1 ]; then
+              echo "::error::$APK_NAME was not downloaded"
+              ls -laR dist
+              exit 1
+            fi
+            mv "${files[0]}" "$apk"
+          fi
+
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "::notice::Release $tag already exists (re-run); nothing to do."
+            exit 0
+          fi
+          # The weekly run rebuilds main; publishing the same commit again would only make the
+          # TV offer an "update" that changes nothing.
+          if [ "$GITHUB_EVENT_NAME" = schedule ]; then
+            released=$(gh api --paginate "repos/$GH_REPO/tags" --jq '.[] | "\(.commit.sha) \(.name)"' |
+              awk -v sha="$GITHUB_SHA" '$1 == sha && $2 ~ /^v/ { print $2 }')
+            if [ -n "$released" ]; then
+              echo "::notice::Commit $GITHUB_SHA is already released as ${released%%$'\n'*};" \
+                "weekly build verified, no new release."
+              exit 0
+            fi
+          fi
+
+          subject=$(gh api "repos/$GH_REPO/commits/$GITHUB_SHA" --jq '.commit.message | split("\n") | .[0]')
+          notes="$RUNNER_TEMP/release-notes.md"
+          {
+            echo "## شاشة $VERSION_NAME ($VERSION_CODE)"
+            echo
+            echo "- **NewPipeExtractor:** \`$EXTRACTOR_VERSION\`"
+            echo "- **Commit:** [\`${GITHUB_SHA:0:7}\`]($COMMIT_URL) $subject"
+            echo "- **Build:** [$GITHUB_WORKFLOW #$GITHUB_RUN_NUMBER]($RUN_URL) ($GITHUB_EVENT_NAME)"
+            echo "- **Signing certificate SHA-256:** \`$CERT_SHA256\`"
+            echo
+            echo "التثبيت: زر «فحص التحديثات» في التطبيق، أو من الحاسوب: ضع \`$APK_NAME\` في مجلد Shasha-Setup وشغّل المثبّت (انظر docs/install-guide.md)."
+          } > "$notes"
+
+          gh release create "$tag" "$apk" \
+            --target "$GITHUB_SHA" \
+            --title "شاشة $VERSION_NAME ($VERSION_CODE)" \
+            --notes-file "$notes" \
+            --latest
+          echo "::notice::Published $tag"

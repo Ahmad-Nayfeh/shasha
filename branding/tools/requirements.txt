@@ -1,0 +1,6 @@
+# Python tools used to generate the brand assets (python3 -m pip install -r branding/tools/requirements.txt)
+CairoSVG==2.9.1
+fonttools==4.66.0
+uharfbuzz==0.56.2
+pillow==12.3.0
+imageio-ffmpeg==0.6.0

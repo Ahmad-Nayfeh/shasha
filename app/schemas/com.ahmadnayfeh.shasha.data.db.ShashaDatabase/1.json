@@ -1,0 +1,341 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "f660a96d10116a34a2b52f0e715d066c",
+    "entities": [
+      {
+        "tableName": "subscriptions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`channelId` TEXT NOT NULL, `name` TEXT NOT NULL, `avatarUrl` TEXT, `addedAtMs` INTEGER NOT NULL, `lastSyncAtMs` INTEGER, `lastSyncError` TEXT, PRIMARY KEY(`channelId`))",
+        "fields": [
+          {
+            "fieldPath": "channelId",
+            "columnName": "channelId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "avatarUrl",
+            "columnName": "avatarUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "addedAtMs",
+            "columnName": "addedAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncAtMs",
+            "columnName": "lastSyncAtMs",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lastSyncError",
+            "columnName": "lastSyncError",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "channelId"
+          ]
+        }
+      },
+      {
+        "tableName": "feed_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`videoId` TEXT NOT NULL, `channelId` TEXT NOT NULL, `channelName` TEXT NOT NULL, `title` TEXT NOT NULL, `publishedAtMs` INTEGER NOT NULL, `thumbnailUrl` TEXT, `durationSeconds` INTEGER, `isShort` INTEGER NOT NULL, `isLive` INTEGER NOT NULL, `url` TEXT NOT NULL, `fetchedAtMs` INTEGER NOT NULL, `publishedAtApproximate` INTEGER NOT NULL, PRIMARY KEY(`videoId`))",
+        "fields": [
+          {
+            "fieldPath": "videoId",
+            "columnName": "videoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "channelId",
+            "columnName": "channelId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "channelName",
+            "columnName": "channelName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publishedAtMs",
+            "columnName": "publishedAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thumbnailUrl",
+            "columnName": "thumbnailUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "isShort",
+            "columnName": "isShort",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isLive",
+            "columnName": "isLive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "url",
+            "columnName": "url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAtMs",
+            "columnName": "fetchedAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publishedAtApproximate",
+            "columnName": "publishedAtApproximate",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "videoId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_feed_items_channelId",
+            "unique": false,
+            "columnNames": [
+              "channelId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_feed_items_channelId` ON `${TABLE_NAME}` (`channelId`)"
+          },
+          {
+            "name": "index_feed_items_publishedAtMs",
+            "unique": false,
+            "columnNames": [
+              "publishedAtMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_feed_items_publishedAtMs` ON `${TABLE_NAME}` (`publishedAtMs`)"
+          }
+        ]
+      },
+      {
+        "tableName": "watch_progress",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`profileId` TEXT NOT NULL, `videoId` TEXT NOT NULL, `positionMs` INTEGER NOT NULL, `durationMs` INTEGER NOT NULL, `updatedAtMs` INTEGER NOT NULL, PRIMARY KEY(`profileId`, `videoId`))",
+        "fields": [
+          {
+            "fieldPath": "profileId",
+            "columnName": "profileId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "videoId",
+            "columnName": "videoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "positionMs",
+            "columnName": "positionMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationMs",
+            "columnName": "durationMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtMs",
+            "columnName": "updatedAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "profileId",
+            "videoId"
+          ]
+        }
+      },
+      {
+        "tableName": "history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`profileId` TEXT NOT NULL, `videoId` TEXT NOT NULL, `title` TEXT NOT NULL, `channelId` TEXT, `channelName` TEXT, `thumbnailUrl` TEXT, `durationSeconds` INTEGER, `watchedAtMs` INTEGER NOT NULL, PRIMARY KEY(`profileId`, `videoId`))",
+        "fields": [
+          {
+            "fieldPath": "profileId",
+            "columnName": "profileId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "videoId",
+            "columnName": "videoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "channelId",
+            "columnName": "channelId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "channelName",
+            "columnName": "channelName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "thumbnailUrl",
+            "columnName": "thumbnailUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "watchedAtMs",
+            "columnName": "watchedAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "profileId",
+            "videoId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_history_profileId_watchedAtMs",
+            "unique": false,
+            "columnNames": [
+              "profileId",
+              "watchedAtMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_history_profileId_watchedAtMs` ON `${TABLE_NAME}` (`profileId`, `watchedAtMs`)"
+          }
+        ]
+      },
+      {
+        "tableName": "watch_later",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`profileId` TEXT NOT NULL, `videoId` TEXT NOT NULL, `title` TEXT NOT NULL, `channelId` TEXT, `channelName` TEXT, `thumbnailUrl` TEXT, `durationSeconds` INTEGER, `addedAtMs` INTEGER NOT NULL, PRIMARY KEY(`profileId`, `videoId`))",
+        "fields": [
+          {
+            "fieldPath": "profileId",
+            "columnName": "profileId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "videoId",
+            "columnName": "videoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "channelId",
+            "columnName": "channelId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "channelName",
+            "columnName": "channelName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "thumbnailUrl",
+            "columnName": "thumbnailUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "addedAtMs",
+            "columnName": "addedAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "profileId",
+            "videoId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_watch_later_profileId_addedAtMs",
+            "unique": false,
+            "columnNames": [
+              "profileId",
+              "addedAtMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_watch_later_profileId_addedAtMs` ON `${TABLE_NAME}` (`profileId`, `addedAtMs`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f660a96d10116a34a2b52f0e715d066c')"
+    ]
+  }
+}

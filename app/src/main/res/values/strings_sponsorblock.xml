@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SponsorBlock (SPEC §1, §7): the player's skip notice, the categories, the data's attribution. Same rules as
+     strings.xml: Arabic only, Western digits, numbers passed as ready-made text (%1$s). -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="ar">
+    <!-- The calm notice after an automatic skip; %1$s = the category below. -->
+    <string name="sponsor_skipped">تم تخطي: %1$s</string>
+    <!-- The adult's button in that notice (5 seconds): back to where the skipped part began. -->
+    <string name="sponsor_undo">تراجع عن التخطي</string>
+
+    <!-- Categories: a short name (after «تم تخطي:» and in the settings) and one line about it. -->
+    <string name="sponsor_category_sponsor">إعلان مموَّل</string>
+    <string name="sponsor_category_sponsor_body">إعلان مدفوع يقرؤه صاحب القناة داخل الفيديو.</string>
+    <string name="sponsor_category_selfpromo">ترويج ذاتي</string>
+    <string name="sponsor_category_selfpromo_body">ترويج صاحب القناة لمنتجاته أو متجره أو قنواته الأخرى.</string>
+    <string name="sponsor_category_interaction">تذكير بالتفاعل</string>
+    <string name="sponsor_category_interaction_body">طلب الإعجاب والاشتراك والتعليق في وسط الفيديو.</string>
+    <string name="sponsor_category_intro">المقدمة</string>
+    <string name="sponsor_category_intro_body">شارة البداية أو فاصل متكرر بلا محتوى.</string>
+    <string name="sponsor_category_outro">الخاتمة</string>
+    <string name="sponsor_category_outro_body">شارة النهاية والشاشات الختامية.</string>
+    <string name="sponsor_category_preview">معاينة أو تلخيص</string>
+    <string name="sponsor_category_preview_body">لقطات مما سيأتي في الفيديو، أو ملخص لما سبق.</string>
+    <string name="sponsor_category_hook">تحية أو تشويق</string>
+    <string name="sponsor_category_hook_body">تحيات ولقطات تشويقية في البداية لا تحمل معلومة.</string>
+    <string name="sponsor_category_filler">استطراد</string>
+    <string name="sponsor_category_filler_body">حديث جانبي أو مزاح خارج موضوع الفيديو.</string>
+    <string name="sponsor_category_music_offtopic">جزء غير موسيقي</string>
+    <string name="sponsor_category_music_offtopic_body">في مقاطع الموسيقى: الأجزاء التي ليست موسيقى.</string>
+
+    <!-- Settings → SponsorBlock. -->
+    <string name="sponsor_settings_subtitle">تتخطى «شاشة» هذه الأجزاء تلقائياً في كل الملفات، مع رسالة صغيرة.</string>
+    <string name="sponsor_settings_default">الافتراضي</string>
+    <string name="sponsor_settings_none">لا يُتخطى شيء: لن تسأل «شاشة» SponsorBlock عن أي فيديو.</string>
+
+    <!-- The data's licence (SPEC: attribution in «حول» and the SponsorBlock pane). The English sentence is SponsorBlock's
+         own attribution template, word for word with its final period (gist ajayyy/4b27dfc66e33941a45aeaadccb51de71, linked
+         from the API docs; the link on the licence's name may be left out). -->
+    <string name="sponsorblock_attribution">بيانات التخطي من SponsorBlock على sponsor.ajay.app، يساهم بها مجتمعه، ومرخّصة بموجب CC BY-NC-SA 4.0.</string>
+    <string name="sponsorblock_attribution_exact" translatable="false">Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/.</string>
+</resources>

@@ -1,0 +1,29 @@
+# Gradle / Android
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+# ...except the signed app inside the one-download install kit (Shasha-Setup/, Shasha-Setup.zip).
+!Shasha-Setup/*.apk
+*.aab
+*.ap_
+*.dex
+output-metadata.json
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.kotlin/
+
+# Signing: the keystore lives only in GitHub Secrets (and your own safe place)
+*.jks
+*.keystore
+keystore.properties
+
+# OS
+.DS_Store
+Thumbs.db

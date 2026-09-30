@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The app draws everything in Compose; the window only needs the brand background (no white flash). -->
+    <style name="Theme.Shasha" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/brand_splash_background</item>
+        <item name="android:colorBackground">@color/brand_splash_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- Launch theme: the brand splash (static logo below API 31; values-v31 animates it). -->
+    <style name="Theme.Shasha.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.Shasha</item>
+    </style>
+</resources>

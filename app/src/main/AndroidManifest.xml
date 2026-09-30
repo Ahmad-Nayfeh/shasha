@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- YouTube, and later SponsorBlock and GitHub Releases. Nothing else. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Whether the TV is online (WorkManager declares it too): the home screen says «لا يوجد اتصال
+         بالإنترنت» instead of waiting for a feed sync that cannot start. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- SPEC §4, the guard outside the app (granted once by the Shasha-Setup installer, never asked for here):
+         cover the app in front and bring Shasha back from the background (SYSTEM_ALERT_WINDOW), and see
+         which app is in front (usage access: the GET_USAGE_STATS app-op). -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <!-- The guard is a foreground service, started again after a reboot or an update. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- «فحص التحديثات» hands a downloaded release to the system installer (SPEC §6; adb-setup grants the
+         app-op, «حالة الحماية» tells whether it is allowed). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- SPEC §5, the phone remote: a web server on the home network (INTERNET comes from :remote), in a
+         foreground service of type connectedDevice, rebound when the network changes and announced with NSD.
+         From Android 14 that type also needs one of a few permissions: CHANGE_WIFI_MULTICAST_STATE (normal,
+         granted at install), which the announcement's Wi-Fi multicast lock uses. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+
+    <!-- «حالة الحماية» says whether the official YouTube app is still enabled (targetSdk 30+ hides other
+         packages unless they are named here). -->
+    <queries>
+        <package android:name="com.google.android.youtube.tv" />
+    </queries>
+
+    <!-- A TV app driven by the remote: no touchscreen, and it also installs on non-Leanback devices. -->
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <!-- The phone remote's Wi-Fi permissions must not make Wi-Fi required: a TV on Ethernet reaches the phone too. -->
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+
+    <!-- The label is a literal, so it reads «شاشة» whatever the TV's system language is. -->
+    <application
+        android:name=".ShashaApp"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:banner="@drawable/banner"
+        android:icon="@mipmap/ic_launcher"
+        android:label="شاشة"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Shasha"
+        android:usesCleartextTraffic="false"
+        tools:targetApi="31">
+        <!-- configChanges: connecting a remote, keyboard or gamepad must not recreate the activity
+             (that would restart the video); Compose handles these changes itself. -->
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|fontScale|layoutDirection|locale"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.Shasha.Starting">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- SPEC §4's guard (the name is what the Shasha-Setup installer checks). Owner decision: it also keeps a child
+             profile inside the app the whole time, until the parent PIN lets it out. -->
+        <service
+            android:name=".lock.GuardService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Parental controls: while a child profile is in use, a video is locked, viewing time is over, or it is outside the allowed viewing hours, keeps this app in front of other apps (the owner granted display over other apps and usage access over ADB)." />
+        </service>
+
+        <!-- Starts the guard after a reboot and after an update (system broadcasts reach it unexported). -->
+        <receiver
+            android:name=".lock.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- SPEC §5's phone remote: the LAN server lives in this service while «التحكم من الجوال» is on. -->
+        <service
+            android:name=".remote.RemoteService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
+        <!-- SPEC §6's updater: the system installer's answers for its sessions (only the system's PendingIntent reaches it). -->
+        <receiver
+            android:name=".update.InstallStatusReceiver"
+            android:exported="false" />
+
+        <!-- Starts the phone remote after a reboot and after an update. -->
+        <receiver
+            android:name=".remote.RemoteBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
