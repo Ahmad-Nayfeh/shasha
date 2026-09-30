@@ -1,6 +1,6 @@
 """Makes the small JPG copies of the screenshots that the guide uses (docs/guide/img/).
 
-The guide (guide.html) refers to img/<name>.jpg; <name> is the name of a real screenshot in
+The guides (guide.html, and en/guide.html as ../img/<name>.jpg) refer to img/<name>.jpg; <name> is the name of a real screenshot in
 app/src/test/screenshots (TV, 1920x1080) or remote/src/test/screenshots (phone page). Smaller JPG copies
 keep the PDF light. The install pictures are used as they are, from docs/images/install.
 
@@ -24,8 +24,9 @@ PHONE_WIDTH = 600
 
 
 def main():
-    html = open(os.path.join(HERE, "guide.html"), encoding="utf-8").read()
-    names = sorted(set(re.findall(r'src="img/([\w.-]+)\.jpg"', html)))
+    html = "".join(open(os.path.join(HERE, *p), encoding="utf-8").read() for p in (["guide.html"], ["en", "guide.html"])
+                   if os.path.exists(os.path.join(HERE, *p)))
+    names = sorted(set(re.findall(r'src="(?:\.\./)?img/([\w.-]+)\.jpg"', html)))
     os.makedirs(OUT, exist_ok=True)
     wanted = set()
     for name in names:
