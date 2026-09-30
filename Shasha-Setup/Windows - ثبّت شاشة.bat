@@ -483,8 +483,12 @@ for /f "tokens=1-5 delims=.:" %%a in ("%ADDR%") do call :check_parts %%a %%b %%c
 exit /b 0
 :check_parts
 for %%n in (%1 %2 %3 %4) do if %%n GTR 255 exit /b 0
-if not "%5"=="" if %5 GTR 65535 exit /b 0
-if not "%5"=="" if %5 LSS 1 exit /b 0
+rem No port: skip. An empty %5 in an if comparison is a syntax error that ends the script, even
+rem behind a false test on the same line, because cmd parses the whole line first.
+if "%~5"=="" goto check_parts_ok
+if %~5 GTR 65535 exit /b 0
+if %~5 LSS 1 exit /b 0
+:check_parts_ok
 set "ADDR_OK=1"
 exit /b 0
 
