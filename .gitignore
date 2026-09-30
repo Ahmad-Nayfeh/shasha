@@ -6,6 +6,8 @@ captures/
 .externalNativeBuild/
 .cxx/
 *.apk
+# ...except the signed app inside the one-download install kit (Shasha-Setup/, Shasha-Setup.zip).
+!Shasha-Setup/*.apk
 *.aab
 *.ap_
 *.dex
