@@ -1,0 +1,26 @@
+{
+  "name": "shasha-explainer",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio",
+    "sync": "./sync-assets.sh && ./sync-screens.sh",
+    "screens": "./sync-screens.sh",
+    "words": "../.venv/bin/python tools/align_words.py",
+    "music": "../.venv/bin/python tools/make_music.py",
+    "stills": "node tools/stills.mjs",
+    "preview": "./render-preview.sh",
+    "render:main": "./render-final.sh out/shasha_explainer.mp4",
+    "render:test": "remotion render src/index.ts TestArabic out/test_arabic.mp4 --concurrency=1"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.529",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "remotion": "4.0.529"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "7.0.2"
+  }
+}

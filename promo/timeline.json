@@ -1,0 +1,1155 @@
+{
+ "fps": 30,
+ "width": 1920,
+ "height": 1080,
+ "total_duration_s": 371.633,
+ "total_frames": 11149,
+ "narration_track": "audio/narration_full.wav",
+ "tts": {
+  "engine": "edge-tts 7.2.8 (Microsoft Edge Read Aloud neural voices)",
+  "voice": "ar-SA-HamedNeural",
+  "rate": "-6%",
+  "pitch": "+0Hz",
+  "text_field": "tts_diac",
+  "pauses_s": {
+   "comma": 0.25,
+   "colon": 0.3,
+   "sentence": 0.5,
+   "beat": 0.9
+  },
+  "note": "phrase-by-phrase synthesis, silences inserted by us; waqf ta marbuta sent as هْ; shadda written before its vowel"
+ },
+ "loudness": {
+  "target": "-16 LUFS integrated, true peak <= -1.5 dBTP (EBU R128 / ffmpeg loudnorm measurement)",
+  "measured_combined": {
+   "integrated_lufs": -16.04,
+   "true_peak_dbtp": -2.05,
+   "lra": 2.6
+  }
+ },
+ "asr_check": {
+  "model": "faster-whisper medium int8, language=ar",
+  "overall_cer_char_weighted": 0.0254
+ },
+ "padding_s": {
+  "lead_in": 0.3,
+  "tail": 0.4,
+  "section_extra": 0.6,
+  "first_lead": 2.5,
+  "last_hold": 3.2
+ },
+ "scenes": [
+  {
+   "id": "s01_intro",
+   "section": "intro",
+   "title": "ما هي «شاشة»؟",
+   "step": null,
+   "audio": "audio/scenes/s01_intro.wav",
+   "audio_duration_s": 15.65,
+   "start_s": 0.0,
+   "duration_s": 18.533,
+   "start_frame": 0,
+   "duration_frames": 556,
+   "voice_offset_s": 2.5,
+   "voice_offset_frames": 75,
+   "cues": [
+    {
+     "start_s": 2.6,
+     "end_s": 4.12,
+     "start_frame": 78,
+     "end_frame": 124,
+     "text_display": "هذا تطبيق «شاشة»:",
+     "text_tts": "هذا تطبيق شاشة:"
+    },
+    {
+     "start_s": 4.42,
+     "end_s": 10.19,
+     "start_frame": 133,
+     "end_frame": 306,
+     "text_display": "يوتيوب على تلفاز Google TV، بلا إعلانات، وبلا خوارزمية.",
+     "text_tts": "يوتيوب على تلفاز جوجل تي في، بلا إعلانات، وبلا خوارزمية."
+    },
+    {
+     "start_s": 10.69,
+     "end_s": 18.05,
+     "start_frame": 321,
+     "end_frame": 542,
+     "text_display": "ومعه حصص للوقت، وملف للأطفال، وقفل للفيديو، وريموت من جوالك.",
+     "text_tts": "ومعه حصص للوقت، وملف للأطفال، وقفل للفيديو، وريموت من جوالك."
+    }
+   ]
+  },
+  {
+   "id": "s02_why",
+   "section": "why",
+   "title": "لماذا؟",
+   "step": null,
+   "audio": "audio/scenes/s02_why.wav",
+   "audio_duration_s": 12.37,
+   "start_s": 18.533,
+   "duration_s": 13.667,
+   "start_frame": 556,
+   "duration_frames": 410,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 1.79,
+     "start_frame": 30,
+     "end_frame": 54,
+     "text_display": "الفكرة:",
+     "text_tts": "الفكرة:"
+    },
+    {
+     "start_s": 2.09,
+     "end_s": 4.62,
+     "start_frame": 63,
+     "end_frame": 139,
+     "text_display": "مشاهدة هادئة ومقصودة.",
+     "text_tts": "مشاهدة هادئة ومقصودة."
+    },
+    {
+     "start_s": 5.12,
+     "end_s": 13.17,
+     "start_frame": 154,
+     "end_frame": 395,
+     "text_display": "تشاهد ما اخترته أنت، ثم تغلق التلفاز راضياً، لا أن تضيّع ساعة في فيديو لم تبحث عنه.",
+     "text_tts": "تشاهد ما اخترته أنت، ثم تغلق التلفاز راضيا، لا أن تضيع ساعة في فيديو لم تبحث عنه."
+    }
+   ]
+  },
+  {
+   "id": "s03_home_search",
+   "section": "features",
+   "title": "الرئيسية والبحث",
+   "step": null,
+   "audio": "audio/scenes/s03_home_search.wav",
+   "audio_duration_s": 12.52,
+   "start_s": 32.2,
+   "duration_s": 13.833,
+   "start_frame": 966,
+   "duration_frames": 415,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 7.48,
+     "start_frame": 30,
+     "end_frame": 224,
+     "text_display": "الرئيسية تعرض فيديوهات قنواتك فقط، والأحدث أولاً، بلا أي حساب.",
+     "text_tts": "الرئيسية تعرض فيديوهات قنواتك فقط، والأحدث أولا، بلا أي حساب."
+    },
+    {
+     "start_s": 7.98,
+     "end_s": 9.98,
+     "start_frame": 239,
+     "end_frame": 299,
+     "text_display": "لا مقترحات ولا رائج.",
+     "text_tts": "لا مقترحات ولا رائج."
+    },
+    {
+     "start_s": 10.48,
+     "end_s": 13.32,
+     "start_frame": 314,
+     "end_frame": 400,
+     "text_display": "والبحث بالريموت متاح في ملف الكبار.",
+     "text_tts": "والبحث بالريموت متاح في ملف الكبار."
+    }
+   ]
+  },
+  {
+   "id": "s04_player",
+   "section": "features",
+   "title": "المشغّل وSponsorBlock",
+   "step": null,
+   "audio": "audio/scenes/s04_player.wav",
+   "audio_duration_s": 11.96,
+   "start_s": 46.033,
+   "duration_s": 12.667,
+   "start_frame": 1381,
+   "duration_frames": 380,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 4.54,
+     "start_frame": 12,
+     "end_frame": 136,
+     "text_display": "ومن إعدادات المشغّل تختار الجودة والسرعة والترجمة.",
+     "text_tts": "ومن إعدادات المشغل تختار الجودة والسرعة والترجمة."
+    },
+    {
+     "start_s": 5.04,
+     "end_s": 7.5,
+     "start_frame": 151,
+     "end_frame": 225,
+     "text_display": "ويكمل الفيديو من حيث توقفت.",
+     "text_tts": "ويكمل الفيديو من حيث توقفت."
+    },
+    {
+     "start_s": 8.0,
+     "end_s": 12.16,
+     "start_frame": 240,
+     "end_frame": 365,
+     "text_display": "وفقرات الرعاية يتخطاها SponsorBlock تلقائياً.",
+     "text_tts": "وفقرات الرعاية يتخطاها سبونسر بلوك تلقائيا."
+    }
+   ]
+  },
+  {
+   "id": "s05_profiles",
+   "section": "features",
+   "title": "الملفات: كبار وطفل",
+   "step": null,
+   "audio": "audio/scenes/s05_profiles.wav",
+   "audio_duration_s": 11.41,
+   "start_s": 58.7,
+   "duration_s": 12.1,
+   "start_frame": 1761,
+   "duration_frames": 363,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 3.01,
+     "start_frame": 12,
+     "end_frame": 90,
+     "text_display": "ملف الكبار يحميه رمز سري.",
+     "text_tts": "ملف الكبار يحميه رمز سري."
+    },
+    {
+     "start_s": 3.51,
+     "end_s": 7.61,
+     "start_frame": 105,
+     "end_frame": 228,
+     "text_display": "أما ملف الطفل فلا يعرض إلا القنوات التي اخترتها له:",
+     "text_tts": "أما ملف الطفل فلا يعرض إلا القنوات التي اخترتها له:"
+    },
+    {
+     "start_s": 7.91,
+     "end_s": 11.61,
+     "start_frame": 237,
+     "end_frame": 348,
+     "text_display": "لا بحث ولا كتابة، ولا خروج إلا بالرمز.",
+     "text_tts": "لا بحث ولا كتابة، ولا خروج إلا بالرمز."
+    }
+   ]
+  },
+  {
+   "id": "s06_time",
+   "section": "features",
+   "title": "الحصص والأوقات",
+   "step": null,
+   "audio": "audio/scenes/s06_time.wav",
+   "audio_duration_s": 13.5,
+   "start_s": 70.8,
+   "duration_s": 14.2,
+   "start_frame": 2124,
+   "duration_frames": 426,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 4.67,
+     "start_frame": 12,
+     "end_frame": 140,
+     "text_display": "ولكل ملف حصة يومية، وساعات مسموحة.",
+     "text_tts": "ولكل ملف حصة يومية، وساعات مسموحة."
+    },
+    {
+     "start_s": 5.17,
+     "end_s": 13.7,
+     "start_frame": 155,
+     "end_frame": 411,
+     "text_display": "قبل النهاية بخمس دقائق يظهر تنبيه هادئ صغير، ثم شاشة «انتهى الوقت»، ولا تُفتح إلا بالرمز.",
+     "text_tts": "قبل النهاية بخمس دقائق يظهر تنبيه هادئ صغير، ثم شاشة انتهى الوقت، ولا تفتح إلا بالرمز."
+    }
+   ]
+  },
+  {
+   "id": "s07_lock",
+   "section": "features",
+   "title": "قفل الفيديو",
+   "step": null,
+   "audio": "audio/scenes/s07_lock.wav",
+   "audio_duration_s": 15.27,
+   "start_s": 85.0,
+   "duration_s": 15.967,
+   "start_frame": 2550,
+   "duration_frames": 479,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 3.39,
+     "start_frame": 12,
+     "end_frame": 102,
+     "text_display": "وكل فيديو يبدأ مقفلاً حتى ينتهي.",
+     "text_tts": "وكل فيديو يبدأ مقفلا حتى ينتهي."
+    },
+    {
+     "start_s": 3.89,
+     "end_s": 7.09,
+     "start_frame": 117,
+     "end_frame": 213,
+     "text_display": "في ملف الطفل، لا يعمل زر الرجوع.",
+     "text_tts": "في ملف الطفل، لا يعمل زر الرجوع."
+    },
+    {
+     "start_s": 7.59,
+     "end_s": 15.47,
+     "start_frame": 228,
+     "end_frame": 464,
+     "text_display": "وفي ملف الكبار، يحتاج الخروج المبكر ضغطاً مطوّلاً لعشر ثوانٍ، ثم كتابة جملة قصيرة.",
+     "text_tts": "وفي ملف الكبار، يحتاج الخروج المبكر ضغطا مطولا لعشر ثوان، ثم كتابة جملة قصيرة."
+    }
+   ]
+  },
+  {
+   "id": "s08_guard",
+   "section": "features",
+   "title": "الحارس",
+   "step": null,
+   "audio": "audio/scenes/s08_guard.wav",
+   "audio_duration_s": 8.44,
+   "start_s": 100.967,
+   "duration_s": 9.133,
+   "start_frame": 3029,
+   "duration_frames": 274,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 8.64,
+     "start_frame": 12,
+     "end_frame": 259,
+     "text_display": "وإذا ضغط الطفل زر الرئيسية في الريموت، يغطي الحارس التطبيق الآخر، ويعيد «شاشة» في لحظات.",
+     "text_tts": "وإذا ضغط الطفل زر الرئيسية في الريموت، يغطي الحارس التطبيق الآخر، ويعيد شاشة في لحظات."
+    }
+   ]
+  },
+  {
+   "id": "s09_phone",
+   "section": "features",
+   "title": "الجوال ريموتاً",
+   "step": null,
+   "audio": "audio/scenes/s09_phone.wav",
+   "audio_duration_s": 14.52,
+   "start_s": 110.1,
+   "duration_s": 15.233,
+   "start_frame": 3303,
+   "duration_frames": 457,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 2.45,
+     "start_frame": 12,
+     "end_frame": 73,
+     "text_display": "وجوالك يصبح ريموتاً:",
+     "text_tts": "وجوالك يصبح ريموتا:"
+    },
+    {
+     "start_s": 2.75,
+     "end_s": 7.99,
+     "start_frame": 82,
+     "end_frame": 240,
+     "text_display": "امسح رمز QR، لتبحث وتتحكم، وترسل الروابط.",
+     "text_tts": "امسح رمز كيو آر، لتبحث وتتحكم، وترسل الروابط."
+    },
+    {
+     "start_s": 8.49,
+     "end_s": 14.72,
+     "start_frame": 255,
+     "end_frame": 442,
+     "text_display": "وفي «قسم الأب»، برمز الوالدين، تضيف وقتاً، وتدير قائمة الطفل.",
+     "text_tts": "وفي قسم الأب، برمز الوالدين، تضيف وقتا، وتدير قائمة الطفل."
+    }
+   ]
+  },
+  {
+   "id": "s10_stats",
+   "section": "features",
+   "title": "إحصائيات صادقة",
+   "step": null,
+   "audio": "audio/scenes/s10_stats.wav",
+   "audio_duration_s": 11.43,
+   "start_s": 125.333,
+   "duration_s": 12.133,
+   "start_frame": 3760,
+   "duration_frames": 364,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 2.24,
+     "start_frame": 12,
+     "end_frame": 67,
+     "text_display": "والإحصائيات صادقة:",
+     "text_tts": "والإحصائيات صادقة:"
+    },
+    {
+     "start_s": 2.54,
+     "end_s": 9.19,
+     "start_frame": 76,
+     "end_frame": 276,
+     "text_display": "دقائق كل ملف، وأكثر القنوات مشاهدة، ومقارنة بالأسبوع الماضي.",
+     "text_tts": "دقائق كل ملف، وأكثر القنوات مشاهدة، ومقارنة بالأسبوع الماضي."
+    },
+    {
+     "start_s": 9.69,
+     "end_s": 11.63,
+     "start_frame": 291,
+     "end_frame": 349,
+     "text_display": "بلا نقاط ولا أوسمة.",
+     "text_tts": "بلا نقاط ولا أوسمة."
+    }
+   ]
+  },
+  {
+   "id": "s11_install",
+   "section": "install",
+   "title": "التثبيت: ما تحتاجه",
+   "step": null,
+   "audio": "audio/scenes/s11_install.wav",
+   "audio_duration_s": 9.79,
+   "start_s": 137.467,
+   "duration_s": 11.7,
+   "start_frame": 4124,
+   "duration_frames": 351,
+   "voice_offset_s": 1.5,
+   "voice_offset_frames": 45,
+   "cues": [
+    {
+     "start_s": 1.6,
+     "end_s": 4.55,
+     "start_frame": 48,
+     "end_frame": 137,
+     "text_display": "والآن التثبيت، خطوة بخطوة.",
+     "text_tts": "والآن التثبيت، خطوة بخطوة."
+    },
+    {
+     "start_s": 5.05,
+     "end_s": 11.19,
+     "start_frame": 152,
+     "end_frame": 336,
+     "text_display": "تحتاج إلى كمبيوتر شخصي بنظام ماك أو ويندوز، على شبكة التلفاز نفسها.",
+     "text_tts": "تحتاج إلى كمبيوتر شخصي بنظام ماك أو ويندوز، على شبكة التلفاز نفسها."
+    }
+   ]
+  },
+  {
+   "id": "s12_download",
+   "section": "install",
+   "title": "الخطوة ١: التنزيل",
+   "step": 1,
+   "audio": "audio/scenes/s12_download.wav",
+   "audio_duration_s": 17.31,
+   "start_s": 149.167,
+   "duration_s": 18.1,
+   "start_frame": 4475,
+   "duration_frames": 543,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 2.74,
+     "start_frame": 15,
+     "end_frame": 82,
+     "text_display": "الخطوة الأولى على الكمبيوتر:",
+     "text_tts": "الخطوة الأولى على الكمبيوتر:"
+    },
+    {
+     "start_s": 3.04,
+     "end_s": 9.16,
+     "start_frame": 91,
+     "end_frame": 275,
+     "text_display": "من صفحة «شاشة» على GitHub، اضغط الملف المضغوط «Shasha-Setup.zip»، ثم زر التنزيل.",
+     "text_tts": "من صفحة شاشة على غيت هب، اضغط الملف المضغوط، ثم زر التنزيل."
+    },
+    {
+     "start_s": 9.66,
+     "end_s": 10.96,
+     "start_frame": 290,
+     "end_frame": 329,
+     "text_display": "ثم فُكّ ضغطه:",
+     "text_tts": "ثم فك ضغطه:"
+    },
+    {
+     "start_s": 11.26,
+     "end_s": 15.55,
+     "start_frame": 338,
+     "end_frame": 467,
+     "text_display": "في ويندوز، بالزر الأيمن، ثم «Extract All».",
+     "text_tts": "في ويندوز، بالزر الأيمن، ثم استخراج الكل."
+    },
+    {
+     "start_s": 16.05,
+     "end_s": 17.61,
+     "start_frame": 482,
+     "end_frame": 528,
+     "text_display": "وفي ماك بنقرتين.",
+     "text_tts": "وفي ماك بنقرتين."
+    }
+   ]
+  },
+  {
+   "id": "s13_folder",
+   "section": "install",
+   "title": "الخطوة ١: المجلد",
+   "step": 1,
+   "audio": "audio/scenes/s13_folder.wav",
+   "audio_duration_s": 9.53,
+   "start_s": 167.267,
+   "duration_s": 10.233,
+   "start_frame": 5018,
+   "duration_frames": 307,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 4.37,
+     "start_frame": 12,
+     "end_frame": 131,
+     "text_display": "ستجد مجلداً واحداً (Shasha-Setup)، وفيه كل ما تحتاجه:",
+     "text_tts": "ستجد مجلدا واحدا، وفيه كل ما تحتاجه:"
+    },
+    {
+     "start_s": 4.67,
+     "end_s": 9.73,
+     "start_frame": 140,
+     "end_frame": 292,
+     "text_display": "التطبيق، وملفا تثبيت لماك وويندوز، ودليل مصوَّر.",
+     "text_tts": "التطبيق، وملفا تثبيت لماك وويندوز، ودليل مصور."
+    }
+   ]
+  },
+  {
+   "id": "s14_devmode",
+   "section": "install",
+   "title": "الخطوة ٢: خيارات المطوّر",
+   "step": 2,
+   "audio": "audio/scenes/s14_devmode.wav",
+   "audio_duration_s": 15.66,
+   "start_s": 177.5,
+   "duration_s": 16.467,
+   "start_frame": 5325,
+   "duration_frames": 494,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 2.92,
+     "start_frame": 15,
+     "end_frame": 88,
+     "text_display": "الخطوة الثانية على التلفاز:",
+     "text_tts": "الخطوة الثانية على التلفاز:"
+    },
+    {
+     "start_s": 3.22,
+     "end_s": 7.01,
+     "start_frame": 97,
+     "end_frame": 210,
+     "text_display": "افتح الإعدادات (Settings)، ثم النظام (System)، ثم حول (About).",
+     "text_tts": "افتح الإعدادات، ثم النظام، ثم حول."
+    },
+    {
+     "start_s": 7.51,
+     "end_s": 14.35,
+     "start_frame": 225,
+     "end_frame": 430,
+     "text_display": "انزل إلى «Android TV OS build»، واضغط الزر الأوسط سبع مرات، حتى تظهر رسالة:",
+     "text_tts": "انزل إلى أندرويد تي في أو إس بيلد، واضغط الزر الأوسط سبع مرات، حتى تظهر رسالة:"
+    },
+    {
+     "start_s": 14.65,
+     "end_s": 15.96,
+     "start_frame": 440,
+     "end_frame": 479,
+     "text_display": "«أنت الآن مطوّر».",
+     "text_tts": "أنت الآن مطور."
+    }
+   ]
+  },
+  {
+   "id": "s15_debugging",
+   "section": "install",
+   "title": "الخطوة ٣: تصحيح الأخطاء",
+   "step": 3,
+   "audio": "audio/scenes/s15_debugging.wav",
+   "audio_duration_s": 13.01,
+   "start_s": 193.967,
+   "duration_s": 13.8,
+   "start_frame": 5819,
+   "duration_frames": 414,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 1.91,
+     "start_frame": 15,
+     "end_frame": 57,
+     "text_display": "الخطوة الثالثة:",
+     "text_tts": "الخطوة الثالثة:"
+    },
+    {
+     "start_s": 2.21,
+     "end_s": 5.67,
+     "start_frame": 66,
+     "end_frame": 170,
+     "text_display": "ارجع إلى «النظام»، وافتح «خيارات المطوّر» (Developer options).",
+     "text_tts": "ارجع إلى النظام، وافتح خيارات المطور."
+    },
+    {
+     "start_s": 6.17,
+     "end_s": 8.46,
+     "start_frame": 185,
+     "end_frame": 254,
+     "text_display": "فعّل «تصحيح أخطاء USB» (USB debugging).",
+     "text_tts": "فعل تصحيح أخطاء يو إس بي."
+    },
+    {
+     "start_s": 8.96,
+     "end_s": 13.31,
+     "start_frame": 269,
+     "end_frame": 399,
+     "text_display": "وإن وجدت «تصحيح الأخطاء عبر الشبكة» (Network debugging)، ففعّله أيضاً.",
+     "text_tts": "وإن وجدت تصحيح الأخطاء عبر الشبكة، ففعله أيضا."
+    }
+   ]
+  },
+  {
+   "id": "s16_find_ip",
+   "section": "install",
+   "title": "الخطوة ٤: عنوان التلفاز",
+   "step": 4,
+   "audio": "audio/scenes/s16_find_ip.wav",
+   "audio_duration_s": 20.55,
+   "start_s": 207.767,
+   "duration_s": 21.367,
+   "start_frame": 6233,
+   "duration_frames": 641,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 1.8,
+     "start_frame": 15,
+     "end_frame": 54,
+     "text_display": "الخطوة الرابعة:",
+     "text_tts": "الخطوة الرابعة:"
+    },
+    {
+     "start_s": 2.1,
+     "end_s": 5.59,
+     "start_frame": 63,
+     "end_frame": 168,
+     "text_display": "من الإعدادات، افتح «الشبكة والإنترنت» (Network & Internet).",
+     "text_tts": "من الإعدادات، افتح الشبكة والإنترنت."
+    },
+    {
+     "start_s": 6.09,
+     "end_s": 11.05,
+     "start_frame": 183,
+     "end_frame": 332,
+     "text_display": "إن كانت الشاشة على الواي فاي (Wi-Fi)، فاختر شبكتك ثم «IP address».",
+     "text_tts": "إن كانت الشاشة على الواي فاي، فاختر شبكتك ثم آي بي أدرس."
+    },
+    {
+     "start_s": 11.55,
+     "end_s": 16.84,
+     "start_frame": 347,
+     "end_frame": 505,
+     "text_display": "وإن كانت موصولة بسلك، فستجد العنوان تحت «Ethernet» مباشرة.",
+     "text_tts": "وإن كانت موصولة بسلك، فستجد العنوان تحت إيثرنت مباشرة."
+    },
+    {
+     "start_s": 17.34,
+     "end_s": 18.67,
+     "start_frame": 520,
+     "end_frame": 560,
+     "text_display": "سجّل العنوان:",
+     "text_tts": "سجل العنوان:"
+    },
+    {
+     "start_s": 18.97,
+     "end_s": 20.85,
+     "start_frame": 569,
+     "end_frame": 626,
+     "text_display": "أرقاماً بينها نقاط.",
+     "text_tts": "أرقاما بينها نقاط."
+    }
+   ]
+  },
+  {
+   "id": "s17_run_windows",
+   "section": "install",
+   "title": "الخطوة ٥: التشغيل على ويندوز",
+   "step": 5,
+   "audio": "audio/scenes/s17_run_windows.wav",
+   "audio_duration_s": 14.19,
+   "start_s": 229.133,
+   "duration_s": 15.0,
+   "start_frame": 6874,
+   "duration_frames": 450,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 3.06,
+     "start_frame": 15,
+     "end_frame": 92,
+     "text_display": "الخطوة الخامسة على الكمبيوتر:",
+     "text_tts": "الخطوة الخامسة على الكمبيوتر:"
+    },
+    {
+     "start_s": 3.36,
+     "end_s": 7.38,
+     "start_frame": 101,
+     "end_frame": 221,
+     "text_display": "في ويندوز، انقر مرتين على ملف ويندوز.",
+     "text_tts": "في ويندوز، انقر مرتين على ملف ويندوز."
+    },
+    {
+     "start_s": 7.88,
+     "end_s": 14.49,
+     "start_frame": 236,
+     "end_frame": 435,
+     "text_display": "وإن ظهر تحذير أزرق، فاختر «مزيد من المعلومات» (More info)، ثم «تشغيل على أي حال» (Run anyway).",
+     "text_tts": "وإن ظهر تحذير أزرق، فاختر مزيد من المعلومات، ثم تشغيل على أي حال."
+    }
+   ]
+  },
+  {
+   "id": "s18_run_mac",
+   "section": "install",
+   "title": "الخطوة ٥: التشغيل على ماك",
+   "step": 5,
+   "audio": "audio/scenes/s18_run_mac.wav",
+   "audio_duration_s": 5.67,
+   "start_s": 244.133,
+   "duration_s": 6.367,
+   "start_frame": 7324,
+   "duration_frames": 191,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 5.87,
+     "start_frame": 12,
+     "end_frame": 176,
+     "text_display": "وفي ماك انقر على ملف ماك بالزر الأيمن، ثم اختر أمر الفتح (Open) مرتين.",
+     "text_tts": "وفي ماك انقر على ملف ماك بالزر الأيمن، ثم اختر أمر الفتح مرتين."
+    }
+   ]
+  },
+  {
+   "id": "s19_type_ip",
+   "section": "install",
+   "title": "الخطوة ٥: اكتب العنوان",
+   "step": 5,
+   "audio": "audio/scenes/s19_type_ip.wav",
+   "audio_duration_s": 8.06,
+   "start_s": 250.5,
+   "duration_s": 8.767,
+   "start_frame": 7515,
+   "duration_frames": 263,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 1.97,
+     "start_frame": 12,
+     "end_frame": 59,
+     "text_display": "سيسألك البرنامج:",
+     "text_tts": "سيسألك البرنامج:"
+    },
+    {
+     "start_s": 2.27,
+     "end_s": 4.28,
+     "start_frame": 68,
+     "end_frame": 128,
+     "text_display": "«اكتب عنوان IP للشاشة».",
+     "text_tts": "اكتب عنوان آي بي للشاشة."
+    },
+    {
+     "start_s": 4.78,
+     "end_s": 8.26,
+     "start_frame": 143,
+     "end_frame": 248,
+     "text_display": "اكتب العنوان الذي سجلته، ثم اضغط Enter.",
+     "text_tts": "اكتب العنوان الذي سجلته، ثم اضغط إنتر."
+    }
+   ]
+  },
+  {
+   "id": "s20_allow",
+   "section": "install",
+   "title": "الخطوة ٦: السماح",
+   "step": 6,
+   "audio": "audio/scenes/s20_allow.wav",
+   "audio_duration_s": 13.77,
+   "start_s": 259.267,
+   "duration_s": 14.567,
+   "start_frame": 7778,
+   "duration_frames": 437,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 2.95,
+     "start_frame": 15,
+     "end_frame": 88,
+     "text_display": "الخطوة السادسة على التلفاز:",
+     "text_tts": "الخطوة السادسة على التلفاز:"
+    },
+    {
+     "start_s": 3.25,
+     "end_s": 4.73,
+     "start_frame": 98,
+     "end_frame": 142,
+     "text_display": "ستسألك رسالة:",
+     "text_tts": "ستسألك رسالة:"
+    },
+    {
+     "start_s": 5.03,
+     "end_s": 7.1,
+     "start_frame": 151,
+     "end_frame": 213,
+     "text_display": "هل تسمح بتصحيح الأخطاء؟",
+     "text_tts": "هل تسمح بتصحيح الأخطاء؟"
+    },
+    {
+     "start_s": 7.6,
+     "end_s": 14.07,
+     "start_frame": 228,
+     "end_frame": 422,
+     "text_display": "ضع علامة على «السماح دائماً من هذا الكمبيوتر»، ثم اضغط «OK» قبل مرور دقيقة.",
+     "text_tts": "ضع علامة على السماح دائما من هذا الكمبيوتر، ثم اضغط أوكي قبل مرور دقيقة."
+    }
+   ]
+  },
+  {
+   "id": "s21_pairing",
+   "section": "install",
+   "title": "الخطوة ٦: الاقتران برمز",
+   "step": 6,
+   "audio": "audio/scenes/s21_pairing.wav",
+   "audio_duration_s": 9.0,
+   "start_s": 273.833,
+   "duration_s": 9.7,
+   "start_frame": 8215,
+   "duration_frames": 291,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 9.2,
+     "start_frame": 12,
+     "end_frame": 276,
+     "text_display": "وإن لم يعرض تلفازك إلا «تصحيح الأخطاء اللاسلكي» (Wireless debugging)، فاختر «الاقتران برمز» (Pair device with pairing code)، وأدخل العنوان والرمز في البرنامج.",
+     "text_tts": "وإن لم يعرض تلفازك إلا تصحيح الأخطاء اللاسلكي، فاختر الاقتران برمز، وأدخل العنوان والرمز في البرنامج."
+    }
+   ]
+  },
+  {
+   "id": "s22_automatic",
+   "section": "install",
+   "title": "الخطوة ٧: البرنامج يكمل وحده",
+   "step": 7,
+   "audio": "audio/scenes/s22_automatic.wav",
+   "audio_duration_s": 16.52,
+   "start_s": 283.533,
+   "duration_s": 17.333,
+   "start_frame": 8506,
+   "duration_frames": 520,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 1.8,
+     "start_frame": 15,
+     "end_frame": 54,
+     "text_display": "الخطوة السابعة:",
+     "text_tts": "الخطوة السابعة:"
+    },
+    {
+     "start_s": 2.1,
+     "end_s": 3.96,
+     "start_frame": 63,
+     "end_frame": 119,
+     "text_display": "البرنامج يكمل وحده.",
+     "text_tts": "البرنامج يكمل وحده."
+    },
+    {
+     "start_s": 4.46,
+     "end_s": 9.14,
+     "start_frame": 134,
+     "end_frame": 274,
+     "text_display": "يثبّت التطبيق، ويمنحه صلاحياته، ثم يسألك:",
+     "text_tts": "يثبت التطبيق، ويمنحه صلاحياته، ثم يسألك:"
+    },
+    {
+     "start_s": 9.44,
+     "end_s": 11.42,
+     "start_frame": 283,
+     "end_frame": 343,
+     "text_display": "هل توقف يوتيوب الرسمي؟",
+     "text_tts": "هل توقف يوتيوب الرسمي؟"
+    },
+    {
+     "start_s": 11.92,
+     "end_s": 14.59,
+     "start_frame": 358,
+     "end_frame": 438,
+     "text_display": "اكتب y للموافقة، أو n للرفض.",
+     "text_tts": "اكتب واي للموافقة، أو إن للرفض."
+    },
+    {
+     "start_s": 15.09,
+     "end_s": 16.82,
+     "start_frame": 453,
+     "end_frame": 505,
+     "text_display": "ثم يعرض ملخصاً.",
+     "text_tts": "ثم يعرض ملخصا."
+    }
+   ]
+  },
+  {
+   "id": "s23_first_start",
+   "section": "install",
+   "title": "الخطوة ٨: أول تشغيل",
+   "step": 8,
+   "audio": "audio/scenes/s23_first_start.wav",
+   "audio_duration_s": 14.45,
+   "start_s": 300.867,
+   "duration_s": 15.233,
+   "start_frame": 9026,
+   "duration_frames": 457,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 1.82,
+     "start_frame": 15,
+     "end_frame": 55,
+     "text_display": "الخطوة الثامنة:",
+     "text_tts": "الخطوة الثامنة:"
+    },
+    {
+     "start_s": 2.12,
+     "end_s": 3.23,
+     "start_frame": 64,
+     "end_frame": 97,
+     "text_display": "أول تشغيل.",
+     "text_tts": "أول تشغيل."
+    },
+    {
+     "start_s": 3.73,
+     "end_s": 11.54,
+     "start_frame": 112,
+     "end_frame": 346,
+     "text_display": "اختر رمز الوالدين، ثم أنشئ ملفك، وملف طفلك بدقائقه اليومية وساعاته المسموحة.",
+     "text_tts": "اختر رمز الوالدين، ثم أنشئ ملفك، وملف طفلك بدقائقه اليومية وساعاته المسموحة."
+    },
+    {
+     "start_s": 12.04,
+     "end_s": 14.75,
+     "start_frame": 361,
+     "end_frame": 443,
+     "text_display": "ثم أضف القنوات التي تسمح بها.",
+     "text_tts": "ثم أضف القنوات التي تسمح بها."
+    }
+   ]
+  },
+  {
+   "id": "s24_phone",
+   "section": "install",
+   "title": "الخطوة ٩: الجوال",
+   "step": 9,
+   "audio": "audio/scenes/s24_phone.wav",
+   "audio_duration_s": 16.11,
+   "start_s": 316.1,
+   "duration_s": 16.9,
+   "start_frame": 9483,
+   "duration_frames": 507,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 3.41,
+     "start_frame": 15,
+     "end_frame": 102,
+     "text_display": "الخطوة التاسعة، وهي اختيارية:",
+     "text_tts": "الخطوة التاسعة، وهي اختيارية:"
+    },
+    {
+     "start_s": 3.71,
+     "end_s": 12.37,
+     "start_frame": 111,
+     "end_frame": 371,
+     "text_display": "من إعدادات «شاشة»، افتح «التحكم من الجوال»، وامسح رمز QR بكاميرا جوالك، وهو على الشبكة نفسها.",
+     "text_tts": "من إعدادات شاشة، افتح التحكم من الجوال، وامسح رمز كيو آر بكاميرا جوالك، وهو على الشبكة نفسها."
+    },
+    {
+     "start_s": 12.87,
+     "end_s": 16.41,
+     "start_frame": 386,
+     "end_frame": 492,
+     "text_display": "ثم أضف الصفحة إلى الشاشة الرئيسية للجوال.",
+     "text_tts": "ثم أضف الصفحة إلى الشاشة الرئيسية للجوال."
+    }
+   ]
+  },
+  {
+   "id": "s25_breaks",
+   "section": "breaks",
+   "title": "عندما يتعطل يوتيوب",
+   "step": null,
+   "audio": "audio/scenes/s25_breaks.wav",
+   "audio_duration_s": 14.82,
+   "start_s": 333.0,
+   "duration_s": 16.133,
+   "start_frame": 9990,
+   "duration_frames": 484,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 3.76,
+     "start_frame": 30,
+     "end_frame": 113,
+     "text_display": "ويوتيوب يتغيّر كل بضعة أشهر.",
+     "text_tts": "ويوتيوب يتغير كل بضعة أشهر."
+    },
+    {
+     "start_s": 4.26,
+     "end_s": 7.96,
+     "start_frame": 128,
+     "end_frame": 239,
+     "text_display": "عندها لن تتعطل «شاشة» بصمت، بل تقول:",
+     "text_tts": "عندها لن تتعطل شاشة بصمت، بل تقول:"
+    },
+    {
+     "start_s": 8.26,
+     "end_s": 9.95,
+     "start_frame": 248,
+     "end_frame": 299,
+     "text_display": "«يوتيوب غيّر شيئاً.",
+     "text_tts": "يوتيوب غير شيئا."
+    },
+    {
+     "start_s": 10.45,
+     "end_s": 11.66,
+     "start_frame": 314,
+     "end_frame": 350,
+     "text_display": "حدّث التطبيق.»",
+     "text_tts": "حدث التطبيق."
+    },
+    {
+     "start_s": 12.16,
+     "end_s": 15.62,
+     "start_frame": 365,
+     "end_frame": 469,
+     "text_display": "وزر «فحص التحديثات» يجلب الإصدار الجديد.",
+     "text_tts": "وزر فحص التحديثات يجلب الإصدار الجديد."
+    }
+   ]
+  },
+  {
+   "id": "s26_disclaimer",
+   "section": "disclaimer",
+   "title": "بصراحة",
+   "step": null,
+   "audio": "audio/scenes/s26_disclaimer.wav",
+   "audio_duration_s": 11.55,
+   "start_s": 349.133,
+   "duration_s": 12.833,
+   "start_frame": 10474,
+   "duration_frames": 385,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 2.04,
+     "start_frame": 30,
+     "end_frame": 61,
+     "text_display": "وبصراحة:",
+     "text_tts": "وبصراحة:"
+    },
+    {
+     "start_s": 2.34,
+     "end_s": 7.75,
+     "start_frame": 70,
+     "end_frame": 232,
+     "text_display": "هذا التطبيق يخالف شروط يوتيوب، وهو للاستخدام الشخصي فقط.",
+     "text_tts": "هذا التطبيق يخالف شروط يوتيوب، وهو للاستخدام الشخصي فقط."
+    },
+    {
+     "start_s": 8.25,
+     "end_s": 12.35,
+     "start_frame": 248,
+     "end_frame": 370,
+     "text_display": "والحارس أفضل جهد ممكن، لكنه ليس منيعاً.",
+     "text_tts": "والحارس أفضل جهد ممكن، لكنه ليس منيعا."
+    }
+   ]
+  },
+  {
+   "id": "s27_outro",
+   "section": "outro",
+   "title": "الخاتمة",
+   "step": null,
+   "audio": "audio/scenes/s27_outro.wav",
+   "audio_duration_s": 5.56,
+   "start_s": 361.967,
+   "duration_s": 9.667,
+   "start_frame": 10859,
+   "duration_frames": 290,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 1.61,
+     "start_frame": 30,
+     "end_frame": 48,
+     "text_display": "«شاشة»:",
+     "text_tts": "شاشة:"
+    },
+    {
+     "start_s": 1.91,
+     "end_s": 6.36,
+     "start_frame": 57,
+     "end_frame": 191,
+     "text_display": "يوتيوب على التلفاز، بهدوء، وبنيّة واضحة.",
+     "text_tts": "يوتيوب على التلفاز، بهدوء، وبنية واضحة."
+    }
+   ]
+  }
+ ]
+}

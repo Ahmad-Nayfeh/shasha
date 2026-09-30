@@ -1,0 +1,690 @@
+{
+ "engine": {
+  "engine": "edge-tts 7.2.8 (Microsoft Edge Read Aloud neural voices)",
+  "voice": "ar-SA-HamedNeural",
+  "rate": "-6%",
+  "pitch": "+0Hz",
+  "text_field": "tts_diac",
+  "pauses_s": {
+   "comma": 0.25,
+   "colon": 0.3,
+   "sentence": 0.5,
+   "beat": 0.9
+  },
+  "note": "phrase-by-phrase synthesis, silences inserted by us; waqf ta marbuta sent as هْ; shadda written before its vowel"
+ },
+ "asr": {
+  "model": "faster-whisper medium int8, language=ar",
+  "overall_cer_char_weighted": 0.0254
+ },
+ "scenes": [
+  {
+   "id": "s01_intro",
+   "audio_s": 15.65,
+   "words": 23,
+   "speech_s": 13.4,
+   "wpm_speech": 103.0,
+   "wpm_overall": 88.2,
+   "loudness": {
+    "integrated_lufs": -16.28,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.7
+   },
+   "phrases": 8,
+   "exact_word_timing": true,
+   "cer": 0.016,
+   "hyp": "هذا تطبيق شاشة يوتيوب على تلفاز جوجل تيفي بلا اعلانة وبلا خوارزمية ومعه حصص للوقت وملف للأطفال وقفل للفيديو وريموت من جوالك"
+  },
+  {
+   "id": "s02_why",
+   "audio_s": 12.37,
+   "words": 21,
+   "speech_s": 10.87,
+   "wpm_speech": 115.9,
+   "wpm_overall": 101.9,
+   "loudness": {
+    "integrated_lufs": -16.21,
+    "true_peak_dbtp": -2.05,
+    "lra": 1.0
+   },
+   "phrases": 5,
+   "exact_word_timing": true,
+   "cer": 0.0283,
+   "hyp": "الفكرة مشاهدة هادئة ومقصودة تشاهد ما اخترته انت ثم تغلق التلفاز راضي لا ان تضيع ساعة في فيديو لم تتحف عنه"
+  },
+  {
+   "id": "s03_home_search",
+   "audio_s": 12.52,
+   "words": 20,
+   "speech_s": 10.82,
+   "wpm_speech": 110.9,
+   "wpm_overall": 95.8,
+   "loudness": {
+    "integrated_lufs": -16.38,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.5
+   },
+   "phrases": 5,
+   "exact_word_timing": true,
+   "cer": 0.0088,
+   "hyp": "الرئيسية تعرض فيديوهات قنواتك فقط والأحدث أولى بلا أي حساب لا مقترحات ولا رائج والبحث بالريموت متاح في ملف الكبار"
+  },
+  {
+   "id": "s04_player",
+   "audio_s": 11.96,
+   "words": 18,
+   "speech_s": 10.76,
+   "wpm_speech": 100.4,
+   "wpm_overall": 90.3,
+   "loudness": {
+    "integrated_lufs": -16.29,
+    "true_peak_dbtp": -2.04,
+    "lra": 2.4
+   },
+   "phrases": 3,
+   "exact_word_timing": true,
+   "cer": 0.0678,
+   "hyp": "ومن اعدادات المشهد لتختار الجودة والسرعة والترجمة ويكمل الفيديو من حيث توقفت وفقرات الرعاية يتخطاها سبونسر بولكت القائية",
+   "phrase_check": [
+    {
+     "ref": "ومن إعدادات المشغل تختار الجودة والسرعة والترجمة.",
+     "hyp": "ومن اعدادات المشغل تختار الجودة والسرعة والترجمة",
+     "cer": 0.0
+    },
+    {
+     "ref": "ويكمل الفيديو من حيث توقفت.",
+     "hyp": "ويكمل الفيديو من حيث توقفت",
+     "cer": 0.0
+    },
+    {
+     "ref": "وفقرات الرعاية يتخطاها سبونسر بلوك تلقائيا.",
+     "hyp": "وفقرات الرعاية يتخطاها سبون سربولوك تلقائيا",
+     "cer": 0.071
+    }
+   ]
+  },
+  {
+   "id": "s05_profiles",
+   "audio_s": 11.41,
+   "words": 23,
+   "speech_s": 10.16,
+   "wpm_speech": 135.8,
+   "wpm_overall": 120.9,
+   "loudness": {
+    "integrated_lufs": -16.28,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.1
+   },
+   "phrases": 4,
+   "exact_word_timing": true,
+   "cer": 0.0,
+   "hyp": "ملف الكبار يحميه رمز سري أما ملف الطفل فلا يعرض إلا القنوات التي اخترتها له لا بحث ولا كتابه ولا خروج إلا بالرمز"
+  },
+  {
+   "id": "s06_time",
+   "audio_s": 13.5,
+   "words": 22,
+   "speech_s": 12.05,
+   "wpm_speech": 109.5,
+   "wpm_overall": 97.8,
+   "loudness": {
+    "integrated_lufs": -16.22,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.7
+   },
+   "phrases": 5,
+   "exact_word_timing": true,
+   "cer": 0.0086,
+   "hyp": "ولكل ملف حصة يومية وساعات نسموحة قبل النهاية بخمس دقائق يظهر تنبيه هادئ صغير ثم شاشة انتهى الوقت ولا تفتح الا بالرمز"
+  },
+  {
+   "id": "s07_lock",
+   "audio_s": 15.27,
+   "words": 27,
+   "speech_s": 13.32,
+   "wpm_speech": 121.6,
+   "wpm_overall": 106.1,
+   "loudness": {
+    "integrated_lufs": -16.26,
+    "true_peak_dbtp": -2.05,
+    "lra": 1.9
+   },
+   "phrases": 6,
+   "exact_word_timing": true,
+   "cer": 0.0,
+   "hyp": "وكل فيديو يبدأ مقفلا حتى ينتهي في ملف الطفل لا يعمل زر الرجوع وفي ملف الكبار يحتاج الخروج المبكر ضغطا مطولا لعشر ثوان ثم كتابة جملة قصيرة"
+  },
+  {
+   "id": "s08_guard",
+   "audio_s": 8.44,
+   "words": 15,
+   "speech_s": 7.74,
+   "wpm_speech": 116.3,
+   "wpm_overall": 106.6,
+   "loudness": {
+    "integrated_lufs": -16.13,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.2
+   },
+   "phrases": 3,
+   "exact_word_timing": true,
+   "cer": 0.0482,
+   "hyp": "واذا ضغط التفل زر رئيسية في اريموت يغطي الحارس التطبيق الآخر ويعيد شاشة في لحظات",
+   "phrase_check": [
+    {
+     "ref": "وإذا ضغط الطفل زر الرئيسية في الريموت،",
+     "hyp": "واذا ضغط الطفل زر رئيسية في اريموت",
+     "cer": 0.081
+    },
+    {
+     "ref": "يغطي الحارس التطبيق الآخر،",
+     "hyp": "يغطي الحارس التطبيق الآخر",
+     "cer": 0.0
+    },
+    {
+     "ref": "ويعيد شاشة في لحظات.",
+     "hyp": "ويعيد شاشة في لحظات",
+     "cer": 0.0
+    }
+   ]
+  },
+  {
+   "id": "s09_phone",
+   "audio_s": 14.52,
+   "words": 21,
+   "speech_s": 12.27,
+   "wpm_speech": 102.7,
+   "wpm_overall": 86.8,
+   "loudness": {
+    "integrated_lufs": -16.27,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.9
+   },
+   "phrases": 8,
+   "exact_word_timing": true,
+   "cer": 0.0259,
+   "hyp": "وجوالك يصبح ريموتة انسح رمز كيو آر لتبحث وتتحكم وترسل الروابط وفي قسم الأب برمز الوالدين تضيف وقت وتدير قائمة الطفل"
+  },
+  {
+   "id": "s10_stats",
+   "audio_s": 11.43,
+   "words": 15,
+   "speech_s": 9.93,
+   "wpm_speech": 90.6,
+   "wpm_overall": 78.7,
+   "loudness": {
+    "integrated_lufs": -16.28,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.3
+   },
+   "phrases": 5,
+   "exact_word_timing": true,
+   "cer": 0.0,
+   "hyp": "والاحصائيات صادقة دقائق كل ملف وأكثر القنوات مشاهدة ومقارنة بالأسبوع الماضي بلا نقاط ولا أوسمة"
+  },
+  {
+   "id": "s11_install",
+   "audio_s": 9.79,
+   "words": 16,
+   "speech_s": 8.59,
+   "wpm_speech": 111.8,
+   "wpm_overall": 98.1,
+   "loudness": {
+    "integrated_lufs": -16.34,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.3
+   },
+   "phrases": 4,
+   "exact_word_timing": true,
+   "cer": 0.0111,
+   "hyp": "والآن التثبيت خطوة بخطوة تحتاج إلى كمبوتر شخصي بنظام ماك أو ويندوز على شبكة التلفاز نفسها"
+  },
+  {
+   "id": "s12_download",
+   "audio_s": 17.31,
+   "words": 29,
+   "speech_s": 14.51,
+   "wpm_speech": 119.9,
+   "wpm_overall": 100.5,
+   "loudness": {
+    "integrated_lufs": -16.24,
+    "true_peak_dbtp": -2.04,
+    "lra": 3.1
+   },
+   "phrases": 9,
+   "exact_word_timing": true,
+   "cer": 0.04,
+   "hyp": "الخطوة الأولى على الكم بيوتر من صفحة شاشة على غيت هب اضغط الملف المضغط ثم زر التنزيل ثم فك ضغط في ويندوز بالزر الايمن ثم استخراج الكل وفي مكب نقرتين"
+  },
+  {
+   "id": "s13_folder",
+   "audio_s": 9.53,
+   "words": 14,
+   "speech_s": 8.28,
+   "wpm_speech": 101.4,
+   "wpm_overall": 88.1,
+   "loudness": {
+    "integrated_lufs": -16.34,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.6
+   },
+   "phrases": 5,
+   "exact_word_timing": true,
+   "cer": 0.0769,
+   "hyp": "ستجد مجلد واحدة وفيه كل ما تحتاجه التطبيق وملف تثبيت لمك وويندولز وداليل مصور",
+   "phrase_check": [
+    {
+     "ref": "ستجد مجلدا واحدا،",
+     "hyp": "ستجد مجلداً واحدة",
+     "cer": 0.062
+    },
+    {
+     "ref": "وفيه كل ما تحتاجه:",
+     "hyp": "وفيه كل ما تحتاجه",
+     "cer": 0.0
+    },
+    {
+     "ref": "التطبيق،",
+     "hyp": "التطبيق",
+     "cer": 0.0
+    },
+    {
+     "ref": "وملفا تثبيت لماك وويندوز،",
+     "hyp": "وملفة تثبيت لمك و ويندوز",
+     "cer": 0.125
+    },
+    {
+     "ref": "ودليل مصور.",
+     "hyp": "ودليل مصور",
+     "cer": 0.0
+    }
+   ]
+  },
+  {
+   "id": "s14_devmode",
+   "audio_s": 15.66,
+   "words": 29,
+   "speech_s": 13.36,
+   "wpm_speech": 130.2,
+   "wpm_overall": 111.1,
+   "loudness": {
+    "integrated_lufs": -16.29,
+    "true_peak_dbtp": -2.04,
+    "lra": 0.8
+   },
+   "phrases": 8,
+   "exact_word_timing": true,
+   "cer": 0.0676,
+   "hyp": "الخطوة الثانية على التلفاز افتح الاعدادة ثم النظام ثم حول انزل الى اندرويد ديفيا واسبد واضغط الزر الاوسط سبع مرات حتى تظهر رسالة انت الان مطور",
+   "phrase_check": [
+    {
+     "ref": "الخطوة الثانية على التلفاز:",
+     "hyp": "الخطوة الثانية على التلفاز",
+     "cer": 0.0
+    },
+    {
+     "ref": "افتح الإعدادات،",
+     "hyp": "افتح الاعدادات",
+     "cer": 0.0
+    },
+    {
+     "ref": "ثم النظام،",
+     "hyp": "ثم النظام",
+     "cer": 0.0
+    },
+    {
+     "ref": "ثم حول.",
+     "hyp": "ثم حول",
+     "cer": 0.0
+    },
+    {
+     "ref": "انزل إلى أندرويد تي في أو إس بيلد،",
+     "hyp": "انزل الى اندرو والتيفية واسبب",
+     "cer": 0.364
+    },
+    {
+     "ref": "واضغط الزر الأوسط سبع مرات،",
+     "hyp": "واضغط الزر الأوسط سبع مرات",
+     "cer": 0.0
+    },
+    {
+     "ref": "حتى تظهر رسالة:",
+     "hyp": "حتى تظهر رسالة",
+     "cer": 0.0
+    },
+    {
+     "ref": "أنت الآن مطور.",
+     "hyp": "انت الان مطور",
+     "cer": 0.0
+    }
+   ]
+  },
+  {
+   "id": "s15_debugging",
+   "audio_s": 13.01,
+   "words": 22,
+   "speech_s": 11.01,
+   "wpm_speech": 119.9,
+   "wpm_overall": 101.5,
+   "loudness": {
+    "integrated_lufs": -16.42,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.4
+   },
+   "phrases": 6,
+   "exact_word_timing": true,
+   "cer": 0.0,
+   "hyp": "الخطوة الثالثة ارجع الى النظام وافتح خيارات المطور فعل تصحيح اخطاء USB وان وجدت تصحيح الاخطاء عبر الشبكة ففعله ايضا"
+  },
+  {
+   "id": "s16_find_ip",
+   "audio_s": 20.55,
+   "words": 33,
+   "speech_s": 17.5,
+   "wpm_speech": 113.1,
+   "wpm_overall": 96.4,
+   "loudness": {
+    "integrated_lufs": -16.26,
+    "true_peak_dbtp": -2.05,
+    "lra": 2.0
+   },
+   "phrases": 9,
+   "exact_word_timing": true,
+   "hyp": "الخطوة الرابعة من الاعدادة افتح الشبكة والانترنت ان كانت الشاشة على الويفي فاختر شبكتك ثم اب ادرس وان كانت موصولة بسلك فستجد العنوان تحت اثرنت مباشرة سجل العنوان ارقاما بينها نقاط",
+   "cer": 0.0481,
+   "phrase_check": [
+    {
+     "ref": "الخطوة الرابعة:",
+     "hyp": "الخطوة الرابعة",
+     "cer": 0.0
+    },
+    {
+     "ref": "من الإعدادات،",
+     "hyp": "من الإعدادات",
+     "cer": 0.0
+    },
+    {
+     "ref": "افتح الشبكة والإنترنت.",
+     "hyp": "افتح الشبكة والانترنت",
+     "cer": 0.0
+    },
+    {
+     "ref": "إن كانت الشاشة على الواي فاي،",
+     "hyp": "إن كانت الشاشة على الويفي",
+     "cer": 0.107
+    },
+    {
+     "ref": "فاختر شبكتك ثم آي بي أدرس.",
+     "hyp": "فاختر شبكتك ثم أي بي أدرس",
+     "cer": 0.0
+    },
+    {
+     "ref": "وإن كانت موصولة بسلك،",
+     "hyp": "وإن كانت معصولة بسلك",
+     "cer": 0.05
+    },
+    {
+     "ref": "فستجد العنوان تحت إيثرنت مباشرة.",
+     "hyp": "فستجد العنوان تحت ايفرنت مباشرة",
+     "cer": 0.032
+    },
+    {
+     "ref": "سجل العنوان:",
+     "hyp": "سجل العنوان",
+     "cer": 0.0
+    },
+    {
+     "ref": "أرقاما بينها نقاط.",
+     "hyp": "أرقاما بينها نقات",
+     "cer": 0.059
+    }
+   ]
+  },
+  {
+   "id": "s17_run_windows",
+   "audio_s": 14.19,
+   "words": 24,
+   "speech_s": 12.44,
+   "wpm_speech": 115.8,
+   "wpm_overall": 101.5,
+   "loudness": {
+    "integrated_lufs": -16.21,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.5
+   },
+   "phrases": 6,
+   "exact_word_timing": true,
+   "cer": 0.0079,
+   "hyp": "الخطوة الخامسة على الكمبيوتر في ويندوز انقر مرتين على ملف ويندوز وإن ظهر تحذير أزرق فاختر مزيد من المعلومات ثم تشغيل على أي حل"
+  },
+  {
+   "id": "s18_run_mac",
+   "audio_s": 5.67,
+   "words": 13,
+   "speech_s": 5.22,
+   "wpm_speech": 149.4,
+   "wpm_overall": 137.6,
+   "loudness": {
+    "integrated_lufs": -16.43,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.8
+   },
+   "phrases": 2,
+   "exact_word_timing": true,
+   "cer": 0.0656,
+   "hyp": "وفي ماك أنقر على ملث مكب الزر الأيمن ثم اختر امر الفتح مرتين",
+   "phrase_check": [
+    {
+     "ref": "وفي ماك انقر على ملف ماك بالزر الأيمن،",
+     "hyp": "وفي ماك امقر على ملف مكب الزر الأيمن",
+     "cer": 0.108
+    },
+    {
+     "ref": "ثم اختر أمر الفتح مرتين.",
+     "hyp": "ثم اختر امر الفتح مراتين",
+     "cer": 0.043
+    }
+   ]
+  },
+  {
+   "id": "s19_type_ip",
+   "audio_s": 8.06,
+   "words": 14,
+   "speech_s": 6.81,
+   "wpm_speech": 123.3,
+   "wpm_overall": 104.2,
+   "loudness": {
+    "integrated_lufs": -16.21,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.7
+   },
+   "phrases": 4,
+   "exact_word_timing": true,
+   "cer": 0.0132,
+   "hyp": "سيسألك البرنامج اكتب عنوان واي بي للشاشة اكتب العنوان الذي سجلته ثم اضغط انتر"
+  },
+  {
+   "id": "s20_allow",
+   "audio_s": 13.77,
+   "words": 24,
+   "speech_s": 12.22,
+   "wpm_speech": 117.8,
+   "wpm_overall": 104.6,
+   "loudness": {
+    "integrated_lufs": -16.27,
+    "true_peak_dbtp": -2.04,
+    "lra": 2.7
+   },
+   "phrases": 5,
+   "exact_word_timing": true,
+   "cer": 0.015,
+   "hyp": "الخطوة السادسة على التلفاز ستسألك رسالة هل تسمح بتصحيح الأخطاء؟ ضع لامة على السماح دائما من هذا الكومبيوتر ثم اضغط اوكي قبل مرور دقيقة"
+  },
+  {
+   "id": "s21_pairing",
+   "audio_s": 9.0,
+   "words": 16,
+   "speech_s": 8.3,
+   "wpm_speech": 115.7,
+   "wpm_overall": 106.7,
+   "loudness": {
+    "integrated_lufs": -16.2,
+    "true_peak_dbtp": -2.05,
+    "lra": 1.8
+   },
+   "phrases": 3,
+   "exact_word_timing": true,
+   "cer": 0.0102,
+   "hyp": "وإن لم يعرض تلفازك إلا تصحيح الأخطاء اللاسيكي فاختر الاقتران برمز وأدخل العنوان والرمز في البرنامج"
+  },
+  {
+   "id": "s22_automatic",
+   "audio_s": 16.52,
+   "words": 24,
+   "speech_s": 13.47,
+   "wpm_speech": 106.9,
+   "wpm_overall": 87.2,
+   "loudness": {
+    "integrated_lufs": -16.21,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.6
+   },
+   "phrases": 9,
+   "exact_word_timing": true,
+   "cer": 0.0657,
+   "hyp": "الخطوة السابعة البرنامج يكمل واحدة يثبت التطبيق وينحه صلاحيات ثم يسألك هل توقف يوتيوبا رسمي اكتب ويل الموافقة او ان للرفض ثم يعرض ملخصة",
+   "phrase_check": [
+    {
+     "ref": "الخطوة السابعة:",
+     "hyp": "الخطوة السابعة",
+     "cer": 0.0
+    },
+    {
+     "ref": "البرنامج يكمل وحده.",
+     "hyp": "البرنامج يكمل وحدة",
+     "cer": 0.0
+    },
+    {
+     "ref": "يثبت التطبيق،",
+     "hyp": "يثبت التطبيق",
+     "cer": 0.0
+    },
+    {
+     "ref": "ويمنحه صلاحياته،",
+     "hyp": "وينّحه صلاحيات",
+     "cer": 0.133
+    },
+    {
+     "ref": "ثم يسألك:",
+     "hyp": "ثم يسألك",
+     "cer": 0.0
+    },
+    {
+     "ref": "هل توقف يوتيوب الرسمي؟",
+     "hyp": "هل توقف يوتيوب الرسمي؟",
+     "cer": 0.0
+    },
+    {
+     "ref": "اكتب واي للموافقة،",
+     "hyp": "اكتب ويل الموافقة",
+     "cer": 0.176
+    },
+    {
+     "ref": "أو إن للرفض.",
+     "hyp": "او ان الرفض",
+     "cer": 0.091
+    },
+    {
+     "ref": "ثم يعرض ملخصا.",
+     "hyp": "ثم يعرض ملخصة",
+     "cer": 0.077
+    }
+   ]
+  },
+  {
+   "id": "s23_first_start",
+   "audio_s": 14.45,
+   "words": 22,
+   "speech_s": 12.45,
+   "wpm_speech": 106.0,
+   "wpm_overall": 91.3,
+   "loudness": {
+    "integrated_lufs": -16.31,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.4
+   },
+   "phrases": 6,
+   "exact_word_timing": true,
+   "cer": 0.0,
+   "hyp": "الخطوة الثامنة اول تشغيل اختر رمز الوالدين ثم انشئ ملفك وملف طفلك بدقائقه اليومية وساعاته المسموحة ثم اضف القنوات التي تسمح بها"
+  },
+  {
+   "id": "s24_phone",
+   "audio_s": 16.11,
+   "words": 28,
+   "speech_s": 14.11,
+   "wpm_speech": 119.1,
+   "wpm_overall": 104.3,
+   "loudness": {
+    "integrated_lufs": -16.19,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.1
+   },
+   "phrases": 7,
+   "exact_word_timing": true,
+   "cer": 0.0063,
+   "hyp": "الخطوة التاسعة وهي اختيارية من اعدادات شاشة افتح التحكم من الجوال وامسح رمز كيو ار بكانيرا جوالك وهو على الشبكة نفسها ثم اضف الصفحة الى الشاشة الرئيسية للجوال"
+  },
+  {
+   "id": "s25_breaks",
+   "audio_s": 14.82,
+   "words": 23,
+   "speech_s": 12.57,
+   "wpm_speech": 109.8,
+   "wpm_overall": 93.1,
+   "loudness": {
+    "integrated_lufs": -16.32,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.9
+   },
+   "phrases": 6,
+   "exact_word_timing": true,
+   "cer": 0.024,
+   "hyp": "و يوتيوب يتغير كل بضعة أشهر عندها لن تتعطل شاشة بصمت بل تقول يوتيوب غير شيئ حدث التطبيق و زر فحص التحديثات يجلب الإصدار الجديد"
+  },
+  {
+   "id": "s26_disclaimer",
+   "audio_s": 11.55,
+   "words": 17,
+   "speech_s": 10.05,
+   "wpm_speech": 101.5,
+   "wpm_overall": 88.3,
+   "loudness": {
+    "integrated_lufs": -16.1,
+    "true_peak_dbtp": -2.04,
+    "lra": 1.5
+   },
+   "phrases": 5,
+   "exact_word_timing": true,
+   "cer": 0.0101,
+   "hyp": "وبصراحة هذا التطبيق يخالف شروط يوتيوب وهو لاستخدام الشخصي فقط والحارس افضل جهد ممكن لكنه ليس منيعا"
+  },
+  {
+   "id": "s27_outro",
+   "audio_s": 5.56,
+   "words": 7,
+   "speech_s": 4.56,
+   "wpm_speech": 92.1,
+   "wpm_overall": 75.5,
+   "loudness": {
+    "integrated_lufs": -16.25,
+    "true_peak_dbtp": -2.05,
+    "lra": 1.1
+   },
+   "phrases": 4,
+   "exact_word_timing": true,
+   "cer": 0.0244,
+   "hyp": "شاشة يوتيوب على التلفاز بهدو وبنية واضحة"
+  }
+ ]
+}

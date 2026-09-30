@@ -1,0 +1,595 @@
+{
+  "_readme": [
+    "Screenshot manifest for the explainer. Key = storyboard screen name; file = PNG in public/screens/.",
+    "source = where ./sync-screens.sh copies it from (path relative to the shasha repo; null = no capture exists yet).",
+    "  This is THE mapping: after new screenshots land in the repo, `./sync-screens.sh` re-copies everything.",
+    "TV captures: 1920x1080 PNG (app JVM screenshot tests). Phone captures: 390x844 CSS px at any scale (@2x = 780x1688).",
+    "If a file is missing the renderer draws a labelled placeholder (title + skeleton), so the timeline always renders.",
+    "units = px: focus rectangles [x, y, w, h] are in the capture's own pixels (size = [w, h] of the capture, top-left",
+    "  origin); units = rel: relative 0..1. The focus ring, zooms and tap markers in the scenes read them from here.",
+    "patches (capture px) are drawn over the capture: 'base' always, other keys when a scene asks (ScreenPatch). They",
+    "  only neutralise details of the capture (the app's own focus highlight where our D-pad ring takes over, an error",
+    "  line); ops: rect {x,y,w,h,r,fill,stroke,strokeWidth,feather}, band (ring eraser) {x,y,w,h,r,width,color,feather},",
+    "  crop {src:[x,y,w,h], r, levels:[from,to]} (re-colours a region: from -> to, white stays white), qr {x,y,size} (the video's pairing QR),",
+    "  text {text,x,y,size,weight,color,anchor}, icon {name,x,y,size,color,stroke}.",
+    "Check a screen with: npx remotion still src/index.ts ScreensDebug out/s.png --frame=<index>"
+  ],
+  "screens": {
+    "home_adult": {
+      "file": "home_adult.png",
+      "source": "app/src/test/screenshots/home.png",
+      "title": "الرئيسية · ملف الكبار",
+      "kind": "home",
+      "scenes": ["s01_intro", "s03_home_search", "s09_phone", "s13_first_run"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "firstCard": [1297, 285, 372, 206],
+        "home": [1712, 216, 111, 95],
+        "search": [1712, 324, 111, 95],
+        "row1": [96, 286, 1568, 356],
+        "rows": [[96, 286, 1568, 356], [96, 708, 1568, 356]]
+      },
+      "patches": {
+        "unfocusFirstCard": [{"op": "band", "x": 1286, "y": 274, "w": 394, "h": 228, "r": 31, "width": 12, "color": "#0B0F14", "feather": 12}]
+      }
+    },
+    "search_adult": {
+      "file": "search_adult.png",
+      "source": "app/src/test/screenshots/search_results.png",
+      "title": "البحث",
+      "kind": "search",
+      "scenes": ["s03_home_search"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "query": [96, 88, 1568, 112],
+        "firstResult": [1302, 357, 362, 204]
+      }
+    },
+    "player_overlay": {
+      "file": "player_overlay.png",
+      "source": "app/src/test/screenshots/player_osd.png",
+      "title": "المشغّل",
+      "kind": "player",
+      "scenes": ["s04_player", "s07_lock", "s09_phone", "s14_breaks"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "quality": [1501, 872, 306, 104],
+        "speed": [1286, 872, 190, 104],
+        "subtitles": [1059, 872, 202, 104],
+        "progress": [128, 812, 1664, 32],
+        "pause": [112, 865, 120, 118],
+        "title": [1010, 95, 800, 120]
+      }
+    },
+    "player_loading": {
+      "file": "player_loading.png",
+      "source": "app/src/test/screenshots/player_loading.png",
+      "title": "جارٍ تجهيز الفيديو",
+      "kind": "player",
+      "scenes": ["s09_phone"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "logo": [893, 420, 135, 145]
+      }
+    },
+    "player_settings": {
+      "file": "player_settings.png",
+      "source": "app/src/test/screenshots/player_osd_quality_menu.png",
+      "title": "إعدادات التشغيل",
+      "kind": "menu",
+      "scenes": ["s04_player"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "panel": [1129, 225, 678, 758],
+        "q1080": [1156, 375, 624, 98]
+      }
+    },
+    "player_resume": {
+      "file": "player_resume.png",
+      "source": "app/src/test/screenshots/player_osd_watch_later_resume.png",
+      "title": "استكمال المشاهدة",
+      "kind": "resume",
+      "scenes": ["s04_player"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "resume": [113, 97, 350, 71],
+        "progress": [128, 812, 1664, 32]
+      }
+    },
+    "player_sponsor_skipped": {
+      "file": "player_sponsor_skipped.png",
+      "source": "app/src/test/screenshots/sponsor_skip_undo.png",
+      "title": "تخطي فقرة رعاية",
+      "kind": "toast",
+      "scenes": ["s04_player"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "toast": [1027, 73, 780, 110],
+        "undo": [1035, 87, 332, 81]
+      }
+    },
+    "profile_picker": {
+      "file": "profile_picker.png",
+      "source": "app/src/test/screenshots/profile_picker.png",
+      "title": "اختيار الملف",
+      "kind": "profiles",
+      "scenes": ["s05_profiles"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "adult": [1182, 355, 283, 283],
+        "child": [826, 363, 267, 267],
+        "child2": [462, 363, 267, 267]
+      }
+    },
+    "pin_entry": {
+      "file": "pin_entry.png",
+      "source": "app/src/test/screenshots/pin_pad.png",
+      "title": "إدخال الرمز السري",
+      "kind": "pin",
+      "scenes": ["s05_profiles", "s06_time"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "dots": [1106, 624, 252, 36],
+        "keypad": [357, 161, 449, 757],
+        "panel": [270, 94, 1409, 891]
+      },
+      "patches": {
+        "base": [{"op": "rect", "x": 1030, "y": 700, "w": 410, "h": 56, "fill": "#151B24"}],
+        "_note": "base hides the capture's red 'wrong PIN, 4 attempts left' line; the scenes draw the 4 dots filling (PinDotsOverlay)."
+      }
+    },
+    "kids_home": {
+      "file": "kids_home.png",
+      "source": "app/src/test/screenshots/kids_home.png",
+      "title": "الرئيسية · ملف الطفل",
+      "kind": "kids",
+      "scenes": ["s01_intro", "s05_profiles", "s09_phone"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "firstCard": [1243, 397, 426, 236],
+        "grid": [780, 290, 900, 420]
+      }
+    },
+    "settings_quota": {
+      "file": "settings_quota.png",
+      "source": "app/src/test/screenshots/profile_edit.png",
+      "title": "الحصة اليومية والجدول",
+      "kind": "settings",
+      "scenes": ["s06_time"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "name": [112, 132, 1104, 128],
+        "minutes": [112, 428, 1104, 128],
+        "schedule": [112, 576, 1104, 128]
+      },
+      "patches": {
+        "base": [
+          {"op": "rect", "x": 50, "y": 90, "w": 1227, "h": 190, "fill": "#0B0F14"},
+          {"op": "rect", "x": 50, "y": 280, "w": 62, "h": 30, "fill": "#0B0F14"},
+          {"op": "rect", "x": 1215, "y": 280, "w": 62, "h": 30, "fill": "#0B0F14"},
+          {"op": "rect", "x": 112, "y": 280, "w": 1104, "h": 24, "r": "32px 32px 0 0", "fill": "#151B24"},
+          {"op": "rect", "x": 112, "y": 132, "w": 1104, "h": 128, "r": 32, "fill": "#151B24"},
+          {"op": "crop", "src": [112, 136, 1104, 120], "r": 30, "levels": ["#28323F", "#151B24"]}
+        ],
+        "_note": "base turns the capture's focused (yellow-ringed) 'name' row into a normal row: our ring takes the focus."
+      }
+    },
+    "quota_warning": {
+      "file": "quota_warning.png",
+      "source": "app/src/test/screenshots/time_warning.png",
+      "title": "تنبيه: بقيت ٥ دقائق",
+      "kind": "warning",
+      "scenes": ["s01_intro", "s06_time"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "toast": [630, 57, 660, 142]
+      }
+    },
+    "time_up": {
+      "file": "time_up.png",
+      "source": "app/src/test/screenshots/time_up.png",
+      "title": "انتهى الوقت",
+      "kind": "timeup",
+      "scenes": ["s06_time", "s09_phone"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "pin": [806, 782, 309, 110],
+        "title": [799, 440, 321, 74],
+        "phoneLine": [768, 916, 387, 37]
+      }
+    },
+    "kids_video": {
+      "file": "kids_video.png",
+      "source": "app/src/test/screenshots/player_subtitle_controls_hidden.png",
+      "title": "فيديو يعمل (ملف الطفل)",
+      "kind": "kidsplayer",
+      "scenes": ["s07_lock", "s08_guard"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "subtitle": [558, 816, 804, 152]
+      }
+    },
+    "kids_player_locked": {
+      "file": "kids_player_locked.png",
+      "source": "app/src/test/screenshots/lock_child_pin.png",
+      "title": "مشغّل الطفل (مقفل)",
+      "kind": "kidsplayer",
+      "scenes": ["s01_intro", "s07_lock", "s08_guard"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "lockHint": [776, 946, 370, 58],
+        "title": [1022, 385, 420, 47],
+        "dots": [1106, 613, 252, 36]
+      }
+    },
+    "lock_hold": {
+      "file": "lock_hold.png",
+      "source": "app/src/test/screenshots/lock_hold_ring.png",
+      "title": "خروج مبكر: ضغط مطوّل ١٠ ثوانٍ",
+      "kind": "hold",
+      "scenes": ["s07_lock"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "ring": [749, 295, 422, 422],
+        "count": [880, 400, 160, 150],
+        "button": [837, 142, 246, 83]
+      }
+    },
+    "lock_phrase": {
+      "file": "lock_phrase.png",
+      "source": "app/src/test/screenshots/lock_phrase_keyboard.png",
+      "title": "خروج مبكر: اكتب الجملة",
+      "kind": "phrase",
+      "scenes": ["s07_lock"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "phrase": [388, 130, 1144, 150],
+        "input": [388, 286, 1144, 112],
+        "keys": [
+          [1199, 457, 102, 102],
+          [1431, 457, 102, 102],
+          [851, 457, 102, 102],
+          [503, 689, 102, 102],
+          [1431, 457, 102, 102],
+          [1199, 689, 102, 102],
+          [387, 573, 102, 102],
+          [387, 457, 102, 102],
+          [967, 457, 102, 102]
+        ]
+      },
+      "_keys": "the letters still to type after the capture's «الصبر مف»: ت ا ح (space) ا ل ف ر ج",
+      "patches": {
+        "base": [
+          {"op": "rect", "x": 1412, "y": 438, "w": 140, "h": 140, "r": 36, "fill": "#0D1B20", "feather": 6},
+          {"op": "rect", "x": 1431, "y": 457, "w": 102, "h": 102, "r": 24, "fill": "#1E2632", "stroke": "#2E3947", "strokeWidth": 2},
+          {"op": "text", "text": "ا", "x": 1482, "y": 508, "size": 46, "weight": 500, "color": "#EAF0F6", "anchor": "middle"}
+        ],
+        "_note": "base draws the capture's focused (teal) ا key as a normal key: our ring hops on the keys instead."
+      }
+    },
+    "guard_overlay": {
+      "file": "guard_overlay.png",
+      "source": null,
+      "title": "الحارس يغطي التطبيق الآخر",
+      "kind": "guard",
+      "vector": "GuardOverlay.coverView() is plain Android views (no screenshot test can capture it): drawn from its source",
+      "scenes": ["s08_guard"],
+      "focus": {}
+    },
+    "protection_status": {
+      "file": "protection_status.png",
+      "source": "app/src/test/screenshots/protection_ok.png",
+      "title": "حالة الحماية",
+      "kind": "status",
+      "scenes": ["s08_guard", "s12_install_pc"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "overlay": [112, 347, 1696, 160],
+        "usage": [112, 531, 1696, 160],
+        "install": [112, 715, 1696, 160],
+        "badge": [112, 121, 270, 80]
+      }
+    },
+    "remote_qr": {
+      "file": "remote_qr.png",
+      "source": "app/src/test/screenshots/remote_pairing.png",
+      "title": "ربط الجوال · رمز QR",
+      "kind": "qr",
+      "scenes": ["s01_intro", "s09_phone"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "qr": [112, 148, 600, 600],
+        "url": [112, 772, 600, 108],
+        "toggle": [771, 303, 1050, 136]
+      },
+      "patches": {
+        "base": [
+          {"op": "qr", "x": 181, "y": 217, "size": 462},
+          {"op": "rect", "x": 130, "y": 786, "w": 470, "h": 40, "fill": "#070A0E"},
+          {"op": "text", "text": "http://192.168.1.50:8765/?t=", "x": 139.6, "y": 816.2, "size": 26.6, "color": "#48DCCD", "font": "Capture Mono", "baseline": true}
+        ],
+        "_note": "base swaps the test fixture's TV address (192.168.1.23) for the video's TV, 192.168.1.50 (lib/demo.ts): the QR (same version 4, 33 modules of 14 px) and the URL text, re-lettered in the capture's own font (calibrated: identical glyphs)."
+      }
+    },
+    "first_run_phone": {
+      "file": "first_run_phone.png",
+      "source": "app/src/test/screenshots/setup_phone.png",
+      "title": "أول تشغيل: اربط جوالك",
+      "kind": "qr",
+      "scenes": ["s13_first_run"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "qr": [194, 218, 600, 600],
+        "url": [866, 584, 860, 107],
+        "done": [1525, 784, 209, 110]
+      },
+      "patches": {
+        "base": [
+          {"op": "qr", "x": 263, "y": 287, "size": 462},
+          {"op": "rect", "x": 884, "y": 598, "w": 470, "h": 40, "fill": "#070A0E"},
+          {"op": "text", "text": "http://192.168.1.50:8765/?t=", "x": 893.6, "y": 628.2, "size": 26.6, "color": "#48DCCD", "font": "Capture Mono", "baseline": true}
+        ],
+        "_note": "same QR + address swap as remote_qr"
+      }
+    },
+    "stats": {
+      "file": "stats.png",
+      "source": "app/src/test/screenshots/stats.png",
+      "title": "الإحصائيات",
+      "kind": "stats",
+      "scenes": ["s10_stats"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "chart": [828, 274, 980, 744],
+        "channels": [112, 537, 676, 481],
+        "week": [112, 274, 676, 239],
+        "compare": [336, 436, 420, 56],
+        "profiles": [111, 120, 506, 82]
+      }
+    },
+    "first_run_pin": {
+      "file": "first_run_pin.png",
+      "source": "app/src/test/screenshots/setup_pin.png",
+      "title": "أول تشغيل: اختر رمزك السري",
+      "kind": "pin",
+      "scenes": ["s13_first_run"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "dots": [1106, 550, 252, 36],
+        "keypad": [357, 139, 449, 757]
+      }
+    },
+    "profiles_setup": {
+      "file": "profiles_setup.png",
+      "source": "app/src/test/screenshots/setup_child.png",
+      "title": "أول تشغيل: ملف لطفلك",
+      "kind": "profiles",
+      "scenes": ["s13_first_run"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "name": [500, 366, 920, 112],
+        "avatar": [1501, 517, 134, 134],
+        "add": [898, 841, 335, 100],
+        "adult": [898, 841, 335, 100],
+        "child": [500, 366, 920, 112]
+      },
+      "_alt": "app/src/test/screenshots/settings_profiles.png (the 3 created profiles, from Settings) also works; setup_child is the first-run wizard's own step, like setup_pin and setup_phone"
+    },
+    "error_youtube_changed": {
+      "file": "error_youtube_changed.png",
+      "source": "app/src/test/screenshots/error_blocked_403.png",
+      "title": "يوتيوب غيّر شيئاً",
+      "kind": "error",
+      "scenes": ["s14_breaks"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "title": [591, 420, 742, 68],
+        "details": [709, 612, 502, 182],
+        "version": [709, 612, 229, 182],
+        "errorName": [938, 612, 273, 182],
+        "updateButton": [633, 849, 386, 104],
+        "back": [1049, 849, 246, 104]
+      },
+      "patches": {
+        "base": [
+          {"op": "rect", "x": 1022, "y": 820, "w": 300, "h": 162, "r": 70, "fill": "#0F1116", "feather": 10},
+          {"op": "rect", "x": 1049, "y": 849, "w": 246, "h": 104, "r": 52, "fill": "#153133", "stroke": "#2E3947", "strokeWidth": 2},
+          {"op": "icon", "name": "arrowRight", "x": 1229, "y": 902, "size": 40, "color": "#2EC4B6", "stroke": 2.6},
+          {"op": "text", "text": "رجوع", "x": 1183, "y": 900, "size": 40, "weight": 600, "color": "#2EC4B6", "anchor": "right"}
+        ],
+        "_note": "base draws the capture's focused «رجوع» as an unfocused button: our ring moves to «فحص التحديثات»."
+      }
+    },
+    "update_check": {
+      "file": "update_check.png",
+      "source": "app/src/test/screenshots/updates_available.png",
+      "title": "فحص التحديثات: إصدار جديد",
+      "kind": "update",
+      "scenes": ["s14_breaks"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "install": [1363, 747, 351, 110],
+        "back": [1106, 750, 231, 104],
+        "versions": [1117, 569, 574, 142],
+        "latest": [1150, 630, 220, 60],
+        "notes": [112, 209, 808, 663],
+        "release": [1117, 569, 574, 142],
+        "progress": [1117, 569, 574, 142]
+      }
+    },
+    "update_downloading": {
+      "file": "update_downloading.png",
+      "source": "app/src/test/screenshots/updates_downloading.png",
+      "title": "فحص التحديثات: جارٍ التنزيل",
+      "kind": "update",
+      "scenes": ["s14_breaks"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "bar": [320, 477, 1280, 24],
+        "bytes": [790, 526, 340, 48],
+        "versions": [673, 603, 574, 142],
+        "cancel": [841, 781, 238, 110],
+        "release": [673, 603, 574, 142],
+        "progress": [320, 477, 1280, 24]
+      },
+      "_note": "S14 re-draws the bar fill (from the right) and the «x من 18.0 ميغابايت» line as the download runs (UpdateProgressOverlay)."
+    },
+    "phone_remote_main": {
+      "file": "phone_remote_main.png",
+      "source": "remote/src/test/screenshots/01-screen-now-playing.png",
+      "title": "الريموت على الجوال",
+      "kind": "phone_remote",
+      "device": "phone",
+      "scenes": ["s09_phone", "s13_first_run"],
+      "units": "px",
+      "size": [780, 1688],
+      "focus": {
+        "play": [320, 950, 140, 140],
+        "send": [66, 1370, 202, 104],
+        "link": [284, 1370, 430, 104],
+        "searchTab": [420, 1566, 126, 110],
+        "parentTab": [50, 1566, 126, 110],
+        "nowPlaying": [32, 150, 716, 1060],
+        "search": [36, 1200, 712, 110],
+        "firstResult": [36, 1310, 712, 150]
+      },
+      "_fallback": "search/firstResult only lay out the vector page used when the capture is missing"
+    },
+    "phone_search": {
+      "file": "phone_search.png",
+      "source": "remote/src/test/screenshots/04-search-results.png",
+      "title": "البحث من الجوال",
+      "kind": "phone_search",
+      "device": "phone",
+      "scenes": ["s09_phone"],
+      "units": "px",
+      "size": [780, 1688],
+      "focus": {
+        "query": [186, 142, 562, 104],
+        "firstResult": [36, 496, 712, 158]
+      }
+    },
+    "phone_send_link": {
+      "file": "phone_send_link.png",
+      "source": "remote/src/test/screenshots/03-send-link.png",
+      "title": "إرسال رابط إلى الشاشة",
+      "kind": "phone_send",
+      "device": "phone",
+      "scenes": ["s09_phone"],
+      "units": "px",
+      "size": [780, 1688],
+      "focus": {
+        "send": [66, 1318, 202, 72],
+        "toast": [32, 1390, 716, 138]
+      }
+    },
+    "phone_parent_pin": {
+      "file": "phone_parent_pin.png",
+      "source": "remote/src/test/screenshots/10-parent-login.png",
+      "title": "قسم الأب · الرمز",
+      "kind": "phone_pin",
+      "device": "phone",
+      "scenes": ["s09_phone"],
+      "units": "px",
+      "size": [780, 1688],
+      "focus": {
+        "field": [70, 596, 640, 124],
+        "enter": [70, 744, 640, 100],
+        "dots": [300, 632, 180, 56]
+      }
+    },
+    "phone_parent": {
+      "file": "phone_parent.png",
+      "source": "remote/src/test/screenshots/12-parent-time.png",
+      "title": "قسم الأب · الوقت",
+      "kind": "phone_parent",
+      "device": "phone",
+      "scenes": ["s09_phone"],
+      "units": "px",
+      "size": [780, 1688],
+      "focus": {
+        "plus15": [400, 812, 314, 112],
+        "restOfDay": [66, 944, 314, 112],
+        "unlockCard": [32, 510, 716, 682],
+        "allowTab": [32, 298, 286, 84],
+        "unlockTimeUp": [66, 944, 314, 112],
+        "childList": [32, 298, 286, 84]
+      }
+    },
+    "phone_parent_quotas": {
+      "file": "phone_parent_quotas.png",
+      "source": "remote/src/test/screenshots/13-parent-time-quotas.png",
+      "title": "قسم الأب · الحصة اليومية",
+      "kind": "phone_parent",
+      "device": "phone",
+      "scenes": ["s09_phone"],
+      "units": "px",
+      "size": [780, 1688],
+      "focus": {
+        "childPlus": [626, 896, 74, 70],
+        "childValue": [440, 902, 180, 56],
+        "childStepper": [346, 882, 368, 100],
+        "card": [32, 346, 716, 978]
+      }
+    },
+    "phone_parent_allowlist": {
+      "file": "phone_parent_allowlist.png",
+      "source": "remote/src/test/screenshots/15-parent-allowlist.png",
+      "title": "قسم الأب · قائمة السماح",
+      "kind": "phone_parent",
+      "device": "phone",
+      "scenes": ["s09_phone"],
+      "units": "px",
+      "size": [780, 1688],
+      "focus": {
+        "add": [66, 760, 200, 104],
+        "allowTab": [32, 298, 286, 84],
+        "channels": [32, 1082, 716, 338]
+      }
+    },
+    "phone_takeout_import": {
+      "file": "phone_takeout_import.png",
+      "source": "remote/src/test/screenshots/17-parent-subscriptions.png",
+      "title": "استيراد اشتراكات Takeout",
+      "kind": "phone_takeout",
+      "device": "phone",
+      "scenes": ["s13_first_run"],
+      "units": "px",
+      "size": [780, 1688],
+      "focus": {
+        "card": [29, 800, 722, 620],
+        "csv": [68, 1220, 576, 108],
+        "chooseFile": [66, 1362, 648, 54],
+        "drop": [29, 800, 722, 620],
+        "progress": [66, 1362, 648, 20],
+        "done": [32, 1250, 716, 138]
+      }
+    }
+  }
+}

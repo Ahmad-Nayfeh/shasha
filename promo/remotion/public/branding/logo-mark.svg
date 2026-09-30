@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<title>شاشة — العلامة</title>
+<defs><linearGradient id="mScreen" gradientUnits="userSpaceOnUse" x1="0" y1="390.39" x2="0" y2="912"><stop offset="0" stop-color="#48DCCD"/><stop offset="1" stop-color="#1FAE9F"/></linearGradient><linearGradient id="mDots" gradientUnits="userSpaceOnUse" x1="0" y1="112" x2="0" y2="340.31"><stop offset="0" stop-color="#FFC56B"/><stop offset="1" stop-color="#FFA92E"/></linearGradient></defs>
+<path fill="url(#mScreen)" fill-rule="evenodd" d="M292.92,390.39H731.08A156.48,156.48 0 0 1 887.56,546.87V755.52A156.48,156.48 0 0 1 731.08,912H292.92A156.48,156.48 0 0 1 136.44,755.52V546.87A156.48,156.48 0 0 1 292.92,390.39ZM426.77,585.65A35.47,35.47 0 0 1 479.18,554.49L599.77,620.03A35.47,35.47 0 0 1 599.77,682.36L479.18,747.9A35.47,35.47 0 0 1 426.77,716.73Z"/>
+<path fill="url(#mDots)" d="M635.1,283.98A56.33,56.33 0 1 1 522.43,283.98A56.33,56.33 0 1 1 635.1,283.98ZM501.57,283.98A56.33,56.33 0 1 1 388.9,283.98A56.33,56.33 0 1 1 501.57,283.98ZM568.33,168.33A56.33,56.33 0 1 1 455.67,168.33A56.33,56.33 0 1 1 568.33,168.33Z"/>
+</svg>
