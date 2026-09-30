@@ -102,6 +102,11 @@
     <string name="playback_shorts">حدّ الفيديو القصير (&#x2068;Shorts&#x2069;)</string>
     <string name="playback_shorts_body">ما كانت مدته هذا القدر أو أقل يُعدّ قصيراً ويُخفى حيث تُخفى القصيرة</string>
     <string name="playback_shorts_value">حتى %1$s</string>
+    <string name="playback_section_search">البحث</string>
+    <string name="playback_voice_language">لغة البحث الصوتي</string>
+    <string name="playback_voice_language_body">اللغة التي يسمعها الميكروفون في شاشة البحث</string>
+    <string name="voice_language_ar">العربية</string>
+    <string name="voice_language_en">English</string>
 
     <!-- The parent PIN's settings (in «الملفات ورمز الوالدين»). -->
     <string name="pin_settings_failures">المحاولات قبل الإيقاف</string>
@@ -112,6 +117,9 @@
     <string name="pin_settings_unlock_body">بعد إدخال الرمز في ملفك، قبل أن يُطلب من جديد</string>
     <string name="pin_settings_relock">طلب الرمز بعد مغادرة التطبيق</string>
     <string name="pin_settings_relock_body">إذا غاب التطبيق عن الشاشة هذا القدر يُسأل من يشاهد من جديد</string>
+    <string name="pin_settings_adult_entry">طلب رمز الوالدين عند الدخول إلى ملف الكبار</string>
+    <string name="pin_settings_adult_entry_body">عند الإيقاف يُفتح ملف الكبار دون رمز، من التلفاز ومن الجوال. تبقى الإعدادات مقفولة بالرمز دائماً، فلا يستطيع طفل تعطيل الحماية، والخروج من ملف طفل يحتاج الرمز كما هو.</string>
+    <string name="pin_settings_adult_entry_warning">تنبيه: ما دام هذا متوقفاً يستطيع الأطفال الدخول إلى ملف الكبار ومشاهدة ما فيه.</string>
     <string name="hub_pin_note_dynamic">رمز الوالدين يفتح ملفك وهذه الإعدادات، ويُخرج الأطفال من ملفاتهم، ويمنح وقتاً إضافياً. و%1$s خاطئة متتالية توقفه من %2$s حتى %3$s.</string>
     <string-array name="count_attempts">
         <item>محاولة واحدة</item>

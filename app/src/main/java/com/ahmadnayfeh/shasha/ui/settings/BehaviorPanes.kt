@@ -133,6 +133,7 @@ internal object NumberSettings {
 
     val PinKeys: List<Preferences.Key<*>> = listOf(
         BehaviorKeys.PIN_MAX_FAILURES, BehaviorKeys.PIN_FIRST_LOCKOUT_MINUTES, BehaviorKeys.PARENT_UNLOCK_MINUTES, BehaviorKeys.RELOCK_SECONDS,
+        BehaviorKeys.ADULT_ENTRY_PIN,
     )
 }
 
@@ -143,6 +144,7 @@ private sealed interface Editing {
     data object CustomPhrase : Editing
     data object ExtraMinutes : Editing
     data object Speed : Editing
+    data object VoiceLanguage : Editing
 }
 
 /** A row showing one number: OK opens its choices (the original one marked). */
@@ -302,9 +304,7 @@ internal fun PlaybackTimingPane(state: SettingsHubState, actions: SettingsHubAct
                 NumberRow(NumberSettings.Notice, behavior, texts, { editing = it })
                 Spacer(Modifier.height(4.dp))
                 SectionLabel(stringResource(R.string.playback_section_kids), icon = ShashaIcons.Group)
-                NumberRow(NumberSettings.Shorts, behavior, texts, { editing = it })
-                Spacer(Modifier.height(4.dp))
-                ResetRow("playback_reset", { act.reset(NumberSettings.PlaybackKeys) })
+XX, { act.reset(NumberSettings.PlaybackKeys) })
             }
         }
     }
@@ -321,6 +321,17 @@ internal fun PinSettingsRows(behavior: Behavior, actions: SettingsHubActions) {
     NumberRow(NumberSettings.PinLockout, behavior, texts, { editing = it })
     NumberRow(NumberSettings.ParentUnlock, behavior, texts, { editing = it })
     NumberRow(NumberSettings.Relock, behavior, texts, { editing = it })
+    SwitchRow(
+        title = stringResource(R.string.pin_settings_adult_entry),
+        body = stringResource(R.string.pin_settings_adult_entry_body),
+        checked = behavior.adultEntryPin,
+        onToggle = { actions.behavior.setAdultEntryPin(!behavior.adultEntryPin) },
+        modifier = Modifier.paneItem("pin_settings_adult_entry"),
+        icon = ShashaIcons.Lock,
+    )
+    if (!behavior.adultEntryPin) {
+        InfoLine(ShashaIcons.Info, stringResource(R.string.pin_settings_adult_entry_warning), tint = ShashaColors.Secondary, textColor = ShashaColors.Text)
+    }
     ResetRow("pin_settings_reset", { actions.behavior.reset(NumberSettings.PinKeys) })
     BehaviorDialogs(editing, behavior, actions.behavior, texts) { editing = null }
 }
@@ -395,6 +406,16 @@ private fun BehaviorDialogs(editing: Editing?, behavior: Behavior, act: Behavior
                 onDismiss = close,
             )
         }
+        Editing.VoiceLanguage -> OptionsDialog(
+            title = stringResource(R.string.playback_voice_language),
+            options = BehaviorKeys.VOICE_LANGUAGES.map { texts.option(stringResource(voiceLanguageLabel(it)), it == Behavior.DEFAULT.voiceLanguage) to it },
+            selected = behavior.voiceLanguage,
+            onPick = { tag ->
+                close()
+                act.setVoiceLanguage(tag)
+            },
+            onDismiss = close,
+        )
         Editing.Speed -> OptionsDialog(
             title = stringResource(R.string.playback_speed),
             options = BehaviorKeys.SPEEDS.map { texts.option(texts.speed(it), it == Behavior.DEFAULT.defaultSpeed) to it },
@@ -481,3 +502,7 @@ private fun PortDialog(current: Int, act: BehaviorActions, onDismiss: () -> Unit
         tag = "port_entry",
     )
 }
+
+/** «العربية» / «English» for a tag of [BehaviorKeys.VOICE_LANGUAGES]. */
+@StringRes
+internal fun voiceLanguageLabel(tag: String): Int = if (tag.startsWith("en")) R.string.voice_language_en else R.string.voice_language_ar

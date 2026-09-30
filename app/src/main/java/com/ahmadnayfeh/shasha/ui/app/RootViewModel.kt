@@ -288,10 +288,12 @@ class RootViewModel(
         val current = current.value ?: return true
         val mode = (_screen.value as? RootScreen.Picker)?.mode ?: PickerMode.START
         if (exitPinFor(target) != null) return false
+        val adultEntryPin = _deps.value?.behavior?.value?.adultEntryPin ?: true
         return when {
-            target.isAdult -> !(mode == PickerMode.FROM_ADULT && target.id == current.id)
+            target.isAdult && adultEntryPin -> !(mode == PickerMode.FROM_ADULT && target.id == current.id)
             target.id == current.id -> false
-            else -> current.isChild // leaving a child profile
+            // Leaving a child profile (always the PIN); the adult profile itself when the parent turned its PIN off.
+            else -> current.isChild
         }
     }
 

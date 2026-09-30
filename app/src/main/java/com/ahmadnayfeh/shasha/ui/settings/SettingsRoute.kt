@@ -109,6 +109,8 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
             behavior = BehaviorActions(
                 setSeriousMode = { on -> gate.guarded { vm.setSeriousMode(on) } },
                 setAdultEscape = { on -> gate.guarded { vm.setAdultEscape(on) } },
+                setAdultEntryPin = { on -> gate.guarded { vm.setAdultEntryPin(on) } },
+                setVoiceLanguage = { tag -> gate.guarded { vm.setVoiceLanguage(tag) } },
                 setNumber = { key, value -> gate.guarded { vm.setNumber(key, value) } },
                 setPhraseMode = { mode -> gate.guarded { vm.setPhraseMode(mode) } },
                 addPhrase = { phrase -> gate.guarded { vm.addPhrase(phrase) } },

@@ -107,6 +107,8 @@ class SettingsHubActions(
 class BehaviorActions(
     val setSeriousMode: (Boolean) -> Unit = {},
     val setAdultEscape: (Boolean) -> Unit = {},
+    val setAdultEntryPin: (Boolean) -> Unit = {},
+    val setVoiceLanguage: (String) -> Unit = {},
     val setNumber: (key: Preferences.Key<Int>, value: Int) -> Unit = { _, _ -> },
     val setPhraseMode: (PhraseMode) -> Unit = {},
     /** Already checked with AdultExitChallenge.cleanPhrase. */

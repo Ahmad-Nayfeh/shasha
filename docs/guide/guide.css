@@ -414,3 +414,15 @@ ol.flow li b { display: block; }
 .qa .q { margin-bottom: 5mm; }
 .qa .q h3 { font-size: 10.6pt; }
 .qa .q p { font-size: 9.8pt; line-height: 1.7; }
+
+/* Mixed Arabic and Latin: every button or menu name is its own island, so arrows and marks stay in place */
+b.btn, bdi { unicode-bidi: plaintext; }
+
+/* Fill the page: larger install steps */
+.step { grid-template-columns: 1fr 100mm; margin-bottom: 13mm; }
+.step .shot { width: 100mm; }
+.step p { font-size: 11pt; }
+.step h2 { font-size: 14pt; }
+.row { grid-template-columns: 92mm 1fr; margin: 7mm 0; }
+.row ul li, .row p { font-size: 10.8pt; }
+.step .txt, .row > div, .card { min-width: 0; }

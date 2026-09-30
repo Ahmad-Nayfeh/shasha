@@ -111,6 +111,10 @@ class SettingsHubViewModel(
 
     fun setAdultEscape(on: Boolean) = behave { it.setAdultEscape(on) }
 
+    fun setAdultEntryPin(on: Boolean) = behave { it.setAdultEntryPin(on) }
+
+    fun setVoiceLanguage(tag: String) = behave { it.setVoiceLanguage(tag) }
+
     fun setNumber(key: Preferences.Key<Int>, value: Int) = behave { it.setNumber(key, value) }
 
     fun setPhraseMode(mode: PhraseMode) = behave { it.setPhraseMode(mode) }

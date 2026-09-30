@@ -77,6 +77,17 @@ class ProfilesAndFeaturesTest {
     }
 
     @Test
+    fun features_adultEntryPinOff_onlyTheEntryChanges() {
+        val relaxed = PolicyEngine(clockAt("2026-09-28T12:00")) { PolicyConfig(adultEntryNeedsPin = false) }
+        val adultFeatures = relaxed.features(adult())
+        assertThat(adultFeatures.enterNeedsPin).isFalse()
+        assertThat(adultFeatures).isEqualTo(engine.features(adult()).copy(enterNeedsPin = false))
+        // Leaving a child profile still needs the PIN.
+        assertThat(relaxed.features(child())).isEqualTo(engine.features(child()))
+        assertThat(relaxed.features(child()).exitNeedsPin).isTrue()
+    }
+
+    @Test
     fun features_adultWithHiddenComments() {
         val f = engine.features(adult().copy(hideComments = true))
         assertThat(f.comments).isFalse()
