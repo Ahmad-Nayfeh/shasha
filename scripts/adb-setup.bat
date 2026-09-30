@@ -227,9 +227,9 @@ echo(    YouTube / يوتيوب الرسمي:  %YOUTUBE_STATUS%
 echo(    Undo / للتراجع:            "%SELF%" --undo %SERIAL%
 echo(
 call :info "The app runs its guard from its first start and after every reboot; it acts only while"
-call :info "a video is locked, time is up or it is outside the schedule. To double-check, open"
+call :info "a child profile is on screen, a video is locked, time is up or it is outside the schedule. To double-check, open"
 call :info "Shasha, Settings, Protection status on the TV (it also shows how fast the app came back)."
-call :info "التطبيق يشغّل الحارس من أول تشغيل وبعد كل إعادة تشغيل للشاشة، ولا يتدخل إلا أثناء قفل فيديو أو بعد انتهاء الوقت أو خارج الجدول."
+call :info "التطبيق يشغّل الحارس من أول تشغيل وبعد كل إعادة تشغيل للشاشة، ويتدخل طوال بقاء ملف طفل على الشاشة، وأثناء قفل فيديو، وبعد انتهاء الوقت، وخارج الجدول."
 call :info "للتأكد: افتح تطبيق شاشة، ثم الإعدادات، ثم حالة الحماية (وفيها سرعة العودة المقيسة)."
 if "%OPS_OK%"=="0" goto fail
 goto finish

@@ -39,8 +39,6 @@
 - التجربة نفسها سابقاً على ثلاثة فيديوهات أطفال أخرى (`DLxCHtoi518`، `WjZ2f71dFck`، `O7-GZ_xOAg8`)
   أعطت 403 كذلك، من العنوان نفسه.
 
-<!-- verify: the kids-360p behaviour (badge and adult button) was uncommitted work in progress when this correction was written -->
-
 ## الاختبارات الآلية على يوتيوب الحقيقي: الاستخراج
 
 | الحالة | المعرّف | النتيجة الفعلية | الحكم |

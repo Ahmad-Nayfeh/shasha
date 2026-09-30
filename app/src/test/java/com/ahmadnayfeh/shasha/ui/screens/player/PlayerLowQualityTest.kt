@@ -175,7 +175,7 @@ class PlayerLowQualityTest {
         allowedGate = CompletableDeferred() // the loader stays: nothing below tries to build a player
         val vm = player(child = false)
         vm.settled()
-        compose.setContent { ShashaTheme { content(vm, offerLowQuality = true) } }
+        compose.setContent { ShashaTheme { Content(vm, offerLowQuality = true) } }
         compose.waitForIdle()
         compose.onNodeWithTag("error_screen").assertExists()
         compose.onNodeWithTag("error_check_updates").assertExists()
@@ -190,7 +190,7 @@ class PlayerLowQualityTest {
     fun withoutTheOffer_theErrorScreenHasNoLowQualityButton() {
         val vm = player(child = false)
         vm.settled()
-        compose.setContent { ShashaTheme { content(vm, offerLowQuality = false) } }
+        compose.setContent { ShashaTheme { Content(vm, offerLowQuality = false) } }
         compose.waitForIdle()
         compose.onNodeWithTag("error_screen").assertExists()
         compose.onNodeWithTag("error_play_low_quality").assertDoesNotExist()
@@ -212,7 +212,7 @@ class PlayerLowQualityTest {
     }
 
     @androidx.compose.runtime.Composable
-    private fun content(vm: PlayerViewModel, offerLowQuality: Boolean) = PlayerContent(
+    private fun Content(vm: PlayerViewModel, offerLowQuality: Boolean) = PlayerContent(
         vm = vm,
         extractorVersion = "v0.26.5",
         factory = { error("No player in this test") },

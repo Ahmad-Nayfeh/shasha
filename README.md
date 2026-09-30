@@ -117,7 +117,6 @@ bash adb-setup.sh 192.168.1.50
 bash adb-setup.sh 192.168.1.50 ~/Downloads/shasha-1.0.0-1023.apk
 ```
 
-<!-- verify: example file name follows shasha-<versionName>-<versionCode>.apk; versionName is 1.0.0 in app/build.gradle.kts at the time of writing -->
 
 ويندوز: انقر `adb-setup.bat` مرتين فيسألك عن العنوان، أو اسحب ملف APK فوقه، أو من سطر الأوامر:
 
@@ -310,8 +309,6 @@ http://<IP>:<PORT>/?t=<TOKEN>&v=
 | لا يتاح إلا 360p | يُشغَّل بدقة 360p مع شارة ظاهرة «جودة منخفضة: 360p» | شاشة الخطأ الموحدة («360p فقط») مع زر إضافي «شغّل بجودة 360p على أي حال» |
 | يوتيوب يرفض حتى 360p | شاشة الخطأ الموحدة | شاشة الخطأ الموحدة |
 
-<!-- verify: kids-360p was uncommitted work in progress when written: strings player_low_quality («جودة منخفضة: %1$sp», the badge) and player_play_low_quality (the adult's button) -->
-
 الحل الكامل ينتظر دعم بروتوكول SABR في NewPipeExtractor. التفاصيل والأدلة في [MAINTENANCE.md](MAINTENANCE.md#فيديوهات-للأطفال-القيد-والأدلة).
 
 ## الحارس وحدوده
@@ -326,8 +323,6 @@ http://<IP>:<PORT>/?t=<TOKEN>&v=
 - وفي أي ملف: أثناء فيديو مقفول، وبعد «انتهى الوقت»، وخارج أوقات المشاهدة.
 - أما ملف الكبار فيبقى حراً في غير ذلك.
 - ولا يتدخل والشاشة مطفأة أو شاشة التوقف (Screensaver) ظاهرة.
-
-<!-- verify: owner decision 2 was uncommitted work in progress when written (LockState.childProfile, lock/GuardDemand.kt, strings guard_cover_child and guard_notification_text) -->
 
 **«حالة الحماية»** (الإعدادات ← «حالة الحماية» ← «التفاصيل وأوامر ADB») تعرض كل صلاحية ناقصة والأمر الدقيق الذي يمنحها، وحالة خدمة الحارس، و«تثبيت التحديثات»، وحالة يوتيوب الرسمي، و«الوقت التلقائي»، و«سرعة العودة» المقيسة (ولوحتها في الإعدادات تعرض «آخر عودة إلى «شاشة» بعد Home»)، و«حدود الحماية».
 
@@ -373,8 +368,6 @@ adb shell am force-stop com.ahmadnayfeh.shasha
 3. «تنزيل وتثبيت»: ينزّل ملف APK، ويتحقق قبل أي شيء أنه «شاشة» نفسها، وأحدث من المثبّت، وموقّع بالمفتاح نفسه.
 4. «أكّد التحديث في نافذة النظام»: أندرويد يسأل قبل كل تحديث، فلا تحديث صامت. أكّد بالريموت.
 5. بعد التثبيت تُغلق «شاشة»؛ افتحها من جديد.
-
-<!-- verify: the updater (update/, ui/screens/updates/, strings_updates.xml) was uncommitted work in progress when written -->
 
 يحتاج ذلك أمرين، وتشرح شاشة المحدِّث ما ينقص منهما:
 

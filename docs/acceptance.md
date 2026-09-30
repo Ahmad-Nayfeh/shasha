@@ -2,9 +2,7 @@
 
 هذه معايير القبول في [SPEC.md](../SPEC.md) («معايير القبول»)، ولكل منها حالته ودليله، ثم خطوات دقيقة تجربها أنت على شاشة TCL، وجدول تسجّل فيه نتائجك.
 
-**الحالة في 2026-09-29.** «بيئة التطوير» خادم سحابي بعنوان مركز بيانات، لا شاشة TCL ولا شبكة البيت؛ ويوتيوب أشد مع هذه العناوين، فنتائج يوتيوب الحقيقية منه تحتاج تأكيداً من البيت. آخر تشغيل كامل للاختبارات هناك (المرحلة 6، commit `a75741e`): `:policy` ‏322، و`:youtube` ‏109، و`:remote` ‏110، و`:app` ‏627، كلها ناجحة. الاختبارات على يوتيوب الحقيقي وSponsorBlock الحقيقي تُتخطى إلا مع `-Dyoutube.realNetwork=true`، ونتائجها مذكورة في كل معيار.
-
-<!-- verify: update the test counts and the commit after phase 7 lands -->
+**الحالة في 2026-09-30.** «بيئة التطوير» خادم سحابي بعنوان مركز بيانات، لا شاشة TCL ولا شبكة البيت؛ ويوتيوب أشد مع هذه العناوين، فنتائج يوتيوب الحقيقية منه تحتاج تأكيداً من البيت. آخر تشغيل كامل للاختبارات هناك (بعد المرحلة 7): `:policy` ‏325، و`:youtube` ‏114، و`:remote` ‏110، و`:app` ‏677 (المجموع 1226)، كلها ناجحة، و`:app:lintDebug` بلا أخطاء. الاختبارات على يوتيوب الحقيقي وSponsorBlock الحقيقي تُتخطى إلا مع `-Dyoutube.realNetwork=true`، ونتائجها مذكورة في كل معيار.
 
 ## المعايير
 
@@ -18,8 +16,6 @@
 | 6 | على الشاشة الحقيقية: Home أثناء قفل الطفل ← يعود التطبيق خلال ثانيتين على الأكثر (مع تسجيل الرقم الفعلي) | **يحتاج الشاشة**: لم يُقس الرقم بعد | المنطق مختبَر: `GuardDeciderTest` (مثل `homeDuringALock_coversAndBringsShashaBack_untilItIsBack_andMeasuresIt`)، و`GuardServiceTest`، و`UsageStatsProbeTest`، و`PolicyGateTest.theGuardsState_keepsACurrentChildIn_untilTheParentLetsItOut`. الرقم الفعلي تقرؤه من «حالة الحماية». (التجربة 1) |
 | 7 | صفحة الجوال تفتح من QR وتشغّل رابطاً على الشاشة | **تحقّق جزئياً في بيئة التطوير**؛ **يحتاج الشاشة والجوال** | `RemoteEndToEndTest` (خادم حقيقي على 127.0.0.1)، و`TvRemoteControllerTest`، و`RemoteRuntimeTest`، و`TvDisplayTest`؛ و`QrCodesTest.matrix_decodesBackToTheText` في `:remote` (رمز QR يُقرأ بـ ZXing ويعطي الرابط نفسه)، و`RemoteScreenshotTest`؛ واختبارات `:remote` الأخرى (`AuthTest` و`RoutesTest` و`RealSocketTest`…). (التجربة 3) |
 | 8 | GitHub Actions ينتج APK موقّعاً قابلاً للتثبيت فوق الإصدار السابق | **يحتاج GitHub والشاشة**: لم يتحقق بعد | المهمة `android.yml` تفرض ذلك: `versionCode` = 1000 + رقم التشغيل (يزيد دائماً)، وتطابق شهادة التوقيع مع المفتاح (`apksigner`)، وفشل بناءات `main` دون أسرار التوقيع. والمحدِّث يتحقق قبل التثبيت: `ApkVerifierTest` (التطبيق نفسه، وأحدث، وبالمفتاح نفسه، ويرفض غير ذلك)، و`ReleaseParserTest`، و`GitHubReleasesTest`، و`UpdatesViewModelTest`. لكن لم يُنتَج APK موقّع بعد، ولا يوجد أي Release: انظر [حالة CI على GitHub](#حالة-ci-على-github). (التجربة 4) |
-
-<!-- verify: the updater tests cited in row 8 (update/ApkVerifierTest, ReleaseParserTest, GitHubReleasesTest, ui/screens/updates/UpdatesViewModelTest) were uncommitted work in progress when written -->
 
 ## قبل التجارب على الشاشة
 
@@ -46,8 +42,6 @@
    ```sh
    adb logcat -s GuardService
    ```
-
-<!-- verify: step 4 depends on owner decision 2 (uncommitted work in progress when written) -->
 
 ### التجربة 2: فيديو 1080p بلا تقطيع أثناء تحديث 20 قناة (المعيار 4)
 
@@ -99,8 +93,6 @@
    - وإن ظهرت شاشة الخطأ بـ `HTTP 403 · BLOCKED_403` فالنتيجة «لا يعمل (403)».
 3. في ملف طفل: أضف قناة أطفال إلى قائمة سماحه، مثل قناة CoComelon (ومنها `WjZ2f71dFck` من فيديوهات الاختبار): ابحث عنها في ملف الكبار، واضغط مطوّلاً على بطاقة القناة ← «أضف إلى قائمة سماح <اسم الطفل>». ثم بدّل إلى ملف الطفل وشغّل أحد فيديوهاتها. المتوقع: يعمل بدقة 360p مع شارة «جودة منخفضة: 360p»، أو شاشة الخطأ إن رفضه يوتيوب.
 4. سجّل النتيجة بإحدى ثلاث: «يعمل بجودة كاملة» / «360p فقط» / «لا يعمل»، وحدّث [youtube-test-results.md](youtube-test-results.md).
-
-<!-- verify: the kids-360p button and badge were uncommitted work in progress when written (strings player_play_low_quality and player_low_quality) -->
 
 ### التجربة 7: لا بحث في ملف الطفل (المعيار 5)
 

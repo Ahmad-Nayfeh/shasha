@@ -292,10 +292,10 @@ setup() {
     "Guard / الحارس:            $guard" \
     "YouTube / يوتيوب الرسمي:  $YOUTUBE_STATUS" \
     "Undo / للتراجع:            $0 --undo $SERIAL"
-  info "" "The app runs its guard from its first start and after every reboot; it acts only while" \
-    "a video is locked, time is up or it is outside the schedule. To double-check, open" \
+  info "" "The app runs its guard from its first start and after every reboot; it acts while a child" \
+    "profile is on screen, a video is locked, time is up or it is outside the schedule. To double-check, open" \
     "Shasha > Settings > Protection status on the TV (it also shows how fast the app came back)." \
-    "التطبيق يشغّل الحارس من أول تشغيل وبعد كل إعادة تشغيل للشاشة، ولا يتدخل إلا أثناء قفل فيديو أو بعد انتهاء الوقت أو خارج الجدول." \
+    "التطبيق يشغّل الحارس من أول تشغيل وبعد كل إعادة تشغيل للشاشة، ويتدخل طوال بقاء ملف طفل على الشاشة، وأثناء قفل فيديو، وبعد انتهاء الوقت، وخارج الجدول." \
     "للتأكد: افتح تطبيق شاشة > الإعدادات > حالة الحماية (وفيها سرعة العودة المقيسة)."
   [ "$ops_ok" = true ] || exit 1
 }
