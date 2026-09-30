@@ -45,6 +45,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.json.JsonElement
 
 /**
  * The TV's side of the phone remote (SPEC §5): every request goes through the same doors as the TV's own
@@ -82,8 +83,14 @@ class TvRemoteController(
     private val playQueues: PlayQueues,
     private val texts: RemoteTexts,
     private val main: CoroutineDispatcher = Dispatchers.Main.immediate,
+    /** «الوضع الجاد» as the rules have it now (the page explains a video that cannot be stopped). */
+    private val seriousMode: () -> Boolean = { true },
     /** Where the TV's picker hears which profile the phone chose. */
     private val profileChoices: PhoneProfileChoices = PhoneProfileChoices(),
+    /** v1.1: every setting of the TV's Settings (null: the page's settings are refused, e.g. in tests of the rest). */
+    private val settings: PhoneSettings? = null,
+    /** v1.1: profile rules, the block list and the stats. */
+    private val parental: PhoneParental? = null,
 ) : RemoteController {
 
     // ---- Everyone ---------------------------------------------------------------------------------------
@@ -101,6 +108,7 @@ class TvRemoteController(
             timeLeftMinutes = state.minutesLeft(),
             sessionState = state.remote(),
             videoLocked = lock.lock.value != null,
+            seriousMode = seriousMode(),
         )
     }
 
@@ -445,6 +453,38 @@ class TvRemoteController(
         val restored = texts.get(R.string.backup_restored, texts.profiles(report.profiles), texts.channels(report.subscriptions))
         return RemoteResult.ok(if (report.skipped > 0) texts.get(R.string.backup_restored_skipped, restored, report.skipped.toString()) else restored)
     }
+
+    // ---- v1.1: settings, profile rules, the block list, the stats -------------------------------------------
+
+    override suspend fun settings(): RemoteSettingsPage = settingsOrRefuse().page()
+
+    override suspend fun changeSetting(key: String, value: JsonElement): RemoteSettingsResult = settingsOrRefuse().change(key, value)
+
+    override suspend fun resetSettings(group: String?): RemoteSettingsResult = settingsOrRefuse().reset(group)
+
+    override suspend fun profileDetails(): List<RemoteProfileDetails> = parentalOrRefuse().details()
+
+    override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult =
+        parentalOrRefuse().setFlags(profileId, hideShorts, hideComments)
+
+    override suspend fun setSchedule(profileId: String, fromMinute: Int?, untilMinute: Int?): RemoteResult =
+        parentalOrRefuse().setSchedule(profileId, fromMinute, untilMinute)
+
+    override suspend fun blocklist(): RemoteBlocklist = parentalOrRefuse().blocklist()
+
+    override suspend fun blockKeyword(keyword: String): RemoteResult = parentalOrRefuse().blockKeyword(keyword)
+
+    override suspend fun unblockKeyword(keyword: String): RemoteResult = parentalOrRefuse().unblockKeyword(keyword)
+
+    override suspend fun blockChannel(link: String): RemoteResult = parentalOrRefuse().blockChannel(link)
+
+    override suspend fun unblockChannel(channelId: String): RemoteResult = parentalOrRefuse().unblockChannel(channelId)
+
+    override suspend fun stats(): List<RemoteStats> = parentalOrRefuse().stats()
+
+    private fun settingsOrRefuse() = settings ?: throw RemoteRejection(texts.get(R.string.phone_setting_unknown))
+
+    private fun parentalOrRefuse() = parental ?: throw RemoteRejection(texts.get(R.string.phone_setting_unknown))
 
     // ---- Helpers ----------------------------------------------------------------------------------------
 

@@ -38,7 +38,9 @@ import com.ahmadnayfeh.shasha.policy.VideoLookup
 import com.ahmadnayfeh.shasha.policy.spendingTime
 import com.ahmadnayfeh.shasha.remote.NsdAdvertiser
 import com.ahmadnayfeh.shasha.remote.NsdAnnouncer
+import com.ahmadnayfeh.shasha.remote.PhoneParental
 import com.ahmadnayfeh.shasha.remote.PhonePin
+import com.ahmadnayfeh.shasha.remote.PhoneSettings
 import com.ahmadnayfeh.shasha.remote.PhoneProfileChoices
 import com.ahmadnayfeh.shasha.remote.RemoteRuntime
 import com.ahmadnayfeh.shasha.remote.RemoteSettings
@@ -319,7 +321,28 @@ class AppContainer(context: Context) {
             display = TvDisplay(appContext, appVisibility, profileScreensShown, navigationRequests),
             playQueues = playQueues,
             texts = RemoteTexts(appContext.resources),
+            seriousMode = { behavior.policyConfig().seriousMode },
             profileChoices = phoneProfileChoices,
+            settings = PhoneSettings(
+                behavior = behavior,
+                sponsorBlock = sponsorBlockSettings,
+                playback = playbackSettings,
+                remote = remoteSettings,
+                resources = appContext.resources,
+                scope = appScope,
+                restartRemote = { remote.restart() },
+            ),
+            parental = PhoneParental(
+                profiles = profiles,
+                lists = ParentalLists(profiles),
+                usage = usage,
+                engine = policyEngine,
+                zone = { clock.zone },
+                source = videoSource,
+                resources = appContext.resources,
+                errors = RemoteTexts(appContext.resources)::sourceError,
+                currentId = { currentProfile.awaitProfile().id },
+            ),
         )
         RemoteRuntime(remoteSettings, controller, NsdAnnouncer(NsdAdvertiser(appContext)), phonePin = phonePin).also { runtime ->
             // A new parent PIN logs every phone out of the parent section.

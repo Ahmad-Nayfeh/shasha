@@ -10,6 +10,7 @@ import com.ahmadnayfeh.shasha.data.FeedRepository
 import com.ahmadnayfeh.shasha.data.PhraseMode
 import com.ahmadnayfeh.shasha.data.PlaybackSettings
 import com.ahmadnayfeh.shasha.data.ProfileRepository
+import com.ahmadnayfeh.shasha.data.SettingsReset
 import com.ahmadnayfeh.shasha.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.data.SyncHealth
 import com.ahmadnayfeh.shasha.data.UsageRepository
@@ -147,10 +148,7 @@ class SettingsHubViewModel(
      * and the server's port. Never the profiles, the PIN itself, the subscriptions, the history or the lists.
      */
     fun resetEverything(afterDone: () -> Unit = {}) = write {
-        behaviorSettings?.resetAll()
-        sponsorBlock.reset()
-        playback.reset()
-        remoteSettings.resetPort()
+        SettingsReset(behaviorSettings, sponsorBlock, playback, remoteSettings).resetAll()
         restartRemote()
         afterDone()
     }

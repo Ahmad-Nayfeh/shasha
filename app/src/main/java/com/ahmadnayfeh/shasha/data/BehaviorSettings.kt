@@ -274,6 +274,17 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
         return added
     }
 
+    /**
+     * The whole phrase list at once (the phone edits it as a list): 1 to [BehaviorKeys.MAX_PHRASES] phrases the exit
+     * keyboard can type. False (nothing stored) when one of them cannot be typed or the list is empty or too long.
+     */
+    suspend fun setPhrases(phrases: List<String>): Boolean {
+        val clean = phrases.map { AdultExitChallenge.cleanPhrase(it) ?: return false }.distinct()
+        if (clean.isEmpty() || clean.size > BehaviorKeys.MAX_PHRASES) return false
+        put(BehaviorKeys.PHRASES, encodePhrases(clean))
+        return true
+    }
+
     /** Removes [phrase]; the last phrase is never removed (the list would be empty). */
     suspend fun removePhrase(phrase: String) {
         store.edit { prefs ->
