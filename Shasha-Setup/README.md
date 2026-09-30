@@ -10,6 +10,7 @@
 | الملف | ما هو |
 |---|---|
 | `دليل شاشة.pdf` | «دليل شاشة»: التثبيت والاستخدام والوالدين والإعدادات وحل المشاكل، يُبنى من `docs/guide/` |
+| `Shasha Guide (English).pdf` | الدليل نفسه بالإنجليزية (Shasha Guide)، يُبنى من `docs/guide/en/` |
 | `Windows - ثبّت شاشة.bat` | مثبّت ويندوز: يُنقر مرتين |
 | `Mac - ثبّت شاشة.command` | مثبّت ماك: يُنقر مرتين. أول مرة في macOS 15 (Sequoia) وما بعده: System Settings ← Privacy & Security ← Open Anyway (لم يعد «الزر الأيمن ← Open» يكفي). سكربت bash يعمل أيضاً على لينكس |
 | `install-linux.sh` | للينكس: `bash install-linux.sh` (يشغّل مثبّت ماك نفسه) |
@@ -60,7 +61,7 @@ bash install-linux.sh --help
 
 - **إصدار جديد من التطبيق في الحقيبة:** ضع `shasha-<الإصدار>-<رقم البناء>.apk` الجديد هنا واحذف القديم (`.gitignore`
   يسمح بملفات APK في هذا المجلد وحده)، وحدّث اسمه في الجدول أعلاه، ثم ابنِ الحقيبة.
-- **الدليل PDF:** `bash docs/guide/build.sh` يبني `docs/دليل-شاشة.pdf` وينسخه هنا باسم «دليل شاشة.pdf» (يحتاج `playwright-core`
+- **الدليل PDF:** `bash docs/guide/build.sh` يبني `docs/دليل-شاشة.pdf` و`docs/Shasha-Guide.pdf` وينسخهما هنا باسمَي «دليل شاشة.pdf» و«Shasha Guide (English).pdf» (يحتاج `playwright-core`
   خارج المستودع؛ التفاصيل في رأس `docs/guide/build.sh`).
 - **الحقيبة:** `bash tools/make-setup-zip.sh` يبني `Shasha-Setup.zip` من هذا المجلد، محافظاً على صلاحية التنفيذ لمثبّت ماك
   ولينكس ولأداتي `adb`، ويتحقق من نهايات الأسطر (CRLF لملف `.bat`، وLF للباقي).

@@ -491,3 +491,5 @@ html[dir="ltr"] .ar { direction: rtl; unicode-bidi: isolate; }
 .app:not(.wide) { flex-direction: column; text-align: center; gap: 2.4mm; }
 .app:not(.wide) .qrs figure { width: 30mm; }
 .app.wide { justify-content: center; }
+html[dir="ltr"] .app.wide { text-align: left; }
+.app h3 .en.ar { text-align: inherit; }

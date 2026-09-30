@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds Shasha-Setup.zip at the root of the repository from the Shasha-Setup/ folder: the one file people
-# download («دليل شاشة», step 1). Rebuild the PDF guide first when the guide changed:
-#   bash docs/guide/build.sh             (see its header; it also copies the PDF into Shasha-Setup/)
+# download («دليل شاشة» / "Shasha Guide", step 1). Rebuild the two PDF guides first when a guide changed:
+#   bash docs/guide/build.sh             (see its header; it also copies both PDFs into Shasha-Setup/)
 #   bash tools/make-setup-zip.sh
 #
 # - The files sit at the top of the ZIP, with no folder around them: Windows' «Extract All» and a double-click
@@ -10,23 +10,24 @@
 #   names are stored as UTF-8 (flag bit 11), which the unzip of Windows and of macOS read.
 # - The same content gives the same ZIP: entries are sorted and dated SOURCE_DATE_EPOCH (default 2026-01-01).
 # - README.md (it is for GitHub) and hidden files such as .DS_Store stay out.
-# - It stops when a file of the kit is missing, when the .bat is not CRLF or a shell script is not LF.
+# - It stops when a file of the kit is missing (both guides are required: Arabic and English), when the .bat is not CRLF or a shell script is not LF.
 # Needs bash and python3.
 set -euo pipefail
 
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 command -v python3 > /dev/null 2>&1 || { echo "make-setup-zip: python3 is needed" >&2; exit 1; }
 
-python3 - "$repo/Shasha-Setup" "$repo/Shasha-Setup.zip" "$repo/docs/guide/guide.html" <<'PY'
+python3 - "$repo/Shasha-Setup" "$repo/Shasha-Setup.zip" "$repo/docs/guide/guide.html" "$repo/docs/guide/en/guide.html" <<'PY'
 import glob
 import os
 import sys
 import time
 import zipfile
 
-kit, out, guide = sys.argv[1:4]
-BAT, MAC, LINUX, PDF = "Windows - ثبّت شاشة.bat", "Mac - ثبّت شاشة.command", "install-linux.sh", "دليل شاشة.pdf"
-required = [BAT, MAC, LINUX, PDF, "tools/VERSION.txt",
+kit, out, guide, guide_en = sys.argv[1:5]
+BAT, MAC, LINUX = "Windows - ثبّت شاشة.bat", "Mac - ثبّت شاشة.command", "install-linux.sh"
+PDF, PDF_EN = "دليل شاشة.pdf", "Shasha Guide (English).pdf"
+required = [BAT, MAC, LINUX, PDF, PDF_EN, "tools/VERSION.txt",
             "tools/windows/adb.exe", "tools/windows/AdbWinApi.dll", "tools/windows/AdbWinUsbApi.dll", "tools/windows/NOTICE.txt",
             "tools/mac/adb", "tools/mac/NOTICE.txt", "tools/linux/adb", "tools/linux/NOTICE.txt"]
 executable = {MAC, LINUX, "tools/mac/adb", "tools/linux/adb"}
@@ -50,9 +51,10 @@ if not problems:
             problems.append(f"{rel} must use LF line endings")
 if problems:
     sys.exit("make-setup-zip: " + "\n  ".join(["the kit is not ready:"] + problems))
-if os.path.getmtime(os.path.join(kit, PDF)) < os.path.getmtime(guide):
-    print("make-setup-zip: note: the PDF guide is older than docs/guide/guide.html; rebuild it if the guide changed "
-          "(bash docs/guide/build.sh)", file=sys.stderr)
+for pdf, html in ((PDF, guide), (PDF_EN, guide_en)):
+    if os.path.getmtime(os.path.join(kit, pdf)) < os.path.getmtime(html):
+        print(f"make-setup-zip: note: «{pdf}» is older than {os.path.relpath(html)}; rebuild it if the guide changed "
+              "(bash docs/guide/build.sh)", file=sys.stderr)
 
 entries = []
 for root, dirs, files in os.walk(kit):
