@@ -1,0 +1,20 @@
+Android SDK Platform-Tools 37.0.1 (adb 1.0.41, Version 37.0.1-15733141)
+Downloaded 2026-09-30 from Google's official links:
+  https://dl.google.com/android/repository/platform-tools-latest-windows.zip
+    sha256 45f4d63113e895ebde0c90f194099a4676b6ac653bd28d54314a9e022bbc1a99
+  https://dl.google.com/android/repository/platform-tools-latest-darwin.zip
+    sha256 ee39ad5967e95c2a07f04dbcbde96b1a0c916ba376096db5d2f498b7727a5d1d
+  https://dl.google.com/android/repository/platform-tools-latest-linux.zip
+    sha256 d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1
+
+Kept from each zip: adb (Windows: adb.exe, AdbWinApi.dll, AdbWinUsbApi.dll) and NOTICE.txt.
+adb is open source (Apache License 2.0); NOTICE.txt holds the licences of everything in it.
+
+sha256 of the bundled files:
+  b4a6b455702684652cccf7b46258b29e653538904359a58fd4931cf3ef286b3f  windows/adb.exe
+  c1d653030b4bde65d3e07e4d0b0979e17be56df1436cdd15528630f27808050d  windows/AdbWinApi.dll
+  0710e894d9b40f71a670c13c694079d564c92c1279da382cfe4850983aaebe1b  windows/AdbWinUsbApi.dll
+  1811e253b21b12cbfda7201ebaf86c10e7ddcb5c606a7a81f7c82b4c429c2d3b  mac/adb
+  a902be8f45c6c62e76c9efaf6947a0fa747c9cabd89a2ac8e0d16ecb30b3ed01  linux/adb
+
+To update: see "Updating the bundled adb" in ../README.md.
