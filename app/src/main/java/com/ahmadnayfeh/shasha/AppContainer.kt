@@ -45,6 +45,8 @@ import com.ahmadnayfeh.shasha.remote.RemoteSettings
 import com.ahmadnayfeh.shasha.remote.RemoteTexts
 import com.ahmadnayfeh.shasha.remote.TvDisplay
 import com.ahmadnayfeh.shasha.remote.TvRemoteController
+import com.ahmadnayfeh.shasha.search.SearchHistory
+import com.ahmadnayfeh.shasha.search.VoiceSearchRequests
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockClient
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockRepository
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockSettings
@@ -154,6 +156,16 @@ class AppContainer(context: Context) {
     val behavior: BehaviorSettings by lazy { BehaviorSettings(behaviorStore, appScope) }
 
     val policyEngine: PolicyEngine by lazy { PolicyEngine(clock) { behavior.policyConfig() } }
+
+    // ---- Search (v1.1): recent searches per profile, and the remote's SEARCH key. ----------------------------
+
+    private val searchStore: DataStore<Preferences> by lazy { SearchHistory.createStore(appContext) }
+
+    /** Each profile's recent searches (only profiles with search keep any). */
+    val searchHistory: SearchHistory by lazy { SearchHistory(searchStore) }
+
+    /** The remote's SEARCH key: the adult profile opens the search tab listening. */
+    val voiceSearchRequests: VoiceSearchRequests = VoiceSearchRequests()
 
     private val policyStore: DataStore<Preferences> by lazy { PolicyStore.create(appContext) }
 

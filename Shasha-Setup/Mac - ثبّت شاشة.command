@@ -2,7 +2,12 @@
 # «شاشة» (Shasha): the installer for macOS (double-click this file) and Linux (install-linux.sh runs it).
 # It installs the app on the TV over the network and grants the permissions that only ADB can grant
 # (SPEC section 4, "the guard outside the app"), using the adb bundled in tools/ (Google's Platform-Tools).
-# Step by step: docs/install-guide.md (the PDF next to this file). Details: README.md next to this file.
+# Step by step: the guide next to this file, «دليل شاشة.pdf» (source: docs/guide). Details: README.md in the
+# Shasha-Setup folder of the repository.
+#
+# First time on a Mac: double-click this file. On macOS 15 (Sequoia) and later, right-click > Open no longer
+# gets past the warning: click Done, then System Settings > Privacy & Security > scroll down > «Open Anyway»,
+# and confirm. (Or run it from Terminal: bash, a space, drag this file in, Enter.)
 #
 #   double-click, or: bash "Mac - ثبّت شاشة.command"            asks for the TV's address
 #   bash "Mac - ثبّت شاشة.command" <TV_IP[:port]> [path/to/shasha.apk]
@@ -238,8 +243,8 @@ ask_yes_no() {
 }
 
 ask_tv_address() {
-  say "Type the TV's IP address (Settings > Network & Internet > your network)" \
-    "اكتب عنوان IP للشاشة (الإعدادات ← الشبكة والإنترنت ← شبكتك)"
+  say "Type the TV's IP address (Settings > Network & Internet > your Wi-Fi, or Ethernet > under «Connected»)" \
+    "اكتب عنوان IP للشاشة (الإعدادات ← الشبكة والإنترنت ← شبكتك، أو Ethernet ← تحت «Connected»)"
   info "Example / مثال: 192.168.1.50"
   read_address "" "IP: "
 }
@@ -328,10 +333,12 @@ unauthorized_help() {
 
 unreachable_help() {
   warn "Could not reach the TV at $SERIAL (state: ${1:-not found})." "تعذّر الوصول إلى الشاشة على $SERIAL."
-  info "- Is the TV on, and on the SAME Wi-Fi as this computer?" \
-    "  هل الشاشة تعمل، وعلى شبكة Wi-Fi نفسها التي عليها الحاسوب؟" \
+  info "- Is the TV on, and on the SAME home network as this computer (Wi-Fi or cable)?" \
+    "  هل الشاشة تعمل، وعلى شبكة البيت نفسها التي عليها الحاسوب (Wi-Fi أو سلك)؟" \
     "- Is the address right? TV Settings > Network & Internet > your network > IP address." \
     "  هل العنوان صحيح؟ الإعدادات ← الشبكة والإنترنت ← شبكتك ← IP address." \
+    "  With a cable: Network & Internet > Ethernet > the number under «Connected»." \
+    "  بالسلك: الشبكة والإنترنت ← Ethernet ← الرقم تحت «Connected»." \
     "- Developer options > «USB debugging» (and «Network debugging», if present) must be ON." \
     "  يجب تفعيل خيارات المطوّر ← «USB debugging» (و«Network debugging» إن وُجد)." \
     "- Still stuck: run   \"$ADB\" kill-server   then try again." \

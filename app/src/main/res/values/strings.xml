@@ -229,7 +229,7 @@
     <string name="search_filter_channels">قنوات</string>
     <string name="search_filter_playlists">قوائم تشغيل</string>
     <string name="search_idle_title">عمّ تبحث؟</string>
-    <string name="search_idle_body">اضغط OK على خانة البحث لتظهر لوحة المفاتيح، ثم اضغط زر البحث فيها.</string>
+    <string name="search_idle_body">اضغط زر الميكروفون وقل ما تبحث عنه، أو اضغط OK على خانة البحث لتكتب بلوحة المفاتيح.</string>
     <string name="search_loading">جارٍ البحث…</string>
     <!-- The query sits in FSI…PDI so that English text keeps its place inside the Arabic sentence. -->
     <string name="search_no_results">لا نتائج لـ «&#x2068;%1$s&#x2069;»</string>
@@ -934,4 +934,35 @@
     <string name="license_role_plex">خط الواجهة العربي</string>
     <string name="license_role_smarttube">تجربة الريموت، ومزامنة الاشتراكات دون إثقال التشغيل</string>
     <string name="license_role_tv_app_lock">الحارس الذي يعيد التطبيق إلى المقدمة</string>
+    <!-- v1.1 voice search and suggestions (search screen). -->
+    <string name="voice_mic">البحث بالصوت</string>
+    <string name="voice_language_toggle">لغة البحث الصوتي: %1$s. اضغط للتبديل</string>
+    <string name="voice_alternatives">أو ربما:</string>
+    <string name="search_recent">عمليات بحث سابقة:</string>
+    <string name="search_recent_clear">مسح</string>
+    <string name="voice_speak_now">تكلّم الآن…</string>
+    <string name="voice_hearing">أسمعك…</string>
+    <string name="voice_processing">لحظة…</string>
+    <string name="voice_hint">قل ما تبحث عنه بـ%1$s</string>
+    <string name="voice_retry">أعد المحاولة</string>
+    <string name="voice_close">إغلاق</string>
+    <string name="voice_prompt">قل ما تبحث عنه</string>
+    <string name="voice_error_no_match">لم أفهم ما قيل</string>
+    <string name="voice_error_no_match_body">جرّب مرة أخرى، وتكلّم بوضوح قريباً من الريموت.</string>
+    <string name="voice_error_timeout">لم أسمع شيئاً</string>
+    <string name="voice_error_timeout_body">اضغط «أعد المحاولة» ثم تكلّم حين تتحرك الدائرة.</string>
+    <string name="voice_error_network">التعرّف على الصوت يحتاج الإنترنت</string>
+    <string name="voice_error_network_body">تأكد من اتصال التلفاز ثم أعد المحاولة، أو اكتب ما تبحث عنه.</string>
+    <string name="voice_error_busy">الميكروفون مشغول الآن</string>
+    <string name="voice_error_busy_body">ربما يستخدمه المساعد أو تطبيق آخر. انتظر لحظة ثم أعد المحاولة.</string>
+    <string name="voice_error_audio">لم يصل صوت من الميكروفون</string>
+    <string name="voice_error_audio_body">تأكد أن الريموت متصل وبطاريته جيدة، ثم أعد المحاولة.</string>
+    <string name="voice_error_permission">البحث الصوتي يحتاج إذن الميكروفون</string>
+    <string name="voice_error_permission_body">اسمح لـ«شاشة» باستخدام الميكروفون حين يسألك التلفاز. إن رفضته من قبل فافتحه من إعدادات التلفاز ← التطبيقات ← شاشة ← الأذونات.</string>
+    <string name="voice_error_language">هذه اللغة غير متاحة للتعرّف على الصوت</string>
+    <string name="voice_error_language_body">جرّب اللغة الأخرى من زر «ع / EN» بجانب الميكروفون.</string>
+    <string name="voice_error_unavailable">لا يوجد تعرّف على الصوت في هذا التلفاز</string>
+    <string name="voice_error_unavailable_body">اكتب ما تبحث عنه بالريموت، أو ابحث من الجوال.</string>
+    <string name="voice_error_other">تعذّر البحث الصوتي</string>
+    <string name="voice_error_other_body">أعد المحاولة بعد لحظة.</string>
 </resources>

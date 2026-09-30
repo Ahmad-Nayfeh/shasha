@@ -12,6 +12,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -144,6 +145,8 @@ fun ProfileNavHost(
         if (lock != null) KeepLockedVideoOnScreen(lock.lock, profile.id, nav)
         // SPEC §5: links from the phone, once the policy allowed them for this profile, open here.
         FollowNavigationRequests(nav, profile.id)
+        // The remote's SEARCH key: the search tab, listening (profiles with search only; never over a locked video).
+        if (!kids) FollowVoiceSearchKey(nav, lock)
     }
     if (kids) {
         graph()
@@ -219,6 +222,24 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
     composable<Screen.Updates> {
         // SPEC §6: the updater is the adult's; a child's «فحص التحديثات» (on the error screen) says who can update.
         UpdatesRoute(adult = adult, onBack = dropUnlessResumed { nav.popBackStack() })
+    }
+}
+
+@Composable
+private fun FollowVoiceSearchKey(nav: NavHostController, lock: LockController?) {
+    val requests = LocalContext.current.appContainer.voiceSearchRequests
+    LaunchedEffect(requests, nav) {
+        requests.pending.collect { at ->
+            if (at == null) return@collect
+            if (lock?.lock?.value != null) {
+                requests.consume() // SPEC §4: nothing but the locked video
+                return@collect
+            }
+            runCatching {
+                nav.getBackStackEntry<Screen.Main>().savedStateHandle[SELECT_TAB] = Tab.SEARCH.name
+                nav.popBackStack(Screen.Main, inclusive = false)
+            }
+        }
     }
 }
 

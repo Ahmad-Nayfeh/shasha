@@ -412,7 +412,7 @@ jobs:
             echo "- **Build:** [$GITHUB_WORKFLOW #$GITHUB_RUN_NUMBER]($RUN_URL) ($GITHUB_EVENT_NAME)"
             echo "- **Signing certificate SHA-256:** \`$CERT_SHA256\`"
             echo
-            echo "التثبيت: زر «فحص التحديثات» في التطبيق، أو من الحاسوب: ضع \`$APK_NAME\` في مجلد Shasha-Setup وشغّل المثبّت (انظر docs/install-guide.md)."
+            echo "التثبيت: زر «فحص التحديثات» في التطبيق، أو من الحاسوب: ضع \`$APK_NAME\` في مجلد Shasha-Setup وشغّل المثبّت (انظر «دليل شاشة.pdf» في Shasha-Setup)."
           } > "$notes"
 
           gh release create "$tag" "$apk" \

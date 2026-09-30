@@ -5,8 +5,8 @@ rem grant (SPEC section 4), with the adb bundled in tools\windows (Google's Plat
 rem   double-click, or: "this file" (asks for the TV's address)
 rem   "this file" TV_IP[:port] [path\to\shasha.apk]
 rem   "this file" --undo [TV_IP[:port]]
-rem Drop an APK on it to install that file. Step by step: docs\install-guide.md (the PDF next to
-rem this file). Details: README.md next to this file.
+rem Drop an APK on it to install that file. Step by step: the guide PDF next to this file (source:
+rem docs\guide). Details: README.md in the Shasha-Setup folder of the repository.
 rem Keep this file UTF-8 WITHOUT BOM, with CRLF line endings. Lines before "chcp 65001" stay ASCII.
 setlocal EnableExtensions DisableDelayedExpansion
 
@@ -98,8 +98,8 @@ for /f "delims=" %%v in ("%ADB_VERSION%") do echo(    %%v
 rem ---------------------------------------------------------------- the TV's address
 if defined TV goto have_tv
 echo(
-echo(==^> Type the TV's IP address (Settings ^> Network ^& Internet ^> your network)
-echo(    اكتب عنوان IP للشاشة (الإعدادات ← الشبكة والإنترنت ← شبكتك)
+echo(==^> Type the TV's IP address (Settings ^> Network ^& Internet ^> your Wi-Fi, or Ethernet ^> under «Connected»)
+echo(    اكتب عنوان IP للشاشة (الإعدادات ← الشبكة والإنترنت ← شبكتك، أو Ethernet ← تحت «Connected»)
 echo(    Example / مثال: 192.168.1.50
 call :read_addr any "IP: "
 if errorlevel 1 goto no_address
@@ -661,10 +661,12 @@ if not defined STATE set "STATE=not found"
 echo(
 echo(!!  Could not reach the TV at %SERIAL% (state: %STATE%).
 echo(    تعذّر الوصول إلى الشاشة على %SERIAL%.
-echo(    - Is the TV on, and on the SAME Wi-Fi as this computer?
-echo(      هل الشاشة تعمل، وعلى شبكة Wi-Fi نفسها التي عليها الحاسوب؟
+echo(    - Is the TV on, and on the SAME home network as this computer (Wi-Fi or cable)?
+echo(      هل الشاشة تعمل، وعلى شبكة البيت نفسها التي عليها الحاسوب (Wi-Fi أو سلك)؟
 echo(    - Is the address right? TV Settings ^> Network ^& Internet ^> your network ^> IP address.
 echo(      هل العنوان صحيح؟ الإعدادات ← الشبكة والإنترنت ← شبكتك ← IP address.
+echo(      With a cable: Network ^& Internet ^> Ethernet ^> the number under «Connected».
+echo(      بالسلك: الشبكة والإنترنت ← Ethernet ← الرقم تحت «Connected».
 echo(    - Developer options ^> «USB debugging» (and «Network debugging», if present) must be ON.
 echo(      يجب تفعيل خيارات المطوّر ← «USB debugging» (و«Network debugging» إن وُجد).
 echo(    - Still stuck: run the command below, then try again. / إن استمرت المشكلة نفّذ الأمر التالي ثم أعد المحاولة:

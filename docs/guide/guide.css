@@ -435,3 +435,10 @@ code, bdi { white-space: nowrap; }
 .qa .q { margin-bottom: 7mm; }
 .qa .q h3 { font-size: 11.4pt; margin-bottom: 1.2mm; }
 .qa .q p { font-size: 10.5pt; }
+.help .qa { margin-top: 8mm; }
+.help .qa .q { margin-bottom: 9mm; }
+.help .qa .q p { margin-bottom: 0.8mm; }
+.tiles.t2 .tile { padding: 4.2mm 4.2mm; }
+.tiles.t2 .tile h3 { font-size: 11pt; }
+.tiles.t2 .tile p { font-size: 9.8pt; }
+.tiles.t2 { row-gap: 4.5mm; }

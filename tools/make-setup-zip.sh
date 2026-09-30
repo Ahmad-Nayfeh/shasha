@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds Shasha-Setup.zip at the root of the repository from the Shasha-Setup/ folder: the one file people
-# download (docs/install-guide.md, step 1). Rebuild the PDF guide first when the guide changed:
-#   node tools/make-install-pdf.mjs      (see its header)
+# download («دليل شاشة», step 1). Rebuild the PDF guide first when the guide changed:
+#   bash docs/guide/build.sh             (see its header; it also copies the PDF into Shasha-Setup/)
 #   bash tools/make-setup-zip.sh
 #
 # - The files sit at the top of the ZIP, with no folder around them: Windows' «Extract All» and a double-click
@@ -17,7 +17,7 @@ set -euo pipefail
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 command -v python3 > /dev/null 2>&1 || { echo "make-setup-zip: python3 is needed" >&2; exit 1; }
 
-python3 - "$repo/Shasha-Setup" "$repo/Shasha-Setup.zip" "$repo/docs/install-guide.md" <<'PY'
+python3 - "$repo/Shasha-Setup" "$repo/Shasha-Setup.zip" "$repo/docs/guide/guide.html" <<'PY'
 import glob
 import os
 import sys
@@ -25,7 +25,7 @@ import time
 import zipfile
 
 kit, out, guide = sys.argv[1:4]
-BAT, MAC, LINUX, PDF = "Windows - ثبّت شاشة.bat", "Mac - ثبّت شاشة.command", "install-linux.sh", "اقرأني - طريقة التثبيت.pdf"
+BAT, MAC, LINUX, PDF = "Windows - ثبّت شاشة.bat", "Mac - ثبّت شاشة.command", "install-linux.sh", "دليل شاشة.pdf"
 required = [BAT, MAC, LINUX, PDF, "tools/VERSION.txt",
             "tools/windows/adb.exe", "tools/windows/AdbWinApi.dll", "tools/windows/AdbWinUsbApi.dll", "tools/windows/NOTICE.txt",
             "tools/mac/adb", "tools/mac/NOTICE.txt", "tools/linux/adb", "tools/linux/NOTICE.txt"]
@@ -51,8 +51,8 @@ if not problems:
 if problems:
     sys.exit("make-setup-zip: " + "\n  ".join(["the kit is not ready:"] + problems))
 if os.path.getmtime(os.path.join(kit, PDF)) < os.path.getmtime(guide):
-    print("make-setup-zip: note: the PDF guide is older than docs/install-guide.md; rebuild it if the guide changed "
-          "(node tools/make-install-pdf.mjs)", file=sys.stderr)
+    print("make-setup-zip: note: the PDF guide is older than docs/guide/guide.html; rebuild it if the guide changed "
+          "(bash docs/guide/build.sh)", file=sys.stderr)
 
 entries = []
 for root, dirs, files in os.walk(kit):

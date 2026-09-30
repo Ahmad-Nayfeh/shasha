@@ -4,6 +4,7 @@ import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.View
 import android.view.animation.AccelerateInterpolator
 import androidx.activity.ComponentActivity
@@ -76,6 +77,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             ShashaTheme { ShashaRoot(root) }
         }
+    }
+
+    /**
+     * The remote's SEARCH key (when the TV lets it reach apps; Google TV usually keeps it for its assistant): the
+     * search tab, listening. Only an adult profile has search; elsewhere the request expires unanswered.
+     */
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_SEARCH) {
+            if (event.repeatCount == 0) appContainer.voiceSearchRequests.request()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     // Every ActivityResultLauncher ends up here. Set only once the launch succeeded (no picker installed =
