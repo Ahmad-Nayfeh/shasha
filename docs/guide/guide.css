@@ -1,4 +1,4 @@
-/* «كتيّب شاشة» — A4 portrait, right to left, IBM Plex Sans Arabic, brand colours on white paper.
+/* «دليل شاشة» — A4 portrait, right to left, IBM Plex Sans Arabic, brand colours on white paper.
    Every .page is exactly one printed page (210 x 297 mm); build.mjs refuses a page whose content overflows. */
 
 @font-face { font-family: "Plex Arabic"; font-weight: 400; src: url("../../app/src/main/res/font/plex_arabic_regular.ttf"); }
@@ -320,3 +320,97 @@ hr.div { border: none; border-top: 0.3mm solid var(--line); margin: 3.5mm 0; }
 .closing img { width: 44mm; display: block; margin: 0 auto 2.5mm; }
 .closing p { margin: 0 0 1mm; font-size: 10.5pt; font-weight: 600; color: var(--ink); }
 .closing p.small { font-weight: 400; font-size: 8.3pt; }
+
+/* ---------- «دليل شاشة»: more air, one idea per block ---------- */
+body { font-size: 10.6pt; line-height: 1.75; }
+.page { padding: 25mm 17mm 19mm; }
+.hdr, .ftr { right: 17mm; left: 17mm; }
+.mt-l { margin-top: 7mm; }
+.big-p { font-size: 13pt; font-weight: 600; color: var(--ink); margin: 0 0 2.5mm; }
+.card.big { padding: 4.5mm 5mm; font-size: 10.2pt; }
+.card.big h3 { font-size: 12pt; margin-bottom: 1.5mm; }
+.card p { margin: 0 0 1.2mm; }
+.card p:last-child { margin-bottom: 0; }
+.card.way { border-top: 1mm solid var(--teal); }
+.card.way h3 { margin-top: 0; font-size: 11pt; }
+hr.div.big { margin: 8mm 0 7mm; }
+
+/* The eight parts on page 2 */
+ol.parts { list-style: none; margin: 2mm 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; column-gap: 12mm; row-gap: 2.6mm; grid-auto-flow: column; grid-template-rows: repeat(4, auto); }
+ol.parts li { display: flex; align-items: center; gap: 2.6mm; font-size: 11pt; }
+ol.parts .n { flex: none; width: 7mm; height: 7mm; border-radius: 50%; background: var(--ink); color: var(--teal); font-weight: 700; font-size: 9pt; display: grid; place-items: center; }
+ol.parts li.k .n { color: var(--kids); }
+ol.parts li.a .n { color: var(--amber); }
+ol.parts .ti { font-weight: 600; color: var(--ink); }
+ol.parts .dots { flex: 1; border-bottom: 0.35mm dotted #B4BECA; transform: translateY(1mm); }
+ol.parts .no { font-weight: 700; color: var(--teal-deep); min-width: 5mm; text-align: left; }
+
+/* Two-column tiles with the icon beside the words */
+.tiles.t2 { grid-template-columns: 1fr 1fr; gap: 3.6mm 5mm; }
+.tiles.t2 .tile { display: flex; gap: 3.2mm; align-items: flex-start; padding: 3.2mm 3.6mm; }
+.tiles.t2 .tile .ic { flex: none; margin: 0; }
+.tiles.t2 .tile h3 { font-size: 10.4pt; }
+.tiles.t2 .tile p { font-size: 9.2pt; }
+
+/* What you need */
+.need { display: grid; grid-template-columns: 1.6fr 1fr; gap: 5mm; margin-bottom: 7mm; }
+.need ul { margin: 0; }
+.need h3 { margin-top: 0; }
+
+/* One install step: words on the right, its picture on the left */
+.step { display: grid; grid-template-columns: 1fr 92mm; gap: 7mm; align-items: center; margin-bottom: 9mm; }
+.step .txt { position: relative; padding-right: 13mm; }
+.step .num {
+  position: absolute; right: 0; top: 0.5mm; width: 10mm; height: 10mm; border-radius: 50%;
+  background: var(--ink); color: var(--teal); font-weight: 700; font-size: 14pt; display: grid; place-items: center;
+}
+.step h2 { margin: 0 0 2mm; font-size: 13pt; flex-wrap: wrap; }
+.step h2::before { display: none; }
+.step h2 .where { font-size: 8pt; }
+.step p { margin: 0 0 1.6mm; }
+.step .shot { width: 92mm; }
+
+/* A picture beside a short list */
+.row { display: grid; grid-template-columns: 82mm 1fr; gap: 7mm; align-items: center; margin: 5mm 0; }
+.row h2 { margin-top: 0; }
+.row ul { margin: 0; }
+.phone-row { grid-template-columns: 82mm 1fr; }
+.phones { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; height: 70mm; }
+.phones .phone { height: 70mm; }
+.phones .phone img { height: 100%; object-fit: cover; object-position: top; }
+
+/* First-run cards */
+figure h3 { margin: 3mm 0 0.8mm; font-size: 11pt; display: flex; align-items: center; gap: 2mm; }
+figure h3 + p { margin-bottom: 0.6mm; }
+.dot { flex: none; width: 6mm; height: 6mm; border-radius: 50%; background: var(--teal); color: var(--ink); font-size: 8.5pt; font-weight: 700; display: grid; place-items: center; }
+
+/* Voice search call-out */
+.note.voice { display: flex; gap: 4mm; align-items: center; padding: 4mm 5mm; font-size: 10.2pt; margin-top: 6mm; }
+.note.voice .ic { flex: none; width: 12mm; height: 12mm; border-radius: 3.4mm; background: var(--ink); color: var(--teal); display: grid; place-items: center; }
+.note.voice .ic svg { width: 7mm; height: 7mm; }
+.note.voice .t { font-size: 11pt; }
+
+/* Remote keys table */
+table.keys { font-size: 10.2pt; }
+table.keys td { padding: 2mm 2.5mm; }
+table.keys td:first-child { width: 30mm; white-space: nowrap; }
+
+/* Settings table */
+table.set { font-size: 9.6pt; }
+table.set td { padding: 1.7mm 2.4mm; }
+table.set td:first-child { width: 58mm; font-weight: 600; color: var(--ink); }
+table.set td:last-child, table.set th:last-child { width: 40mm; }
+table.set tr.grp td {
+  background: var(--kids-soft); color: #7A5600; font-weight: 700; font-size: 9.8pt;
+  padding-top: 2.2mm; border-bottom: none;
+}
+
+/* The three-step story of an update */
+ol.flow { list-style: none; counter-reset: f; margin: 2mm 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; }
+ol.flow li { counter-increment: f; background: var(--paper-2); border-radius: 2.6mm; padding: 4mm 4mm 3.6mm; font-size: 10.2pt; line-height: 1.6; }
+ol.flow li::before { content: counter(f); display: grid; place-items: center; width: 8mm; height: 8mm; border-radius: 50%; background: var(--ink); color: var(--amber); font-weight: 700; margin-bottom: 2mm; }
+ol.flow li b { display: block; }
+
+.qa .q { margin-bottom: 5mm; }
+.qa .q h3 { font-size: 10.6pt; }
+.qa .q p { font-size: 9.8pt; line-height: 1.7; }

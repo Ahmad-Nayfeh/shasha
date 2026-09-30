@@ -1,10 +1,10 @@
-"""Makes the small JPG copies of the screenshots that the catalog uses (docs/catalog/img/).
+"""Makes the small JPG copies of the screenshots that the guide uses (docs/guide/img/).
 
-The catalog (catalog.html) refers to img/<name>.jpg; <name> is the name of a real screenshot in
+The guide (guide.html) refers to img/<name>.jpg; <name> is the name of a real screenshot in
 app/src/test/screenshots (TV, 1920x1080) or remote/src/test/screenshots (phone page). Smaller JPG copies
-keep the PDF light. The annotated pictures come from docs/manual/images (docs/manual/tools/annotate.py).
+keep the PDF light. The install pictures are used as they are, from docs/images/install.
 
-    python3 docs/catalog/prepare_images.py      # needs Pillow (pip install Pillow)
+    python3 docs/guide/prepare_images.py      # needs Pillow (pip install Pillow)
 """
 
 import os
@@ -24,7 +24,7 @@ PHONE_WIDTH = 600
 
 
 def main():
-    html = open(os.path.join(HERE, "catalog.html"), encoding="utf-8").read()
+    html = open(os.path.join(HERE, "guide.html"), encoding="utf-8").read()
     names = sorted(set(re.findall(r'src="img/([\w.-]+)\.jpg"', html)))
     os.makedirs(OUT, exist_ok=True)
     wanted = set()

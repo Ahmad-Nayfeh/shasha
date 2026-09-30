@@ -1,4 +1,5 @@
-// Renders catalog.html to ../Shasha-Catalog.pdf («كتيّب شاشة») with Playwright's Chromium.
+// Renders guide.html to ../دليل-شاشة.pdf («دليل شاشة», the one guide for the household) with Playwright's
+// Chromium, and copies it into the install kit as «Shasha-Setup/دليل شاشة.pdf». Then run tools/make-setup-zip.sh.
 //
 //   node build.mjs                 # the PDF
 //   node build.mjs --png <dir>     # also every page as a PNG, to look at before publishing
@@ -35,12 +36,13 @@ function loadPlaywright() {
 const { chromium } = loadPlaywright();
 const args = process.argv.slice(2);
 const pngDir = args.includes("--png") ? path.resolve(args[args.indexOf("--png") + 1] || "pages") : null;
-const out = path.resolve(here, "..", "Shasha-Catalog.pdf");
+const out = path.resolve(here, "..", "دليل-شاشة.pdf");
+const kitCopy = path.resolve(here, "..", "..", "Shasha-Setup", "دليل شاشة.pdf");
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const page = await browser.newPage({ viewport: { width: 900, height: 1200 } });
-  await page.goto(pathToFileURL(path.join(here, "catalog.html")).href, { waitUntil: "load" });
+  await page.goto(pathToFileURL(path.join(here, "guide.html")).href, { waitUntil: "load" });
   await page.evaluate(async () => {
     await document.fonts.ready;
     await Promise.all([...document.images].map((img) => img.complete ? null : new Promise((ok) => { img.onload = img.onerror = ok; })));
@@ -71,7 +73,8 @@ try {
 
   await page.emulateMedia({ media: "print" });
   await page.pdf({ path: out, format: "A4", printBackground: true, preferCSSPageSize: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } });
-  console.log(`${path.relative(process.cwd(), out)}: ${report.pages} pages, ${(fs.statSync(out).size / 1048576).toFixed(1)} MB`);
+  fs.copyFileSync(out, kitCopy);
+  console.log(`${path.relative(process.cwd(), out)} (and Shasha-Setup/دليل شاشة.pdf): ${report.pages} pages, ${(fs.statSync(out).size / 1048576).toFixed(1)} MB`);
 
   if (pngDir) {
     fs.mkdirSync(pngDir, { recursive: true });

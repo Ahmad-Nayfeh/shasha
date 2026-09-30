@@ -15,6 +15,8 @@ import kotlin.random.Random
  * @property skipAllowance how much skipping still lets a video count as ended by itself ([PlayedPart]).
  * @property warningSeconds the quiet notice before time runs out; 0 = none.
  * @property shortsMaxSeconds a video this long or shorter is a Short.
+ * @property adultEntryNeedsPin entering an adult profile asks for the parent PIN. Off: no PIN to enter it (leaving a
+ *   child profile still needs it, and the parent's settings stay behind the PIN in the app).
  */
 data class PolicyConfig(
     val seriousMode: Boolean = true,
@@ -24,6 +26,7 @@ data class PolicyConfig(
     val skipAllowance: SkipAllowance = SkipAllowance(),
     val warningSeconds: Long = PolicyEngine.WARNING_SECONDS,
     val shortsMaxSeconds: Long = PolicyEngine.SHORTS_MAX_SECONDS,
+    val adultEntryNeedsPin: Boolean = true,
 ) {
     /** The adult's way out of a video, or null when there is none (Serious Mode off, or the escape turned off). */
     val escape: AdultEscape?

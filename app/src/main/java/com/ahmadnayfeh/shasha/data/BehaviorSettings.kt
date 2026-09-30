@@ -66,6 +66,8 @@ data class Behavior(
     val pinFirstLockoutMinutes: Int = 5,
     val parentUnlockMinutes: Int = 5,
     val relockSeconds: Int = 15,
+    /** Entering the adult profile asks for the parent PIN (off: anyone at the TV can choose it; Settings stay behind the PIN). */
+    val adultEntryPin: Boolean = true,
     // Playback.
     val defaultSpeed: Float = 1f,
     val seekStepSeconds: Int = 10,
@@ -77,6 +79,9 @@ data class Behavior(
     val sponsorNoticeSeconds: Int = 3,
     // Children.
     val shortsMaxSeconds: Int = 180,
+    // Search.
+    /** «لغة البحث الصوتي»: a BCP 47 tag of [BehaviorKeys.VOICE_LANGUAGES]. */
+    val voiceLanguage: String = BehaviorKeys.VOICE_LANGUAGES.first(),
 ) {
     /** The phrases the exit challenge may ask for now. */
     val exitPhrases: List<String>
@@ -90,6 +95,7 @@ data class Behavior(
         skipAllowance = SkipAllowance(skipAllowanceSeconds * 1000L, playedPercent),
         warningSeconds = warningMinutes * 60L,
         shortsMaxSeconds = shortsMaxSeconds.toLong(),
+        adultEntryNeedsPin = adultEntryPin,
     )
 
     fun pinLockout(): PinLockoutConfig = PinLockoutConfig(pinMaxFailures, pinFirstLockoutMinutes * 60_000L)
@@ -129,6 +135,11 @@ object BehaviorKeys {
     val SPONSOR_UNDO_SECONDS = intPreferencesKey("sponsor_undo_seconds")
     val SPONSOR_NOTICE_SECONDS = intPreferencesKey("sponsor_notice_seconds")
     val SHORTS_MAX_SECONDS = intPreferencesKey("shorts_max_seconds")
+    val ADULT_ENTRY_PIN = booleanPreferencesKey("adult_entry_pin")
+    val VOICE_LANGUAGE = stringPreferencesKey("voice_language")
+
+    /** «لغة البحث الصوتي»: Arabic (the default) or English. */
+    val VOICE_LANGUAGES = listOf("ar-SA", "en-US")
 
     // What Settings offers for each number (the default is always among them).
     val ESCAPE_HOLD_CHOICES = listOf(3, 5, 10, 15, 20, 30)
@@ -179,6 +190,8 @@ object BehaviorKeys {
         SPONSOR_UNDO_SECONDS.name to SettingType.INT,
         SPONSOR_NOTICE_SECONDS.name to SettingType.INT,
         SHORTS_MAX_SECONDS.name to SettingType.INT,
+        ADULT_ENTRY_PIN.name to SettingType.BOOLEAN,
+        VOICE_LANGUAGE.name to SettingType.STRING,
     )
 }
 
@@ -227,6 +240,14 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
     suspend fun setSeriousMode(on: Boolean) = put(BehaviorKeys.SERIOUS_MODE, on)
 
     suspend fun setAdultEscape(on: Boolean) = put(BehaviorKeys.ADULT_ESCAPE, on)
+
+    suspend fun setAdultEntryPin(on: Boolean) = put(BehaviorKeys.ADULT_ENTRY_PIN, on)
+
+    /** One of [BehaviorKeys.VOICE_LANGUAGES]. */
+    suspend fun setVoiceLanguage(tag: String) {
+        require(tag in BehaviorKeys.VOICE_LANGUAGES) { "Not an offered voice language: $tag" }
+        put(BehaviorKeys.VOICE_LANGUAGE, tag)
+    }
 
     suspend fun setPhraseMode(mode: PhraseMode) = put(BehaviorKeys.PHRASE_MODE, mode.name)
 
@@ -348,6 +369,8 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
                 sponsorUndoSeconds = num(BehaviorKeys.SPONSOR_UNDO_SECONDS, d.sponsorUndoSeconds),
                 sponsorNoticeSeconds = num(BehaviorKeys.SPONSOR_NOTICE_SECONDS, d.sponsorNoticeSeconds),
                 shortsMaxSeconds = num(BehaviorKeys.SHORTS_MAX_SECONDS, d.shortsMaxSeconds),
+                adultEntryPin = prefs[BehaviorKeys.ADULT_ENTRY_PIN] ?: d.adultEntryPin,
+                voiceLanguage = prefs[BehaviorKeys.VOICE_LANGUAGE]?.takeIf { it in BehaviorKeys.VOICE_LANGUAGES } ?: d.voiceLanguage,
             )
         }
 

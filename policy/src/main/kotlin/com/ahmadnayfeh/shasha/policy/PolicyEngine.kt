@@ -128,7 +128,7 @@ class PolicyEngine(
             textInput = adult,
             comments = adult && !profile.hideComments,
             undoSponsorSkip = adult,
-            enterNeedsPin = adult,
+            enterNeedsPin = adult && rules.adultEntryNeedsPin,
             exitNeedsPin = !adult,
             adultExitChallenge = adult && rules.escape != null,
             channelBrowsing = true,
