@@ -62,6 +62,7 @@
     <string name="serious_phrase_invalid">لا تُكتب هذه العبارة بلوحة الخروج: حروف عربية ومسافات فقط، حتى 30 حرفاً.</string>
     <string name="serious_phrase_exists">هذه العبارة في القائمة من قبل.</string>
     <string name="serious_skip">التخطي المسموح</string>
+    <string name="serious_end_section">متى يُعدّ الفيديو منتهياً وحده</string>
     <string name="serious_skip_body">ما يُتخطى بالتقديم حتى هذا القدر لا يمنع اعتبار الفيديو منتهياً وحده</string>
     <string name="serious_played">أو مشاهدة جزء من الفيديو</string>
     <string name="serious_played_body">وينتهي الفيديو وحده أيضاً إذا شوهد هذا القدر مما بقي منه</string>
@@ -89,9 +90,9 @@
     <string name="playback_hide">إخفاء أزرار التحكم</string>
     <string name="playback_hide_body">بعد كم ثانية بلا ضغط تختفي الأزرار أثناء التشغيل</string>
     <string name="playback_up_next">العدّ قبل الفيديو التالي</string>
-    <string name="playback_up_next_body">داخل قائمة التشغيل. عند الإيقاف ينتظر التالي ضغطة «شغّل الآن»</string>
+    <string name="playback_up_next_body">داخل قائمة التشغيل. عند الإيقاف ينتظر التالي ضغطة «تشغيل الآن»</string>
     <string name="playback_kids_home">عودة الطفل إلى الرئيسية</string>
-    <string name="playback_kids_home_body">بعد انتهاء فيديو الطفل تعود الشاشة إلى رئيسيته وحدها بعد</string>
+    <string name="playback_kids_home_body">بعد انتهاء فيديو الطفل: كم ثانية قبل أن تعود الشاشة إلى رئيسيته وحدها</string>
     <string name="playback_section_sponsor">رسائل التخطي (&#x2068;SponsorBlock&#x2069;)</string>
     <string name="playback_undo">مهلة «تراجع عن التخطي»</string>
     <string name="playback_undo_body">في ملف الكبار: كم تبقى فرصة التراجع بعد كل تخطٍّ</string>
@@ -107,7 +108,7 @@
     <string name="pin_settings_failures_body">كم رمزاً خاطئاً متتالياً قبل أن يتوقف قبول الرمز</string>
     <string name="pin_settings_failures_value">%1$s محاولات</string>
     <string name="pin_settings_lockout">مدة الإيقاف الأولى</string>
-    <string name="pin_settings_lockout_body">وتطول كل مرة حتى يُدخل الرمز الصحيح: ×3 ثم ×12 ثم ×48</string>
+    <string name="pin_settings_lockout_body">وتطول كل مرة حتى يُدخل الرمز الصحيح: ثلاثة أضعافها، ثم 12 ضعفاً، ثم 48 ضعفاً</string>
     <string name="pin_settings_unlock">بقاء الإعدادات مفتوحة</string>
     <string name="pin_settings_unlock_body">بعد إدخال الرمز في ملفك، قبل أن يُطلب من جديد</string>
     <string name="pin_settings_relock">طلب الرمز بعد مغادرة التطبيق</string>
@@ -123,7 +124,7 @@
 
     <!-- The phone remote's port (in «التحكم من الجوال»). -->
     <string name="remote_port">منفذ الخادم</string>
-    <string name="remote_port_body">رقم من 1024 إلى 65535. تغييره يعيد تشغيل الخادم ويغيّر رمز &#x2068;QR&#x2069;: امسحه من جديد</string>
+    <string name="remote_port_body">من 1024 حتى 65535. بعد تغييره يعمل الخادم عليه من جديد، فامسح رمز الاقتران مرة أخرى</string>
     <string name="remote_port_hint">رقم المنفذ</string>
     <string name="remote_port_invalid">المنفذ رقم من 1024 إلى 65535.</string>
     <string name="remote_port_saved">سيعمل الخادم على المنفذ %1$s.</string>

@@ -171,8 +171,8 @@ class BehaviorScreenshotTest {
             onSave = {},
             onDismiss = {},
             keyboardType = KeyboardType.Number,
-            note = "رقم من 1024 إلى 65535. تغييره يعيد تشغيل الخادم ويغيّر رمز ⁨QR⁩: امسحه من جديد",
-            resetLabel = "إرجاع الإعداد الأصلي (⁦8765⁩)",
+            note = "من 1024 حتى 65535. بعد تغييره يعمل الخادم عليه من جديد، فامسح رمز الاقتران مرة أخرى",
+            resetLabel = "إرجاع الإعداد الأصلي (\u20668765\u2069)",
             onReset = {},
             tag = "port_entry",
         )

@@ -42,6 +42,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
+import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.BehaviorKeys
 import com.ahmadnayfeh.shasha.policy.AdultExitChallenge
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
@@ -170,7 +171,7 @@ internal fun ExtraMinutesPanel(current: List<Int>, onSave: (List<Int>) -> Unit, 
     val texts = rememberBehaviorTexts()
     DialogCard(stringResource(R.string.playback_extra_title), Modifier.testTag("extra_minutes_dialog"), width = 520.dp) {
         LazyColumn(
-            modifier = Modifier.heightIn(max = 340.dp).focusGroup(),
+            modifier = Modifier.heightIn(max = 250.dp).focusGroup(),
             contentPadding = PaddingValues(vertical = 4.dp, horizontal = 6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -178,7 +179,7 @@ internal fun ExtraMinutesPanel(current: List<Int>, onSave: (List<Int>) -> Unit, 
                 val on = minutes in chosen
                 val full = !on && chosen.size >= BehaviorKeys.MAX_EXTRA_CHOICES
                 CheckRow(
-                    label = texts.option("⁦+$minutes⁩  ${texts.minutes(minutes)}", minutes in com.ahmadnayfeh.shasha.data.Behavior.DEFAULT_EXTRA_MINUTES),
+                    label = texts.option(texts.minutes(minutes), minutes in Behavior.DEFAULT_EXTRA_MINUTES),
                     checked = on,
                     dimmed = full,
                     onClick = {
@@ -276,7 +277,7 @@ internal fun PhrasesPanel(phrases: List<String>, onAdd: () -> Unit, onRemove: (S
     val single = phrases.size <= 1
     DialogCard(stringResource(R.string.serious_phrases_title), Modifier.testTag("phrases_dialog"), width = 560.dp) {
         LazyColumn(
-            modifier = Modifier.heightIn(max = 360.dp).focusProperties { onExit = { cancelFocusChange() } }.focusGroup(),
+            modifier = Modifier.heightIn(max = 250.dp).focusProperties { onExit = { cancelFocusChange() } }.focusGroup(),
             contentPadding = PaddingValues(vertical = 4.dp, horizontal = 6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {

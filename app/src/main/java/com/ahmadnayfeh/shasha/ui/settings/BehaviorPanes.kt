@@ -51,16 +51,16 @@ internal class BehaviorTexts(private val resources: Resources, private val forma
     fun skip(n: Int): String = if (n <= 0) resources.getString(R.string.serious_skip_none) else seconds(n)
 
     /** "50%" kept left to right inside the Arabic line; 100 = the whole video. */
-    fun percent(n: Int): String = if (n >= 100) resources.getString(R.string.serious_played_all) else "⁦$n%⁩"
+    fun percent(n: Int): String = if (n >= 100) resources.getString(R.string.serious_played_all) else "\u2066$n%\u2069"
 
     fun shorts(n: Int): String = resources.getString(R.string.playback_shorts_value, if (n % 60 == 0) minutes(n / 60) else seconds(n))
 
     fun attempts(n: Int): String = formats.count(R.array.count_attempts, n.toLong())
 
     fun speed(speed: Float): String =
-        if (speed == 1f) "${resources.getString(R.string.player_speed_normal)} (⁦${formatSpeed(speed)}⁩)" else "⁦${formatSpeed(speed)}⁩"
+        if (speed == 1f) "${resources.getString(R.string.player_speed_normal)} (\u2066${formatSpeed(speed)}\u2069)" else "\u2066${formatSpeed(speed)}\u2069"
 
-    fun extra(minutes: List<Int>): String = minutes.joinToString("  ") { "⁦+$it⁩" }
+    fun extra(minutes: List<Int>): String = minutes.joinToString("  ") { "\u2066+$it\u2069" }
 
     fun phrases(n: Int): String = formats.count(R.array.count_phrases, n.toLong())
 
@@ -241,12 +241,12 @@ internal fun SeriousPane(state: SettingsHubState, actions: SettingsHubActions, f
                                 onClick = { editing = Editing.CustomPhrase },
                                 modifier = Modifier.paneItem("serious_custom_edit"),
                                 icon = ShashaIcons.Edit,
-                                body = behavior.customPhrase,
+                                body = stringResource(R.string.serious_phrases_note),
                             )
                         }
                         Spacer(Modifier.height(4.dp))
                     }
-                    SectionLabel(stringResource(R.string.serious_skip), icon = ShashaIcons.Forward)
+                    SectionLabel(stringResource(R.string.serious_end_section), icon = ShashaIcons.CheckCircle)
                     NumberRow(NumberSettings.SkipAllowance, behavior, texts, { editing = it })
                     NumberRow(NumberSettings.PlayedPercent, behavior, texts, { editing = it })
                 }
@@ -339,7 +339,7 @@ internal fun PortRow(state: SettingsHubState, actions: SettingsHubActions, modif
         modifier = modifier.paneItem("hub_remote_port"),
         icon = RemoteIcons.Wifi,
         body = stringResource(R.string.remote_port_body),
-        value = state.remotePort?.let { "⁦$it⁩" },
+        value = state.remotePort?.let { "\u2066$it\u2069" },
         locked = !state.unlocked,
     )
     if (editing) PortDialog(state.remotePort ?: RemoteSettings.DEFAULT_PORT, actions.behavior) { editing = false }
