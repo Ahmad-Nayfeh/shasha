@@ -4,7 +4,7 @@
 # from the duration so the file lands on the target size. A master rendered WITH film grain should be denoised
 # first (the grain is only noise to the encoder): DENOISE=1. The delivered copy is made from a GRAIN=0 master.
 #
-#   ./compress.sh out/shasha_explainer.mp4 ../../docs/video/shasha-explainer.mp4 [target_MB=27.8]
+#   ./compress.sh out/shasha_explainer.mp4 ../../docs/video/shasha-explainer.mp4 [target_MB=27.2]
 #   DENOISE=1 ./compress.sh out/with_grain.mp4 out/small.mp4
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -12,7 +12,7 @@ FF=../bin/ffmpeg
 FP=../bin/ffprobe
 IN=$1
 OUT=$2
-TARGET_MB=${3:-27.8}
+TARGET_MB=${3:-27.2}
 AK=96
 D=$("$FP" -v error -show_entries format=duration -of csv=p=0 "$IN")
 # total kb/s = MB * 8388.608 / seconds; minus audio and ~1.5% container overhead
