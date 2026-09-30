@@ -122,7 +122,7 @@ object ProtectionChecks {
     }
 }
 
-/** The adb commands «حالة الحماية» shows for each missing item (the same ones scripts/adb-setup runs). */
+/** The adb commands «حالة الحماية» shows for each missing item (the same ones the Shasha-Setup installer runs). */
 object ProtectionCommands {
     fun overlay(packageName: String) = "adb shell appops set $packageName SYSTEM_ALERT_WINDOW allow"
 

@@ -16,7 +16,7 @@
 #                             for the in-app updater, because Releases of a private repo need auth.
 #                             Empty when the secret is not set. It ends up inside the APK: never give
 #                             it any write permission. When it expires, "check for updates" fails:
-#                             renew it, update the secret, install the next build with scripts/adb-setup.
+#                             renew it, update the secret, install the next build with the Shasha-Setup installer.
 # versionName stays in app/build.gradle.kts; CI reads it back from the APK (aapt2 dump badging).
 # Published as: tag v<versionName>-<versionCode>, asset shasha-<versionName>-<versionCode>.apk.
 #
@@ -36,9 +36,9 @@ name: Android
 on:
   push:
     branches: ['**']
-    paths-ignore: ['**.md', 'docs/**', 'scripts/**', 'branding/**']
+    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**']
   pull_request:
-    paths-ignore: ['**.md', 'docs/**', 'scripts/**', 'branding/**']
+    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**']
   schedule:
     - cron: '17 3 * * 5' # Friday 03:17 UTC
   workflow_dispatch:
@@ -412,8 +412,7 @@ jobs:
             echo "- **Build:** [$GITHUB_WORKFLOW #$GITHUB_RUN_NUMBER]($RUN_URL) ($GITHUB_EVENT_NAME)"
             echo "- **Signing certificate SHA-256:** \`$CERT_SHA256\`"
             echo
-            echo "التثبيت: زر «فحص التحديثات» في التطبيق، أو من الحاسوب (انظر scripts/README.md):"
-            echo "\`adb-setup.sh <TV_IP> $APK_NAME\` أو \`adb-setup.bat <TV_IP> $APK_NAME\`"
+            echo "التثبيت: زر «فحص التحديثات» في التطبيق، أو من الحاسوب: ضع \`$APK_NAME\` في مجلد Shasha-Setup وشغّل المثبّت (انظر docs/install-guide.md)."
           } > "$notes"
 
           gh release create "$tag" "$apk" \
