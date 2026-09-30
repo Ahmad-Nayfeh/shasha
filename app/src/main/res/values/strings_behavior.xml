@@ -106,7 +106,6 @@
     <!-- The parent PIN's settings (in «الملفات ورمز الوالدين»). -->
     <string name="pin_settings_failures">المحاولات قبل الإيقاف</string>
     <string name="pin_settings_failures_body">كم رمزاً خاطئاً متتالياً قبل أن يتوقف قبول الرمز</string>
-    <string name="pin_settings_failures_value">%1$s محاولات</string>
     <string name="pin_settings_lockout">مدة الإيقاف الأولى</string>
     <string name="pin_settings_lockout_body">وتطول كل مرة حتى يُدخل الرمز الصحيح: ثلاثة أضعافها، ثم 12 ضعفاً، ثم 48 ضعفاً</string>
     <string name="pin_settings_unlock">بقاء الإعدادات مفتوحة</string>
@@ -127,7 +126,6 @@
     <string name="remote_port_body">من 1024 حتى 65535. بعد تغييره يعمل الخادم عليه من جديد، فامسح رمز الاقتران مرة أخرى</string>
     <string name="remote_port_hint">رقم المنفذ</string>
     <string name="remote_port_invalid">المنفذ رقم من 1024 إلى 65535.</string>
-    <string name="remote_port_saved">سيعمل الخادم على المنفذ %1$s.</string>
 
     <!-- A profile's comments switch (profile editor). -->
     <string name="profile_hide_comments">إخفاء التعليقات</string>
