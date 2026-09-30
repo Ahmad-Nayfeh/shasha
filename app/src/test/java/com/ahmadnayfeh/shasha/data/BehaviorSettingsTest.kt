@@ -134,6 +134,35 @@ class BehaviorSettingsTest {
     }
 
     @Test
+    fun v11_adultEntryPin_andVoiceLanguage_areStored_resetAndReachTheRules() = runBlocking<Unit> {
+        assertThat(Behavior.DEFAULT.adultEntryPin).isTrue()
+        assertThat(Behavior.DEFAULT.voiceLanguage).isEqualTo("ar-SA")
+        settings.setAdultEntryPin(false)
+        settings.setVoiceLanguage("en-US")
+        shows { !it.adultEntryPin && it.voiceLanguage == "en-US" }
+        assertThat(settings.policyConfig().adultEntryNeedsPin).isFalse()
+        assertThat(settings.current().adultEntryPin).isFalse()
+        assertThrows(IllegalArgumentException::class.java) { runBlocking { settings.setVoiceLanguage("fr-FR") } }
+        // Both are in the backup and in «إرجاع كل الإعدادات».
+        assertThat(BehaviorKeys.ALL.keys).containsAtLeast(BehaviorKeys.ADULT_ENTRY_PIN.name, BehaviorKeys.VOICE_LANGUAGE.name)
+        settings.resetAll()
+        shows { it == Behavior.DEFAULT }
+        // A stored language this build does not offer reads as the default.
+        store.edit { it[BehaviorKeys.VOICE_LANGUAGE] = "xx" }
+        assertThat(settings.current().voiceLanguage).isEqualTo("ar-SA")
+    }
+
+    @Test
+    fun v11_thePhraseList_asAWhole() = runBlocking<Unit> {
+        assertThat(settings.setPhrases(listOf("انا اخرج", "انا اخرج", "ساعود"))).isTrue()
+        assertThat(settings.current().phrases).containsExactly("انا اخرج", "ساعود").inOrder()
+        assertThat(settings.setPhrases(emptyList())).isFalse()
+        assertThat(settings.setPhrases(listOf("hello"))).isFalse()
+        assertThat(settings.setPhrases(List(31) { "عبارة " + "ب".repeat(it % 15 + 1) + " " + "ت".repeat(it / 15 + 1) })).isFalse()
+        assertThat(settings.current().phrases).containsExactly("انا اخرج", "ساعود").inOrder()
+    }
+
+    @Test
     fun onlyOfferedValues_areAccepted() = runBlocking<Unit> {
         assertThrows(IllegalArgumentException::class.java) { runBlocking { settings.setNumber(BehaviorKeys.ESCAPE_HOLD_SECONDS, 2) } }
         assertThrows(IllegalArgumentException::class.java) { runBlocking { settings.setDefaultSpeed(5f) } }

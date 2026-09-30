@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.pressKey
@@ -49,6 +50,11 @@ class SettingsBehaviorPanesTest {
                 state = state.copy(behavior = state.behavior!!.copy(seriousMode = on))
             },
             setAdultEscape = { calls += "escape=$it" },
+            setAdultEntryPin = { on ->
+                calls += "adultEntry=$on"
+                state = state.copy(behavior = state.behavior!!.copy(adultEntryPin = on))
+            },
+            setVoiceLanguage = { calls += "voice=$it" },
             setNumber = { key, value -> calls += "${key.name}=$value" },
             setPhraseMode = { calls += "mode=$it" },
             addPhrase = { calls += "add=$it" },
@@ -183,7 +189,7 @@ class SettingsBehaviorPanesTest {
         val rows = listOf(
             "behavior_warning_minutes", "behavior_warning_banner_seconds", "behavior_extra_minutes", "behavior_default_speed",
             "behavior_seek_step_seconds", "behavior_controls_hide_seconds", "behavior_up_next_seconds", "behavior_kids_home_seconds",
-            "behavior_sponsor_undo_seconds", "behavior_sponsor_notice_seconds", "behavior_shorts_max_seconds", "playback_reset",
+            "behavior_sponsor_undo_seconds", "behavior_sponsor_notice_seconds", "behavior_shorts_max_seconds", "behavior_voice_language", "playback_reset",
         )
         compose.onNodeWithTag(rows.first()).assertIsFocused()
         rows.drop(1).forEach { tag ->
@@ -230,6 +236,23 @@ class SettingsBehaviorPanesTest {
         state = SettingsHubFixtures.state(unlocked = false)
         compose.waitForIdle()
         assertThat(exists("behavior_pin_max_failures")).isFalse()
+        assertThat(exists("pin_settings_adult_entry")).isFalse()
+    }
+
+    @Test
+    fun theAdultEntryPin_switchesOff_withItsWarning_andOnAgain() {
+        show(SettingsCategory.PROFILES)
+        val warning = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+            .getString(com.ahmadnayfeh.shasha.R.string.pin_settings_adult_entry_warning)
+        assertThat(exists("pin_settings_adult_entry")).isTrue()
+        compose.onNodeWithText(warning, substring = true).assertDoesNotExist()
+        click("pin_settings_adult_entry")
+        assertThat(calls).containsExactly("adultEntry=false")
+        compose.onNodeWithText(warning, substring = true).assertExists()
+        click("pin_settings_adult_entry")
+        assertThat(calls).containsExactly("adultEntry=false", "adultEntry=true").inOrder()
+        // It is among the keys «إرجاع الإعداد الأصلي» of «رمز الوالدين» resets.
+        assertThat(NumberSettings.PinKeys.map { it.name }).contains("adult_entry_pin")
     }
 
     @Test

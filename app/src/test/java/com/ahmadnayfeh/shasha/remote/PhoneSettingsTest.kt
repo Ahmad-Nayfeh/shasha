@@ -135,7 +135,7 @@ class PhoneSettingsTest {
 
     @Test
     fun phrases_theWholeListAtOnce_andTheCustomPhraseIsChosenWhenWritten() = runBlocking<Unit> {
-        val list = listOf("انا اخرج الان", "سأعود لاحقا")
+        val list = listOf("انا اخرج الان", "ساعود لاحقا")
         assertThat(controller.changeSetting(BehaviorKeys.PHRASES.name, JsonArray(list.map(::JsonPrimitive))).ok).isTrue()
         assertThat(env.behavior.current().phrases).isEqualTo(list)
         val r = controller.changeSetting(BehaviorKeys.CUSTOM_PHRASE.name, JsonPrimitive("اريد الخروج"))

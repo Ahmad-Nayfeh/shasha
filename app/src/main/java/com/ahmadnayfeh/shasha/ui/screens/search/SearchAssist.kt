@@ -381,6 +381,7 @@ private fun Listening(state: VoiceState, languageTag: String) {
 @Composable
 private fun Waveform(level: Float, phase: Float, active: Boolean, modifier: Modifier = Modifier) {
     val accent = LocalAccent.current
+    val still = LocalInspectionMode.current
     val history = remember { mutableStateListOf<Float>().apply { repeat(BARS) { add(0f) } } }
     LaunchedEffect(level) {
         history.removeAt(0)
@@ -392,7 +393,8 @@ private fun Waveform(level: Float, phase: Float, active: Boolean, modifier: Modi
         for (i in 0 until BARS) {
             // Mirrored around the middle: the newest loudness in the centre, older towards the edges.
             val fromCentre = kotlin.math.abs(i - (BARS - 1) / 2f) / (BARS / 2f)
-            val heard = history[(BARS - 1 - (fromCentre * (BARS - 1)).toInt()).coerceIn(0, BARS - 1)]
+            // Screenshots: a still, pleasant shape instead of the (empty) history.
+            val heard = if (still) level * (0.35f + 0.65f * (1f - fromCentre)) else history[(BARS - 1 - (fromCentre * (BARS - 1)).toInt()).coerceIn(0, BARS - 1)]
             val ripple = 0.5f + 0.5f * sin((phase * 2 * PI + i * 0.55).toFloat())
             val amount = if (active) (0.12f + 0.88f * heard * (0.55f + 0.45f * ripple)) else 0.12f + 0.2f * ripple
             val h = (size.height * amount.coerceIn(0.08f, 1f))
