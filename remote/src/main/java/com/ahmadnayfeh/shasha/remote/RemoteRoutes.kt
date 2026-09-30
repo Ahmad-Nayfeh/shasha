@@ -10,6 +10,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.call
+import io.ktor.server.request.host
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
 import io.ktor.server.response.header
@@ -346,7 +347,7 @@ private fun ApplicationCall.requireParent(sessions: ParentSessions) {
 
 private suspend fun ApplicationCall.respondPage(page: WebPage, status: HttpStatusCode) {
     response.header(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
-    response.header("Content-Security-Policy", page.contentSecurityPolicy)
+    response.header("Content-Security-Policy", page.contentSecurityPolicy(runCatching { request.host() }.getOrNull()))
     respondBytes(page.bytes, ContentType.Text.Html.withCharset(Charsets.UTF_8), status)
 }
 
