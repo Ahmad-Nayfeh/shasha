@@ -36,9 +36,9 @@ name: Android
 on:
   push:
     branches: ['**']
-    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**']
+    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**', 'promo/**']
   pull_request:
-    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**']
+    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**', 'promo/**']
   schedule:
     - cron: '17 3 * * 5' # Friday 03:17 UTC
   workflow_dispatch:
