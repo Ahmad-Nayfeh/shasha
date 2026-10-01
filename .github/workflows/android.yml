@@ -36,9 +36,9 @@ name: Android
 on:
   push:
     branches: ['**']
-    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**']
+    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**', 'promo/**']
   pull_request:
-    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**']
+    paths-ignore: ['**.md', 'docs/**', 'Shasha-Setup/**', 'Shasha-Setup.zip', 'tools/**', 'branding/**', 'promo/**']
   schedule:
     - cron: '17 3 * * 5' # Friday 03:17 UTC
   workflow_dispatch:
@@ -412,7 +412,7 @@ jobs:
             echo "- **Build:** [$GITHUB_WORKFLOW #$GITHUB_RUN_NUMBER]($RUN_URL) ($GITHUB_EVENT_NAME)"
             echo "- **Signing certificate SHA-256:** \`$CERT_SHA256\`"
             echo
-            echo "التثبيت: زر «فحص التحديثات» في التطبيق، أو من الحاسوب: ضع \`$APK_NAME\` في مجلد Shasha-Setup وشغّل المثبّت (انظر docs/install-guide.md)."
+            echo "التثبيت: زر «فحص التحديثات» في التطبيق، أو من الحاسوب: ضع \`$APK_NAME\` في مجلد Shasha-Setup وشغّل المثبّت (انظر «دليل شاشة.pdf» في Shasha-Setup)."
           } > "$notes"
 
           gh release create "$tag" "$apk" \

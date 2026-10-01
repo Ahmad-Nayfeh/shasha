@@ -13,7 +13,7 @@ import org.junit.Test
 /**
  * Talks to the real YouTube. Skipped unless run with:
  *   ./gradlew :youtube:testDebugUnitTest -Dyoutube.realNetwork=true
- * Every test prints one "REAL-RESULT" line; docs/youtube-test-results.md is written from them.
+ * Every test prints one "REAL-RESULT" line; docs/dev/youtube-test-results.md is written from them.
  */
 class RealNetworkVideoSourceTest {
 
@@ -54,6 +54,16 @@ class RealNetworkVideoSourceTest {
         val expiresInMinutes = (details.playback.expiresAtEpochMs!! - System.currentTimeMillis()) / 60_000
         report("normal dQw4w9WgXcQ expiry", "URLs expire in $expiresInMinutes min")
         assertThat(expiresInMinutes).isIn(com.google.common.collect.Range.closed(60L, 24 * 60L))
+    }
+
+    @Test
+    fun suggestionsInArabicAndEnglish() = runBlocking {
+        val arabic = source.suggestions("قرآن", "ar")
+        val english = source.suggestions("minecraft", "en")
+        report("suggestions", "ar ${arabic.size}: ${arabic.take(3)} · en ${english.size}: ${english.take(3)}")
+        assertThat(arabic).isNotEmpty()
+        assertThat(english).isNotEmpty()
+        assertThat(english.size).isAtMost(MAX_SUGGESTIONS)
     }
 
     @Test

@@ -46,7 +46,8 @@ import com.ahmadnayfeh.shasha.player.formatSpeed
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
+import com.ahmadnayfeh.shasha.ui.theme.OsdColors
+import com.ahmadnayfeh.shasha.ui.theme.Accents
 
 enum class OsdMenu { QUALITY, SPEED, SUBTITLES }
 
@@ -114,15 +115,15 @@ internal fun OsdMenuPanel(
         modifier
             .width(340.dp)
             .shadow(24.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
-            .background(ShashaColors.Surface, shape)
-            .border(1.dp, ShashaColors.Outline, shape)
+            .background(OsdColors.Surface, shape)
+            .border(1.dp, OsdColors.Outline, shape)
             .padding(top = 22.dp, bottom = 14.dp)
             .testTag("osd_menu"),
     ) {
         Row(Modifier.padding(horizontal = 28.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(menuIcon(menu), contentDescription = null, tint = LocalAccent.current.main, modifier = Modifier.size(26.dp))
+            Icon(menuIcon(menu), contentDescription = null, tint = Accents.overDark(LocalAccent.current).main, modifier = Modifier.size(26.dp))
             Spacer(Modifier.width(12.dp))
-            Text(menuTitle(menu), style = MaterialTheme.typography.headlineSmall)
+            Text(menuTitle(menu), style = MaterialTheme.typography.headlineSmall, color = OsdColors.Text)
         }
         Spacer(Modifier.height(10.dp))
         LazyColumn(
@@ -143,13 +144,13 @@ internal fun OsdMenuPanel(
 
 @Composable
 private fun MenuOptionRow(option: MenuOption, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     FocusSurface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().height(52.dp),
         shape = RoundedCornerShape(14.dp),
-        containerColor = ShashaColors.Surface.copy(alpha = 0f),
-        focusedContainerColor = ShashaColors.SurfaceHigh,
+        containerColor = OsdColors.Surface.copy(alpha = 0f),
+        focusedContainerColor = OsdColors.SurfaceHigh,
         scale = 1.03f,
     ) {
         Row(
@@ -163,7 +164,7 @@ private fun MenuOptionRow(option: MenuOption, onClick: () -> Unit, modifier: Mod
             Text(
                 option.label,
                 style = MaterialTheme.typography.titleMedium,
-                color = if (option.selected) accent.bright else ShashaColors.Text,
+                color = if (option.selected) accent.bright else OsdColors.Text,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

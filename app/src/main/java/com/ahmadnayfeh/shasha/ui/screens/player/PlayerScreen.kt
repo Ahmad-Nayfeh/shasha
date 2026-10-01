@@ -44,7 +44,9 @@ import com.ahmadnayfeh.shasha.player.NextInPlaylist
 import com.ahmadnayfeh.shasha.player.PlaybackController
 import com.ahmadnayfeh.shasha.player.PlayerAction
 import com.ahmadnayfeh.shasha.player.WatchSession
+import com.ahmadnayfeh.shasha.policy.AdultEscape
 import com.ahmadnayfeh.shasha.policy.PlayOrigin
+import com.ahmadnayfeh.shasha.policy.PolicyConfig
 import com.ahmadnayfeh.shasha.policy.PlaybackMeter
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.UnlockMethod
@@ -53,6 +55,7 @@ import com.ahmadnayfeh.shasha.sponsorblock.SkipController
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorSkipLayer
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorSkipsViewModel
 import com.ahmadnayfeh.shasha.ui.components.LocalAppMessages
+import com.ahmadnayfeh.shasha.ui.components.LocalBehavior
 import com.ahmadnayfeh.shasha.ui.components.PolicyNotice
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
@@ -132,6 +135,7 @@ fun PlayerScreen(
                     playlistId = playlistId,
                     startAtMs = startSeconds?.let { it * 1000 },
                     allowLowQuality = profile?.isChild == true,
+                    defaultSpeed = container.behavior.values.value.defaultSpeed,
                 )
             }
         },
@@ -148,6 +152,8 @@ fun PlayerScreen(
                     categories = container.sponsorBlockSettings.categories,
                     undoAllowed = profile?.let { container.policyEngine.features(it).undoSponsorSkip } ?: false,
                     online = container.network.online,
+                    undoWindowMs = { container.behavior.values.value.sponsorUndoSeconds * 1000L },
+                    noticeMs = { container.behavior.values.value.sponsorNoticeSeconds * 1000L },
                 )
             }
         },
@@ -182,6 +188,7 @@ fun PlayerScreen(
         skipper = sponsor.skipper,
         maxQuality = { playback.maxQuality.value },
         offerLowQuality = profile?.isChild != true,
+        escape = container.policyEngine.config().escape,
     )
 }
 
@@ -217,9 +224,10 @@ internal fun PlayerContent(
     skipper: SkipController? = null,
     maxQuality: () -> Int = { MAX_AUTO_HEIGHT },
     offerLowQuality: Boolean = false,
+    escape: AdultEscape? = PolicyConfig.DEFAULT.escape,
 ) {
     val load by vm.load.collectAsStateWithLifecycle()
-    LockedPlayback(lockMethod, lockActions, onLeave = onBack, onSurrendered = onSurrendered) { lock ->
+    LockedPlayback(lockMethod, lockActions, onLeave = onBack, onSurrendered = onSurrendered, escape = escape) { lock ->
         AnimatedContent(
             targetState = load,
             contentKey = { it::class },
@@ -313,6 +321,7 @@ private fun VideoPlayer(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val seekStepMs = LocalBehavior.current.seekStepSeconds * 1000L
     var controller by remember { mutableStateOf<PlaybackController?>(null) }
     // The time this player really plays, for the stats (most watched channels).
     var meter by remember { mutableStateOf<PlaybackMeter?>(null) }
@@ -327,6 +336,7 @@ private fun VideoPlayer(
                 factory(),
                 ready.stream,
                 maxQuality = maxQuality(),
+                seekStepMs = seekStepMs,
                 onJump = vm::onJumped,
                 onAutoSkip = vm::onAutoSkipped,
             ) { error ->

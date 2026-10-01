@@ -49,6 +49,7 @@ class PlaybackController(
     private val factory: YouTubeMediaSourceFactory,
     private val stream: StreamDetails,
     private val maxQuality: Int = MAX_AUTO_HEIGHT,
+    seekStepMs: Long = SEEK_STEP_MS,
     private val onJump: (fromMs: Long, toMs: Long) -> Unit = { _, _ -> },
     private val onAutoSkip: (fromMs: Long, toMs: Long) -> Unit = onJump,
     private val onError: (SourceException) -> Unit,
@@ -63,8 +64,8 @@ class PlaybackController(
             /* handleAudioFocus= */ true,
         )
         .setHandleAudioBecomingNoisy(true)
-        .setSeekBackIncrementMs(SEEK_STEP_MS)
-        .setSeekForwardIncrementMs(SEEK_STEP_MS)
+        .setSeekBackIncrementMs(seekStepMs)
+        .setSeekForwardIncrementMs(seekStepMs)
         .build()
         .apply { trackSelectionParameters = trackSelectionParameters.withAutoQualityCap(maxQuality) }
 

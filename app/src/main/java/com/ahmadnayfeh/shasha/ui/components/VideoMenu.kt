@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -59,6 +58,7 @@ import com.ahmadnayfeh.shasha.youtube.VideoItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
 /**
  * Opens a video card's context menu (OK held, or the MENU key). [CardMenuHost] provides it; outside a
@@ -135,7 +135,7 @@ fun CardMenuHost(
     fun parentalRow(icon: ImageVector, label: String, tag: String, onClick: () -> Unit) = MenuItem(icon, label, tag, locked, onClick)
 
     fun channelRows(channelId: String, name: String): List<MenuItem> = buildList {
-        val quoted = quote(name)
+        val quoted = resources.getString(R.string.quoted_name, name)
         children.forEach { child ->
             if (child.allowlist.hasChannel(channelId)) {
                 add(
@@ -198,7 +198,7 @@ fun CardMenuHost(
         )
         is MenuTarget.Playlist -> {
             val playlist = shown.playlist
-            val quoted = quote(playlist.title)
+            val quoted = resources.getString(R.string.quoted_name, playlist.title)
             val rows = children.map { child ->
                 if (child.allowlist.hasPlaylist(playlist.playlistId)) {
                     parentalRow(ShashaIcons.CheckCircle, resources.getString(R.string.menu_allowlist_remove, child.name), "menu_allow_${child.id}") {
@@ -244,7 +244,6 @@ fun CardMenuHost(
 private val NoCollectionMenu: (MenuTarget) -> Unit = {}
 
 /** «…» around a name, isolated so an English title keeps its place in the Arabic sentence. */
-private fun quote(name: String) = "«\u2068$name\u2069»"
 
 /** One row of a context menu. [locked]: it asks for the parent PIN first (a small lock says so). */
 @Immutable
@@ -322,8 +321,8 @@ fun CardMenuPanel(title: String, subtitle: String?, items: List<MenuItem>, modif
     ) {
         Text(
             title,
-            style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.ContentOrRtl),
-            textAlign = TextAlign.Right,
+            style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content),
+            textAlign = StartTextAlign,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),

@@ -31,6 +31,7 @@ import com.ahmadnayfeh.shasha.policy.UnlockMethod
 import com.ahmadnayfeh.shasha.ui.format.Thumbnails
 import com.ahmadnayfeh.shasha.ui.navigation.Screen
 import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
+import com.ahmadnayfeh.shasha.ui.screens.settings.QuotaOptions
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.SourceException
@@ -45,6 +46,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.json.JsonElement
 
 /**
  * The TV's side of the phone remote (SPEC §5): every request goes through the same doors as the TV's own
@@ -82,8 +84,20 @@ class TvRemoteController(
     private val playQueues: PlayQueues,
     private val texts: RemoteTexts,
     private val main: CoroutineDispatcher = Dispatchers.Main.immediate,
+    /** «الوضع الجاد» as the rules have it now (the page explains a video that cannot be stopped). */
+    private val seriousMode: () -> Boolean = { true },
     /** Where the TV's picker hears which profile the phone chose. */
     private val profileChoices: PhoneProfileChoices = PhoneProfileChoices(),
+    /** v1.1: every setting of the TV's Settings (null: the page's settings are refused, e.g. in tests of the rest). */
+    private val settings: PhoneSettings? = null,
+    /** v1.1: profile rules, the block list and the stats. */
+    private val parental: PhoneParental? = null,
+    /** v1.1: the mark that moves when anything the parent section shows changes ([RemoteRevision]). */
+    private val revision: () -> Long = { 0L },
+    /** v1.1: the port the server moves to in a moment ([RemoteRuntime.movingTo]): every open page follows it. */
+    private val movingTo: () -> Int? = { null },
+    /** v1.1: entering the adult profile asks for the parent PIN (on the TV too, after a switch from the phone). */
+    private val adultEntryPin: () -> Boolean = { true },
 ) : RemoteController {
 
     // ---- Everyone ---------------------------------------------------------------------------------------
@@ -101,6 +115,10 @@ class TvRemoteController(
             timeLeftMinutes = state.minutesLeft(),
             sessionState = state.remote(),
             videoLocked = lock.lock.value != null,
+            seriousMode = seriousMode(),
+            rev = revision(),
+            movingTo = movingTo(),
+            profileId = profile.id,
         )
     }
 
@@ -172,7 +190,8 @@ class TvRemoteController(
      * the playlist's own ([PlayOrigin.Playlist]).
      */
     private suspend fun playPlaylist(playlistId: String, profileId: String): RemoteResult {
-        blockedBySession()?.let { return it }
+        // Content first, then the time, as for a video link (PolicyEngine.canPlay): a playlist the profile may never
+        // open says so, even at bedtime, instead of a "time up" that the parent's extra time would not change.
         denied(rules().playlist(playlistId, ownerChannelId = null))?.let { return it }
         val page = source.playlist(playlistId)
         val filter = rules()
@@ -180,6 +199,7 @@ class TvRemoteController(
         val videos = page.videos.distinctBy { it.videoId }
         val index = videos.indexOfFirst { filter.playlistVideos(playlistId, listOf(it)).isNotEmpty() }
         if (index < 0) return error(R.string.remote_playlist_nothing_allowed)
+        blockedBySession()?.let { return it }
         val first = videos[index]
         val check = gate.checkPlay(first.videoId, PlayOrigin.Playlist(playlistId), known = first)
         if (check is PlayCheck.Denied) return RemoteResult.error(texts.deny(check.reason))
@@ -190,9 +210,10 @@ class TvRemoteController(
     }
 
     private suspend fun openChannel(link: YouTubeLink.Channel, profileId: String): RemoteResult {
-        blockedBySession()?.let { return it }
         val channelId = source.resolveChannelId(link)
+        // Content first, then the time (see playPlaylist).
         denied(rules().channel(channelId))?.let { return it }
+        blockedBySession()?.let { return it }
         val shown = display.show(Screen.Channel(channelId), profileId)
         if (shown != ShowResult.SHOWN) return RemoteResult.error(texts.show(shown))
         return RemoteResult.ok(texts.get(R.string.remote_play_channel))
@@ -265,7 +286,9 @@ class TvRemoteController(
         return when (val result = whole { gate.switchProfile(id, pin, verifyPin = phonePin::check) }) {
             SwitchResult.Switched -> {
                 profileChoices.chose(target.id)
-                RemoteResult.ok(texts.get(if (target.isAdult) R.string.remote_profile_switched_adult else R.string.remote_profile_switched, target.name))
+                // The TV asks for the adult again (whoever holds its remote now) unless the adult's PIN is off.
+                val asksOnTv = target.isAdult && adultEntryPin()
+                RemoteResult.ok(texts.get(if (asksOnTv) R.string.remote_profile_switched_adult else R.string.remote_profile_switched, target.name))
             }
             SwitchResult.PinRequired -> error(R.string.remote_profile_needs_pin)
             is SwitchResult.WrongPin -> RemoteResult.error(texts.wrongPin(result.attemptsLeft))
@@ -286,6 +309,9 @@ class TvRemoteController(
     // ---- The parent section (the server lets only a logged-in parent reach these) -----------------------
 
     override suspend fun setQuota(profileId: String, minutes: Int?): RemoteResult {
+        // Only what the TV's own quota picker offers (the phone gets the TV's choices and checks, owner decision): a value
+        // the TV would never offer is not stored.
+        if (minutes !in QuotaOptions) return RemoteResult.error(texts.get(R.string.phone_setting_refused, texts.get(R.string.profile_quota)))
         val updated = try {
             whole { profiles.update(profileId) { it.copy(dailyQuotaMinutes = minutes) } }
         } catch (e: IllegalArgumentException) {
@@ -301,10 +327,11 @@ class TvRemoteController(
     }
 
     /**
-     * The phone's «فتح الوقت»: the same grants as the TV's time-up screen after the PIN, for the profile on
-     * the TV now. Works for the quota and for the schedule (bedtime) alike: [SessionController.grantUnlock]
-     * gives what is missing of both; «بقية اليوم» lifts the quota and, when the schedule stops the profile
-     * now, the schedule until the end of the day. The TV's "time up" screen goes away by itself.
+     * The phone's «+N دقيقة» / «بقية اليوم» for the profile on the TV now: N minutes more than what is left
+     * ([SessionController.addTime]: after "time up" the same grants as the TV's time-up screen after the PIN; while
+     * time is left, on top of it). Works for the quota and for the schedule (bedtime) alike; «بقية اليوم» lifts the
+     * quota and, when the schedule stops the profile now, the schedule until the end of the day. The TV's "time up"
+     * screen goes away by itself.
      */
     override suspend fun unlockTimeUp(extraMinutes: Int?): RemoteResult {
         val profile = currentProfile()
@@ -312,7 +339,7 @@ class TvRemoteController(
             return RemoteResult.ok(texts.get(R.string.remote_time_no_limit, profile.name))
         }
         val after = try {
-            whole { if (extraMinutes == null) session.unlimitedToday() else session.grantUnlock(extraMinutes) }
+            whole { if (extraMinutes == null) session.unlimitedToday() else session.addTime(extraMinutes) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -445,6 +472,46 @@ class TvRemoteController(
         val restored = texts.get(R.string.backup_restored, texts.profiles(report.profiles), texts.channels(report.subscriptions))
         return RemoteResult.ok(if (report.skipped > 0) texts.get(R.string.backup_restored_skipped, restored, report.skipped.toString()) else restored)
     }
+
+    // ---- v1.1: settings, profile rules, the block list, the stats -------------------------------------------
+
+    override suspend fun settings(): RemoteSettingsPage = settingsOrRefuse().page()
+
+    override suspend fun changeSetting(key: String, value: JsonElement, base: JsonElement?): RemoteSettingsResult =
+        settingsOrRefuse().change(key, value, base)
+
+    override suspend fun resetSettings(group: String?): RemoteSettingsResult = settingsOrRefuse().reset(group)
+
+    override suspend fun profilesPage(): RemoteProfilesPage = parentalOrRefuse().page()
+
+    override suspend fun createChild(name: String, avatar: String): RemoteResult = parentalOrRefuse().createChild(name, avatar)
+
+    override suspend fun editProfile(profileId: String, name: String?, avatar: String?): RemoteResult =
+        parentalOrRefuse().editProfile(profileId, name, avatar)
+
+    override suspend fun deleteProfile(profileId: String): RemoteResult = parentalOrRefuse().deleteProfile(profileId)
+
+    override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult =
+        parentalOrRefuse().setFlags(profileId, hideShorts, hideComments)
+
+    override suspend fun setSchedule(profileId: String, fromMinute: Int?, untilMinute: Int?): RemoteResult =
+        parentalOrRefuse().setSchedule(profileId, fromMinute, untilMinute)
+
+    override suspend fun blocklist(): RemoteBlocklist = parentalOrRefuse().blocklist()
+
+    override suspend fun blockKeyword(keyword: String): RemoteResult = parentalOrRefuse().blockKeyword(keyword)
+
+    override suspend fun unblockKeyword(keyword: String): RemoteResult = parentalOrRefuse().unblockKeyword(keyword)
+
+    override suspend fun blockChannel(link: String): RemoteResult = parentalOrRefuse().blockChannel(link)
+
+    override suspend fun unblockChannel(channelId: String): RemoteResult = parentalOrRefuse().unblockChannel(channelId)
+
+    override suspend fun stats(): List<RemoteStats> = parentalOrRefuse().stats()
+
+    private fun settingsOrRefuse() = settings ?: throw RemoteRejection(texts.get(R.string.phone_setting_unknown))
+
+    private fun parentalOrRefuse() = parental ?: throw RemoteRejection(texts.get(R.string.phone_setting_unknown))
 
     // ---- Helpers ----------------------------------------------------------------------------------------
 

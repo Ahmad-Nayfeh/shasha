@@ -27,6 +27,15 @@ class FakeUiSource : VideoSource {
     val playlistPages = HashMap<PageKey?, List<VideoItem>>()
     val playlistNext = HashMap<PageKey?, PageKey?>()
 
+    /** Suggestion requests (text, language) as they reach YouTube; [suggest] answers them. */
+    val suggestionCalls = CopyOnWriteArrayList<Pair<String, String>>()
+    var suggest: suspend (String, String) -> List<String> = { q, _ -> listOf(q, "$q 1", "$q 2") }
+
+    override suspend fun suggestions(query: String, language: String): List<String> {
+        suggestionCalls += query to language
+        return suggest(query, language)
+    }
+
     override suspend fun search(query: String, filter: SearchFilter, page: PageKey?): ItemsPage {
         val call = SearchCall(query, filter, page)
         searches += call

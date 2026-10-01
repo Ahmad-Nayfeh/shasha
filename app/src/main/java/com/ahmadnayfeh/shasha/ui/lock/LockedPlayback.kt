@@ -54,13 +54,17 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.lock.ExitHold
+import com.ahmadnayfeh.shasha.policy.AdultEscape
 import com.ahmadnayfeh.shasha.policy.AdultExitChallenge
+import com.ahmadnayfeh.shasha.policy.PolicyConfig
 import com.ahmadnayfeh.shasha.policy.UnlockMethod
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
+import com.ahmadnayfeh.shasha.ui.format.rememberFormats
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import kotlinx.coroutines.delay
 import kotlin.random.Random
+import com.ahmadnayfeh.shasha.ui.theme.OsdColors
+import com.ahmadnayfeh.shasha.ui.theme.Accents
 
 /** The lock screen in front of the player, if any. */
 internal sealed interface LockStep {
@@ -105,6 +109,9 @@ class LockedPlaybackState internal constructor() {
             UnlockMethod.EXIT_CHALLENGE -> hints++
         }
     }
+
+    /** The adult's way out as the parent set it (null: none, only the phone's parent section ends the video). */
+    internal var escape: AdultEscape? = null
 }
 
 /**
@@ -119,7 +126,9 @@ class LockedPlaybackState internal constructor() {
  *   reminds him how.
  * - Without a lock ([method] null) everything passes straight through.
  *
- * [newPhrase] picks the phrase of each attempt.
+ * [escape]: the adult's way out as the parent set it (how long to hold, which phrases); null when the parent
+ * turned it off: the adult's BACK then only says that this video is watched to its end. [newPhrase] picks the
+ * phrase of each attempt (one of [escape]'s by default).
  */
 @Composable
 fun LockedPlayback(
@@ -128,7 +137,8 @@ fun LockedPlayback(
     onLeave: () -> Unit,
     modifier: Modifier = Modifier,
     onSurrendered: () -> Unit = {},
-    newPhrase: () -> String = { AdultExitChallenge.randomPhrase(Random.Default) },
+    escape: AdultEscape? = PolicyConfig.DEFAULT.escape,
+    newPhrase: () -> String = { (escape ?: PolicyConfig.DEFAULT.escape!!).randomPhrase(Random.Default) },
     hintMs: Long = HINT_MS,
     content: @Composable (LockedPlaybackState) -> Unit,
 ) {
@@ -137,7 +147,9 @@ fun LockedPlayback(
     val surrendered by rememberUpdatedState(onSurrendered)
     state.method = method
     state.leave = { leave() }
-    val hold = remember { ExitHold() }
+    state.escape = escape
+    val holdMillis = escape?.holdMillis ?: AdultExitChallenge.HOLD_MILLIS
+    val hold = remember(holdMillis) { ExitHold(holdMillis = holdMillis) }
     // A held key is being followed by the clock (remotes that do not repeat it).
     var holding by remember { mutableStateOf(false) }
     val rootFocus = remember { FocusRequester() }
@@ -167,7 +179,7 @@ fun LockedPlayback(
             holding = false
             if (outcome.consume) return true
         }
-        if (method != UnlockMethod.EXIT_CHALLENGE || state.covered) return false
+        if (method != UnlockMethod.EXIT_CHALLENGE || escape == null || state.covered) return false
         val outcome = hold.onKey(native.keyCode, native.action, native.repeatCount, native.downTime, native.eventTime)
         apply(outcome.change)
         return outcome.consume
@@ -223,7 +235,7 @@ fun LockedPlayback(
             .testTag("lock_layer"),
     ) {
         content(state)
-        LockHint(state.hints, hintMs, Modifier.align(Alignment.TopCenter))
+        LockHint(state.hints, hintMs, escape, Modifier.align(Alignment.TopCenter))
         ExitRing(state.ring)
         AnimatedContent(
             targetState = state.step,
@@ -278,7 +290,7 @@ private fun ExitRing(ring: RingUi?) {
 
 /** The adult pressed BACK (or «رجوع») in a locked video: how to leave early, for a few seconds. */
 @Composable
-private fun LockHint(requests: Int, showMs: Long, modifier: Modifier = Modifier) {
+private fun LockHint(requests: Int, showMs: Long, escape: AdultEscape?, modifier: Modifier = Modifier) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(requests) {
         if (requests == 0) return@LaunchedEffect
@@ -292,19 +304,25 @@ private fun LockHint(requests: Int, showMs: Long, modifier: Modifier = Modifier)
         exit = fadeOut(tween(220)) + slideOutVertically(tween(260)) { -it },
         modifier = modifier.padding(top = 36.dp),
     ) {
-        LockHintPill()
+        LockHintPill(escape = escape)
     }
 }
 
 @Composable
-internal fun LockHintPill(modifier: Modifier = Modifier) {
-    val accent = LocalAccent.current
+internal fun LockHintPill(modifier: Modifier = Modifier, escape: AdultEscape? = PolicyConfig.DEFAULT.escape) {
+    val formats = rememberFormats()
+    val text = if (escape == null) {
+        stringResource(R.string.lock_adult_no_escape)
+    } else {
+        stringResource(R.string.lock_adult_hint, formats.count(R.array.count_seconds_after, escape.holdMillis / 1000))
+    }
+    val accent = Accents.overDark(LocalAccent.current)
     val shape = RoundedCornerShape(percent = 50)
     Row(
         modifier
             .widthIn(max = 820.dp)
             .shadow(18.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
-            .background(ShashaColors.SurfaceHigh.copy(alpha = 0.96f), shape)
+            .background(OsdColors.SurfaceHigh.copy(alpha = 0.96f), shape)
             .border(1.dp, accent.tint(0.5f), shape)
             .padding(start = 18.dp, end = 24.dp, top = 11.dp, bottom = 11.dp)
             .testTag("lock_hint"),
@@ -312,7 +330,7 @@ internal fun LockHintPill(modifier: Modifier = Modifier) {
     ) {
         Icon(ShashaIcons.Lock, contentDescription = null, tint = accent.bright, modifier = Modifier.size(24.dp))
         Spacer(Modifier.width(12.dp))
-        Text(stringResource(R.string.lock_adult_hint), style = MaterialTheme.typography.titleMedium, color = Color.White, maxLines = 2)
+        Text(text, style = MaterialTheme.typography.titleMedium, color = Color.White, maxLines = 2)
     }
 }
 

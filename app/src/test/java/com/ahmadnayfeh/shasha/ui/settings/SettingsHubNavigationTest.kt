@@ -83,6 +83,10 @@ class SettingsHubNavigationTest {
         },
         setMaxQuality = { calls += "quality:$it" },
         setRemoteEnabled = { calls += "remote_enabled:$it" },
+        setAppLanguage = { calls += "language:$it" },
+        setAppTheme = { calls += "theme:$it" },
+        openGuide = { calls += "guide" },
+        openExplainer = { calls += "explainer" },
     )
 
     private fun show() {
@@ -345,16 +349,53 @@ class SettingsHubNavigationTest {
         press(Key.DirectionCenter)
         press(Key.Back)
 
+        press(Key.DirectionDown) // إعادة الضبط
+        press(Key.DirectionDown) // الدليل والفيديو
         press(Key.DirectionDown) // حول
         press(Key.DirectionLeft)
-        focused("about_version")
+        // The developer first, then his other apps one card each, then the version and the rest as before.
+        focused("about_developer")
+        listOf("shadra", "silah", "masarif", "khatwa").forEach { app ->
+            press(Key.DirectionDown)
+            focused("about_app_$app")
+        }
         press(Key.DirectionDown)
-        focused("about_terms")
+        focused("about_version")
         press(Key.DirectionDown)
         focused("about_sponsorblock")
         press(Key.DirectionDown)
         focused("license_NewPipeExtractor")
         assertThat(calls).containsExactly("updates", "diagnostics").inOrder()
+    }
+
+    @Test
+    fun theGuidePane_opensTheGuideAndTheVideo() {
+        show()
+        goTo(SettingsCategory.GUIDE)
+        press(Key.DirectionLeft)
+        focused("guide_open")
+        press(Key.DirectionCenter)
+        press(Key.DirectionDown)
+        focused("explainer_open")
+        press(Key.DirectionCenter)
+        assertThat(calls).containsExactly("guide", "explainer").inOrder()
+    }
+
+    @Test
+    fun theAppearancePane_isOpenWithoutThePin_andChoosesLanguageAndTheme() {
+        show()
+        goTo(SettingsCategory.APPEARANCE)
+        press(Key.DirectionLeft)
+        focused("appearance_language_ar")
+        press(Key.DirectionDown)
+        focused("appearance_language_en")
+        press(Key.DirectionCenter)
+        press(Key.DirectionDown)
+        focused("appearance_theme_dark")
+        press(Key.DirectionDown)
+        focused("appearance_theme_light")
+        press(Key.DirectionCenter)
+        assertThat(calls).containsExactly("language:ENGLISH", "theme:LIGHT").inOrder()
     }
 
     @Test

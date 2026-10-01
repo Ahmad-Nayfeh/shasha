@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,6 +44,7 @@ import com.ahmadnayfeh.shasha.ui.settings.remote.RemoteIcons
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import java.util.Locale
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
 /**
  * «حالة الحماية» at a glance (SPEC §4, §7): the last measured return and the goal it is measured against, then
@@ -194,6 +194,7 @@ internal fun RemotePane(state: SettingsHubState, actions: SettingsHubActions, fi
             body = stringResource(R.string.hub_remote_pairing_body),
             locked = !state.unlocked,
         )
+        PortRow(state, actions)
         val address = remote?.address
         if (address != null) {
             InfoLine(RemoteIcons.Wifi, stringResource(R.string.hub_remote_address, address), tint = LocalAccent.current.bright, textColor = ShashaColors.Text)
@@ -327,7 +328,7 @@ internal fun DiagnosticsPane(state: SettingsHubState, actions: SettingsHubAction
                             "${error.kind.name}: ${error.technicalName}",
                             style = MaterialTheme.typography.bodySmall.copy(textDirection = TextDirection.Ltr),
                             color = ShashaColors.Muted,
-                            textAlign = TextAlign.Right,
+                            textAlign = StartTextAlign,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.fillMaxWidth().padding(start = 28.dp),

@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>دليل شاشة</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body>
+
+<!-- Icons (drawn for this guide) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r="0.9" fill="currentColor"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3.5v11"/><path d="m7.3 10 4.7 4.7 4.7-4.7"/><path d="M4.5 19.5h15"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="3.5"/><path d="M10 9.2v5.6l4.6-2.8z" fill="currentColor"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.8 19.5 5.8v6c0 4.6-3.2 8.2-7.5 9.4-4.3-1.2-7.5-4.8-7.5-9.4v-6z"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M5.5 18.5l1.9-1.9M16.6 7.4l1.9-1.9"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.4a2.6 2.6 0 1 1 3.6 2.4c-.8.4-1.1.9-1.1 1.8v.5"/><circle cx="12" cy="16.9" r="0.9" fill="currentColor"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4v4.5H15"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="m3.5 6 1.6 1.6L8 4.8M3.5 12.5l1.6 1.6L8 11.3"/><path d="M11 6.5h9.5M11 13h9.5M4 19h16.5"/></symbol>
+    <symbol id="i-noads" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.8"/><path d="m5.8 5.8 12.4 12.4"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.2 2.6 5.5 6 .8-4.4 4.1 1.1 6L12 16.7l-5.3 2.9 1.1-6-4.4-4.1 6-.8z"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M6.5 3h11M6.5 21h11"/><path d="M8 3v3.4c0 2.2 4 3.4 4 5.6s-4 3.4-4 5.6V21M16 3v3.4c0 2.2-4 3.4-4 5.6s4 3.4 4 5.6V21"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.6"/><path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9"/></symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 5.5 15 12 5 18.5z"/><path d="M19 5.5v13"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6"/><path d="M10.5 18.3h3"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.8 9.5V20h12.4V9.5"/><path d="M10 20v-5h4v5"/></symbol>
+  </defs>
+</svg>
+
+<!-- ============================================================ 1. COVER -->
+<section class="page cover">
+  <div class="inner">
+    <img class="logo" src="../../branding/logo-lockup.svg" alt="شاشة">
+    <div class="title">دليل شاشة</div>
+    <div class="subtitle">كل ما تحتاجه في ملف واحد: التثبيت، والمشاهدة، والرقابة.</div>
+    <div class="chips">
+      <span class="chip a">بلا إعلانات</span>
+      <span class="chip">بلا اقتراحات</span>
+      <span class="chip">بلا تسجيل دخول</span>
+      <span class="chip k">ملفات للأطفال</span>
+      <span class="chip a">وقت محدد</span>
+      <span class="chip">الجوال ريموتاً</span>
+      <span class="chip">العربية و English</span>
+    </div>
+    <div class="hero">
+      <div class="tvset"><img src="img/home.jpg" alt="الرئيسية في شاشة"></div>
+      <div class="tv-stand"></div><div class="tv-foot"></div>
+      <div class="phone"><img src="img/01-screen-now-playing.jpg" alt="صفحة الجوال"></div>
+    </div>
+    <div class="foot">
+      <span><b>تطبيق يوتيوب لتلفاز البيت</b><br>لشاشات Google TV</span>
+      <span>سبتمبر 2026</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ 2. CONTENTS + PART 1 -->
+<section class="page spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">المحتويات</span></header>
+  <div>
+  <div class="sec small">
+    <div class="badge"><svg class="i"><use href="#i-list"/></svg></div>
+    <div><div class="kicker">دليل شاشة</div><h1>ثمانية أجزاء قصيرة</h1>
+      <p class="lead">اقرأ الجزء الذي تحتاجه فقط. التثبيت مرة واحدة، والباقي حين يلزم.</p></div>
+  </div>
+  <ol class="parts">
+    <li><span class="n">1</span><span class="ti">ما هو «شاشة»</span><span class="dots"></span><span class="no">2</span></li>
+    <li><span class="n">2</span><span class="ti">التثبيت في 9 خطوات</span><span class="dots"></span><span class="no">3</span></li>
+    <li><span class="n">3</span><span class="ti">أول تشغيل</span><span class="dots"></span><span class="no">8</span></li>
+    <li><span class="n">4</span><span class="ti">الاستخدام اليومي</span><span class="dots"></span><span class="no">9</span></li>
+    <li class="k"><span class="n">5</span><span class="ti">للوالدين</span><span class="dots"></span><span class="no">11</span></li>
+    <li class="k"><span class="n">6</span><span class="ti">الإعدادات</span><span class="dots"></span><span class="no">13</span></li>
+    <li class="a"><span class="n">7</span><span class="ti">حل المشاكل</span><span class="dots"></span><span class="no">16</span></li>
+    <li class="a"><span class="n">8</span><span class="ti">التحديثات</span><span class="dots"></span><span class="no">17</span></li>
+  </ol>
+  </div>
+
+  <hr class="div big">
+
+  <div>
+  <div class="sec small">
+    <div class="badge"><svg class="i"><use href="#i-info"/></svg></div>
+    <div><div class="kicker">الجزء 1</div><h1>ما هو «شاشة»</h1>
+      <p class="lead">تطبيق يوتيوب خاص بتلفاز البيت. يعرض ما تختاره أنت فقط.</p></div>
+  </div>
+  <div class="tiles t2">
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-noads"/></svg></div><div><h3>بلا إعلانات ولا اقتراحات</h3><p>الرئيسية فيها أحدث فيديوهات قنواتك فقط.</p></div></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-star"/></svg></div><div><h3>ملفات للأطفال</h3><p>يرى الطفل القنوات التي تسمح بها فقط.</p></div></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-hourglass"/></svg></div><div><h3>وقت محدد</h3><p>دقائق يومية وساعات مشاهدة لكل طفل.</p></div></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-lock"/></svg></div><div><h3>الوضع الجاد</h3><p>الفيديو الذي يبدأ يُشاهَد حتى نهايته.</p></div></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-skip"/></svg></div><div><h3>تخطي الإعلانات المقروءة</h3><p>داخل الفيديو، وحده، ببيانات SponsorBlock.</p></div></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-mic"/></svg></div><div><h3>البحث بالصوت</h3><p>من ميكروفون الريموت، بالعربية أو الإنجليزية.</p></div></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-phone"/></svg></div><div><h3>الجوال ريموتاً</h3><p>أرسل الروابط وافتح الوقت من الجوال.</p></div></div>
+    <div class="tile"><div class="ic"><svg class="i"><use href="#i-shield"/></svg></div><div><h3>بياناتك عندك</h3><p>كل شيء على التلفاز. لا حسابات ولا تتبّع.</p></div></div>
+  </div>
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">2</span><span>ما هو «شاشة»</span></footer>
+</section>
+
+<!-- ============================================================ 3. INSTALL: 1-2 -->
+<section class="page spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 2 · التثبيت</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-download"/></svg></div>
+    <div><div class="kicker">الجزء 2</div><h1>التثبيت في 9 خطوات</h1>
+      <p class="lead">مرة واحدة فقط، في نحو ربع ساعة. اتبع الخطوات بالترتيب.</p></div>
+  </div>
+  <div class="need">
+    <div class="card"><h3>تحتاج</h3>
+      <ul>
+        <li>التلفاز (Google TV) والريموت.</li>
+        <li>حاسوباً شخصياً: ويندوز أو ماك.</li>
+        <li>الاثنان على شبكة البيت نفسها.</li>
+      </ul>
+    </div>
+    <div class="card"><h3>في كل خطوة</h3>
+      <p><span class="where pc">الحاسوب</span> <span class="where tv">التلفاز</span> <span class="where ph">الجوال</span></p>
+      <p class="small muted">تقول لك أين تعمل.</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="txt">
+      <div class="num">1</div>
+      <h2>نزّل ملف التثبيت <span class="where pc">الحاسوب</span></h2>
+      <p>من صفحة المستودع اضغط <code dir="ltr">Shasha-Setup.zip</code>، ثم <b class="btn">Download</b>.</p>
+      <p>فك الضغط. ويندوز: زر الفأرة الأيمن ← <b class="btn">Extract All</b>. ماك: انقر مرتين.</p>
+      <p class="small muted">كل ما يلزم في هذا المجلد. لا تنقل منه أي ملف.</p>
+    </div>
+    <img class="shot" src="../images/install/pc-kit-folder.jpg" alt="مجلد Shasha-Setup">
+  </div>
+
+  <div class="step">
+    <div class="txt">
+      <div class="num">2</div>
+      <h2>فعّل خيارات المطوّر <span class="where tv">التلفاز</span></h2>
+      <p><bdi>Settings</bdi> ← <bdi>System</bdi> ← <bdi>About</bdi>.</p>
+      <p>على <b class="btn">Android TV OS build</b> اضغط <kbd>OK</kbd> سبع مرات.</p>
+      <p class="small muted">تظهر رسالة: <bdi>You are now a developer!</bdi></p>
+    </div>
+    <img class="shot" src="../images/install/tv-build-7-presses.jpg" alt="الضغط سبع مرات">
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">3</span><span>التثبيت</span></footer>
+</section>
+
+<!-- ============================================================ 4. INSTALL: 3-4 -->
+<section class="page spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 2 · التثبيت</span></header>
+
+  <div class="step">
+    <div class="txt">
+      <div class="num">3</div>
+      <h2>فعّل تصحيح الأخطاء <span class="where tv">التلفاز</span></h2>
+      <p><bdi>Settings</bdi> ← <bdi>System</bdi> ← <bdi>Developer options</bdi>.</p>
+      <p>فعّل <b class="btn">USB debugging</b>.</p>
+      <p>وفعّل <b class="btn">Network debugging</b> إن وجدته.</p>
+    </div>
+    <img class="shot" src="../images/install/tv-developer-options.jpg" alt="Developer options">
+  </div>
+
+  <div class="step">
+    <div class="txt">
+      <div class="num">4</div>
+      <h2>اعرف عنوان التلفاز <span class="where tv">التلفاز</span></h2>
+      <p>العنوان أربعة أرقام بينها نقاط، مثل <code dir="ltr">192.168.1.50</code>.</p>
+      <p>اكتبه على ورقة.</p>
+    </div>
+    <img class="shot" src="../images/install/tv-find-ip.jpg" alt="عنوان التلفاز">
+  </div>
+
+  <div class="grid g2 mt">
+    <div class="card way">
+      <h3>متصل بالـ Wi-Fi</h3>
+      <p><bdi>Settings</bdi> ← <bdi>Network &amp; Internet</bdi> ← اسم شبكتك.</p>
+      <p>اقرأ الرقم تحت <b class="btn">IP address</b>.</p>
+    </div>
+    <div class="card way">
+      <h3>متصل بسلك (Ethernet)</h3>
+      <p><bdi>Settings</bdi> ← <bdi>Network &amp; Internet</bdi> ← <b class="btn">Ethernet</b>.</p>
+      <p>اقرأ الرقم تحت <b class="btn">Connected</b>.</p>
+    </div>
+  </div>
+  <div class="note plain mt small">
+    <span class="t">تغيّر العنوان؟</span>
+    قد يتغيّر بعد إطفاء الراوتر. أعد هذه الخطوة واكتب العنوان الجديد.
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">4</span><span>التثبيت</span></footer>
+</section>
+
+<!-- ============================================================ 5. INSTALL: 5-6 -->
+<section class="page spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 2 · التثبيت</span></header>
+
+  <div class="step">
+    <div class="txt">
+      <div class="num">5</div>
+      <h2>شغّل المثبّت <span class="where pc">الحاسوب</span></h2>
+      <p>افتحه كما في المربعين أدناه.</p>
+      <p>يسألك: «اكتب عنوان IP للشاشة». اكتب العنوان، ثم <kbd>Enter</kbd>.</p>
+    </div>
+    <img class="shot" src="../images/install/pc-run-script.jpg" alt="نافذة المثبّت">
+  </div>
+
+  <div class="grid g2">
+    <div class="card way">
+      <h3>ويندوز</h3>
+      <p>انقر مرتين على <b class="btn">Windows - ثبّت شاشة</b>.</p>
+      <p>إن ظهر تحذير ويندوز الأزرق: اضغط <b class="btn">More info</b>، ثم <b class="btn">Run anyway</b>.</p>
+    </div>
+    <div class="card way">
+      <h3>ماك</h3>
+      <p>انقر مرتين على <b class="btn">Mac - ثبّت شاشة</b>.</p>
+      <p>إن رفض ماك فتحه: <bdi>System Settings</bdi> ← <bdi>Privacy &amp; Security</bdi> ← انزل إلى الأسفل ← <b class="btn">Open Anyway</b>.</p>
+      <p class="small muted">من <bdi>macOS 15 Sequoia</bdi>: «الزر الأيمن ثم <bdi>Open</bdi>» لم يعد يكفي.</p>
+    </div>
+  </div>
+
+  <div class="step mt-l">
+    <div class="txt">
+      <div class="num">6</div>
+      <h2>اسمح للحاسوب <span class="where tv">التلفاز</span></h2>
+      <p>تظهر على التلفاز: <b class="btn">Allow USB debugging?</b></p>
+      <p>ضع علامة على:<br><b class="btn">Always allow from this computer</b></p>
+      <p>ثم اضغط <b class="btn">OK</b>.</p>
+      <p class="small muted">لديك 60 ثانية.</p>
+    </div>
+    <img class="shot" src="../images/install/tv-allow-debugging.jpg" alt="Allow USB debugging">
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">5</span><span>التثبيت</span></footer>
+</section>
+
+<!-- ============================================================ 6. INSTALL: 7-8 -->
+<section class="page spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 2 · التثبيت</span></header>
+
+  <div class="step">
+    <div class="txt">
+      <div class="num">7</div>
+      <h2>انتظر، المثبّت يكمل وحده <span class="where pc">الحاسوب</span></h2>
+      <p>يثبّت «شاشة» ويمنحه صلاحياته.</p>
+      <p>يسألك: هل تطفئ يوتيوب الرسمي؟ اكتب <code dir="ltr">y</code> أو <code dir="ltr">n</code>.</p>
+      <p>يفتح «شاشة» ويكتب «تمّ!». اضغط أي زر لتغلق النافذة.</p>
+    </div>
+    <img class="shot" src="../images/install/pc-success.jpg" alt="المثبّت انتهى">
+  </div>
+
+  <div class="step">
+    <div class="txt">
+      <div class="num">8</div>
+      <h2>أول تشغيل <span class="where tv">التلفاز</span></h2>
+      <p>«شاشة» يطلب رمز الوالدين، ثم ملفك، ثم ملف طفلك.</p>
+      <p>التفاصيل في الجزء 3 (صفحة 8).</p>
+    </div>
+    <img class="shot" src="img/setup_pin.jpg" alt="اختر رمز الوالدين">
+  </div>
+
+  <div class="note teal mt">
+    <span class="t">لا ينجح شيء؟</span>
+    انظر الجزء 7: حل المشاكل (صفحة 16).
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">6</span><span>التثبيت</span></footer>
+</section>
+
+<!-- ============================================================ 7. INSTALL: 9 + update/undo -->
+<section class="page spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 2 · التثبيت</span></header>
+
+  <div class="step">
+    <div class="txt">
+      <div class="num">9</div>
+      <h2>اربط جوالك (اختياري) <span class="where ph">الجوال</span></h2>
+      <p>في «شاشة»: الإعدادات ← <b class="btn">الخادم المحلي</b> ← <b class="btn">رمز الاقتران QR</b>.</p>
+      <p>امسح الرمز بكاميرا الجوال.</p>
+      <p>أضف الصفحة إلى الشاشة الرئيسية للجوال.</p>
+    </div>
+    <img class="shot" src="../images/install/phone-scan-qr.jpg" alt="مسح رمز QR">
+  </div>
+
+  <div>
+  <h2>انتهى التثبيت</h2>
+  <div class="grid g2 gap-l">
+    <div class="card big">
+      <h3>التحديث لاحقاً</h3>
+      <p>شغّل المثبّت من جديد (الخطوة 5).</p>
+      <p>بياناتك تبقى كما هي.</p>
+      <p class="small muted">والطريق الأسهل في الجزء 8.</p>
+    </div>
+    <div class="card big">
+      <h3>الإزالة</h3>
+      <p>على التلفاز: <bdi>Settings</bdi> ← <bdi>Apps</bdi> ← شاشة ← <b class="btn">Uninstall</b>.</p>
+      <p class="small muted">هذا يمسح بيانات «شاشة» كلها.</p>
+    </div>
+  </div>
+  </div>
+  <div class="note plain mt small">
+    <span class="t">لمن يعرف سطر الأوامر</span>
+    المثبّت يقبل <code dir="ltr">--undo</code>: يعيد يوتيوب الرسمي ويسحب صلاحيات «شاشة» ويبقيه مثبّتاً.
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">7</span><span>التثبيت</span></footer>
+</section>
+
+<!-- ============================================================ 8. FIRST RUN -->
+<section class="page spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 3 · أول تشغيل</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-power"/></svg></div>
+    <div><div class="kicker">الجزء 3</div><h1>أول تشغيل</h1>
+      <p class="lead">أربع شاشات قصيرة، مرة واحدة.</p></div>
+  </div>
+
+  <div class="grid g2 gap-l">
+    <figure>
+      <img class="shot" src="img/setup_pin.jpg" alt="رمز الوالدين">
+      <h3><span class="dot">1</span> رمز الوالدين</h3>
+      <p>من 4 إلى 8 أرقام. احفظه جيداً.</p>
+      <p class="small muted">يفتح ملفك والإعدادات، ويُخرج الطفل من ملفه.</p>
+    </figure>
+    <figure>
+      <img class="shot" src="img/setup_child.jpg" alt="ملف الطفل">
+      <h3><span class="dot">2</span> ملف لطفلك</h3>
+      <p>اسم وصورة. يبدأ بساعة يومياً، من 7 صباحاً إلى 10 مساءً.</p>
+      <p class="small muted">تغيّر ذلك لاحقاً من الجزء 5.</p>
+    </figure>
+    <figure>
+      <img class="shot" src="img/kids_allowed_channels.jpg" alt="القنوات المسموحة">
+      <h3><span class="dot">3</span> القنوات المسموحة</h3>
+      <p>اختر القنوات التي يراها الطفل.</p>
+      <p class="small muted">لا يرى الطفل شيئاً غيرها.</p>
+    </figure>
+    <figure>
+      <img class="shot" src="img/profile_picker.jpg" alt="من يشاهد الآن">
+      <h3><span class="dot">4</span> من يشاهد الآن؟</h3>
+      <p>تظهر عند كل تشغيل.</p>
+      <p class="small muted">ملف الطفل يُفتح مباشرة. ملفك يحتاج الرمز، إلا إن أوقفته (الجزء 5).</p>
+    </figure>
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">8</span><span>أول تشغيل</span></footer>
+</section>
+
+<!-- ============================================================ 9. DAILY: home + search -->
+<section class="page spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 4 · الاستخدام اليومي</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-home"/></svg></div>
+    <div><div class="kicker">الجزء 4</div><h1>الاستخدام اليومي</h1>
+      <p class="lead">تهت؟ اضغط <kbd>BACK</kbd> عدة مرات حتى تصل إلى الرئيسية.</p></div>
+  </div>
+
+  <div class="row">
+    <img class="shot" src="img/home.jpg" alt="الرئيسية">
+    <div>
+      <h2>الرئيسية</h2>
+      <ul>
+        <li>أحدث فيديوهات قنواتك، الأحدث أولاً.</li>
+        <li>القائمة الجانبية على اليمين: اضغط <kbd>→</kbd>.</li>
+        <li><kbd>OK</kbd> مطوّلاً على فيديو: <b class="btn">شاهد لاحقاً</b> أو <b class="btn">اذهب إلى القناة</b>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row">
+    <img class="shot" src="img/search_results.jpg" alt="البحث">
+    <div>
+      <h2>البحث</h2>
+      <ul>
+        <li>اكتب بلوحة المفاتيح. تظهر اقتراحات وأنت تكتب.</li>
+        <li>اختر النوع: الكل، فيديوهات، قنوات، قوائم تشغيل.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note teal voice">
+    <div class="ic"><svg class="i"><use href="#i-mic"/></svg></div>
+    <div>
+      <span class="t">جديد: البحث بالصوت</span>
+      اضغط زر الميكروفون في الريموت، وقل ما تبحث عنه.
+      يفهم العربية والإنجليزية. بدّل اللغة بزر «ع / EN» بجانب الميكروفون، أو من الإعدادات.
+    </div>
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">9</span><span>الاستخدام اليومي</span></footer>
+</section>
+
+<!-- ============================================================ 10. DAILY: player + sponsorblock -->
+<section class="page spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 4 · الاستخدام اليومي</span></header>
+
+  <h2>المشغّل</h2>
+  <img class="shot" style="width:150mm;margin:0 auto" src="img/player_osd.jpg" alt="أزرار المشغّل">
+  <table class="keys mt">
+    <tr><td><kbd>OK</kbd></td><td>إيقاف مؤقت وتشغيل.</td></tr>
+    <tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>رجوع وتقديم 10 ثوانٍ.</td></tr>
+    <tr><td><kbd>↓</kbd></td><td>أزرار الترجمة، والسرعة، والجودة.</td></tr>
+    <tr><td><b>السرعة</b></td><td>من <bdi dir="ltr">0.5×</bdi> حتى <bdi dir="ltr">4×</bdi>.</td></tr>
+    <tr><td><b>الاستكمال</b></td><td>الفيديو يكمل من حيث توقفت.</td></tr>
+    <tr><td><b>قائمة التشغيل</b></td><td>الفيديو التالي يبدأ بعد 5 ثوانٍ.</td></tr>
+  </table>
+  <p class="small muted">الأزرار تختفي وحدها بعد 3 ثوانٍ. أي زر يعيدها.</p>
+
+  <h2 class="mt-l">تخطي الإعلانات المقروءة (SponsorBlock)</h2>
+  <div class="row">
+    <img class="shot" src="img/sponsor_skip_undo.jpg" alt="تم تخطي إعلان ممول">
+    <div>
+      <ul>
+        <li>«شاشة» يقفز فوق الإعلان داخل الفيديو وحده.</li>
+        <li>تظهر رسالة: «تم تخطي: إعلان مموّل».</li>
+        <li>تريد رؤيته؟ اضغط <b class="btn">تراجع عن التخطي</b> خلال 5 ثوانٍ.</li>
+      </ul>
+    </div>
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">10</span><span>الاستخدام اليومي</span></footer>
+</section>
+
+<!-- ============================================================ 11. PARENTS: profiles, time, lists -->
+<section class="page parents spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 5 · للوالدين</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-shield"/></svg></div>
+    <div><div class="kicker">الجزء 5</div><h1>للوالدين</h1>
+      <p class="lead">كل ما في هذا الجزء يحتاج رمز الوالدين.</p></div>
+  </div>
+
+  <div>
+  <h2>ملفات الأطفال</h2>
+  <p>الإعدادات ← <b class="btn">الملفات ورمز الوالدين</b> ← <b class="btn">إدارة الملفات</b>.</p>
+  <p class="small muted">أضف ملفاً، غيّر الاسم والصورة، أو احذف ملفاً.</p>
+  <div class="note kids mt-s small">
+    <span class="t">ملفك بلا رمز؟</span>
+    من القسم نفسه أوقف <b class="btn">طلب رمز الوالدين عند الدخول إلى ملف الكبار</b> (يعمل في الأصل). عندها يُفتح ملفك بلا رمز، ويستطيع الطفل فتحه أيضاً. الإعدادات تطلب الرمز دائماً.
+  </div>
+  </div>
+
+  <div class="row">
+    <img class="shot" src="img/profile_schedule.jpg" alt="أوقات المشاهدة">
+    <div>
+      <h2>الوقت اليومي والجدول</h2>
+      <p>الإعدادات ← <b class="btn">الحصص والجداول</b>.</p>
+      <ul>
+        <li><b>الحصة:</b> كم دقيقة في اليوم.</li>
+        <li><b>الجدول:</b> من أي ساعة إلى أي ساعة.</li>
+        <li>قبل النهاية بـ 5 دقائق يظهر تنبيه هادئ.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="row">
+    <img class="shot" src="img/time_up.jpg" alt="انتهى الوقت">
+    <div>
+      <h2>حين ينتهي الوقت</h2>
+      <ul>
+        <li>تظهر شاشة «انتهى الوقت».</li>
+        <li>وقت إضافي؟ أدخل الرمز واختر 15 أو 30 أو 60 دقيقة، أو بقية اليوم.</li>
+        <li>أو افتح الوقت من الجوال.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div>
+  <h2>قوائم السماح والحظر</h2>
+  <div class="grid g2">
+    <div class="card"><h3>السماح</h3><p>لكل طفل قائمته. لا يرى غيرها.</p></div>
+    <div class="card"><h3>الحظر</h3><p>قنوات تُخفى عن كل الملفات.</p></div>
+  </div>
+  <p class="small muted mt-s">للإضافة بسرعة: <kbd>OK</kbd> مطوّلاً على بطاقة قناة، أو أرسل رابطها من الجوال.</p>
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">11</span><span>للوالدين</span></footer>
+</section>
+
+<!-- ============================================================ 12. PARENTS: serious mode, phone -->
+<section class="page parents spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 5 · للوالدين</span></header>
+
+  <div>
+  <h2>الوضع الجاد</h2>
+  <p class="big-p">الفيديو الذي يبدأ لا يُترك حتى ينتهي.</p>
+  <ul>
+    <li>يعمل من البداية، في كل الملفات.</li>
+    <li><b>الطفل</b> يخرج قبل النهاية برمز الوالدين فقط.</li>
+    <li><b>الكبير</b> يضغط <kbd>BACK</kbd> مطوّلاً 10 ثوانٍ، ثم يكتب عبارة تظهر له.</li>
+    <li>الخروج المبكر يُسجَّل «استسلاماً» في الإحصائيات.</li>
+    <li>لإيقافه: الإعدادات ← <b class="btn">الوضع الجاد</b>. عندها يُخرج زر <kbd>BACK</kbd> من أي فيديو.</li>
+  </ul>
+  <div class="grid g2 mt">
+    <figure>
+      <img class="shot" src="img/lock_hold_ring.jpg" alt="واصل الضغط للخروج">
+      <figcaption><b>1.</b> واصل الضغط حتى تكتمل الدائرة.</figcaption>
+    </figure>
+    <figure>
+      <img class="shot" src="img/lock_phrase_keyboard.jpg" alt="اكتب العبارة">
+      <figcaption><b>2.</b> اكتب العبارة كما تظهر، ثم <b>خروج</b>.</figcaption>
+    </figure>
+  </div>
+  </div>
+
+  <div>
+  <h2>التحكم من الجوال</h2>
+  <div class="row phone-row">
+    <div class="phones">
+      <div class="phone"><img src="img/01-screen-now-playing.jpg" alt="الشاشة من الجوال"></div>
+      <div class="phone"><img src="img/12-parent-time.jpg" alt="قسم الأب"></div>
+    </div>
+    <div>
+      <ul>
+        <li>أوقف الفيديو وشغّله، وابحث، وأرسل رابطاً إلى التلفاز.</li>
+        <li><b>قسم الأب</b> (بالرمز): افتح وقتاً إضافياً، وأضف قناة إلى القوائم.</li>
+        <li>ومنه تُنهي فيديو مقفولاً بالوضع الجاد.</li>
+        <li>وتتبع الصفحة لغة «شاشة».</li>
+      </ul>
+      <p class="small muted">الجوال والتلفاز على شبكة البيت نفسها.</p>
+    </div>
+  </div>
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">12</span><span>للوالدين</span></footer>
+</section>
+
+<!-- ============================================================ 13. SETTINGS (1) -->
+<section class="page parents">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 6 · الإعدادات</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-gear"/></svg></div>
+    <div><div class="kicker">الجزء 6</div><h1>الإعدادات</h1>
+      <p class="lead">كلها خلف رمز الوالدين. لا تحتاج تغيير شيء: الأصل يعمل جيداً.</p></div>
+  </div>
+
+  <table class="set">
+    <tr><th>الإعداد</th><th>ما يفعله</th><th>الأصلي</th></tr>
+    <tr class="grp"><td colspan="3">الوضع الجاد</td></tr>
+    <tr><td>الوضع الجاد</td><td>الفيديو يُشاهَد حتى نهايته</td><td>يعمل</td></tr>
+    <tr><td>خروج الكبير قبل النهاية</td><td>بالضغط المطوّل ثم العبارة</td><td>مسموح</td></tr>
+    <tr><td>مدة الضغط المطوّل</td><td>قبل ظهور العبارة</td><td>10 ثوانٍ</td></tr>
+    <tr><td>عبارة الخروج</td><td>عشوائية من قائمة، أو عبارتك الخاصة</td><td>عشوائية</td></tr>
+    <tr><td>التخطي المسموح</td><td>تقديم لا يمنع عدّ الفيديو منتهياً</td><td>30 ثانية</td></tr>
+    <tr class="grp"><td colspan="3">الوقت والتنبيهات</td></tr>
+    <tr><td>التنبيه قبل انتهاء الوقت</td><td>تنبيه هادئ قبل التوقف</td><td>5 دقائق</td></tr>
+    <tr><td>مدة ظهور التنبيه</td><td>كم يبقى على الشاشة</td><td>12 ثانية</td></tr>
+    <tr><td>خيارات الوقت الإضافي</td><td>ما يظهر بعد الرمز في «انتهى الوقت»</td><td>15 · 30 · 60 دقيقة</td></tr>
+    <tr class="grp"><td colspan="3">رمز الوالدين</td></tr>
+    <tr><td>المحاولات قبل الإيقاف</td><td>رموز خاطئة متتالية</td><td>5</td></tr>
+    <tr><td>مدة الإيقاف الأولى</td><td>وتطول كل مرة</td><td>5 دقائق</td></tr>
+    <tr><td>بقاء الإعدادات مفتوحة</td><td>بعد إدخال الرمز</td><td>5 دقائق</td></tr>
+    <tr><td>طلب الرمز بعد مغادرة التطبيق</td><td>بعد غياب «شاشة» عن الشاشة</td><td>15 ثانية</td></tr>
+    <tr><td>الرمز عند دخول ملف الكبار</td><td>إيقافه يفتح ملفك بلا رمز. الإعدادات تبقى بالرمز</td><td>يعمل</td></tr>
+    <tr class="grp"><td colspan="3">التشغيل</td></tr>
+    <tr><td>السرعة عند بدء الفيديو</td><td>والقائمة في المشغّل حتى <bdi dir="ltr">4×</bdi></td><td><bdi dir="ltr">1×</bdi></td></tr>
+    <tr><td>خطوة التقديم والإرجاع</td><td>بضغطة يمين أو يسار</td><td>10 ثوانٍ</td></tr>
+    <tr><td>إخفاء أزرار التحكم</td><td>بلا ضغط أثناء التشغيل</td><td>3 ثوانٍ</td></tr>
+    <tr><td>العدّ قبل الفيديو التالي</td><td>داخل قائمة التشغيل</td><td>5 ثوانٍ</td></tr>
+    <tr><td>عودة الطفل إلى الرئيسية</td><td>بعد انتهاء فيديو الطفل</td><td>10 ثوانٍ</td></tr>
+  </table>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">13</span><span>الإعدادات</span></footer>
+</section>
+
+<!-- ============================================================ 14. SETTINGS (2) -->
+<section class="page parents">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 6 · الإعدادات</span></header>
+
+  <table class="set">
+    <tr><th>الإعداد</th><th>ما يفعله</th><th>الأصلي</th></tr>
+    <tr class="grp"><td colspan="3">تخطي المقاطع الدعائية (SponsorBlock)</td></tr>
+    <tr><td>الفئات</td><td>أي المقاطع تُتخطى</td><td>إعلان مموّل، ترويج ذاتي، تذكير بالتفاعل، المقدمة، الخاتمة</td></tr>
+    <tr><td>مهلة «تراجع عن التخطي»</td><td>في ملف الكبار</td><td>5 ثوانٍ</td></tr>
+    <tr><td>مدة رسالة التخطي</td><td>في ملف الطفل</td><td>3 ثوانٍ</td></tr>
+    <tr class="grp"><td colspan="3">الأطفال</td></tr>
+    <tr><td>إخفاء التعليقات</td><td>لكل ملف. في ملف الطفل مخفية دائماً</td><td>ظاهرة للكبار</td></tr>
+    <tr><td>حدّ الفيديو القصير (Shorts)</td><td>ما هو أقصر منه يُعدّ قصيراً</td><td>180 ثانية</td></tr>
+    <tr class="grp"><td colspan="3">الجودة، والجوال، والصوت</td></tr>
+    <tr><td>الجودة الافتراضية</td><td>أعلى جودة، وتهبط وحدها إن ضعفت الشبكة</td><td>تلقائي حتى 1080p</td></tr>
+    <tr><td>التحكم من الجوال</td><td>تشغيل الخادم المحلي وإيقافه</td><td>يعمل</td></tr>
+    <tr><td>منفذ الخادم</td><td>رقم من 1024 إلى 65535</td><td>8765</td></tr>
+    <tr><td>لغة البحث الصوتي</td><td>العربية أو الإنجليزية</td><td>العربية</td></tr>
+    <tr class="grp"><td colspan="3">التطبيق</td></tr>
+    <tr><td>اللغة</td><td>لغة الواجهة كلها وصفحة الجوال</td><td>العربية</td></tr>
+    <tr><td>المظهر</td><td>داكن أو فاتح</td><td>داكن</td></tr>
+  </table>
+
+  <div class="grid g-wide gap-l mt-l align-s">
+    <div>
+      <h2>أخطأت في إعداد؟</h2>
+      <ul>
+        <li>في كل قسم زر <b class="btn">إرجاع الإعداد الأصلي</b>.</li>
+        <li>ولإرجاع كل شيء: الإعدادات ← <b class="btn">إعادة الضبط</b> ← <b class="btn">إرجاع كل الإعدادات إلى وضعها الأصلي</b>.</li>
+      </ul>
+      <div class="note kids mt-s">
+        <span class="t">لا يُحذف شيء</span>
+        تبقى الملفات، والرمز، والاشتراكات، والسجل، والقوائم، والحصص.
+      </div>
+    </div>
+    <img class="shot" src="img/behavior_reset.jpg" alt="إعادة الضبط">
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">14</span><span>الإعدادات</span></footer>
+</section>
+
+<!-- ============================================================ 15. SETTINGS (3): language, theme, guide, about -->
+<section class="page parents spread">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 6 · الإعدادات</span></header>
+
+  <div>
+  <h2>اللغة والمظهر</h2>
+  <div class="grid g2">
+    <div class="card big">
+      <h3>اللغة</h3>
+      <p>الإعدادات ← <b class="btn">اللغة</b>: <b>العربية</b> (الأصل) أو <b>English</b>.</p>
+      <p>بالإنجليزية تنقلب الواجهة كلها من اليسار إلى اليمين. وصفحة الجوال تتبعها.</p>
+    </div>
+    <div class="card big">
+      <h3>المظهر</h3>
+      <p>الإعدادات ← <b class="btn">المظهر</b>: <b>داكن</b> (الأصل) أو <b>فاتح</b>.</p>
+      <p class="small muted">الداكن أريح للعين في غرفة معتمة.</p>
+    </div>
+  </div>
+  </div>
+
+  <div class="note teal voice">
+    <div class="ic"><svg class="i"><use href="#i-play"/></svg></div>
+    <div>
+      <span class="t">الدليل والفيديو داخل «شاشة»</span>
+      الإعدادات ← <b class="btn">الدليل والفيديو</b>: هذا الدليل صفحاتٍ تقلّبها بالريموت، وفيديو الشرح. باللغة التي اخترتها.
+    </div>
+  </div>
+
+  <div>
+  <h2>حول</h2>
+  <p>الإصدار، ومصدر بيانات التخطي، والمكتبات ورخصها. وفيه:</p>
+  <p class="maker">من صنع احمد نايفه — صُنع بحب لعائلتي</p>
+  <p class="small muted">وتطبيقات أخرى من المطوّر، لكل منها رمز QR. امسحه بكاميرا الجوال.</p>
+  <div class="apps">
+    <div class="app wide">
+      <div class="qrs"><figure><img src="qr/shadhra-site.svg" alt=""><figcaption>shadhra.app</figcaption></figure><figure><img src="qr/shadhra-play.svg" alt=""><figcaption>Google Play</figcaption></figure></div>
+      <div class="txt"><h3>شذرة <span class="en">Shadra</span></h3><p class="small muted">الرمز الأول لموقعها، والثاني لصفحتها في Google Play.</p><p class="url">shadhra.app</p></div>
+    </div>
+    <div class="app">
+      <div class="qrs"><figure><img src="qr/silah.svg" alt=""></figure></div>
+      <div class="txt"><h3>صِلة <span class="en">Silah</span></h3><p class="url">github.com/Ahmad-Nayfeh/silah</p></div>
+    </div>
+    <div class="app">
+      <div class="qrs"><figure><img src="qr/masarif.svg" alt=""></figure></div>
+      <div class="txt"><h3>مصاريف <span class="en">Masarif</span></h3><p class="url">github.com/Ahmad-Nayfeh/masarif</p></div>
+    </div>
+    <div class="app">
+      <div class="qrs"><figure><img src="qr/khatwa.svg" alt=""></figure></div>
+      <div class="txt"><h3>خطوة <span class="en">Khatwa</span></h3><p class="url">github.com/Ahmad-Nayfeh/khatwa</p></div>
+    </div>
+  </div>
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">15</span><span>الإعدادات</span></footer>
+</section>
+
+<!-- ============================================================ 16. TROUBLESHOOTING -->
+<section class="page help">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 7 · حل المشاكل</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-help"/></svg></div>
+    <div><div class="kicker">الجزء 7</div><h1>حل المشاكل</h1>
+      <p class="lead">سؤال قصير، وجواب قصير.</p></div>
+  </div>
+
+  <div class="qa">
+    <div class="q"><h3>المثبّت لا يصل إلى التلفاز</h3>
+      <p>التلفاز يعمل؟ الحاسوب على شبكة البيت نفسها؟ راجع العنوان (الخطوة 4) واكتبه من جديد.</p></div>
+    <div class="q"><h3>«رفضت الشاشة الاتصال»</h3>
+      <p>فعّل <b>USB debugging</b> (الخطوة 3)، ثم شغّل المثبّت من جديد.</p></div>
+    <div class="q"><h3>لم تظهر «<bdi>Allow USB debugging?</bdi>»</h3>
+      <p>أطفئ <b>USB debugging</b> ثم شغّله. شغّل المثبّت من جديد وراقب التلفاز.</p></div>
+    <div class="q"><h3>في التلفاز «<bdi>Wireless debugging</bdi>» فقط</h3>
+      <p>اضغط عليه، ثم <b class="btn">Pair device with pairing code</b>. اكتب في المثبّت العنوان والرمز (6 أرقام).</p></div>
+    <div class="q"><h3>نافذة المثبّت تُغلق فوراً (ويندوز)</h3>
+      <p>اضغط زر Windows واكتب <code dir="ltr">cmd</code> ثم <kbd>Enter</kbd>. اسحب ملف المثبّت إلى النافذة السوداء واضغط <kbd>Enter</kbd>. اقرأ الرسالة.</p></div>
+    <div class="q"><h3>ماك يمنع فتح المثبّت</h3>
+      <p><bdi>System Settings</bdi> ← <bdi>Privacy &amp; Security</bdi> ← <b class="btn">Open Anyway</b>.</p><p>وافعل مثله إن مُنعت أداة <code dir="ltr">adb</code>.</p></div>
+    <div class="q"><h3>«موقّعة بمفتاح آخر»</h3>
+      <p>على التلفاز نسخة قديمة. احذفها: <bdi>Settings</bdi> ← <bdi>Apps</bdi> ← شاشة ← <bdi>Uninstall</bdi>. ثم ثبّت من جديد.</p></div>
+    <div class="q"><h3>الفيديو لا يعمل</h3>
+      <p>جرّب فيديو آخر. إن لم يعمل أي فيديو فيوتيوب غيّر شيئاً: حدّث «شاشة» (الجزء 8).</p></div>
+    <div class="q"><h3>هل الحماية مطلقة؟</h3>
+      <p>لا. تكفي للاستعمال اليومي، لكن طرقاً متطرفة تتجاوزها، مثل إعادة ضبط التلفاز. انظر إلى <b>حالة الحماية</b> في الإعدادات من حين لآخر.</p></div>
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">16</span><span>حل المشاكل</span></footer>
+</section>
+
+<!-- ============================================================ 17. UPDATES -->
+<section class="page help">
+  <header class="hdr"><span class="brand"><img src="../../branding/logo-mark.svg" alt="">دليل شاشة</span><span class="part">الجزء 8 · التحديثات</span></header>
+  <div class="sec">
+    <div class="badge"><svg class="i"><use href="#i-refresh"/></svg></div>
+    <div><div class="kicker">الجزء 8</div><h1>التحديثات</h1>
+      <p class="lead">يوتيوب يغيّر أشياء أحياناً. عندها قد يتوقف التشغيل.</p></div>
+  </div>
+
+  <ol class="flow">
+    <li><b>يتوقف التشغيل.</b> <span class="muted">لا شيء معطّل عندك.</span></li>
+    <li><b>يُنشر إصلاح.</b> <span class="muted">نسخة جديدة من «شاشة».</span></li>
+    <li><b>تحدّث.</b> <span class="muted">بإحدى الطريقتين أدناه.</span></li>
+  </ol>
+
+  <div class="grid g2 gap-l mt-l">
+    <div class="card big">
+      <h3>الطريقة الأسهل</h3>
+      <p>الإعدادات ← <b class="btn">فحص التحديثات</b> ← <b class="btn">تنزيل وتثبيت</b>.</p>
+      <p>وافق في نافذة التلفاز.</p>
+      <p class="small muted">تعمل إن بُني «شاشة» بمفتاح التحديث. إن ظهر «فحص التحديثات يحتاج رمز قراءة» فاستعمل الطريقة الثانية.</p>
+    </div>
+    <div class="card big">
+      <h3>من الحاسوب</h3>
+      <p>نزّل <code dir="ltr">Shasha-Setup.zip</code> الجديد.</p>
+      <p>شغّل المثبّت كما في الخطوة 5.</p>
+      <p class="small muted">لا يسألك التلفاز عن السماح مرة ثانية.</p>
+    </div>
+  </div>
+  <div class="grid gap-l mt-l align-c" style="grid-template-columns: 1fr 100mm">
+    <div class="note teal">
+      <span class="t">بياناتك تبقى</span>
+      الملفات والاشتراكات والسجل لا تُمسح عند التحديث.
+    </div>
+    <img class="shot" src="img/updates_available.jpg" alt="يتوفر إصدار جديد">
+  </div>
+
+  <div class="closing">
+    <img src="../../branding/logo-lockup-on-light.svg" alt="شاشة">
+    <p>مشاهدة هادئة لكل البيت.</p>
+  </div>
+  <footer class="ftr"><span>دليل شاشة</span><span class="pg">17</span><span>التحديثات</span></footer>
+</section>
+
+</body>
+</html>

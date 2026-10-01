@@ -322,7 +322,7 @@ fun SchedulePanel(title: String, schedule: Schedule?, texts: TimeTexts, onSave: 
             ShashaButton(
                 stringResource(R.string.action_save),
                 // The same time twice means no window at all: that is "all day".
-                { onSave(if (from == until) null else Schedule(from, if (until == 0) 24 * 60 else until)) },
+                { onSave(Schedule.fromPicker(from, until)) },
                 icon = ShashaIcons.Check,
                 primary = true,
                 modifier = Modifier.testTag("schedule_save"),

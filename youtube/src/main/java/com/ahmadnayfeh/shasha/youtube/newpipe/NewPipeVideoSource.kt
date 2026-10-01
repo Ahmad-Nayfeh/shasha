@@ -4,6 +4,7 @@ import com.ahmadnayfeh.shasha.youtube.BuildConfig
 import com.ahmadnayfeh.shasha.youtube.ChannelDetails
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.ItemsPage
+import com.ahmadnayfeh.shasha.youtube.MAX_SUGGESTIONS
 import com.ahmadnayfeh.shasha.youtube.PageKey
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistPage
@@ -72,6 +73,18 @@ internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
             }
             failIfBroken(result.items, result.errors)
             ItemsPage(result.items.mapNotNull(ItemMapper::toSourceItem), pages.put(owner, result.nextPage))
+        }
+    }
+
+    override suspend fun suggestions(query: String, language: String): List<String> {
+        val q = query.trim()
+        if (q.isEmpty()) return emptyList()
+        return io {
+            // A new extractor per call (thread-safe); its localization only sets Accept-Language on this request.
+            val extractor = service.suggestionExtractor
+            extractor.forceLocalization(Localization(if (language.startsWith("en")) "en" else "ar"))
+            extractor.forceContentCountry(ContentCountry("SA"))
+            cleanSuggestions(extractor.suggestionList(q).orEmpty())
         }
     }
 
@@ -224,6 +237,16 @@ internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
         fun failIfBroken(items: List<*>, errors: List<Throwable>?) {
             if (items.isNotEmpty()) return
             errors.orEmpty().firstOrNull { it !is SearchExtractor.NothingFoundException }?.let { throw it }
+        }
+
+        /** Trimmed, one line each, no blanks or repeats (ignoring case), at most [MAX_SUGGESTIONS]. */
+        fun cleanSuggestions(raw: List<String?>): List<String> {
+            val seen = HashSet<String>()
+            return raw.asSequence()
+                .mapNotNull { it?.replace(Regex("\\s+"), " ")?.trim()?.takeIf(String::isNotEmpty) }
+                .filter { seen.add(it.lowercase()) }
+                .take(MAX_SUGGESTIONS)
+                .toList()
         }
 
         /** NPE reports a search without results (a typo, a narrow filter) as NothingFoundException. */

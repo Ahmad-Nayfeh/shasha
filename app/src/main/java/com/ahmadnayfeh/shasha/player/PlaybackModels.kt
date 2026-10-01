@@ -82,7 +82,8 @@ const val MAX_AUTO_HEIGHT = 1080
 /** Fixed qualities the menu may offer, best first; only those up to the quality cap ([qualityOptions]). */
 val QUALITY_LADDER = listOf(2160, 1440, 1080, 720, 480, 360)
 
-val PLAYBACK_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
+/** The speed menu, up to 4× (also what Settings offers as the default speed). */
+val PLAYBACK_SPEEDS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 3f, 4f)
 
 const val SEEK_STEP_MS = 10_000L
 

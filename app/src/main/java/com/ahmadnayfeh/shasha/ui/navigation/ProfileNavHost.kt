@@ -12,6 +12,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +46,8 @@ import com.ahmadnayfeh.shasha.ui.parental.ParentUnlock
 import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
 import com.ahmadnayfeh.shasha.ui.screens.channel.ChannelRoute
 import com.ahmadnayfeh.shasha.ui.screens.diagnostics.DiagnosticsRoute
+import com.ahmadnayfeh.shasha.ui.screens.guide.ExplainerRoute
+import com.ahmadnayfeh.shasha.ui.screens.guide.GuideRoute
 import com.ahmadnayfeh.shasha.ui.screens.home.HomeRoute
 import com.ahmadnayfeh.shasha.ui.screens.kids.AllowedChannelsRoute
 import com.ahmadnayfeh.shasha.ui.screens.kids.KidsHomeRoute
@@ -144,13 +147,15 @@ fun ProfileNavHost(
         if (lock != null) KeepLockedVideoOnScreen(lock.lock, profile.id, nav)
         // SPEC §5: links from the phone, once the policy allowed them for this profile, open here.
         FollowNavigationRequests(nav, profile.id)
+        // The remote's SEARCH key: the search tab, listening (profiles with search only; never over a locked video).
+        if (!kids) FollowVoiceSearchKey(nav, lock)
     }
     if (kids) {
         graph()
     } else {
         val container = LocalContext.current.appContainer
         // One parent unlock for this adult session (its ViewModel store): the settings and the card menus share it.
-        val unlock = containerViewModel { ParentUnlock(it.parentPin) }
+        val unlock = containerViewModel { ParentUnlock(it.parentPin, unlockMs = { it.behavior.values.value.parentUnlockMinutes * 60_000L }) }
         val parental = remember(unlock) { ParentalActions(container.profiles.observeAll(), ParentalLists(container.profiles), unlock) }
         CompositionLocalProvider(LocalParentUnlock provides unlock) {
             CardMenuHost(
@@ -222,6 +227,26 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
     }
 }
 
+@Composable
+private fun FollowVoiceSearchKey(nav: NavHostController, lock: LockController?) {
+    val requests = LocalContext.current.appContainer.voiceSearchRequests
+    LaunchedEffect(requests, nav) {
+        requests.pending.collect { at ->
+            if (at == null) return@collect
+            // SPEC §4: nothing but the locked video. And a request left over from a profile without search (or one
+            // nobody took in time) never switches tabs later.
+            if (lock?.lock?.value != null || !requests.isFresh(at)) {
+                requests.consume()
+                return@collect
+            }
+            runCatching {
+                nav.getBackStackEntry<Screen.Main>().savedStateHandle[SELECT_TAB] = Tab.SEARCH.name
+                nav.popBackStack(Screen.Main, inclusive = false)
+            }
+        }
+    }
+}
+
 /** Back to the rail's home tab, whatever was opened on the way (a channel, a playlist). */
 private fun NavHostController.showHome() {
     getBackStackEntry<Screen.Main>().savedStateHandle[SELECT_TAB] = Tab.HOME.name
@@ -254,6 +279,12 @@ private fun NavGraphBuilder.adultDestinations(nav: NavHostController, actions: B
     composable<Screen.Protection> { ProtectionRoute() }
     composable<Screen.RemoteControl> { RemoteRoute() }
     composable<Screen.Backup> { BackupRoute() }
+    composable<Screen.Guide> { GuideRoute(onBack = dropUnlessResumed { nav.popBackStack() }) }
+    composable<Screen.Explainer>(
+        // The video is on a SurfaceView, which cannot fade or scale: leave it with a quick cut (like the player).
+        exitTransition = { fadeOut(tween(120)) },
+        popExitTransition = { fadeOut(tween(120)) },
+    ) { ExplainerRoute(onBack = dropUnlessResumed { nav.popBackStack() }) }
 }
 
 @Composable
@@ -300,4 +331,6 @@ private fun settingsActions(nav: NavHostController) = SettingsActions(
     openRemote = { nav.navigate(Screen.RemoteControl) { launchSingleTop = true } },
     openBackup = { nav.navigate(Screen.Backup) { launchSingleTop = true } },
     openUpdates = { nav.navigate(Screen.Updates) { launchSingleTop = true } },
+    openGuide = { nav.navigate(Screen.Guide) { launchSingleTop = true } },
+    openExplainer = { nav.navigate(Screen.Explainer) { launchSingleTop = true } },
 )

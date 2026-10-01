@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.data.ActiveProfile
+import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.OverridesRepository
 import com.ahmadnayfeh.shasha.data.ParentPinRepository
 import com.ahmadnayfeh.shasha.data.PlaybackLockStore
@@ -67,7 +68,9 @@ class RootViewModelTest {
     private lateinit var stores: TestDataStores
     private val scope = testScope()
     private val clock = MutableClock(instantAt("2026-09-28T12:00"))
-    private val engine = PolicyEngine(clock)
+    /** Settings → «رمز الوالدين»: the tests of the optional adult PIN turn it off. */
+    private val behavior = MutableStateFlow(Behavior())
+    private val engine = PolicyEngine(clock) { behavior.value.policyConfig() }
     private val viewModels = ViewModelStore()
 
     private lateinit var profiles: ProfileRepository
@@ -100,7 +103,7 @@ class RootViewModelTest {
             engine, active, profiles, session, PlaybackLockStore(store, scope), pin, VideoLookup { LookedUpVideo(clip(it), null) }, scope,
             childLetOut = letOut,
         )
-        deps = RootDeps(profiles, active, pin, gate, session, phoneChoices = choices, childLetOut = letOut)
+        deps = RootDeps(profiles, active, pin, gate, session, phoneChoices = choices, childLetOut = letOut, behavior = behavior)
         active.awaitProfile()
         Unit
     }
@@ -181,6 +184,43 @@ class RootViewModelTest {
         assertThat(wait { vm.choose(adult, PIN) }).isEqualTo(PinCheck.Accepted)
         vm.shows(RootScreen.Browse)
         vm.isIn(adult)
+    }
+
+    @Test
+    fun adultEntryPinOff_theAdultProfileOpensWithoutThePin_butLeavingAChildStillNeedsIt() {
+        withPin()
+        withChild()
+        behavior.value = Behavior(adultEntryPin = false)
+        val vm = root()
+        vm.shows(RootScreen.Picker(PickerMode.START))
+        assertThat(vm.needsPin(adult)).isFalse()
+        assertThat(wait { vm.choose(adult, pin = null) }).isEqualTo(PinCheck.Accepted)
+        vm.shows(RootScreen.Browse)
+        vm.isIn(adult)
+
+        // The same rule as the phone's switch (PolicyGate): from the child, the adult needs the PIN (leaving a child).
+        assertThat(wait { gate.switchProfile(child.id, pin = null) }).isEqualTo(SwitchResult.Switched)
+        vm.isIn(child)
+        assertThat(gate.switchNeedsPin(adult)).isTrue()
+        assertThat(wait { gate.switchProfile(adult.id, pin = null) }).isEqualTo(SwitchResult.PinRequired)
+        assertThat(wait { vm.confirmExit(PIN) }).isEqualTo(PinCheck.Accepted)
+        assertThat(wait { vm.choose(adult, pin = null) }).isEqualTo(PinCheck.Accepted)
+        vm.isIn(adult)
+    }
+
+    @Test
+    fun adultEntryPinOn_theAdultProfileAsks_onTheTvAndThroughTheGate() {
+        withPin()
+        withChild()
+        assertThat(wait { gate.switchProfile(child.id, pin = null) }).isEqualTo(SwitchResult.Switched)
+        wait { active.profile.first { it?.id == child.id } }
+        assertThat(gate.switchNeedsPin(adult)).isTrue()
+        behavior.value = Behavior(adultEntryPin = false)
+        // Leaving the child still needs it, whatever the setting.
+        assertThat(gate.switchNeedsPin(adult)).isTrue()
+        behavior.value = Behavior()
+        assertThat(wait { gate.switchProfile(adult.id, pin = null) }).isEqualTo(SwitchResult.PinRequired)
+        assertThat(wait { gate.switchProfile(adult.id, pin = PIN) }).isEqualTo(SwitchResult.Switched)
     }
 
     @Test
@@ -331,6 +371,30 @@ class RootViewModelTest {
         vm.isIn(child)
         // Leaving it still takes the parent PIN.
         assertThat(vm.needsPin(adult)).isTrue()
+    }
+
+    @Test
+    fun adultEntryPinOff_thePhonesSwitchToTheAdult_opensIt_withoutThePickerFirst() {
+        withPin()
+        withChild()
+        behavior.value = Behavior(adultEntryPin = false)
+        val vm = root()
+        vm.shows(RootScreen.Picker(PickerMode.START))
+        assertThat(wait { vm.choose(child, pin = null) }).isEqualTo(PinCheck.Accepted)
+        vm.isIn(child)
+        vm.shows(RootScreen.Browse)
+        // The phone switched the TV to the adult (leaving the child: with the PIN, on the phone). Nobody needs a PIN to
+        // enter the adult profile now, so the TV does not ask «من يشاهد الآن؟» first.
+        assertThat(wait { gate.switchProfile(adult.id, PIN) }).isEqualTo(SwitchResult.Switched)
+        vm.isIn(adult)
+        wait { kotlinx.coroutines.delay(200) }
+        vm.shows(RootScreen.Browse)
+
+        // On the picker (the relock, the start), the adult the phone chose opens there too.
+        vm.openPicker()
+        phoneChooses(adult.id)
+        vm.shows(RootScreen.Browse)
+        vm.isIn(adult)
     }
 
     @Test

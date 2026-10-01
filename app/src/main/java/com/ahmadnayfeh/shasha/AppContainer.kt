@@ -7,6 +7,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.work.WorkManager
 import com.ahmadnayfeh.shasha.backup.BackupManager
 import com.ahmadnayfeh.shasha.data.ActiveProfile
+import com.ahmadnayfeh.shasha.data.AppLanguage
+import com.ahmadnayfeh.shasha.data.AppearanceState
+import com.ahmadnayfeh.shasha.data.BehaviorSettings
 import com.ahmadnayfeh.shasha.data.FeedRepository
 import com.ahmadnayfeh.shasha.data.NetworkStatus
 import com.ahmadnayfeh.shasha.data.OverridesRepository
@@ -37,19 +40,25 @@ import com.ahmadnayfeh.shasha.policy.VideoLookup
 import com.ahmadnayfeh.shasha.policy.spendingTime
 import com.ahmadnayfeh.shasha.remote.NsdAdvertiser
 import com.ahmadnayfeh.shasha.remote.NsdAnnouncer
+import com.ahmadnayfeh.shasha.remote.PhoneParental
 import com.ahmadnayfeh.shasha.remote.PhonePin
+import com.ahmadnayfeh.shasha.remote.PhoneSettings
 import com.ahmadnayfeh.shasha.remote.PhoneProfileChoices
+import com.ahmadnayfeh.shasha.remote.RemoteRevision
 import com.ahmadnayfeh.shasha.remote.RemoteRuntime
 import com.ahmadnayfeh.shasha.remote.RemoteSettings
 import com.ahmadnayfeh.shasha.remote.RemoteTexts
 import com.ahmadnayfeh.shasha.remote.TvDisplay
 import com.ahmadnayfeh.shasha.remote.TvRemoteController
+import com.ahmadnayfeh.shasha.search.SearchHistory
+import com.ahmadnayfeh.shasha.search.VoiceSearchRequests
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockClient
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockRepository
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockSettings
 import com.ahmadnayfeh.shasha.ui.navigation.NavigationRequests
 import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
 import com.ahmadnayfeh.shasha.ui.screens.kids.KidsFeed
+import com.ahmadnayfeh.shasha.ui.theme.AppLocale
 import com.ahmadnayfeh.shasha.update.ApkInspector
 import com.ahmadnayfeh.shasha.update.GitHubReleases
 import com.ahmadnayfeh.shasha.update.InstallEvents
@@ -67,7 +76,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import java.io.File
 import java.time.Clock
@@ -142,7 +153,28 @@ class AppContainer(context: Context) {
     /** The TV's clock, in the TV's current time zone. */
     val clock: Clock = DeviceClock
 
-    val policyEngine: PolicyEngine by lazy { PolicyEngine(clock) }
+    private val behaviorStore: DataStore<Preferences> by lazy { BehaviorSettings.createStore(appContext) }
+
+    /**
+     * The parent's adjustable behaviour (Settings, behind the parent PIN): «الوضع الجاد», the time warnings, the
+     * PIN's brake, the player's timings. Every consumer reads it when it acts, so a change applies at once.
+     */
+    val behavior: BehaviorSettings by lazy { BehaviorSettings(behaviorStore, appScope) }
+
+    /** «المظهر واللغة» on screen: the activity and the services read the language before they draw anything. */
+    val appearance: AppearanceState by lazy { AppearanceState(behavior, appScope) }
+
+    val policyEngine: PolicyEngine by lazy { PolicyEngine(clock) { behavior.policyConfig() } }
+
+    // ---- Search (v1.1): recent searches per profile, and the remote's SEARCH key. ----------------------------
+
+    private val searchStore: DataStore<Preferences> by lazy { SearchHistory.createStore(appContext) }
+
+    /** Each profile's recent searches (only profiles with search keep any). */
+    val searchHistory: SearchHistory by lazy { SearchHistory(searchStore) }
+
+    /** The remote's SEARCH key: the adult profile opens the search tab listening. */
+    val voiceSearchRequests: VoiceSearchRequests = VoiceSearchRequests()
 
     private val policyStore: DataStore<Preferences> by lazy { PolicyStore.create(appContext) }
 
@@ -153,11 +185,19 @@ class AppContainer(context: Context) {
      * ShashaApp does that off the main thread at start.
      */
     val currentProfile: ActiveProfile by lazy {
-        ActiveProfile.create(profiles, policyStore, appScope, ownerName = appContext.getString(R.string.profile_owner_default_name))
+        ActiveProfile.create(
+            profiles,
+            policyStore,
+            appScope,
+            // The owner's first name is written once, in the language the app shows then.
+            ownerName = AppLocale.localize(appContext, appearance.current().language).getString(R.string.profile_owner_default_name),
+        )
     }
 
     /** Lockouts count down on the TV's uptime: setting its clock forward does not end one. */
-    val parentPin: ParentPinRepository by lazy { ParentPinRepository(policyStore, clock, uptime = DeviceUptime.of(appContext)) }
+    val parentPin: ParentPinRepository by lazy {
+        ParentPinRepository(policyStore, clock, uptime = DeviceUptime.of(appContext), lockout = { behavior.pinLockout() })
+    }
 
     val overrides: OverridesRepository by lazy { OverridesRepository(policyStore) }
 
@@ -180,6 +220,7 @@ class AppContainer(context: Context) {
             pinLockMillis = { parentPin.remainingLockMillis() },
             surrenders = { event -> usage.recordSurrender(event) },
             scope = appScope,
+            seriousMode = behavior.values.map { it.seriousMode }.distinctUntilChanged(),
         )
     }
 
@@ -232,6 +273,12 @@ class AppContainer(context: Context) {
 
     // ---- The phone remote (SPEC §5) and the manual backup. ---------------------------------------------------
 
+    /**
+     * The phone's page is Arabic (remote/web): its answers (labels, refusals, errors) are read in Arabic whatever language
+     * the TV shows.
+     */
+    private val phoneResources by lazy { AppLocale.localize(appContext, AppLanguage.ARABIC).resources }
+
     /** The player on screen, as the phone remote sees and drives it. */
     val playerHub: PlayerHub = PlayerHub()
 
@@ -252,6 +299,7 @@ class AppContainer(context: Context) {
                 RemoteSettings.backupSection(remoteStore),
                 SponsorBlockSettings.backupSection(sponsorStore),
                 PlaybackSettings.backupSection(playbackStore),
+                BehaviorSettings.backupSection(behaviorStore),
             ),
             clock = clock,
             appVersion = BuildConfig.VERSION_NAME,
@@ -268,10 +316,30 @@ class AppContainer(context: Context) {
      * The parent PIN as the phone checks it: its own attempt count, saved like the TV's (a restart grants no new
      * guesses), never the TV's (owner decision: guesses on the TV never close the parent's phone route).
      */
-    val phonePin: PhonePin by lazy { PhonePin(policyStore, clock, uptime = DeviceUptime.of(appContext)) }
+    val phonePin: PhonePin by lazy { PhonePin(policyStore, clock, uptime = DeviceUptime.of(appContext), lockout = { behavior.pinLockout() }) }
 
     /** The profile the phone chose («اختيار الملف»), after PolicyGate allowed it: the TV's picker follows it. */
     val phoneProfileChoices: PhoneProfileChoices = PhoneProfileChoices()
+
+    /**
+     * What makes the phone pages read their parent section again: every setting, the profiles (rules and lists) and the
+     * subscriptions, changed from any phone or from the TV itself.
+     */
+    private val remoteRevision: RemoteRevision by lazy {
+        RemoteRevision(
+            CoroutineScope(appScope.coroutineContext + Dispatchers.Default),
+            listOf(
+                behavior.values,
+                sponsorBlockSettings.categories,
+                playbackSettings.maxQuality,
+                remoteSettings.port,
+                profiles.observeAll(),
+                // A switch changes which profile is on the TV (it cannot be deleted then).
+                currentProfile.id,
+                subscriptions.observe(),
+            ),
+        )
+    }
 
     /**
      * The phone remote's server and its controller. [com.ahmadnayfeh.shasha.remote.RemoteService] starts and
@@ -291,10 +359,38 @@ class AppContainer(context: Context) {
             player = playerHub,
             display = TvDisplay(appContext, appVisibility, profileScreensShown, navigationRequests),
             playQueues = playQueues,
-            texts = RemoteTexts(appContext.resources),
+            texts = RemoteTexts(phoneResources),
+            seriousMode = { behavior.policyConfig().seriousMode },
             profileChoices = phoneProfileChoices,
+            settings = PhoneSettings(
+                behavior = behavior,
+                sponsorBlock = sponsorBlockSettings,
+                playback = playbackSettings,
+                remote = remoteSettings,
+                resources = phoneResources,
+                scope = appScope,
+                restartRemote = { remote.restart() },
+                portAvailable = { port -> remote.portAvailable(port) },
+            ),
+            parental = PhoneParental(
+                profiles = profiles,
+                lists = ParentalLists(profiles),
+                usage = usage,
+                engine = policyEngine,
+                zone = { clock.zone },
+                source = videoSource,
+                resources = phoneResources,
+                errors = RemoteTexts(phoneResources)::sourceError,
+                currentId = { currentProfile.awaitProfile().id },
+            ),
+            revision = { remoteRevision.value },
+            movingTo = { remote.movingTo.value },
+            adultEntryPin = { behavior.policyConfig().adultEntryNeedsPin },
         )
-        RemoteRuntime(remoteSettings, controller, NsdAnnouncer(NsdAdvertiser(appContext)), phonePin = phonePin).also { runtime ->
+        RemoteRuntime(
+            remoteSettings, controller, NsdAnnouncer(NsdAdvertiser(appContext)), phonePin = phonePin,
+            pinFailures = { behavior.pinLockout().maxFailures },
+        ).also { runtime ->
             // A new parent PIN logs every phone out of the parent section.
             appScope.launch { parentPin.changes.collect { runtime.revokeParentSessions() } }
         }
@@ -339,6 +435,11 @@ class AppContainer(context: Context) {
     /** The highest quality "Auto" reaches (1080p unless Settings changed it); the player reads it for each video. */
     val playbackSettings: PlaybackSettings by lazy { PlaybackSettings(playbackStore, appScope) }
 
+    /** Waits (a moment at most) for the parent's settings to be read. */
+    suspend fun awaitSettings() {
+        withTimeoutOrNull(SETTINGS_WAIT_MS) { behavior.awaitLoaded() }
+    }
+
     /**
      * Starts the session state and the usage tracker ([foreground]: [spendingTime], the app visible and a
      * profile's screens shown). Main thread; the current profile must have been created (see [currentProfile]).
@@ -363,6 +464,7 @@ class AppContainer(context: Context) {
 
     private companion object {
         const val TAG = "AppContainer"
+        const val SETTINGS_WAIT_MS = 3_000L
         const val USER_AGENT = "Shasha/${BuildConfig.VERSION_NAME} (Android TV)"
     }
 }

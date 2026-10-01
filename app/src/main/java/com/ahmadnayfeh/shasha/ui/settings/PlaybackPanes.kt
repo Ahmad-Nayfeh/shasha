@@ -19,7 +19,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Icon
@@ -30,6 +29,7 @@ import com.ahmadnayfeh.shasha.data.PlaybackSettings
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
 /**
  * «فئات SponsorBlock» (SPEC §1, §7): each category with its Arabic name, a line about it and its switch (OK flips
@@ -70,7 +70,7 @@ internal fun SponsorBlockPane(state: SettingsHubState, actions: SettingsHubActio
                 },
                 modifier = Modifier.paneItem("hub_sponsor_reset"),
                 icon = ShashaIcons.Refresh,
-                body = SponsorCategory.DEFAULTS.map { stringResource(it.label) }.joinToString("، "),
+                body = SponsorCategory.DEFAULTS.map { stringResource(it.label) }.joinToString(stringResource(R.string.list_separator)),
                 trailing = {},
             )
         }
@@ -89,7 +89,7 @@ internal fun SponsorBlockAttribution(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodySmall.copy(textDirection = TextDirection.Ltr),
             color = ShashaColors.Muted.copy(alpha = 0.85f),
             // Hangs from the right like the Arabic above it, read left to right.
-            textAlign = TextAlign.Right,
+            textAlign = StartTextAlign,
             modifier = Modifier.fillMaxWidth().padding(start = 28.dp, top = 4.dp),
         )
     }

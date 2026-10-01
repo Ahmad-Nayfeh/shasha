@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Icon
@@ -49,6 +50,7 @@ fun ShashaTextField(
     maxLength: Int = 40,
     imeAction: ImeAction = ImeAction.Done,
     onDone: () -> Unit = {},
+    keyboardType: KeyboardType = KeyboardType.Text,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
@@ -60,9 +62,9 @@ fun ShashaTextField(
         value = value,
         onValueChange = { onValueChange(it.take(maxLength)) },
         singleLine = true,
-        textStyle = MaterialTheme.typography.titleMedium.copy(color = ShashaColors.Text, textDirection = TextDirection.ContentOrRtl),
+        textStyle = MaterialTheme.typography.titleMedium.copy(color = ShashaColors.Text, textDirection = TextDirection.Content),
         cursorBrush = SolidColor(accent.bright),
-        keyboardOptions = KeyboardOptions(imeAction = imeAction, autoCorrectEnabled = false, showKeyboardOnFocus = false),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction, autoCorrectEnabled = false, showKeyboardOnFocus = false),
         keyboardActions = KeyboardActions(onAny = {
             keyboard?.hide()
             onDone()

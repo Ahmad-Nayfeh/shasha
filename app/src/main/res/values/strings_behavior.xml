@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- v1.1: the parent's adjustable behaviour (Settings, behind the parent PIN). -->
+
+    <!-- Counted seconds (ONE, TWO, FEW, MANY, OTHER), and the same after «لمدة». -->
+    <string-array name="count_seconds">
+        <item>ثانية واحدة</item>
+        <item>ثانيتان</item>
+        <item>%1$s ثوانٍ</item>
+        <item>%1$s ثانية</item>
+        <item>%1$s ثانية</item>
+    </string-array>
+    <string-array name="count_seconds_after">
+        <item>ثانية واحدة</item>
+        <item>ثانيتين</item>
+        <item>%1$s ثوانٍ</item>
+        <item>%1$s ثانية</item>
+        <item>%1$s ثانية</item>
+    </string-array>
+    <string-array name="count_phrases">
+        <item>عبارة واحدة</item>
+        <item>عبارتان</item>
+        <item>%1$s عبارات</item>
+        <item>%1$s عبارة</item>
+        <item>%1$s عبارة</item>
+    </string-array>
+
+    <string name="lock_adult_no_escape">الوضع الجاد: هذا الفيديو يُشاهَد حتى نهايته. يُنهيه الأب من قسم الأب في الجوال.</string>
+
+    <!-- Shared by the panes. -->
+    <string name="behavior_default_tag">الأصلي</string>
+    <string name="behavior_option_default">%1$s (الأصلي)</string>
+    <string name="behavior_reset_one">إرجاع الإعداد الأصلي</string>
+    <string name="action_done">تم</string>
+    <string name="behavior_reset_pane_body">يعيد إعدادات هذا القسم كما كانت عند التثبيت</string>
+    <string name="behavior_off">متوقف</string>
+
+    <!-- «الوضع الجاد». -->
+    <string name="hub_serious">الوضع الجاد</string>
+    <string name="hub_serious_summary">الفيديو الذي يبدأ يُشاهَد حتى نهايته</string>
+    <string name="serious_switch">الوضع الجاد</string>
+    <string name="serious_switch_body">الطفل يخرج من الفيديو برمز الوالدين، والكبير بالضغط المطوّل ثم كتابة عبارة. عند الإيقاف يخرج الجميع بزر «رجوع».</string>
+    <string name="serious_off_note">الوضع الجاد متوقف: زر «رجوع» يُخرج من أي فيديو في كل الملفات.</string>
+    <string name="serious_escape">السماح للكبير بالخروج قبل النهاية</string>
+    <string name="serious_escape_body">بالضغط المطوّل ثم كتابة عبارة، ويُسجَّل استسلاماً. عند الإيقاف لا يُنهى الفيديو قبل نهايته إلا من قسم الأب في الجوال.</string>
+    <string name="serious_hold">مدة الضغط المطوّل</string>
+    <string name="serious_hold_body">كم ثانية يُضغط على «رجوع» أو «&#x2068;OK&#x2069;» قبل ظهور العبارة</string>
+    <string name="serious_phrase_section">عبارة الخروج</string>
+    <string name="serious_phrase_random">عبارة عشوائية من القائمة</string>
+    <string name="serious_phrase_custom">عبارتي الخاصة</string>
+    <string name="serious_phrase_custom_empty">لم تُكتب بعد: اضغط لكتابتها</string>
+    <string name="serious_phrases_edit">قائمة العبارات</string>
+    <string name="serious_phrases_edit_body">إضافة عبارة أو حذفها</string>
+    <string name="serious_custom_edit">كتابة عبارتي</string>
+    <string name="serious_phrases_title">عبارات الخروج</string>
+    <string name="serious_phrases_add">إضافة عبارة</string>
+    <string name="serious_phrases_remove">حذف</string>
+    <string name="serious_phrases_note">حروف عربية ومسافات فقط، حتى 30 حرفاً: تُكتب بلوحة المفاتيح التي تظهر عند الخروج.</string>
+    <string name="serious_phrases_last">تبقى في القائمة عبارة واحدة على الأقل.</string>
+    <string name="serious_phrases_reset">إرجاع العبارات العشر الأصلية</string>
+    <string name="serious_phrase_hint">اكتب العبارة</string>
+    <string name="serious_phrase_invalid">لا تُكتب هذه العبارة بلوحة الخروج: حروف عربية ومسافات فقط، حتى 30 حرفاً.</string>
+    <string name="serious_phrase_exists">هذه العبارة في القائمة من قبل.</string>
+    <string name="serious_skip">التخطي المسموح</string>
+    <string name="serious_end_section">متى يُعدّ الفيديو منتهياً وحده</string>
+    <string name="serious_skip_body">ما يُتخطى بالتقديم حتى هذا القدر لا يمنع اعتبار الفيديو منتهياً وحده</string>
+    <string name="serious_played">أو مشاهدة جزء من الفيديو</string>
+    <string name="serious_played_body">وينتهي الفيديو وحده أيضاً إذا شوهد هذا القدر مما بقي منه</string>
+    <string name="serious_played_all">الفيديو كله</string>
+    <string name="serious_skip_none">بلا تخطٍّ</string>
+
+    <!-- «التشغيل والتنبيهات». -->
+    <string name="hub_playback">التشغيل والتنبيهات</string>
+    <string name="hub_playback_summary">تنبيه الوقت، والسرعة، والتقديم، والعدّ التنازلي</string>
+    <string name="playback_section_time">الوقت والتنبيهات</string>
+    <string name="playback_warning">التنبيه قبل انتهاء الوقت</string>
+    <string name="playback_warning_body">تنبيه هادئ قبل أن تتوقف المشاهدة</string>
+    <string name="playback_warning_value">قبل %1$s</string>
+    <string name="playback_banner">مدة ظهور التنبيه</string>
+    <string name="playback_banner_body">كم يبقى التنبيه على الشاشة</string>
+    <string name="playback_extra">خيارات الوقت الإضافي</string>
+    <string name="playback_extra_body">ما يظهر بعد الرمز على شاشة «انتهى الوقت»، مع «بقية اليوم»</string>
+    <string name="playback_extra_title">خيارات الوقت الإضافي</string>
+    <string name="playback_extra_note">اختر من خيار واحد إلى أربعة.</string>
+    <string name="playback_section_player">المشغّل</string>
+    <string name="playback_speed">السرعة عند بدء الفيديو</string>
+    <string name="playback_speed_body">وتبقى قائمة السرعة في المشغّل حتى 4×</string>
+    <string name="playback_seek">خطوة التقديم والإرجاع</string>
+    <string name="playback_seek_body">كم يتقدّم الفيديو أو يرجع بضغطة يمين أو يسار</string>
+    <string name="playback_hide">إخفاء أزرار التحكم</string>
+    <string name="playback_hide_body">بعد كم ثانية بلا ضغط تختفي الأزرار أثناء التشغيل</string>
+    <string name="playback_up_next">العدّ قبل الفيديو التالي</string>
+    <string name="playback_up_next_body">داخل قائمة التشغيل. عند الإيقاف ينتظر التالي ضغطة «تشغيل الآن»</string>
+    <string name="playback_kids_home">عودة الطفل إلى الرئيسية</string>
+    <string name="playback_kids_home_body">بعد انتهاء فيديو الطفل: كم ثانية قبل أن تعود الشاشة إلى رئيسيته وحدها</string>
+    <string name="playback_section_sponsor">رسائل التخطي (&#x2068;SponsorBlock&#x2069;)</string>
+    <string name="playback_undo">مهلة «تراجع عن التخطي»</string>
+    <string name="playback_undo_body">في ملف الكبار: كم تبقى فرصة التراجع بعد كل تخطٍّ</string>
+    <string name="playback_notice">مدة رسالة التخطي</string>
+    <string name="playback_notice_body">في ملف الطفل: كم تبقى رسالة «تم تخطي»</string>
+    <string name="playback_section_kids">الأطفال</string>
+    <string name="playback_shorts">حدّ الفيديو القصير (&#x2068;Shorts&#x2069;)</string>
+    <string name="playback_shorts_body">ما كانت مدته هذا القدر أو أقل يُعدّ قصيراً ويُخفى حيث تُخفى القصيرة</string>
+    <string name="playback_shorts_value">حتى %1$s</string>
+    <string name="playback_section_search">البحث</string>
+    <string name="playback_voice_language">لغة البحث الصوتي</string>
+    <string name="playback_voice_language_body">اللغة التي يسمعها الميكروفون في شاشة البحث</string>
+    <string name="voice_language_ar">العربية</string>
+    <string name="voice_language_en">الإنجليزية</string>
+
+    <!-- The parent PIN's settings (in «الملفات ورمز الوالدين»). -->
+    <string name="pin_settings_failures">المحاولات قبل الإيقاف</string>
+    <string name="pin_settings_failures_body">كم رمزاً خاطئاً متتالياً قبل أن يتوقف قبول الرمز</string>
+    <string name="pin_settings_lockout">مدة الإيقاف الأولى</string>
+    <string name="pin_settings_lockout_body">وتطول كل مرة حتى يُدخل الرمز الصحيح: ثلاثة أضعافها، ثم 12 ضعفاً، ثم 48 ضعفاً</string>
+    <string name="pin_settings_unlock">بقاء الإعدادات مفتوحة</string>
+    <string name="pin_settings_unlock_body">بعد إدخال الرمز في ملفك، قبل أن يُطلب من جديد</string>
+    <string name="pin_settings_relock">طلب الرمز بعد مغادرة التطبيق</string>
+    <string name="pin_settings_relock_body">إذا غاب التطبيق عن الشاشة هذا القدر يُسأل من يشاهد من جديد</string>
+    <string name="pin_settings_adult_entry">طلب رمز الوالدين عند الدخول إلى ملف الكبار</string>
+    <string name="pin_settings_adult_entry_body">عند الإيقاف يُفتح ملف الكبار دون رمز، من التلفاز ومن الجوال. تبقى الإعدادات مقفولة بالرمز دائماً، فلا يستطيع طفل تعطيل الحماية، والخروج من ملف طفل يحتاج الرمز كما هو.</string>
+    <string name="pin_settings_adult_entry_warning">تنبيه: ما دام هذا متوقفاً يستطيع الأطفال الدخول إلى ملف الكبار ومشاهدة ما فيه.</string>
+    <string name="hub_pin_note_dynamic">رمز الوالدين يفتح ملفك وهذه الإعدادات، ويُخرج الأطفال من ملفاتهم، ويمنح وقتاً إضافياً. و%1$s خاطئة متتالية توقفه من %2$s حتى %3$s.</string>
+    <string-array name="count_attempts">
+        <item>محاولة واحدة</item>
+        <item>محاولتان</item>
+        <item>%1$s محاولات</item>
+        <item>%1$s محاولة</item>
+        <item>%1$s محاولة</item>
+    </string-array>
+
+    <!-- The phone remote's port (in «التحكم من الجوال»). -->
+    <string name="remote_port">منفذ الخادم</string>
+    <string name="remote_port_body">من 1024 حتى 65535. بعد تغييره يعمل الخادم عليه من جديد، فامسح رمز الاقتران مرة أخرى</string>
+    <string name="remote_port_hint">رقم المنفذ</string>
+    <string name="remote_port_invalid">المنفذ رقم من 1024 إلى 65535.</string>
+
+    <!-- A profile's comments switch (profile editor). -->
+    <string name="profile_hide_comments">إخفاء التعليقات</string>
+    <string name="profile_comments_child_note">التعليقات مخفية دائماً في ملف الطفل.</string>
+
+    <!-- «إعادة الضبط». -->
+    <string name="hub_reset">إعادة الضبط</string>
+    <string name="hub_reset_summary">إرجاع كل الإعدادات إلى وضعها الأصلي</string>
+    <string name="reset_all">إرجاع كل الإعدادات إلى وضعها الأصلي</string>
+    <string name="reset_all_body">الوضع الجاد، والتنبيهات، والتشغيل، ورمز الوالدين وقيوده، وفئات التخطي، والجودة، ومنفذ الخادم، واللغة والمظهر</string>
+    <string name="reset_keeps">لا يُحذف شيء: تبقى الملفات، ورمز الوالدين نفسه، والاشتراكات، والسجل، وقوائم السماح والحظر، والحصص والجداول.</string>
+    <string name="reset_confirm_title">إرجاع كل الإعدادات؟</string>
+    <string name="reset_confirm_body">تعود كل الإعدادات إلى ما كانت عليه عند التثبيت. الملفات والرمز والاشتراكات والسجل والقوائم تبقى كما هي.</string>
+    <string name="reset_confirm_action">إرجاع</string>
+    <string name="reset_done">عادت كل الإعدادات إلى وضعها الأصلي.</string>
+</resources>

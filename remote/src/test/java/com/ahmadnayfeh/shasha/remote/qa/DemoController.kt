@@ -16,21 +16,36 @@ import com.ahmadnayfeh.shasha.remote.RemoteRejection
 import com.ahmadnayfeh.shasha.remote.RemoteResult
 import com.ahmadnayfeh.shasha.remote.RemoteSessionState
 import com.ahmadnayfeh.shasha.remote.RemoteStatus
+import com.ahmadnayfeh.shasha.remote.RemoteBlocklist
+import com.ahmadnayfeh.shasha.remote.RemoteChannelUsage
+import com.ahmadnayfeh.shasha.remote.RemoteProfileDetails
+import com.ahmadnayfeh.shasha.remote.RemoteProfilesPage
+import com.ahmadnayfeh.shasha.remote.RemoteSettingsPage
+import com.ahmadnayfeh.shasha.remote.RemoteSettingsResult
+import com.ahmadnayfeh.shasha.remote.RemoteStats
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 
 /**
  * A stateful stand-in for the TV, used to drive and screenshot the phone page (see QaServer.kt).
  * Invented content only. Parent PIN and adult PIN: 1234. Every call is reported to [log].
  */
-internal class DemoController(private val log: (String) -> Unit) : RemoteController {
+internal class DemoController(
+    private val log: (String) -> Unit,
+    /** The server moves to this port (a settings change from the page). */
+    private val movePort: (Int) -> Unit = {},
+    /** Whether another program holds a port (the page's port change is refused then). */
+    portTaken: (Int) -> Boolean = { false },
+) : RemoteController {
     private class Video(
         val id: String, val title: String, val channelId: String, val channel: String,
         val duration: Long?, val thumb: String, val live: Boolean = false,
     )
 
     private class Profile(
-        val id: String, val name: String, val kind: RemoteProfileKind, val avatar: String,
+        val id: String, var name: String, val kind: RemoteProfileKind, var avatar: String,
         var quota: Int?, var usedMinutes: Int, var extraMinutes: Int = 0, var unlimitedToday: Boolean = false,
+        var scheduleFrom: Int? = null, var scheduleUntil: Int? = null, var hideShorts: Boolean = false, var hideComments: Boolean = false,
     )
 
     private val catalog = listOf(
@@ -50,12 +65,12 @@ internal class DemoController(private val log: (String) -> Unit) : RemoteControl
         Video("k1dsSc13nc", "لماذا السماء زرقاء؟ تجربة ممتعة", "UCkids00000000000000000b", "العلوم للصغار", 402, DemoArt.science),
     )
 
-    private val profiles = listOf(
+    private val profiles = mutableListOf(
         Profile("ahmad", "أحمد", RemoteProfileKind.ADULT, "person", quota = null, usedMinutes = 95),
-        Profile("sara", "سارة", RemoteProfileKind.CHILD, "star", quota = 60, usedMinutes = 22),
-        Profile("yousef", "يوسف", RemoteProfileKind.CHILD, "rocket", quota = 45, usedMinutes = 45),
+        Profile("sara", "سارة", RemoteProfileKind.CHILD, "star", quota = 60, usedMinutes = 22, scheduleFrom = 420, scheduleUntil = 1260, hideShorts = true, hideComments = true),
+        Profile("yousef", "يوسف", RemoteProfileKind.CHILD, "rocket", quota = 45, usedMinutes = 45, hideShorts = true, hideComments = true),
     )
-    private val allowlists = mapOf(
+    private val allowlists = mutableMapOf(
         "sara" to Lists(
             mutableListOf(
                 RemoteListEntry("UCkids00000000000000000a", "حكايات قبل النوم"),
@@ -89,6 +104,17 @@ internal class DemoController(private val log: (String) -> Unit) : RemoteControl
     private var positionAt = System.nanoTime()
     private var videoUnlocked = false
     private var wrongPins = 0
+    private val settings = DemoSettings(portTaken)
+
+    /** Where the server is about to move (the status tells every page). */
+    @Volatile var movingTo: Int? = null
+    private val revStart = System.currentTimeMillis()
+    private var changes = 0L
+
+    /** QA: the adult's video is locked too (Serious Mode applies to every profile). */
+    @Volatile var lockAdult = false
+    private val blockedKeywords = mutableListOf("رعب", "مقالب")
+    private val blockedChannels = mutableListOf(RemoteListEntry("UCprank000000000000000000", "Prank Masters"))
 
     private val current get() = profiles.first { it.id == currentId }
 
@@ -97,6 +123,9 @@ internal class DemoController(private val log: (String) -> Unit) : RemoteControl
         log("CALL $call")
         block()
     }
+
+    /** A call that may change what the parent section shows: the status's mark moves. */
+    private inline fun <T> changing(call: String, block: () -> T): T = locked(call) { block().also { changes++ } }
 
     override suspend fun status(): RemoteStatus = locked("status") {
         val p = current
@@ -116,7 +145,12 @@ internal class DemoController(private val log: (String) -> Unit) : RemoteControl
                 left <= 5 -> RemoteSessionState.WARNING
                 else -> RemoteSessionState.OK
             },
-            videoLocked = p.kind == RemoteProfileKind.CHILD && video != null && !videoUnlocked,
+            videoLocked = settings.seriousMode && video != null && !video.live && !videoUnlocked &&
+                (p.kind == RemoteProfileKind.CHILD || lockAdult),
+            seriousMode = settings.seriousMode,
+            rev = revStart + changes + settings.revision,
+            movingTo = movingTo,
+            profileId = p.id,
         )
     }
 
@@ -188,7 +222,7 @@ internal class DemoController(private val log: (String) -> Unit) : RemoteControl
                 setPosition((position() + cmd.seconds).coerceIn(0.0, (video.duration ?: 0).toDouble()))
             }
             PlaybackAction.STOP -> {
-                if (current.kind == RemoteProfileKind.CHILD && !videoUnlocked) {
+                if (settings.seriousMode && !video.live && !videoUnlocked && (current.kind == RemoteProfileKind.CHILD || lockAdult)) {
                     return@locked RemoteResult.error("الفيديو مقفول حتى ينتهي. افتحه من قسم الأب.")
                 }
                 playing = null
@@ -203,21 +237,21 @@ internal class DemoController(private val log: (String) -> Unit) : RemoteControl
         return@locked profiles.map {
             RemoteProfile(
                 id = it.id, name = it.name, kind = it.kind,
-                needsPin = it.id != currentId && (it.kind == RemoteProfileKind.ADULT || leavingChild),
+                needsPin = it.id != currentId && ((it.kind == RemoteProfileKind.ADULT && settings.adultEntryPin) || leavingChild),
                 avatar = it.avatar, isCurrent = it.id == currentId, dailyQuotaMinutes = it.quota,
             )
         }
     }
 
-    override suspend fun switchProfile(id: String, pin: String?): RemoteResult = locked("switchProfile($id,$pin)") {
-        val target = profiles.firstOrNull { it.id == id } ?: return@locked RemoteResult.error("هذا الملف غير موجود.")
-        if (target.id == currentId) return@locked RemoteResult.ok("«${target.name}» هو الملف المفتوح الآن.")
-        val needsPin = target.kind == RemoteProfileKind.ADULT || current.kind == RemoteProfileKind.CHILD
-        if (needsPin && pin != PIN) return@locked RemoteResult.error(if (pin == null) "هذا الملف يحتاج رمز PIN." else "رمز PIN غير صحيح.")
+    override suspend fun switchProfile(id: String, pin: String?): RemoteResult = changing("switchProfile($id,$pin)") {
+        val target = profiles.firstOrNull { it.id == id } ?: return@changing RemoteResult.error("هذا الملف غير موجود.")
+        if (target.id == currentId) return@changing RemoteResult.ok("«${target.name}» هو الملف المفتوح الآن.")
+        val needsPin = (target.kind == RemoteProfileKind.ADULT && settings.adultEntryPin) || current.kind == RemoteProfileKind.CHILD
+        if (needsPin && pin != PIN) return@changing RemoteResult.error(if (pin == null) "هذا الملف يحتاج رمز PIN." else "رمز PIN غير صحيح.")
         currentId = target.id
         playing = null // the TV goes back to the new profile's home screen
         videoUnlocked = false
-        return@locked RemoteResult.ok("الشاشة الآن على ملف «${target.name}».")
+        return@changing RemoteResult.ok("الشاشة الآن على ملف «${target.name}».")
     }
 
     override suspend fun parentLogin(pin: String): ParentLoginResult = locked("parentLogin($pin)") {
@@ -230,10 +264,10 @@ internal class DemoController(private val log: (String) -> Unit) : RemoteControl
         return@locked if (wrongPins >= 5) ParentLoginResult.LockedOut(300) else ParentLoginResult.WrongPin(5 - wrongPins)
     }
 
-    override suspend fun setQuota(profileId: String, minutes: Int?): RemoteResult = locked("setQuota($profileId,$minutes)") {
-        val p = profiles.firstOrNull { it.id == profileId } ?: return@locked RemoteResult.error("هذا الملف غير موجود.")
+    override suspend fun setQuota(profileId: String, minutes: Int?): RemoteResult = changing("setQuota($profileId,$minutes)") {
+        val p = profiles.firstOrNull { it.id == profileId } ?: return@changing RemoteResult.error("هذا الملف غير موجود.")
         p.quota = minutes
-        return@locked RemoteResult.ok(
+        return@changing RemoteResult.ok(
             if (minutes == null) "«${p.name}»: بلا حد يومي." else "حُفظت الحصة اليومية لـ «${p.name}»: ${minutesText(minutes)}.",
         )
     }
@@ -265,66 +299,182 @@ internal class DemoController(private val log: (String) -> Unit) : RemoteControl
         return@locked RemoteAllowlist(lists.channels.toList(), lists.playlists.toList())
     }
 
-    override suspend fun addToAllowlist(profileId: String, link: String): RemoteResult = locked("addToAllowlist($profileId,$link)") {
-        val lists = allowlists[profileId] ?: return@locked RemoteResult.error("قائمة السماح لملفات الأطفال فقط.")
+    override suspend fun addToAllowlist(profileId: String, link: String): RemoteResult = changing("addToAllowlist($profileId,$link)") {
+        val lists = allowlists[profileId] ?: return@changing RemoteResult.error("قائمة السماح لملفات الأطفال فقط.")
         val name = profiles.first { it.id == profileId }.name
         PLAYLIST.find(link)?.let { m ->
             val entry = RemoteListEntry(m.groupValues[1], "قائمة تشغيل جديدة")
-            if (lists.playlists.any { it.id == entry.id }) return@locked RemoteResult.error("هذه القائمة موجودة من قبل.")
+            if (lists.playlists.any { it.id == entry.id }) return@changing RemoteResult.error("هذه القائمة موجودة من قبل.")
             lists.playlists += entry
-            return@locked RemoteResult.ok("أُضيفت «${entry.title}» إلى قائمة السماح لـ «$name».")
+            return@changing RemoteResult.ok("أُضيفت «${entry.title}» إلى قائمة السماح لـ «$name».")
         }
-        val handle = HANDLE.find(link)?.groupValues?.get(1) ?: return@locked RemoteResult.error("هذا ليس رابط قناة أو قائمة تشغيل.")
+        val handle = HANDLE.find(link)?.groupValues?.get(1) ?: return@changing RemoteResult.error("هذا ليس رابط قناة أو قائمة تشغيل.")
         val entry = RemoteListEntry("UC" + handle.hashCode().toUInt().toString().padStart(22, '0').take(22), handle)
-        if (lists.channels.any { it.id == entry.id }) return@locked RemoteResult.error("هذه القناة موجودة من قبل.")
+        if (lists.channels.any { it.id == entry.id }) return@changing RemoteResult.error("هذه القناة موجودة من قبل.")
         lists.channels += entry
-        return@locked RemoteResult.ok("أُضيفت «$handle» إلى قائمة السماح لـ «$name».")
+        return@changing RemoteResult.ok("أُضيفت «$handle» إلى قائمة السماح لـ «$name».")
     }
 
-    override suspend fun removeFromAllowlist(profileId: String, id: String): RemoteResult = locked("removeFromAllowlist($profileId,$id)") {
-        val lists = allowlists[profileId] ?: return@locked RemoteResult.error("قائمة السماح لملفات الأطفال فقط.")
-        val entry = (lists.channels + lists.playlists).firstOrNull { it.id == id } ?: return@locked RemoteResult.error("غير موجود في القائمة.")
+    override suspend fun removeFromAllowlist(profileId: String, id: String): RemoteResult = changing("removeFromAllowlist($profileId,$id)") {
+        val lists = allowlists[profileId] ?: return@changing RemoteResult.error("قائمة السماح لملفات الأطفال فقط.")
+        val entry = (lists.channels + lists.playlists).firstOrNull { it.id == id } ?: return@changing RemoteResult.error("غير موجود في القائمة.")
         lists.channels.remove(entry)
         lists.playlists.remove(entry)
-        return@locked RemoteResult.ok("أُزيلت «${entry.title}» من قائمة السماح.")
+        return@changing RemoteResult.ok("أُزيلت «${entry.title}» من قائمة السماح.")
     }
 
-    override suspend fun importTakeout(fileName: String, bytes: ByteArray): RemoteResult = locked("importTakeout($fileName,${bytes.size})") {
+    override suspend fun importTakeout(fileName: String, bytes: ByteArray): RemoteResult = changing("importTakeout($fileName,${bytes.size})") {
         val rows = bytes.decodeToString().lines().mapNotNull { line ->
             val cells = line.split(',')
             val id = cells.firstOrNull()?.trim()?.takeIf { it.matches(Regex("UC[0-9A-Za-z_-]{22}")) } ?: return@mapNotNull null
             RemoteChannel(id, cells.getOrNull(2)?.trim().orEmpty().ifEmpty { id }, null)
         }
-        if (rows.isEmpty()) return@locked RemoteResult.error("لم أجد أي قناة في الملف. تأكد أنه subscriptions.csv من Google Takeout.")
+        if (rows.isEmpty()) return@changing RemoteResult.error("لم أجد أي قناة في الملف. تأكد أنه subscriptions.csv من Google Takeout.")
         val added = rows.filter { r -> subscriptions.none { it.channelId == r.channelId } }
         subscriptions += added
-        return@locked RemoteResult.ok("استُورد ${countText(added.size)} من Google Takeout.")
+        return@changing RemoteResult.ok("استُورد ${countText(added.size)} من Google Takeout.")
     }
 
     override suspend fun subscriptions(): List<RemoteChannel> = locked("subscriptions") {
         return@locked subscriptions.toList()
     }
 
-    override suspend fun addSubscription(link: String): RemoteResult = locked("addSubscription($link)") {
-        val handle = HANDLE.find(link)?.groupValues?.get(1) ?: return@locked RemoteResult.error("هذا ليس رابط قناة من يوتيوب.")
-        if (subscriptions.any { it.name == handle }) return@locked RemoteResult.error("أنت مشترك في «$handle» من قبل.")
+    override suspend fun addSubscription(link: String): RemoteResult = changing("addSubscription($link)") {
+        val handle = HANDLE.find(link)?.groupValues?.get(1) ?: return@changing RemoteResult.error("هذا ليس رابط قناة من يوتيوب.")
+        if (subscriptions.any { it.name == handle }) return@changing RemoteResult.error("أنت مشترك في «$handle» من قبل.")
         subscriptions.add(0, RemoteChannel("UC" + handle.hashCode().toUInt().toString().padStart(22, '0').take(22), handle, null))
-        return@locked RemoteResult.ok("اشتركت في «$handle».")
+        return@changing RemoteResult.ok("اشتركت في «$handle».")
     }
 
-    override suspend fun removeSubscription(channelId: String): RemoteResult = locked("removeSubscription($channelId)") {
-        val channel = subscriptions.firstOrNull { it.channelId == channelId } ?: return@locked RemoteResult.error("لست مشتركاً في هذه القناة.")
+    override suspend fun removeSubscription(channelId: String): RemoteResult = changing("removeSubscription($channelId)") {
+        val channel = subscriptions.firstOrNull { it.channelId == channelId } ?: return@changing RemoteResult.error("لست مشتركاً في هذه القناة.")
         subscriptions.remove(channel)
-        return@locked RemoteResult.ok("أُلغي الاشتراك في «${channel.name}».")
+        return@changing RemoteResult.ok("أُلغي الاشتراك في «${channel.name}».")
     }
 
     override suspend fun exportBackup(): ByteArray = locked("exportBackup") {
         return@locked """{"app":"shasha","version":1,"profiles":${profiles.size},"subscriptions":${subscriptions.size}}""".toByteArray()
     }
 
-    override suspend fun importBackup(bytes: ByteArray): RemoteResult = locked("importBackup(${bytes.size})") {
+    override suspend fun importBackup(bytes: ByteArray): RemoteResult = changing("importBackup(${bytes.size})") {
         val ok = runCatching { Json.parseToJsonElement(bytes.decodeToString()) }.isSuccess
-        return@locked if (ok) RemoteResult.ok("استُعيدت النسخة الاحتياطية.") else RemoteResult.error("هذا الملف ليس نسخة احتياطية من «شاشة».")
+        return@changing if (ok) RemoteResult.ok("استُعيدت النسخة الاحتياطية.") else RemoteResult.error("هذا الملف ليس نسخة احتياطية من «شاشة».")
+    }
+
+    override suspend fun settings(): RemoteSettingsPage = locked("settings") { settings.page() }
+
+    override suspend fun changeSetting(key: String, value: JsonElement, base: JsonElement?): RemoteSettingsResult =
+        locked("changeSetting($key,$value)") { settings.change(key, value, base, movePort) }
+
+    override suspend fun resetSettings(group: String?): RemoteSettingsResult = locked("resetSettings($group)") { settings.reset(group, movePort) }
+
+    override suspend fun profilesPage(): RemoteProfilesPage = locked("profilesPage") {
+        val adults = profiles.count { it.kind == RemoteProfileKind.ADULT }
+        RemoteProfilesPage(
+            profiles = profiles.map {
+                RemoteProfileDetails(it.id, it.name, it.kind, it.avatar, it.id == currentId, it.quota, it.scheduleFrom, it.scheduleUntil,
+                    it.hideShorts, it.hideComments || it.kind == RemoteProfileKind.CHILD, it.usedMinutes,
+                    deleteBlockedReason = when {
+                        it.id == currentId -> "هذا الملف على الشاشة الآن. بدّل الملف على التلفاز أولاً."
+                        it.kind == RemoteProfileKind.ADULT && adults <= 1 -> "لا يُحذف آخر ملف للكبار."
+                        else -> null
+                    })
+            },
+            quotaChoices = listOf(null, 15, 30, 45, 60, 90, 120, 180, 240),
+            avatars = AVATARS,
+            childAvatars = AVATARS - "person",
+            nameMaxLength = NAME_MAX,
+        )
+    }
+
+    override suspend fun createChild(name: String, avatar: String): RemoteResult = changing("createChild($name,$avatar)") {
+        if (name.isBlank() || name.length > NAME_MAX) return@changing RemoteResult.error("اكتب اسماً من حرف إلى $NAME_MAX حرفاً.")
+        if (avatar !in AVATARS - "person") return@changing RemoteResult.error("هذه الصورة غير متاحة لهذا الملف.")
+        val id = "kid" + (profiles.size + 1)
+        profiles += Profile(id, name, RemoteProfileKind.CHILD, avatar, quota = 60, usedMinutes = 0, scheduleFrom = 420, scheduleUntil = 1320,
+            hideShorts = true, hideComments = true)
+        allowlists[id] = Lists(mutableListOf(), mutableListOf())
+        RemoteResult.ok("أُنشئ ملف «$name». اختر ما يشاهده من «قوائم السماح».")
+    }
+
+    override suspend fun editProfile(profileId: String, name: String?, avatar: String?): RemoteResult = changing("editProfile($profileId,$name,$avatar)") {
+        val p = profiles.firstOrNull { it.id == profileId } ?: return@changing RemoteResult.error("هذا الملف غير موجود على الشاشة.")
+        if (name != null && (name.isBlank() || name.length > NAME_MAX)) return@changing RemoteResult.error("اكتب اسماً من حرف إلى $NAME_MAX حرفاً.")
+        val allowed = if (p.kind == RemoteProfileKind.CHILD) AVATARS - "person" else AVATARS
+        if (avatar != null && avatar !in allowed) return@changing RemoteResult.error("هذه الصورة غير متاحة لهذا الملف.")
+        name?.let { p.name = it }
+        avatar?.let { p.avatar = it }
+        RemoteResult.ok("حُفظ ملف «${p.name}».")
+    }
+
+    override suspend fun deleteProfile(profileId: String): RemoteResult = changing("deleteProfile($profileId)") {
+        val p = profiles.firstOrNull { it.id == profileId } ?: return@changing RemoteResult.error("هذا الملف غير موجود على الشاشة.")
+        if (p.id == currentId) return@changing RemoteResult.error("هذا الملف على الشاشة الآن. بدّل الملف على التلفاز أولاً.")
+        if (p.kind == RemoteProfileKind.ADULT && profiles.count { it.kind == RemoteProfileKind.ADULT } <= 1) {
+            return@changing RemoteResult.error("لا يُحذف آخر ملف للكبار.")
+        }
+        profiles.remove(p)
+        allowlists.remove(p.id)
+        RemoteResult.ok("حُذف ملف «${p.name}» وسجلّه.")
+    }
+
+    override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult =
+        changing("setProfileFlags($profileId,$hideShorts,$hideComments)") {
+            val p = profiles.firstOrNull { it.id == profileId } ?: return@changing RemoteResult.error("هذا الملف غير موجود على الشاشة.")
+            if (hideComments == false && p.kind == RemoteProfileKind.CHILD) return@changing RemoteResult.error("التعليقات مخفية دائماً في ملفات الأطفال.")
+            hideShorts?.let { p.hideShorts = it }
+            hideComments?.let { p.hideComments = it }
+            RemoteResult.ok("حُفظ لـ«${p.name}».")
+        }
+
+    override suspend fun setSchedule(profileId: String, fromMinute: Int?, untilMinute: Int?): RemoteResult =
+        changing("setSchedule($profileId,$fromMinute,$untilMinute)") {
+            val p = profiles.firstOrNull { it.id == profileId } ?: return@changing RemoteResult.error("هذا الملف غير موجود على الشاشة.")
+            if (fromMinute == null || fromMinute == untilMinute) {
+                p.scheduleFrom = null
+                p.scheduleUntil = null
+                return@changing RemoteResult.ok("«${p.name}»: المشاهدة مسموحة طوال اليوم.")
+            }
+            p.scheduleFrom = fromMinute
+            p.scheduleUntil = untilMinute
+            RemoteResult.ok("حُفظت أوقات «${p.name}».")
+        }
+
+    override suspend fun blocklist(): RemoteBlocklist = locked("blocklist") { RemoteBlocklist(blockedChannels.toList(), blockedKeywords.toList()) }
+
+    override suspend fun blockKeyword(keyword: String): RemoteResult = changing("blockKeyword($keyword)") {
+        if (blockedKeywords.any { it == keyword }) return@changing RemoteResult.ok("الكلمة «$keyword» محظورة من قبل.")
+        blockedKeywords += keyword
+        RemoteResult.ok("حُظرت الكلمة «$keyword» في كل الملفات.")
+    }
+
+    override suspend fun unblockKeyword(keyword: String): RemoteResult = changing("unblockKeyword($keyword)") {
+        if (!blockedKeywords.remove(keyword)) return@changing RemoteResult.error("هذه الكلمة ليست في قائمة الحظر.")
+        RemoteResult.ok("أُزيلت الكلمة «$keyword» من الحظر.")
+    }
+
+    override suspend fun blockChannel(link: String): RemoteResult = changing("blockChannel($link)") {
+        val handle = HANDLE.find(link)?.groupValues?.get(1) ?: return@changing RemoteResult.error("هذا ليس رابط قناة من يوتيوب.")
+        blockedChannels += RemoteListEntry("UC" + handle.hashCode().toUInt().toString().padStart(22, '0').take(22), handle)
+        RemoteResult.ok("حُظرت القناة «$handle» في كل الملفات.")
+    }
+
+    override suspend fun unblockChannel(channelId: String): RemoteResult = changing("unblockChannel($channelId)") {
+        val entry = blockedChannels.firstOrNull { it.id == channelId } ?: return@changing RemoteResult.error("هذه القناة ليست في قائمة الحظر.")
+        blockedChannels.remove(entry)
+        RemoteResult.ok("أُزيلت القناة «${entry.title}» من الحظر.")
+    }
+
+    override suspend fun stats(): List<RemoteStats> = locked("stats") {
+        val known = listOf(
+            RemoteStats("ahmad", "أحمد", RemoteProfileKind.ADULT, listOf(80, 45, 120, 30, 95, 60, 95), 525, 610, -14,
+                listOf(RemoteChannelUsage("عالم الوثائقيات", 140), RemoteChannelUsage("Space Explained (English)", 85), RemoteChannelUsage("رحّالة", 60)), 2),
+            RemoteStats("sara", "سارة", RemoteProfileKind.CHILD, listOf(40, 55, 60, 35, 20, 58, 22), 290, 250, 16,
+                listOf(RemoteChannelUsage("حكايات قبل النوم", 120), RemoteChannelUsage("العلوم للصغار", 90)), 0),
+            RemoteStats("yousef", "يوسف", RemoteProfileKind.CHILD, listOf(0, 0, 30, 45, 45, 45, 45), 210, 0, null,
+                listOf(RemoteChannelUsage("ألغاز وحكايات", 150)), 0),
+        ).associateBy { it.profileId }
+        profiles.map { p -> known[p.id]?.copy(name = p.name) ?: RemoteStats(p.id, p.name, p.kind, List(7) { 0 }, 0, 0, null, emptyList(), 0) }
     }
 
     private fun minutesText(n: Int) = when {
@@ -344,6 +494,10 @@ internal class DemoController(private val log: (String) -> Unit) : RemoteControl
 
     private companion object {
         const val PIN = "1234"
+        const val NAME_MAX = 20
+
+        /** The TV's avatar keys, in its order ("person" is the adult's). */
+        val AVATARS = listOf("person", "star", "rocket", "cat", "bear", "fish", "sun", "moon", "flower", "heart", "crown", "planet", "balloon")
         val VIDEO_ID = Regex("""(?:v=|youtu\.be/|shorts/|live/)([0-9A-Za-z_-]{11})""")
         val PLAYLIST = Regex("""[?&]list=([0-9A-Za-z_-]+)""")
         val HANDLE = Regex("""youtube\.com/(?:@|c/|user/|channel/)([^/?#\s]+)""")

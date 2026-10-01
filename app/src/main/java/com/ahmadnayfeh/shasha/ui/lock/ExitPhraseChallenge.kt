@@ -73,9 +73,13 @@ import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoader
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.ahmadnayfeh.shasha.ui.theme.OsdColors
+import com.ahmadnayfeh.shasha.ui.theme.Accents
 
 /** What was typed on the phrase keyboard so far. */
 @Stable
@@ -113,7 +117,7 @@ fun ExitPhraseChallenge(
     input: PhraseInput = remember { PhraseInput() },
 ) {
     val scope = rememberCoroutineScope()
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     var busy by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf<Int?>(null) }
     var shake by remember { mutableIntStateOf(0) }
@@ -169,7 +173,7 @@ fun ExitPhraseChallenge(
     Box(
         modifier
             .fillMaxSize()
-            .background(ShashaColors.Background.copy(alpha = 0.96f))
+            .background(OsdColors.Background.copy(alpha = 0.96f))
             .drawBehind {
                 drawRect(
                     Brush.radialGradient(
@@ -207,7 +211,7 @@ fun ExitPhraseChallenge(
             TypedField(phrase, input.text, shake)
             Box(Modifier.height(30.dp), contentAlignment = Alignment.Center) {
                 notice?.let {
-                    Text(stringResource(it), style = MaterialTheme.typography.titleSmall, color = ShashaColors.Error, modifier = Modifier.testTag("lock_phrase_notice"))
+                    Text(stringResource(it), style = MaterialTheme.typography.titleSmall, color = OsdColors.Error, modifier = Modifier.testTag("lock_phrase_notice"))
                 }
             }
             ArabicKeyboard(onLetter = ::type, onSpace = { type(' ') }, onDelete = ::delete, firstKey = firstKey, deleteKey = deleteKey, enabled = !busy)
@@ -231,14 +235,14 @@ fun ExitPhraseChallenge(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Text(stringResource(R.string.lock_phrase_note), style = MaterialTheme.typography.bodySmall, color = ShashaColors.Muted)
+            Text(stringResource(R.string.lock_phrase_note), style = MaterialTheme.typography.bodySmall, color = OsdColors.Muted)
         }
     }
 }
 
 @Composable
 private fun Header() {
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             stringResource(R.string.lock_phrase_step),
@@ -257,14 +261,14 @@ private fun Header() {
 /** The phrase to copy; the part already typed correctly is lit, the rest waits in white. */
 @Composable
 private fun PhraseCard(phrase: String, typed: String) {
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     val done = matchedPrefix(phrase, typed)
     val shape = RoundedCornerShape(22.dp)
     Box(
         Modifier
             .width(KeyboardWidth)
-            .background(ShashaColors.SurfaceVariant.copy(alpha = 0.85f), shape)
-            .border(1.dp, ShashaColors.Outline, shape)
+            .background(OsdColors.SurfaceVariant.copy(alpha = 0.85f), shape)
+            .border(1.dp, OsdColors.Outline, shape)
             .padding(horizontal = 28.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -288,10 +292,10 @@ private fun PhraseCard(phrase: String, typed: String) {
  */
 @Composable
 private fun TypedField(phrase: String, typed: String, shake: Int) {
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     val matches = AdultExitChallenge.matches(phrase, typed)
     val onTrack = phrase.startsWith(typed) || matches
-    val color = if (onTrack) accent.main else ShashaColors.Error
+    val color = if (onTrack) accent.main else OsdColors.Error
     val offset = remember { Animatable(0f) }
     val density = LocalDensity.current
     LaunchedEffect(shake) {
@@ -316,8 +320,8 @@ private fun TypedField(phrase: String, typed: String, shake: Int) {
             .graphicsLayer { translationX = with(density) { offset.value.dp.toPx() } }
             .width(KeyboardWidth)
             .height(56.dp)
-            .background(ShashaColors.Surface, shape)
-            .border(2.dp, if (typed.isEmpty()) ShashaColors.Outline else color.copy(alpha = 0.85f), shape)
+            .background(OsdColors.Surface, shape)
+            .border(2.dp, if (typed.isEmpty()) OsdColors.Outline else color.copy(alpha = 0.85f), shape)
             .padding(horizontal = 22.dp)
             .semantics { stateDescription = typed }
             .testTag("lock_phrase_typed"),
@@ -326,7 +330,7 @@ private fun TypedField(phrase: String, typed: String, shake: Int) {
         if (typed.isEmpty()) {
             Caret(accent.main)
             Spacer(Modifier.width(10.dp))
-            Text(stringResource(R.string.lock_phrase_placeholder), style = MaterialTheme.typography.titleMedium, color = ShashaColors.Muted)
+            Text(stringResource(R.string.lock_phrase_placeholder), style = MaterialTheme.typography.titleMedium, color = OsdColors.Muted)
         } else {
             Text(typed, style = MaterialTheme.typography.headlineSmall, color = Color.White, maxLines = 1)
             Spacer(Modifier.width(2.dp))
@@ -363,34 +367,37 @@ fun ArabicKeyboard(
     enabled: Boolean = true,
 ) {
     val rows = AdultExitChallenge.KEYBOARD_LETTERS.chunked(KEYS_PER_ROW)
-    Column(
-        modifier.focusRestorer(firstKey).focusGroup().testTag("lock_keyboard"),
-        verticalArrangement = Arrangement.spacedBy(KeyGap),
-    ) {
-        rows.forEachIndexed { index, row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(KeyGap)) {
-                row.forEach { letter ->
-                    KeyboardKey(
-                        onClick = { if (enabled) onLetter(letter) },
-                        modifier = (if (letter == row.first() && index == 0) Modifier.focusRequester(firstKey) else Modifier).testTag("kb_key_$letter"),
-                    ) {
-                        Text(letter.toString(), style = MaterialTheme.typography.headlineSmall)
+    // The letters are Arabic (the exit phrases are): their alphabetical order runs right to left in English too.
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        Column(
+            modifier.focusRestorer(firstKey).focusGroup().testTag("lock_keyboard"),
+            verticalArrangement = Arrangement.spacedBy(KeyGap),
+        ) {
+            rows.forEachIndexed { index, row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(KeyGap)) {
+                    row.forEach { letter ->
+                        KeyboardKey(
+                            onClick = { if (enabled) onLetter(letter) },
+                            modifier = (if (letter == row.first() && index == 0) Modifier.focusRequester(firstKey) else Modifier).testTag("kb_key_$letter"),
+                        ) {
+                            Text(letter.toString(), style = MaterialTheme.typography.headlineSmall)
+                        }
                     }
-                }
-                if (index == rows.lastIndex) {
-                    val space = stringResource(R.string.lock_key_space)
-                    KeyboardKey(
-                        onClick = { if (enabled) onSpace() },
-                        modifier = Modifier.semantics { contentDescription = space }.testTag("kb_space"),
-                    ) {
-                        SpaceGlyph()
-                    }
-                    val delete = stringResource(R.string.lock_key_delete)
-                    KeyboardKey(
-                        onClick = { if (enabled) onDelete() },
-                        modifier = Modifier.focusRequester(deleteKey).semantics { contentDescription = delete }.testTag("kb_delete"),
-                    ) {
-                        Icon(ShashaIcons.Backspace, contentDescription = null, modifier = Modifier.size(24.dp))
+                    if (index == rows.lastIndex) {
+                        val space = stringResource(R.string.lock_key_space)
+                        KeyboardKey(
+                            onClick = { if (enabled) onSpace() },
+                            modifier = Modifier.semantics { contentDescription = space }.testTag("kb_space"),
+                        ) {
+                            SpaceGlyph()
+                        }
+                        val delete = stringResource(R.string.lock_key_delete)
+                        KeyboardKey(
+                            onClick = { if (enabled) onDelete() },
+                            modifier = Modifier.focusRequester(deleteKey).semantics { contentDescription = delete }.testTag("kb_delete"),
+                        ) {
+                            Icon(ShashaIcons.Backspace, contentDescription = null, modifier = Modifier.size(24.dp))
+                        }
                     }
                 }
             }
@@ -400,22 +407,22 @@ fun ArabicKeyboard(
 
 @Composable
 private fun KeyboardKey(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     val shape = RoundedCornerShape(14.dp)
     Surface(
         onClick = onClick,
         modifier = modifier.size(KeySize),
         shape = ClickableSurfaceDefaults.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
-            containerColor = ShashaColors.SurfaceVariant,
-            contentColor = ShashaColors.Text,
+            containerColor = OsdColors.SurfaceVariant,
+            contentColor = OsdColors.Text,
             focusedContainerColor = accent.main,
             focusedContentColor = accent.onMain,
             pressedContainerColor = accent.bright,
             pressedContentColor = accent.onMain,
         ),
         border = ClickableSurfaceDefaults.border(
-            border = Border(BorderStroke(1.dp, ShashaColors.Outline), shape = shape),
+            border = Border(BorderStroke(1.dp, OsdColors.Outline), shape = shape),
             focusedBorder = Border.None,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.14f, pressedScale = 1.04f),

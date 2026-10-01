@@ -29,9 +29,6 @@ internal object SettingsIcons {
             "1.71,0 3.1,1.39 3.1,3.1v2H6c-1.1,0 -2,0.9 -2,2v10c0,1.1 0.9,2 2,2h12c1.1,0 2,-0.9 2,-2V10c0,-1.1 -0.9,-2 -2,-2zM18,20H6V10h12v10z",
     )
 
-    /** «حول»'s terms of use. */
-    val Warning = icon("Warning", "M1,21h22L12,2 1,21zM13,18h-2v-2h2v2zM13,14h-2v-4h2v4z")
-
     /** A licence. */
     val Description = icon(
         "Description",

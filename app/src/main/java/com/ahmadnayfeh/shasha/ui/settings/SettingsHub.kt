@@ -219,14 +219,19 @@ private fun PaneBody(category: SettingsCategory, state: SettingsHubState, action
         SettingsCategory.PROFILES -> ProfilesPane(state, actions, first)
         SettingsCategory.LISTS -> ListsPane(state, actions, first)
         SettingsCategory.TIME -> TimePane(state, actions, first)
+        SettingsCategory.SERIOUS -> SeriousPane(state, actions, first)
         SettingsCategory.STATS -> StatsPane(state, actions, first)
         SettingsCategory.SPONSORBLOCK -> SponsorBlockPane(state, actions, first)
         SettingsCategory.QUALITY -> QualityPane(state, actions, first)
+        SettingsCategory.PLAYBACK -> PlaybackTimingPane(state, actions, first)
         SettingsCategory.PROTECTION -> ProtectionPane(state, actions, first)
         SettingsCategory.REMOTE -> RemotePane(state, actions, first)
         SettingsCategory.DATA -> DataPane(state, actions, first)
         SettingsCategory.UPDATES -> UpdatesPane(state, actions, first)
         SettingsCategory.DIAGNOSTICS -> DiagnosticsPane(state, actions, first)
+        SettingsCategory.RESET -> ResetPane(state, actions, first)
+        SettingsCategory.APPEARANCE -> AppearancePane(state, actions, first)
+        SettingsCategory.GUIDE -> GuidePane(state, actions, first)
         SettingsCategory.ABOUT -> AboutPane(state, first)
     }
 }
@@ -382,7 +387,7 @@ private fun CategoryEntry(
 }
 
 /** The list's panel: the surface colour a little into the background, opaque (its fades end in it exactly). */
-private val PanelColor = lerp(ShashaColors.Background, ShashaColors.Surface, 0.75f)
+private val PanelColor: Color get() = lerp(ShashaColors.Background, ShashaColors.Surface, 0.75f)
 
 private val ListWidth = 264.dp
 private val PaneGap = 30.dp

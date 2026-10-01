@@ -40,6 +40,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
+import com.ahmadnayfeh.shasha.ui.components.LocalBehavior
 import com.ahmadnayfeh.shasha.player.formatDuration
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
@@ -48,9 +49,10 @@ import com.ahmadnayfeh.shasha.ui.components.ThumbnailBadge
 import com.ahmadnayfeh.shasha.ui.format.Thumbnails
 import com.ahmadnayfeh.shasha.ui.format.rememberFormats
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import kotlinx.coroutines.delay
+import com.ahmadnayfeh.shasha.ui.theme.OsdColors
+import com.ahmadnayfeh.shasha.ui.theme.Accents
 
 /**
  * What the screen shows when a video ends: a calm card with «رجوع» (no related videos, nothing plays by
@@ -70,11 +72,11 @@ fun EndCard(
     onReplay: () -> Unit,
     onPlayNext: (VideoItem) -> Unit,
     modifier: Modifier = Modifier,
-    countdownSeconds: Int = UP_NEXT_SECONDS,
+    countdownSeconds: Int = LocalBehavior.current.upNextSeconds,
     tickMs: Long = 1_000L,
     paused: Boolean = false,
     kidsHome: (() -> Unit)? = null,
-    homeSeconds: Int = KIDS_HOME_SECONDS,
+    homeSeconds: Int = LocalBehavior.current.kidsHomeSeconds,
     stillLocked: Boolean = false,
 ) {
     val home = kidsHome.takeIf { end !is PlaybackEnd.UpNext }
@@ -131,8 +133,8 @@ private fun KidsFinished(
         Spacer(Modifier.height(6.dp))
         Text(
             title,
-            style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.ContentOrRtl),
-            color = ShashaColors.Muted,
+            style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.Content),
+            color = OsdColors.Muted,
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -142,7 +144,7 @@ private fun KidsFinished(
         Text(
             formats.count(R.array.back_home_in_seconds, left.toLong()),
             style = MaterialTheme.typography.titleMedium,
-            color = LocalAccent.current.bright,
+            color = Accents.overDark(LocalAccent.current).bright,
             modifier = Modifier.testTag("kids_home_countdown"),
         )
         Spacer(Modifier.height(26.dp))
@@ -164,11 +166,11 @@ private fun EndBadge(icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Box(
         Modifier
             .size(84.dp)
-            .background(LocalAccent.current.tint(0.16f), CircleShape)
-            .border(1.dp, LocalAccent.current.tint(0.45f), CircleShape),
+            .background(Accents.overDark(LocalAccent.current).tint(0.16f), CircleShape)
+            .border(1.dp, Accents.overDark(LocalAccent.current).tint(0.45f), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = null, tint = LocalAccent.current.bright, modifier = Modifier.size(42.dp))
+        Icon(icon, contentDescription = null, tint = Accents.overDark(LocalAccent.current).bright, modifier = Modifier.size(42.dp))
     }
 }
 
@@ -181,8 +183,8 @@ private fun Finished(heading: String, title: String, onBack: () -> Unit, onRepla
         Spacer(Modifier.height(6.dp))
         Text(
             title,
-            style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.ContentOrRtl),
-            color = ShashaColors.Muted,
+            style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.Content),
+            color = OsdColors.Muted,
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -193,7 +195,7 @@ private fun Finished(heading: String, title: String, onBack: () -> Unit, onRepla
             Text(
                 stringResource(R.string.player_skipped_still_locked),
                 style = MaterialTheme.typography.titleSmall,
-                color = ShashaColors.Secondary,
+                color = OsdColors.Secondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().testTag("end_still_locked"),
             )
@@ -225,7 +227,8 @@ private fun UpNext(
     val formats = rememberFormats()
     var left by remember(next.videoId) { mutableIntStateOf(countdownSeconds) }
     LaunchedEffect(next.videoId, paused) {
-        if (paused) return@LaunchedEffect
+        // 0: the parent turned the countdown off; the next video waits for «شغّل الآن».
+        if (paused || countdownSeconds <= 0) return@LaunchedEffect
         while (left > 1) {
             delay(tickMs)
             left--
@@ -234,7 +237,7 @@ private fun UpNext(
         onPlayNext(next)
     }
     Column(Modifier.widthIn(max = 640.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(stringResource(R.string.player_up_next), style = MaterialTheme.typography.labelLarge, color = LocalAccent.current.bright)
+        Text(stringResource(R.string.player_up_next), style = MaterialTheme.typography.labelLarge, color = Accents.overDark(LocalAccent.current).bright)
         Spacer(Modifier.height(12.dp))
         Box(Modifier.width(384.dp).height(216.dp)) {
             val url = remember(next.videoId) { Thumbnails.video(next.videoId) }
@@ -246,21 +249,23 @@ private fun UpNext(
         Spacer(Modifier.height(16.dp))
         Text(
             next.title,
-            style = MaterialTheme.typography.titleLarge.copy(textDirection = TextDirection.ContentOrRtl),
+            style = MaterialTheme.typography.titleLarge.copy(textDirection = TextDirection.Content),
             color = Color.White,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth(),
         )
-        next.channelName?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Muted, maxLines = 1) }
+        next.channelName?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = OsdColors.Muted, maxLines = 1) }
         Spacer(Modifier.height(10.dp))
-        Text(
-            formats.count(R.array.starts_in_seconds, left.toLong()),
-            style = MaterialTheme.typography.titleMedium,
-            color = ShashaColors.Secondary,
-            modifier = Modifier.testTag("up_next_countdown"),
-        )
+        if (countdownSeconds > 0) {
+            Text(
+                formats.count(R.array.starts_in_seconds, left.toLong()),
+                style = MaterialTheme.typography.titleMedium,
+                color = OsdColors.Secondary,
+                modifier = Modifier.testTag("up_next_countdown"),
+            )
+        }
         Spacer(Modifier.height(22.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             ShashaButton(
@@ -275,8 +280,8 @@ private fun UpNext(
     }
 }
 
-/** The countdown before the next playlist video. */
+/** The countdown before the next playlist video (Settings may change it: [LocalBehavior]). */
 const val UP_NEXT_SECONDS = 5
 
-/** The countdown before a child whose video ended is back on the child home. */
+/** The countdown before a child whose video ended is back on the child home (Settings may change it). */
 const val KIDS_HOME_SECONDS = 10

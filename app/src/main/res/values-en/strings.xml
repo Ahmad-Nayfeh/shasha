@@ -1,0 +1,932 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English («اللغة» → English). Same names as values/strings.xml; numbers stay ready-made text (%1$s). -->
+<resources>
+    <!-- Common -->
+    <string name="action_back">Back</string>
+    <string name="action_check_updates">Check for updates</string>
+
+    <!-- Unified error screen -->
+    <string name="error_title_youtube">YouTube changed something. Update the app.</string>
+    <string name="error_title_network">No internet connection</string>
+    <string name="error_detail_name">Error name</string>
+    <string name="error_detail_extractor">Library version</string>
+    <string name="error_explain_content_unavailable">This video isn\'t available: it may have been deleted or hidden by its owner.</string>
+    <string name="error_explain_private">This video is private and can only be watched with an allowed account.</string>
+    <string name="error_explain_age_restricted">This video is age-restricted and needs a sign-in, and Shasha never signs in.</string>
+    <string name="error_explain_geo_restricted">This video isn\'t available in your country.</string>
+    <string name="error_explain_paid">This content is paid or for channel members only.</string>
+    <string name="error_explain_account_terminated">The channel that posted this video was closed.</string>
+    <string name="error_explain_bot_check">YouTube wants to check that you\'re not a robot and refuses to play from this network for now.</string>
+    <string name="error_explain_blocked_403">YouTube refused to play the video (403). It most likely changed how playback works.</string>
+    <string name="error_explain_rate_limited">Too many requests in a short time. Wait a few minutes, then try again.</string>
+    <string name="error_explain_low_quality_only">YouTube only gave 360p or lower, a sign that extraction is broken.</string>
+    <string name="error_explain_network">Make sure the TV is connected to the network, then try again.</string>
+    <string name="error_explain_extraction_broken">YouTube\'s answer couldn\'t be understood. YouTube most likely changed something on its site.</string>
+    <string name="error_short_content_unavailable">Unavailable</string>
+    <string name="error_short_private">Private</string>
+    <string name="error_short_age_restricted">Age-restricted</string>
+    <string name="error_short_geo_restricted">Blocked in your country</string>
+    <string name="error_short_paid">Paid</string>
+    <string name="error_short_account_terminated">Channel closed</string>
+    <string name="error_short_bot_check">Robot check</string>
+    <string name="error_short_blocked_403">Refused 403</string>
+    <string name="error_short_rate_limited">Too many requests</string>
+    <string name="error_short_low_quality_only">360p only</string>
+    <string name="error_short_network">Offline</string>
+    <string name="error_short_extraction_broken">Extraction broken</string>
+
+    <!-- Updates placeholder -->
+    <string name="updates_current_version">Current version: %1$s · extraction library %2$s</string>
+
+    <!-- Diagnostics -->
+    <string name="diag_title">Test videos</string>
+    <string name="diag_subtitle">Check playback when YouTube breaks</string>
+    <string name="diag_recheck">Check again</string>
+    <string name="diag_versions">Extraction library %1$s · app %2$s</string>
+    <string name="diag_case_normal">Regular</string>
+    <string name="diag_case_live">Live</string>
+    <string name="diag_case_kids">Made for kids</string>
+    <string name="diag_case_deleted">Deleted</string>
+    <string name="diag_case_sponsorblock">SponsorBlock</string>
+    <string name="diag_about_normal">A regular video: it should play in 1080p.</string>
+    <string name="diag_about_live">A live stream: if it has ended, an error is expected.</string>
+    <string name="diag_about_kids">A video marked “made for kids”: the hardest case on YouTube right now.</string>
+    <string name="diag_about_deleted">A deleted video: the right result is the error screen.</string>
+    <string name="diag_about_sponsorblock">It has a known sponsor segment: it should be skipped by itself.</string>
+    <string name="diag_status_waiting">Waiting</string>
+    <string name="diag_status_checking">Checking…</string>
+    <string name="diag_status_ready">Works · up to %1$sp</string>
+    <string name="diag_status_ready_plain">Works</string>
+    <string name="diag_status_ready_live">Works · live</string>
+    <string name="diag_fact_best_quality">Best quality %1$sp</string>
+    <string name="diag_fact_subtitles">Subtitles: %1$s</string>
+    <string name="diag_fact_elapsed">Checked in %1$s s</string>
+    <string name="diag_fact_live">Live</string>
+
+    <!-- Player -->
+    <string name="player_loading">Getting the video ready…</string>
+    <string name="player_live">Live</string>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_replay">Replay</string>
+    <string name="player_rewind">Back 10 seconds</string>
+    <string name="player_forward">Ahead 10 seconds</string>
+    <string name="player_quality">Quality</string>
+    <string name="player_speed">Speed</string>
+    <string name="player_subtitles">Subtitles</string>
+    <string name="player_quality_auto">Auto</string>
+    <string name="player_quality_auto_detail">Auto (up to %1$sp)</string>
+    <string name="player_quality_auto_playing">Auto · %1$sp</string>
+    <string name="player_speed_normal">Normal</string>
+    <string name="player_subtitles_off">Off</string>
+    <string name="player_subtitles_auto">%1$s (auto)</string>
+    <string name="player_watch_later">Watch later</string>
+    <string name="player_watch_later_saved">Saved</string>
+    <string name="player_watch_later_add">Add</string>
+    <string name="player_resumed_from">Resumed from %1$s</string>
+    <string name="player_low_quality">Low quality: %1$sp</string>
+    <string name="player_play_low_quality">Play in 360p anyway</string>
+    <string name="player_ended_title">The video ended</string>
+    <string name="player_playlist_ended_title">The playlist ended</string>
+    <string name="player_up_next">Up next in the playlist</string>
+    <string name="player_play_now">Play now</string>
+
+    <!-- Counted phrases keep the Arabic forms' order (ONE, TWO, FEW, MANY, OTHER): English needs only one and other. -->
+    <string-array name="ago_minutes">
+        <item>1 minute ago</item>
+        <item>2 minutes ago</item>
+        <item>%1$s minutes ago</item>
+        <item>%1$s minutes ago</item>
+        <item>%1$s minutes ago</item>
+    </string-array>
+    <string-array name="ago_hours">
+        <item>1 hour ago</item>
+        <item>2 hours ago</item>
+        <item>%1$s hours ago</item>
+        <item>%1$s hours ago</item>
+        <item>%1$s hours ago</item>
+    </string-array>
+    <string-array name="ago_days">
+        <item>1 day ago</item>
+        <item>2 days ago</item>
+        <item>%1$s days ago</item>
+        <item>%1$s days ago</item>
+        <item>%1$s days ago</item>
+    </string-array>
+    <string-array name="ago_weeks">
+        <item>1 week ago</item>
+        <item>2 weeks ago</item>
+        <item>%1$s weeks ago</item>
+        <item>%1$s weeks ago</item>
+        <item>%1$s weeks ago</item>
+    </string-array>
+    <string-array name="ago_months">
+        <item>1 month ago</item>
+        <item>2 months ago</item>
+        <item>%1$s months ago</item>
+        <item>%1$s months ago</item>
+        <item>%1$s months ago</item>
+    </string-array>
+    <string-array name="ago_years">
+        <item>1 year ago</item>
+        <item>2 years ago</item>
+        <item>%1$s years ago</item>
+        <item>%1$s years ago</item>
+        <item>%1$s years ago</item>
+    </string-array>
+    <string-array name="count_videos">
+        <item>1 video</item>
+        <item>2 videos</item>
+        <item>%1$s videos</item>
+        <item>%1$s videos</item>
+        <item>%1$s videos</item>
+    </string-array>
+    <string-array name="count_channels">
+        <item>1 channel</item>
+        <item>2 channels</item>
+        <item>%1$s channels</item>
+        <item>%1$s channels</item>
+        <item>%1$s channels</item>
+    </string-array>
+    <string-array name="count_subscribers">
+        <item>1 subscriber</item>
+        <item>2 subscribers</item>
+        <item>%1$s subscribers</item>
+        <item>%1$s subscribers</item>
+        <item>%1$s subscribers</item>
+    </string-array>
+    <string-array name="starts_in_seconds">
+        <item>Starts in 1 second</item>
+        <item>Starts in 2 seconds</item>
+        <item>Starts in %1$s seconds</item>
+        <item>Starts in %1$s seconds</item>
+        <item>Starts in %1$s seconds</item>
+    </string-array>
+    <string name="time_now">just now</string>
+    <string name="watched_ago">Watched %1$s</string>
+    <string name="added_ago">Added %1$s</string>
+    <string name="subscribers_compact">%1$s subscribers</string>
+    <string name="number_thousands">%1$sK</string>
+    <string name="number_millions">%1$sM</string>
+    <string name="number_billions">%1$sB</string>
+
+    <!-- Common (browsing) -->
+    <string name="action_cancel">Cancel</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_retry">Try again</string>
+    <string name="action_subscribe">Subscribe</string>
+    <string name="action_subscribed">Subscribed</string>
+    <string name="action_add">Add</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_save">Save</string>
+    <string name="badge_live">LIVE</string>
+    <string name="paging_error">Couldn\'t load more</string>
+
+    <!-- Navigation rail -->
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_subscriptions">Subscriptions</string>
+    <string name="nav_watch_later">Watch later</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_allowed_channels">Allowed channels</string>
+    <string name="rail_exit">Exit</string>
+    <string name="rail_switch_profile">Switch profile</string>
+
+    <!-- Home -->
+    <string name="home_title">Home</string>
+    <string name="home_subtitle">The latest from your channels</string>
+    <string name="home_refresh">Refresh</string>
+    <string name="home_syncing">Refreshing…</string>
+    <string name="home_last_sync">Last refreshed: %1$s</string>
+    <string name="home_never_synced">Not refreshed yet</string>
+    <string name="home_empty_title">Your subscriptions show up here</string>
+    <string name="home_empty_body">Shasha doesn\'t sign in to YouTube. Bring your subscriptions over once from Google Takeout, or search for a channel and subscribe, and its latest videos show up here.</string>
+    <string name="home_step_1">Export “Subscriptions” from takeout.google.com</string>
+    <string name="home_step_2">Copy subscriptions.csv to the TV</string>
+    <string name="home_step_3">Import it; the videos arrive within minutes</string>
+    <string name="home_empty_import">Import subscriptions</string>
+    <string name="home_empty_search">Search for a channel</string>
+    <string name="home_loading_title">Fetching the latest videos</string>
+    <string name="home_loading_body">Channels are refreshed three at a time so the TV isn\'t slowed down, and videos show up here as soon as they arrive.</string>
+    <string name="home_no_videos_title">No videos yet</string>
+    <string name="home_no_videos_body">Nothing has arrived from your channels yet. Try refreshing in a little while.</string>
+    <string name="home_sync_failures">Couldn\'t refresh %1$s of the channels</string>
+    <string name="home_sync_error_body">The latest videos from your channels couldn\'t be fetched in the last refresh.</string>
+
+    <!-- Search -->
+    <string name="search_hint">Search YouTube</string>
+    <string name="search_filter_all">All</string>
+    <string name="search_filter_videos">Videos</string>
+    <string name="search_filter_channels">Channels</string>
+    <string name="search_filter_playlists">Playlists</string>
+    <string name="search_idle_title">What are you looking for?</string>
+    <string name="search_idle_body">Press the microphone button and say what you\'re looking for, or press OK on the search box to type with the keyboard.</string>
+    <string name="search_loading">Searching…</string>
+    <string name="search_no_results">No results for “&#x2068;%1$s&#x2069;”</string>
+    <string name="search_no_results_body">Try other words or another kind of result.</string>
+
+    <!-- Channel and playlist pages -->
+    <string name="channel_loading">Fetching videos…</string>
+    <string name="channel_no_videos">This channel has no videos.</string>
+    <string name="channel_unsubscribe">Unsubscribe</string>
+    <string name="channel_parental">Parental controls</string>
+    <string name="playlist_label">Playlist</string>
+    <string name="playlist_play_all">Play all</string>
+    <string name="playlist_loading">Opening the playlist…</string>
+    <string name="playlist_empty">The playlist is empty.</string>
+
+    <!-- Watch later, history, subscriptions -->
+    <string name="watch_later_title">Watch later</string>
+    <string name="watch_later_empty_title">Nothing saved yet</string>
+    <string name="watch_later_empty_body">Hold OK on any video, or press the menu button, then choose “Watch later”. You can also save from the player.</string>
+    <string name="history_title">History</string>
+    <string name="history_clear">Clear history</string>
+    <string name="history_clear_confirm_title">Clear watch history?</string>
+    <string name="history_clear_confirm_body">Every video is removed from the history, with no undo. Resume positions stay as they are.</string>
+    <string name="history_empty_title">History is empty</string>
+    <string name="history_empty_body">Videos you watch show up here, newest first.</string>
+    <string name="subscriptions_title">Subscriptions</string>
+    <string name="subscriptions_import">Import</string>
+    <string name="subscriptions_empty_title">No subscriptions yet</string>
+    <string name="subscriptions_empty_body">Import your subscriptions from Google Takeout, or search for a channel and press “Subscribe”.</string>
+
+    <!-- Card context menu (OK held, or the MENU key) -->
+    <string name="menu_watch_later_add">Watch later</string>
+    <string name="menu_watch_later_remove">Remove from “Watch later”</string>
+    <string name="menu_go_to_channel">Go to channel</string>
+    <string name="menu_allowlist_add">Add to &#x2068;%1$s&#x2069;\'s allowlist</string>
+    <string name="menu_allowlist_remove">Remove from &#x2068;%1$s&#x2069;\'s allowlist</string>
+    <string name="menu_block_channel">Block channel</string>
+    <string name="menu_unblock_channel">Unblock channel</string>
+    <string name="menu_channel_subtitle">Channel</string>
+    <string name="menu_no_children">No kids\' profiles yet. Add them from Settings → Profiles.</string>
+    <string name="menu_parental_pin_body">To edit allowlists and blocklists</string>
+    <string name="message_allowlist_added">Added %1$s to &#x2068;%2$s&#x2069;\'s allowlist</string>
+    <string name="message_allowlist_removed">Removed %1$s from &#x2068;%2$s&#x2069;\'s allowlist</string>
+    <string name="message_blocked">Blocked %1$s in every profile</string>
+    <string name="message_unblocked">Unblocked %1$s</string>
+    <string name="message_unsubscribed">Unsubscribed from %1$s</string>
+
+    <!-- Settings (SPEC §7). The hub's own strings are the hub_* section. -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_diagnostics">Diagnostics</string>
+    <string name="settings_version">Shasha %1$s · extraction library %2$s</string>
+
+    <string-array name="count_minutes">
+        <item>1 minute</item>
+        <item>2 minutes</item>
+        <item>%1$s minutes</item>
+        <item>%1$s minutes</item>
+        <item>%1$s minutes</item>
+    </string-array>
+    <string-array name="count_minutes_after">
+        <item>1 minute</item>
+        <item>2 minutes</item>
+        <item>%1$s minutes</item>
+        <item>%1$s minutes</item>
+        <item>%1$s minutes</item>
+    </string-array>
+    <string-array name="count_hours">
+        <item>1 hour</item>
+        <item>2 hours</item>
+        <item>%1$s hours</item>
+        <item>%1$s hours</item>
+        <item>%1$s hours</item>
+    </string-array>
+    <string-array name="count_playlists">
+        <item>1 playlist</item>
+        <item>2 playlists</item>
+        <item>%1$s playlists</item>
+        <item>%1$s playlists</item>
+        <item>%1$s playlists</item>
+    </string-array>
+    <string-array name="count_profiles">
+        <item>1 profile</item>
+        <item>2 profiles</item>
+        <item>%1$s profiles</item>
+        <item>%1$s profiles</item>
+        <item>%1$s profiles</item>
+    </string-array>
+    <string-array name="count_times">
+        <item>once</item>
+        <item>twice</item>
+        <item>%1$s times</item>
+        <item>%1$s times</item>
+        <item>%1$s times</item>
+    </string-array>
+    <string-array name="attempts_left">
+        <item>1 attempt left</item>
+        <item>2 attempts left</item>
+        <item>%1$s attempts left</item>
+        <item>%1$s attempts left</item>
+        <item>%1$s attempts left</item>
+    </string-array>
+
+    <!-- Times of day and durations (ui/format/TimeTexts): 12-hour clock, Western digits. -->
+    <string name="clock_am">%1$s AM</string>
+    <string name="clock_pm">%1$s PM</string>
+    <string name="clock_am_short">AM</string>
+    <string name="clock_pm_short">PM</string>
+    <string name="when_today">at %1$s</string>
+    <string name="when_tomorrow">tomorrow at %1$s</string>
+    <string name="when_weekday">on %1$s at %2$s</string>
+    <string-array name="weekdays">
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+        <item>Sunday</item>
+    </string-array>
+    <string name="duration_hours_minutes">%1$s and %2$s</string>
+    <string name="duration_short_minutes">%1$s min</string>
+    <string name="duration_short_hours">%1$sh</string>
+    <string name="duration_short_both">%1$sh %2$sm</string>
+    <string name="unit_minutes">minutes</string>
+
+    <!-- The app's PIN pad (never the system keyboard) -->
+    <string name="pin_parent_title">Parent PIN</string>
+    <string name="pin_clear">Clear</string>
+    <string name="pin_backspace">Delete digit</string>
+    <string name="pin_confirm">Confirm</string>
+    <string name="pin_wrong">Wrong PIN. %1$s.</string>
+    <string name="pin_locked_out">Too many wrong attempts. Try again in %1$s</string>
+    <string name="pin_not_set">The parent PIN isn\'t set yet.</string>
+    <string name="pin_required">This choice needs the parent PIN.</string>
+    <string name="pin_switch_playback_locked">A Serious Mode video is playing. Finish it first, then switch profiles.</string>
+    <string name="pin_switch_not_found">This profile no longer exists.</string>
+    <string name="pin_check_failed">The PIN couldn\'t be checked. Try again.</string>
+    <string name="pin_enter_body">To enter &#x2068;%1$s&#x2069;\'s profile</string>
+    <string name="pin_exit_body">To leave &#x2068;%1$s&#x2069;\'s profile</string>
+    <string name="pin_new_confirm_title">Enter the PIN again</string>
+    <string name="pin_new_confirm_body">To make sure you typed what you meant</string>
+    <string name="pin_new_mismatch">The PINs don\'t match. Choose the PIN again.</string>
+
+    <!-- First start -->
+    <string name="setup_welcome_title">Welcome to Shasha</string>
+    <string name="setup_welcome_body">YouTube for your home: no ads, no algorithm. Setup takes just a few steps.</string>
+    <string name="setup_feature_kids">Kids\' profiles that show only what you allow</string>
+    <string name="setup_feature_time">A daily quota and viewing hours, with a quiet warning</string>
+    <string name="setup_feature_pin">A PIN that guards your profile and settings</string>
+    <string name="setup_start">Let\'s start</string>
+    <string name="setup_pin_title">Choose the parent PIN</string>
+    <string name="setup_pin_body">4 to 8 digits. It opens your profile, lets kids out of their profiles and grants extra time.</string>
+    <string name="setup_pin_body_short">4 to 8 digits</string>
+    <string name="setup_owner_title">Your profile</string>
+    <string name="setup_owner_body">Your name and picture as they appear in the profile list. Your profile only opens with the PIN.</string>
+    <string name="setup_owner_hint">Your name</string>
+    <string name="setup_next">Next</string>
+    <string name="setup_child_title">A profile for your child</string>
+    <string name="setup_child_body">Optional. Your child enters without a PIN, leaves with the PIN, and sees only the channels you allow. It starts with one hour a day between 7 AM and 10 PM and no Shorts; you can change that in Settings.</string>
+    <string name="setup_child_hint">Child\'s name</string>
+    <string name="setup_child_add">Add profile</string>
+    <string name="setup_child_skip">Later</string>
+
+    <!-- Profile picker -->
+    <string name="picker_title">Who\'s watching?</string>
+    <string name="picker_with_pin">With PIN</string>
+    <string name="picker_current">Current profile</string>
+    <string name="picker_child">Kid\'s profile</string>
+    <string name="picker_adult">Adult profile</string>
+    <string name="picker_hint_start">Kids\' profiles open right away; the adult profile needs the PIN.</string>
+    <string name="picker_hint_from_adult">Press Back to return to your profile.</string>
+    <string name="picker_hint_from_child">Choose a profile, or press Back to return. The screen also goes back by itself after a minute.</string>
+
+    <!-- A child's screens -->
+    <string name="kids_hello">Hi, &#x2068;%1$s&#x2069;!</string>
+    <string name="kids_hello_body">Here are the latest videos from your channels</string>
+    <string name="kids_playlists">Your playlists</string>
+    <string name="kids_latest">Latest videos</string>
+    <string name="kids_loading">Getting your videos ready…</string>
+    <string name="kids_empty_title">Nothing here yet</string>
+    <string name="kids_empty_body">Ask your parents to add your favorite channels.</string>
+    <string name="kids_no_videos_title">No new videos</string>
+    <string name="kids_no_videos_body">Your channels haven\'t posted anything lately. Open “Allowed channels” to watch more.</string>
+    <string name="kids_failed_body">The allowed channels\' videos couldn\'t be fetched.</string>
+
+    <!-- Why something may not be played or opened (titles; the sentence is policy_deny_*) -->
+    <string name="deny_title_not_in_allowlist">Not allowed in this profile</string>
+    <string name="deny_title_blocked_channel">Blocked channel</string>
+    <string name="deny_title_blocked_keyword">Blocked title</string>
+    <string name="deny_title_shorts_hidden">Shorts are hidden</string>
+    <string name="deny_title_time_up">Time\'s up</string>
+    <string name="deny_title_outside_schedule">Outside viewing hours</string>
+    <string name="deny_title_locked">Serious Mode</string>
+
+    <!-- Time: the quiet notice, "time up", outside the allowed hours -->
+    <string name="time_warning_title">%1$s of watch time left</string>
+    <string name="time_warning_body">Watching stops after that; a parent can reopen it with the PIN.</string>
+    <string name="time_up_title">Time\'s up</string>
+    <string name="time_up_body_child">Today\'s watch time is over. See you tomorrow!</string>
+    <string name="time_up_body">Today\'s watch time is used up.</string>
+    <string name="time_up_reopens">Watching resumes tomorrow</string>
+    <string name="time_up_reopens_at">Watching resumes tomorrow at %1$s</string>
+    <string name="outside_schedule_title">Outside viewing hours</string>
+    <string name="outside_schedule_body_child">Time for a break. The screen will be waiting at your usual time.</string>
+    <string name="outside_schedule_body">Watching isn\'t allowed at this time by this profile\'s schedule.</string>
+    <string name="outside_schedule_reopens">Watching resumes %1$s</string>
+    <string name="time_unlock_with_pin">Unlock with PIN</string>
+    <string name="time_unlock_switch_profile">Switch profile</string>
+    <string name="time_unlock_phone_hint">Parents can also unlock from the phone.</string>
+    <string name="time_unlock_pin_body">To add watch time for &#x2068;%1$s&#x2069;\'s profile</string>
+    <string name="time_unlock_choose_title">How much time to add?</string>
+    <string name="time_unlock_choose_body">The extra time starts now, and also overrides the schedule if that\'s what stopped watching.</string>
+    <string name="time_unlock_rest_of_today">Rest of today</string>
+    <string name="time_unlock_failed">The extra time couldn\'t be saved. Try again.</string>
+
+    <!-- Settings: parental sections -->
+    <string name="settings_stats">Stats</string>
+    <string name="settings_change_pin">Change parent PIN</string>
+    <string name="settings_change_pin_body">The current PIN is asked for first</string>
+    <string name="settings_pin_body">To open parental settings</string>
+
+    <string name="profiles_title">Profiles</string>
+    <string name="profiles_add_child">Add a kid\'s profile</string>
+    <string name="profiles_new_child_title">New kid\'s profile</string>
+    <string name="profiles_new_child_body">It starts with one hour a day between 7 AM and 10 PM, no Shorts, and an empty allowlist for you to fill.</string>
+    <string name="profiles_create">Create</string>
+    <string name="profile_kind_child">Kid\'s profile</string>
+    <string name="profile_kind_adult">Adult profile</string>
+    <string name="profile_name">Name</string>
+    <string name="profile_avatar">Picture</string>
+    <string name="profile_quota">Daily quota</string>
+    <string name="profile_schedule">Viewing hours</string>
+    <string name="profile_hide_shorts">Hide Shorts</string>
+    <string name="profile_allowlist">Allowlist</string>
+    <string name="profile_delete">Delete profile</string>
+    <string name="profile_delete_title">Delete &#x2068;%1$s&#x2069;\'s profile?</string>
+    <string name="profile_delete_body">The profile is deleted with its history, resume positions, “Watch later” and stats, with no undo.</string>
+    <string name="profile_deleted">&#x2068;%1$s&#x2069;\'s profile deleted</string>
+    <string name="profile_edit_child_note">Your child enters without a PIN and leaves with the parent PIN. Changes are saved right away.</string>
+    <string name="profile_edit_adult_note">Your profile opens with the PIN. The quota and hours here can apply to you too, if you like.</string>
+    <string name="quota_unlimited">No limit</string>
+    <string name="quota_per_day">%1$s a day</string>
+    <string name="schedule_all_day">All day</string>
+    <string name="schedule_range">%1$s – %2$s</string>
+    <string name="schedule_from">From</string>
+    <string name="schedule_until">To</string>
+    <string name="schedule_summary">Watching allowed from %1$s to %2$s</string>
+    <string name="schedule_hint">Press OK on a number to change it with up and down, then OK again.</string>
+    <string name="toggle_on">On</string>
+    <string name="toggle_off">Off</string>
+
+    <string name="allowlist_title">&#x2068;%1$s&#x2069;\'s allowlist</string>
+    <string name="allowlist_add_from_subscriptions">From my subscriptions</string>
+    <string name="allowlist_channels">Channels</string>
+    <string name="allowlist_playlists">Playlists</string>
+    <string name="allowlist_empty_body">&#x2068;%1$s&#x2069;\'s allowlist is empty, so nothing shows in their profile yet. Add channels “From my subscriptions”, or hold OK on a channel or playlist card.</string>
+    <string name="allowlist_empty_short">The list is empty</string>
+    <string name="allowlist_no_playlists">No playlists.</string>
+    <string name="allowlist_how_to_add">To add: hold OK on a channel or playlist card, use “Parental controls” on its page, or the phone.</string>
+    <string name="allowlist_pick_title">My subscriptions in &#x2068;%1$s&#x2069;\'s allowlist</string>
+    <string name="allowlist_pick_empty">No subscriptions yet. Import them from Settings.</string>
+
+    <string name="blocklist_title">Blocklist</string>
+    <string name="blocklist_subtitle">What you block here doesn\'t show in any profile</string>
+    <string name="blocklist_keywords">Words in the title</string>
+    <string name="blocklist_keyword_hint">A word or phrase</string>
+    <string name="blocklist_keyword_added">Blocked “&#x2068;%1$s&#x2069;”</string>
+    <string name="blocklist_keyword_exists">“&#x2068;%1$s&#x2069;” is already blocked</string>
+    <string name="blocklist_no_keywords">No blocked words.</string>
+    <string name="blocklist_channels">Blocked channels</string>
+    <string name="blocklist_no_channels">No blocked channels. Block a channel from its card\'s menu, or from “Parental controls” on its page.</string>
+    <string name="blocklist_unblock">Unblock</string>
+    <string name="blocklist_subscribed">Subscribed</string>
+
+    <string name="change_pin_current">Current PIN</string>
+    <string name="change_pin_current_body">Enter the current parent PIN</string>
+    <string name="change_pin_new">New PIN</string>
+    <string name="change_pin_done">Parent PIN changed</string>
+    <string name="change_pin_failed">The PIN couldn\'t be changed. Start again.</string>
+
+    <string name="stats_title">Stats</string>
+    <string name="stats_subtitle">Minutes watched, as they are: no points, no badges</string>
+    <string name="stats_last_7_days">Last 7 days</string>
+    <string name="stats_today">Today</string>
+    <string name="stats_quota_key">Quota %1$s</string>
+    <string name="stats_this_week">This week</string>
+    <string name="stats_more_than_last_week">%1$s more than last week</string>
+    <string name="stats_less_than_last_week">%1$s less than last week</string>
+    <string name="stats_same_as_last_week">Same as last week</string>
+    <string name="stats_no_previous_week">No data from last week to compare</string>
+    <string name="stats_top_channels">Most watched channels</string>
+    <string name="stats_no_channels">No watching recorded in these days.</string>
+    <string name="stats_surrenders">Gave up early this week: %1$s</string>
+    <string name="stats_no_surrenders">Never gave up early this week</string>
+
+    <!-- Import subscriptions -->
+    <string name="import_title">Import subscriptions</string>
+    <string name="import_subtitle">On takeout.google.com, choose “YouTube and YouTube Music”, then “subscriptions” only.</string>
+    <string name="import_adb_title">From your computer with ADB</string>
+    <string name="import_adb_body">Run this command, and the TV picks up the file and imports it by itself:</string>
+    <string name="import_adb_waiting">Waiting for the file…</string>
+    <string name="import_adb_found">The file arrived, importing…</string>
+    <string name="import_file_title">From a file on the TV</string>
+    <string name="import_file_body">Choose subscriptions.csv (or the zip file you downloaded) with the TV\'s file browser.</string>
+    <string name="import_file_pick">Choose a file</string>
+    <string name="import_file_unavailable">This TV has no file browser. Use the ADB command above.</string>
+    <string name="import_working">Importing…</string>
+    <string name="import_done_title">Import done</string>
+    <string name="import_done_added">Added %1$s</string>
+    <string name="import_done_existing">Already there: %1$s</string>
+    <string name="import_done_invalid">Invalid lines: %1$s</string>
+    <string name="import_go_home">Go to Home</string>
+    <string name="import_error_title">Couldn\'t import</string>
+    <string name="import_error_empty">The file is empty.</string>
+    <string name="import_error_too_large">The file is larger than a subscription list should be.</string>
+    <string name="import_error_broken_zip">The zip file is damaged or incomplete.</string>
+    <string name="import_error_no_csv">There\'s no CSV file inside the zip file.</string>
+    <string name="import_error_no_channels">No channels were found in the file. Make sure it\'s subscriptions.csv from Takeout.</string>
+    <string name="import_error_read">The file couldn\'t be read.</string>
+
+    <!-- The in-app lock (SPEC §4). -->
+    <string name="lock_child_title">Leaving needs the parent PIN</string>
+    <string name="lock_child_body">Serious Mode: this video plays to the end. Ask a parent to enter the PIN.</string>
+    <string name="lock_back_to_video">Back returns you to the video</string>
+    <string name="lock_pin_not_for_adult">In the adult profile, Serious Mode isn\'t left with the PIN but by holding a key, then typing the phrase.</string>
+    <string name="lock_adult_hint">Serious Mode: to leave before the video ends, hold Back or &#x2068;OK&#x2069; for %1$s</string>
+    <string name="lock_hold_title">Keep holding to leave</string>
+    <string name="lock_hold_body">Let go to stay with the video</string>
+    <string name="lock_hold_key_back">The Back button</string>
+    <string name="lock_hold_key_ok">The &#x2068;OK&#x2069; button</string>
+    <string-array name="lock_hold_seconds">
+        <item>second</item>
+        <item>seconds</item>
+        <item>seconds</item>
+        <item>seconds</item>
+        <item>seconds</item>
+    </string-array>
+    <string name="lock_phrase_step">Last step</string>
+    <string name="lock_phrase_title">Type this phrase to leave</string>
+    <string name="lock_phrase_placeholder">Type with the keyboard below</string>
+    <string name="lock_phrase_mismatch">The phrase doesn\'t match. Type it exactly as shown.</string>
+    <string name="lock_phrase_exit">Leave</string>
+    <string name="lock_phrase_cancel">Keep watching</string>
+    <string name="lock_phrase_note">Leaving before the video ends is recorded in the stats as giving up.</string>
+    <string name="lock_phrase_failed">Couldn\'t leave. Try again.</string>
+    <string name="lock_key_space">Space</string>
+    <string name="lock_key_delete">Delete letter</string>
+    <string name="lock_surrendered">You left before the video ended; it was recorded as giving up.</string>
+
+    <string name="player_skipped_still_locked">Fast-forwarding to the end doesn\'t end Serious Mode: the video still has to be watched to the end.</string>
+
+    <string name="player_kids_home">Home</string>
+    <string-array name="back_home_in_seconds">
+        <item>Back to Home in 1 second</item>
+        <item>Back to Home in 2 seconds</item>
+        <item>Back to Home in %1$s seconds</item>
+        <item>Back to Home in %1$s seconds</item>
+        <item>Back to Home in %1$s seconds</item>
+    </string-array>
+
+    <!-- SPEC §4, the guard outside the app: its cover over another app, and its (quiet) notification. -->
+    <string name="guard_cover_text">One moment… returning to Shasha</string>
+    <string name="guard_channel_name">Protection</string>
+    <string name="guard_notification_title">Protection is on</string>
+    <string name="guard_notification_text">Keeps Shasha in front throughout a kid\'s profile, during a Serious Mode video, when time is up and outside viewing hours.</string>
+    <string name="guard_cover_child">In a kid\'s profile Shasha stays in front. Leaving it needs the parent PIN.</string>
+
+    <!-- «حالة الحماية» (Settings, SPEC §4 and §7). -->
+    <string name="protection_title">Protection status</string>
+    <string name="protection_subtitle">The guard keeps Shasha in front: kids\' profiles, Serious Mode, time up, outside the schedule</string>
+    <string name="protection_all_good">Protection is on</string>
+    <string-array name="protection_missing_count">
+        <item>1 thing missing</item>
+        <item>2 things missing</item>
+        <item>%1$s things missing</item>
+        <item>%1$s things missing</item>
+        <item>%1$s things missing</item>
+    </string-array>
+    <string name="protection_checking">Checking…</string>
+    <string name="protection_section_guard">What the guard needs</string>
+    <string name="protection_section_other">Other settings</string>
+    <string name="protection_section_returns">Return speed</string>
+    <string name="protection_section_limits">Limits of the protection</string>
+    <string name="protection_commands_note">Run the commands from a computer on the TV\'s network after &#x2068;adb connect&#x2069;, or run the installer again, as in the Shasha Guide.</string>
+    <string name="protection_overlay_title">Display over other apps</string>
+    <string name="protection_overlay_body">To cover any other app at once and bring Shasha back to the front.</string>
+    <string name="protection_usage_title">Usage access</string>
+    <string name="protection_usage_body">To know which app is in front.</string>
+    <string name="protection_guard_title">Guard service</string>
+    <string name="protection_guard_body_running">Runs from the app\'s start, and comes back by itself after every TV restart.</string>
+    <string name="protection_guard_body_waiting">Starts by itself once both permissions above are granted.</string>
+    <string name="protection_guard_body_stopped">Stopped. It starts when the app is opened again.</string>
+    <string name="protection_install_title">Installing updates</string>
+    <string name="protection_install_body">So that “Check for updates” can open the system installer with the new version.</string>
+    <string name="protection_youtube_title">The official YouTube app</string>
+    <string name="protection_youtube_body_enabled">Its remote button opens it in the adult profile (in a kid\'s profile the guard covers it and brings Shasha back). Disabling it is optional:</string>
+    <string name="protection_youtube_body_disabled">Disabled, so the remote button doesn\'t open it.</string>
+    <string name="protection_youtube_body_missing">Not installed on this TV.</string>
+    <string name="protection_time_title">Automatic time</string>
+    <string name="protection_time_body_on">The TV\'s date and time come from the network, so the schedule and quota can\'t be changed by changing the clock.</string>
+    <string name="protection_time_body_off">The quota and schedule follow the TV\'s clock: whoever changes the date or time in settings changes them too. Turn it on in settings, or:</string>
+    <string name="protection_state_granted">Granted</string>
+    <string name="protection_state_missing">Missing</string>
+    <string name="protection_state_running">Running</string>
+    <string name="protection_state_stopped">Stopped</string>
+    <string name="protection_state_disabled">Disabled</string>
+    <string name="protection_state_enabled">Enabled</string>
+    <string name="protection_state_not_installed">Not installed</string>
+    <string name="protection_state_on">On</string>
+    <string name="protection_state_off">Off</string>
+    <string name="protection_returns_empty">Not measured yet. To try it: enter a kid\'s profile, then press Home on the remote.</string>
+    <string name="protection_returns_goal">The goal: Shasha comes back within 2 seconds at most.</string>
+    <string name="protection_return_seconds">%1$s s</string>
+    <string name="protection_return_from">From &#x2068;%1$s&#x2069; · %2$s</string>
+    <string name="protection_return_unknown_app">Unknown app</string>
+    <string name="protection_limits_outside">In the adult profile, the guard only steps in during a Serious Mode video or when time is up, and not after a kid\'s profile was left with the parent PIN until another profile is chosen. At those times, whoever reaches the TV\'s settings can stop the app, clear its data or uninstall it, revoke these two permissions, or bring YouTube back.</string>
+    <string name="protection_limits_force_stop">“Force stop” in settings stops the guard until the app is opened again, and restarting the TV doesn\'t bring it back.</string>
+    <string name="protection_limits_keys">In a kid\'s profile and in Serious Mode, the Home button, the remote\'s app buttons, voice commands, casting from a phone and the HDMI input aren\'t blocked: whatever appears is covered and Shasha comes back within a second or two.</string>
+    <string name="protection_limits_owner">Blocking all of that needs &#x2068;Device Owner&#x2069; mode, which was ruled out on purpose: the lock isn\'t unbreakable.</string>
+    <string name="protection_limits_pin_lockout">In a kid\'s profile, when time is up and outside viewing hours, only the parent PIN leaves Shasha (on the TV, or switching profiles from the phone page with its own counter). If the PIN is locked after wrong attempts (5 minutes up to 4 hours; restarting doesn\'t end the wait) or forgotten, the whole TV stays on Shasha until the wait or the block ends. The way out: from the computer that set it up, with debugging still on, run &#x2068;%1$s&#x2069; (the guard stops until the app is opened again).</string>
+
+    <!-- Settings: the protection category. -->
+    <string name="settings_protection">Protection status</string>
+
+    <!-- SPEC §5, the phone remote. -->
+    <string name="settings_remote">Phone remote</string>
+    <string name="settings_backup">Import &amp; export</string>
+
+    <string name="remote_channel_name">Phone remote</string>
+    <string name="remote_notification_title">The phone remote is on</string>
+    <string name="remote_notification_text">Receives links and playback commands from the Shasha page on your phone.</string>
+
+    <!-- Answers to the phone (RemoteResult.message and refusals). -->
+    <string name="remote_play_sent">Now on the TV: “&#x2068;%1$s&#x2069;”</string>
+    <string name="remote_play_sent_plain">Sent to the TV.</string>
+    <string name="remote_play_playlist">The playlist “&#x2068;%1$s&#x2069;” is now on the TV.</string>
+    <string name="remote_play_channel">The channel page is now on the TV.</string>
+    <string name="remote_link_not_youtube">This isn\'t a YouTube link. Send a video, playlist or channel link.</string>
+    <string name="remote_playlist_nothing_allowed">The playlist has no video allowed in this profile.</string>
+    <string name="remote_screen_off">The TV is on standby. Turn it on, then send again.</string>
+    <string name="remote_not_in_front">Open Shasha on the TV, then send again. To open by itself it needs the “Display over other apps” permission: run the installer again, as in the Shasha Guide.</string>
+    <string name="remote_no_profile">Choose the profile on the TV first, then send again.</string>
+    <string name="remote_profile_changed">The profile on the TV changed before the link opened. Send it again.</string>
+    <string name="remote_show_failed">The TV didn\'t respond. Try again.</string>
+    <string name="remote_timeout">The TV took too long. Try again.</string>
+    <string name="remote_nothing_playing">Nothing is playing right now.</string>
+    <string name="remote_stopped">Playback stopped.</string>
+    <string name="remote_video_locked">Serious Mode: the video plays to the end. A parent can end it from the parent section.</string>
+    <string name="remote_player_ended">The video ended. “Replay” on the TV starts it again.</string>
+    <string name="remote_player_live">You can\'t skip ahead in a live stream.</string>
+    <string name="remote_player_covered">The TV is asking for a PIN right now; the video resumes after it.</string>
+    <string name="remote_search_disabled">Search isn\'t available in a kid\'s profile.</string>
+    <string name="remote_youtube_changed">YouTube changed something. Update the app. %1$s</string>
+    <string name="remote_offline">The TV isn\'t connected to the internet right now.</string>
+    <string name="remote_profile_not_found">This profile doesn\'t exist.</string>
+    <string name="remote_profile_current">“&#x2068;%1$s&#x2069;” is the profile open right now.</string>
+    <string name="remote_profile_switched">The TV is now on “&#x2068;%1$s&#x2069;”.</string>
+    <string name="remote_profile_switched_adult">Switched to “&#x2068;%1$s&#x2069;”; the parent PIN is also asked for on the TV before it opens.</string>
+    <string name="remote_profile_needs_pin">This profile needs the parent PIN.</string>
+    <string name="remote_pin_wrong">Wrong PIN.</string>
+    <string name="remote_pin_wrong_left">Wrong PIN. %1$s.</string>
+    <string name="remote_pin_locked">Too many wrong attempts. Try again in %1$s, or enter the PIN on the TV.</string>
+    <string name="remote_pin_not_set">The parent PIN isn\'t set yet. Set it up in Shasha on the TV first.</string>
+    <string name="remote_switch_locked">A Serious Mode video is playing. End Serious Mode for it from the parent section first, then switch profiles.</string>
+    <string name="remote_quota_saved">Daily quota saved for “&#x2068;%1$s&#x2069;”: %2$s.</string>
+    <string name="remote_quota_unlimited">“&#x2068;%1$s&#x2069;” has no daily limit now.</string>
+    <string name="remote_time_rest_of_today">Time unlocked for “&#x2068;%1$s&#x2069;” for the rest of today.</string>
+    <string name="remote_time_added">Added %2$s to “&#x2068;%1$s&#x2069;”\'s time.</string>
+    <string name="remote_time_no_limit">Nothing is stopping “&#x2068;%1$s&#x2069;” right now.</string>
+    <string name="remote_time_failed">The extra time couldn\'t be saved. Try again.</string>
+    <string name="remote_video_unlocked">Serious Mode ended for this video. It can be left now.</string>
+    <string name="remote_video_unlocked_adult">Serious Mode ended for this video; leaving before the end was recorded in the stats as giving up.</string>
+    <string name="remote_video_not_locked">No video is in Serious Mode right now.</string>
+    <string name="remote_video_unlock_failed">Ending Serious Mode couldn\'t be saved. Try again.</string>
+    <string name="remote_allowlist_child_only">Allowlists are for kids\' profiles only.</string>
+    <string name="remote_allowlist_bad_link">Send a channel link (like &#x2068;youtube.com/@name&#x2069;) or a playlist link.</string>
+    <string name="remote_allowlist_added">Added “&#x2068;%1$s&#x2069;” to “&#x2068;%2$s&#x2069;”\'s allowlist.</string>
+    <string name="remote_allowlist_exists">“&#x2068;%1$s&#x2069;” is already on “&#x2068;%2$s&#x2069;”\'s allowlist.</string>
+    <string name="remote_allowlist_removed">Removed “&#x2068;%1$s&#x2069;” from “&#x2068;%2$s&#x2069;”\'s allowlist.</string>
+    <string name="remote_allowlist_not_there">This isn\'t on the allowlist.</string>
+    <string name="remote_subs_added">Subscribed to “&#x2068;%1$s&#x2069;”; its videos reach Home within minutes.</string>
+    <string name="remote_subs_exists">You\'re already subscribed to “&#x2068;%1$s&#x2069;”.</string>
+    <string name="remote_subs_not_channel">This isn\'t a YouTube channel link.</string>
+    <string name="remote_subs_removed">Unsubscribed from “&#x2068;%1$s&#x2069;”.</string>
+    <string name="remote_subs_not_subscribed">You\'re not subscribed to this channel.</string>
+    <string name="remote_takeout_added">Added %1$s from Google Takeout; their videos arrive within minutes.</string>
+    <string name="remote_takeout_added_some_present">Added %1$s from Google Takeout; %2$s were already there.</string>
+    <string name="remote_takeout_all_present">Every channel in the file was already there (%1$s).</string>
+    <string name="remote_backup_locked">A Serious Mode video is playing. End Serious Mode for it first, then restore the backup.</string>
+
+    <!-- Settings → التحكم من الجوال -->
+    <string name="remote_title">Phone remote</string>
+    <string name="remote_subtitle">Send links, search and control playback from your phone\'s browser</string>
+    <string name="remote_status_running">Running</string>
+    <string name="remote_status_starting">Starting…</string>
+    <string name="remote_status_no_network">No local network</string>
+    <string name="remote_status_failed">Couldn\'t start</string>
+    <string name="remote_status_off">Off</string>
+    <string name="remote_step_scan">Scan the code with your phone\'s camera and open the link. The phone must be on the same network as the TV.</string>
+    <string name="remote_step_home">Add the page to your phone\'s home screen to open it with one tap. Its parent section opens with the parent PIN.</string>
+    <string name="remote_regenerate_hint">Wrong PINs in a row from any paired phone close the parent section on every phone for a while, without touching the TV. Making a new code ends that.</string>
+    <string name="remote_phone_pin_wrong">Wrong PINs from the phone since the last correct login: %1$s.</string>
+    <string name="remote_phone_pin_locked">The phone\'s parent section is closed after wrong PINs, and reopens in %1$s.</string>
+    <string name="remote_step_share">Share → Shasha: open the page with the video link at its end, after &#x2068;&amp;v=&#x2069;, with a shortcut (“Shortcuts” on iPhone, or &#x2068;HTTP Shortcuts&#x2069; on Android) or a bookmark. The page gives you the link ready to copy.</string>
+    <string name="remote_nsd_label">Name on the network: “&#x2068;%1$s&#x2069;”</string>
+    <string name="remote_regenerate">Make a new code</string>
+    <string name="remote_regenerate_title">Make a new pairing code?</string>
+    <string name="remote_regenerate_body">Every paired phone stops at once and needs to scan the new code. The count of wrong PINs from the phone is also forgotten.</string>
+    <string name="remote_regenerate_confirm">Make a new code</string>
+    <string name="remote_regenerated">New code: scan it again from your phone.</string>
+    <string name="remote_off_title">The phone remote is off</string>
+    <string name="remote_off_body">Turn it on to show the pairing code here.</string>
+    <string name="remote_no_network_title">No local network</string>
+    <string name="remote_no_network_body">Connect the TV to &#x2068;Wi-Fi&#x2069; or a cable, and keep the phone on the same network.</string>
+    <string name="remote_failed_title">The server couldn\'t start</string>
+    <string name="remote_failed_body">The usual ports are busy. It tries again by itself in a moment.</string>
+    <string name="remote_starting_title">Starting the server…</string>
+    <string name="remote_qr_description">QR code to open the Shasha page on your phone</string>
+
+    <!-- The first start's last step: pair the phone. -->
+    <string name="setup_phone_title">Control it from your phone</string>
+    <string name="setup_phone_body">Scan the code with your phone\'s camera, on the TV\'s network, to send links, search and unlock time from the phone. You\'ll find it later in Settings → Phone remote.</string>
+    <string name="setup_phone_done">Done</string>
+
+    <!-- Settings → الاستيراد والتصدير (the manual JSON backup). -->
+    <string name="backup_title">Import &amp; export</string>
+    <string name="backup_subtitle">A JSON backup with profiles, the parent PIN, quotas, lists, subscriptions, history and stats</string>
+    <string name="backup_export_title">Export to a file</string>
+    <string name="backup_export_body">It\'s saved in the app\'s folder; copy it to your computer with this command:</string>
+    <string name="backup_export_action">Export now</string>
+    <string name="backup_exported">Backup saved: &#x2068;%1$s&#x2069;</string>
+    <string name="backup_export_failed">The file couldn\'t be saved.</string>
+    <string name="backup_import_title">Import from a file</string>
+    <string name="backup_import_body">Copy the backup file into the same folder, then choose it:</string>
+    <string name="backup_import_none">No files in the folder yet. They show up here by themselves when they arrive.</string>
+    <string name="backup_import_confirm_title">Restore &#x2068;%1$s&#x2069;?</string>
+    <string name="backup_import_confirm_body">All the TV\'s data is replaced with what\'s in the file: profiles, the parent PIN, lists, subscriptions, history and stats. This can\'t be undone.</string>
+    <string name="backup_import_action">Restore</string>
+    <string name="backup_restored">Backup restored: %1$s and %2$s.</string>
+    <string name="backup_restored_skipped">%1$s, and %2$s left out as invalid.</string>
+    <string name="backup_phone_note">From the phone too: parent section → “Backup” to download and restore.</string>
+    <string name="backup_file_size">%1$s KB</string>
+    <string name="backup_working">Working…</string>
+    <string name="backup_error_not_backup">This file isn\'t a Shasha backup.</string>
+    <string name="backup_error_newer">This backup is from a newer version of Shasha. Update the app first.</string>
+    <string name="backup_error_no_adult">The backup has no adult profile, so it wasn\'t restored.</string>
+    <string name="backup_error_too_large">The file is too large to be a Shasha backup.</string>
+    <string name="backup_error_failed">The restore failed, and nothing was changed.</string>
+    <string name="backup_error_read">The file couldn\'t be read.</string>
+
+    <!-- Settings (SPEC §7): two panes, the list of settings at the start, the focused one's pane beside it. -->
+    <string name="hub_group_parental">Parental controls</string>
+    <string name="hub_group_watching">Watching</string>
+    <string name="hub_group_device">TV &amp; phone</string>
+    <string name="hub_group_app">App</string>
+    <string name="hub_profiles">Profiles &amp; parent PIN</string>
+    <string name="hub_profiles_summary">Who watches on this TV, and the PIN that protects your profile and parental settings</string>
+    <string name="hub_lists">Allowlists &amp; blocklist</string>
+    <string name="hub_lists_summary">What shows in each kid\'s profile, and what\'s hidden from everyone</string>
+    <string name="hub_time">Quotas &amp; schedules</string>
+    <string name="hub_time_summary">Daily watch minutes and hours for each profile</string>
+    <string name="hub_sponsorblock">SponsorBlock categories</string>
+    <string name="hub_quality">Default quality</string>
+    <string name="hub_quality_summary">The highest quality the player reaches by itself, stepping down automatically when the network slows</string>
+    <string name="hub_remote">Local server</string>
+    <string name="hub_remote_summary">The phone remote: turning it on, the pairing QR code and a new code</string>
+    <string name="hub_data_summary">A backup of all the TV\'s data, and your subscriptions from Takeout</string>
+    <string name="hub_updates_summary">The installed version, and the latest on GitHub Releases</string>
+    <string name="hub_diagnostics_summary">Help for when YouTube breaks: test videos and TV details</string>
+    <string name="hub_about">About</string>
+    <string name="hub_about_summary">Developer and apps, version, skip data, licenses</string>
+    <string name="hub_loading">Loading…</string>
+
+    <!-- A parental pane before the parent PIN. -->
+    <string name="hub_locked_title">Opens with the parent PIN</string>
+    <string name="hub_locked_body">So that parental controls stay in your hands only, even if the TV is left on your profile.</string>
+    <string name="hub_locked_action">Unlock with the parent PIN</string>
+    <string name="hub_locked_note">It stays open for five minutes, then the PIN is asked for again.</string>
+
+    <!-- الملفات ورمز الوالدين -->
+    <string name="hub_profiles_manage">Manage profiles</string>
+    <string name="hub_profiles_manage_body">Add a kid\'s profile, names and pictures, hide Shorts, delete a profile</string>
+
+    <!-- قوائم السماح والحظر -->
+    <string name="hub_blocklist_section">Blocked · in every profile</string>
+    <string name="hub_list_empty">Empty</string>
+    <string name="hub_allowlists_section">Allowed · each kid has their own list</string>
+    <string name="hub_no_children">No kids\' profiles yet. Add one from “Profiles &amp; parent PIN”.</string>
+    <string name="hub_lists_hint">To add quickly: hold OK on a channel or playlist card, or send its link from the parent section on the phone.</string>
+    <string-array name="count_keywords">
+        <item>1 word</item>
+        <item>2 words</item>
+        <item>%1$s words</item>
+        <item>%1$s words</item>
+        <item>%1$s words</item>
+    </string-array>
+
+    <!-- الحصص والجداول: the pickers' titles name the profile. -->
+    <string name="hub_time_quota_of">Daily quota for &#x2068;%1$s&#x2069;</string>
+    <string name="hub_time_schedule_of">Viewing hours for &#x2068;%1$s&#x2069;</string>
+    <string name="hub_time_note">Five minutes before time runs out a quiet notice appears; after that, watching only reopens with the parent PIN, on the TV or from the phone.</string>
+
+    <!-- الإحصائيات -->
+    <string name="hub_stats_open">Details</string>
+    <string name="hub_stats_open_body">The last 7 days, day by day, the most watched channels, and giving up early</string>
+
+    <!-- فئات SponsorBlock -->
+    <string name="hub_sponsor_defaults">Back to the default selection</string>
+
+    <!-- الجودة الافتراضية -->
+    <string name="hub_quality_option">Auto up to %1$sp</string>
+    <string name="hub_quality_2160">The best YouTube offers (4K): for a 4K TV and very fast internet, and it may strain the processor.</string>
+    <string name="hub_quality_1440">Sharper than 1080p on 4K TVs, and needs fast internet.</string>
+    <string name="hub_quality_1080">A sharp picture without stutter on most TVs and networks.</string>
+    <string name="hub_quality_720">Saves data, and suits slow networks.</string>
+    <string name="hub_quality_480">The least data, for a very weak network.</string>
+    <string name="hub_quality_note">Applies from the next video. The player never goes beyond what the TV decodes smoothly, and the player\'s “Quality” menu can still pick a fixed quality up to this limit.</string>
+
+    <!-- حالة الحماية -->
+    <string name="hub_protection_open">Details and ADB commands</string>
+    <string name="hub_protection_open_body">What\'s missing and the command that grants it, the measured return speed, and what the protection can\'t stop</string>
+    <string name="hub_protection_last_return">Last return to Shasha after Home: %1$s s</string>
+    <!-- الخادم المحلي -->
+    <string name="hub_remote_switch">Run the server</string>
+    <string name="hub_remote_switch_body">Starts by itself with the TV, and listens on the home network only</string>
+    <string name="hub_remote_pairing">Pairing QR code</string>
+    <string name="hub_remote_pairing_body">Scan it with your phone\'s camera. From there you can make a new code, which stops every paired phone.</string>
+    <string name="hub_remote_address">Running at &#x2068;%1$s&#x2069;</string>
+    <string name="hub_remote_note">Every request from the phone needs the pairing code, and its parent section also needs the parent PIN.</string>
+
+    <!-- الاستيراد والتصدير -->
+    <string name="hub_data_backup">Backup</string>
+    <string name="hub_data_takeout">Import subscriptions from Takeout</string>
+    <string name="hub_data_takeout_body">From takeout.google.com: with ADB, a file on the TV, or from the phone</string>
+
+    <!-- فحص التحديثات -->
+    <string name="hub_version">Shasha %1$s</string>
+    <string name="hub_build_line">Build %1$s · extraction library %2$s</string>
+    <string name="hub_updates_how">Reads the latest version from GitHub Releases, downloads it and opens the system installer: Android doesn\'t allow silent updates.</string>
+    <string name="hub_updates_when">When YouTube breaks, the fix is usually a newer version of the extraction library.</string>
+    <string name="hub_updates_adb">Or instead: install the new version by running the installer again, as in the Shasha Guide.</string>
+
+    <!-- تشخيص -->
+    <string name="hub_diag_videos_body">Regular, live, made for kids, deleted, and one with a sponsor SponsorBlock skips: find out in seconds what broke</string>
+    <string name="hub_diag_facts">Diagnostic details</string>
+    <string name="hub_fact_app">App %1$s · build %2$s</string>
+    <string name="hub_fact_extractor">Extraction library NewPipeExtractor %1$s</string>
+    <string name="hub_fact_device">&#x2068;%1$s&#x2069; · Android %2$s (API %3$s)</string>
+    <string name="hub_fact_no_subscriptions">No subscriptions yet</string>
+    <string name="hub_fact_feed_never">Subscriptions: %1$s · not refreshed yet</string>
+    <string name="hub_fact_feed">Subscriptions: %1$s · last refreshed %2$s</string>
+    <string name="hub_fact_feed_failed">Channels that failed to refresh last time: %1$s</string>
+    <string name="hub_diag_hint">When something breaks: play the test videos first, then “Check for updates”. The Shasha Guide explains the rest.</string>
+
+    <!-- حول -->
+    <string name="hub_about_data_title">Segment skip data</string>
+    <string name="hub_about_licenses">Libraries and their licenses</string>
+    <string name="hub_about_ideas">Ideas from open-source projects, with code written anew</string>
+    <string name="hub_about_footer">No accounts, no ads, no tracking: all the data stays on this TV.</string>
+    <string name="license_role_newpipe">Reading YouTube: search, channels and playback links</string>
+    <string name="license_role_androidx">The interface, the player, the database and the settings</string>
+    <string name="license_role_okhttp">Networking</string>
+    <string name="license_role_ktor">The phone remote\'s server</string>
+    <string name="license_role_kotlinx">The programming language, concurrency and reading JSON</string>
+    <string name="license_role_coil">Loading thumbnails</string>
+    <string name="license_role_zxing">The pairing QR code</string>
+    <string name="license_role_rhino">Running YouTube\'s code inside the extraction library</string>
+    <string name="license_role_jsoup">Reading HTML pages inside the extraction library</string>
+    <string name="license_role_nanojson">Reading JSON inside the extraction library</string>
+    <string name="license_role_protobuf">YouTube\'s binary requests inside the extraction library</string>
+    <string name="license_role_slf4j">The logging interface Ktor uses</string>
+    <string name="license_role_helpers">Helper libraries the libraries above depend on</string>
+    <string name="license_role_desugar">Modern Java features on Android 9</string>
+    <string name="license_role_plex">The interface\'s Arabic font</string>
+    <string name="license_role_smarttube">The remote experience, and syncing subscriptions without slowing playback</string>
+    <string name="license_role_tv_app_lock">The guard that brings the app back to the front</string>
+    <!-- v1.1 voice search and suggestions (search screen). -->
+    <string name="voice_mic">Voice search</string>
+    <string name="voice_language_toggle">Voice search language: %1$s. Press to switch</string>
+    <string name="voice_alternatives">Or maybe:</string>
+    <string name="search_recent">Recent searches:</string>
+    <string name="search_recent_clear">Clear</string>
+    <string name="voice_speak_now">Speak now…</string>
+    <string name="voice_hearing">Listening…</string>
+    <string name="voice_processing">One moment…</string>
+    <string name="voice_hint_ar">Say what you\'re looking for in Arabic</string>
+    <string name="voice_hint_en">Say what you\'re looking for in English</string>
+    <string name="voice_retry">Try again</string>
+    <string name="voice_close">Close</string>
+    <string name="voice_prompt">Say what you\'re looking for</string>
+    <string name="voice_error_no_match">Didn\'t catch that</string>
+    <string name="voice_error_no_match_body">Try again, speaking clearly close to the remote.</string>
+    <string name="voice_error_timeout">Didn\'t hear anything</string>
+    <string name="voice_error_timeout_body">Press “Try again”, then speak when the circle moves.</string>
+    <string name="voice_error_network">Voice recognition needs the internet</string>
+    <string name="voice_error_network_body">Check the TV\'s connection and try again, or type what you\'re looking for.</string>
+    <string name="voice_error_busy">The microphone is busy right now</string>
+    <string name="voice_error_busy_body">The assistant or another app may be using it. Wait a moment, then try again.</string>
+    <string name="voice_error_audio">No sound reached the microphone</string>
+    <string name="voice_error_audio_body">Make sure the remote is connected and its battery is good, then try again.</string>
+    <string name="voice_error_permission">Voice search needs microphone permission</string>
+    <string name="voice_error_permission_body">Allow Shasha to use the microphone when the TV asks. If you refused before, turn it on in the TV\'s Settings → Apps → Shasha → Permissions.</string>
+    <string name="voice_error_language">This language isn\'t available for voice recognition</string>
+    <string name="voice_error_language_body">Try the other language with the “ع / EN” button beside the microphone.</string>
+    <string name="voice_error_unavailable">This TV has no voice recognition</string>
+    <string name="voice_error_unavailable_body">Type what you\'re looking for with the remote, or search from the phone.</string>
+    <string name="voice_error_other">Voice search failed</string>
+    <string name="voice_error_other_body">Try again in a moment.</string>
+</resources>

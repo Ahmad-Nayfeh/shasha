@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import com.ahmadnayfeh.shasha.policy.MonotonicClock
 import com.ahmadnayfeh.shasha.policy.PinAttemptLimiter
+import com.ahmadnayfeh.shasha.policy.PinLockoutConfig
 import com.ahmadnayfeh.shasha.policy.PinAttemptResult
 import com.ahmadnayfeh.shasha.policy.PinAttemptState
 import com.ahmadnayfeh.shasha.policy.PinHasher
@@ -63,6 +64,8 @@ class ParentPinRepository(
     private val hasher: PinHasher = PinHasher(),
     private val cpu: CoroutineDispatcher = Dispatchers.Default,
     private val uptime: MonotonicClock? = null,
+    /** The parent's PIN brake (Settings → رمز الوالدين): failures before a lockout and how long it lasts. */
+    private val lockout: () -> PinLockoutConfig = { PinLockoutConfig() },
 ) {
     private val mutex = Mutex()
     private var limiter: PinAttemptLimiter? = null
@@ -132,7 +135,7 @@ class ParentPinRepository(
         val saved = store.data.first()[PolicyStore.PIN_ATTEMPTS]
             ?.let { PolicyJson.decodeOrNull(PinAttemptState.serializer(), it) }
             ?: PinAttemptState()
-        PinAttemptLimiter(clock, saved, uptime).also { limiter = it }
+        PinAttemptLimiter(clock, saved, uptime, lockout).also { limiter = it }
     }
 
     private suspend fun storedHash(): String? = store.data.first()[PolicyStore.PARENT_PIN_HASH]

@@ -39,6 +39,22 @@ object AdultExitChallenge {
 
     fun randomPhrase(random: Random): String = phrases.random(random)
 
+    /** The longest phrase the parent may set (it must fit the phrase screen on one line). */
+    const val MAX_PHRASE_LENGTH = 30
+
+    /**
+     * A phrase the parent typed for the list (Settings → «الوضع الجاد»), as it will be shown: folded like the
+     * matching ([TextNormalizer]: أ → ا, ة → ه, no tashkeel, single spaces), so the app's keyboard can type it.
+     * Null when it cannot be used: empty, longer than [MAX_PHRASE_LENGTH], or with a character that keyboard
+     * does not have (digits, Latin letters, punctuation, ء).
+     */
+    fun cleanPhrase(text: String): String? {
+        val folded = TextNormalizer.normalize(text)
+        if (folded.isEmpty() || folded.length > MAX_PHRASE_LENGTH) return null
+        if (folded.any { it != ' ' && it !in KEYBOARD_LETTERS }) return null
+        return folded
+    }
+
     /** Same folding as keyword matching, plus trimmed/collapsed spaces; empty input never matches. */
     fun matches(expected: String, typed: String): Boolean {
         val normalizedTyped = TextNormalizer.normalize(typed)

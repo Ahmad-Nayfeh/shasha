@@ -22,7 +22,11 @@ import androidx.lifecycle.lifecycleScope
 import com.ahmadnayfeh.shasha.MainActivity
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
+import com.ahmadnayfeh.shasha.ui.theme.AppLocale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -52,8 +56,12 @@ class GuardService : LifecycleService() {
     private var enforced = false
     private var enforcedSinceMs = 0L
 
-    /** The cover's second line: how a child gets out, while a child profile is what is enforced. */
-    private var coverDetail: String? = null
+    /** A child profile is what is enforced: the cover says how a child gets out. */
+    private var coverChild = false
+
+    /** The cover's second line, in «اللغة» of the moment. */
+    private val coverDetail: String?
+        get() = if (coverChild) texts().getString(R.string.guard_cover_child) else null
 
     /** The screensaver is showing (between its two broadcasts; PowerManager counts it as interactive). */
     private var dreaming = false
@@ -91,7 +99,7 @@ class GuardService : LifecycleService() {
         power = getSystemService(PowerManager::class.java)
         decider = GuardDecider(packageName, timing)
         probe = UsageStatsProbe(getSystemService(UsageStatsManager::class.java), clock)
-        overlay = GuardOverlay(this, handler) { decider.onCovered(clock.elapsedMs()) }
+        overlay = GuardOverlay(this, handler, texts = ::texts) { decider.onCovered(clock.elapsedMs()) }
         if (!ProtectionChecks.guardCanRun(this)) {
             // Restarted by the system (START_STICKY) after its permissions were taken back.
             stopGuard()
@@ -118,6 +126,8 @@ class GuardService : LifecycleService() {
             // MainActivity reports its pause from onPause, and the next app resumes only once that returns: the
             // look (a UsageStats query) comes right after, never inside it.
             launch { container.appVisibility.state.collect { stepSoon() } }
+            // «اللغة» changed: the notification says it again in the new one.
+            launch { container.appearance.state.map { it.language }.distinctUntilChanged().drop(1).collect { if (!stopping) startInForeground() } }
             guardDemand(
                 container.policyEngine,
                 container.lock.lock,
@@ -131,7 +141,7 @@ class GuardService : LifecycleService() {
                     if (container.appVisibility.state.value.resumed) seedProbe()
                 }
                 enforced = now
-                coverDetail = if (demand.child) getString(R.string.guard_cover_child) else null
+                coverChild = demand.child
                 stepSoon()
             }
         }
@@ -254,17 +264,21 @@ class GuardService : LifecycleService() {
         }
     }
 
+    /** The app's texts in «اللغة» of the moment (the service's own resources follow the TV's system language). */
+    private fun texts(): Context = AppLocale.localize(this, appContainer.appearance.current().language)
+
     private fun startInForeground() {
+        val texts = texts()
         val notifications = getSystemService(NotificationManager::class.java)
         notifications.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, getString(R.string.guard_channel_name), NotificationManager.IMPORTANCE_MIN).apply {
+            NotificationChannel(CHANNEL_ID, texts.getString(R.string.guard_channel_name), NotificationManager.IMPORTANCE_MIN).apply {
                 setShowBadge(false)
             },
         )
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
-            .setContentTitle(getString(R.string.guard_notification_title))
-            .setContentText(getString(R.string.guard_notification_text))
+            .setContentTitle(texts.getString(R.string.guard_notification_title))
+            .setContentText(texts.getString(R.string.guard_notification_text))
             .setOngoing(true)
             .setShowWhen(false)
             .setSilent(true)

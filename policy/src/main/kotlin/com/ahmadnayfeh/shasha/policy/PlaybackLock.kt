@@ -8,7 +8,7 @@ enum class UnlockMethod {
     /** Child profile: only the parent PIN, on the TV or from the phone ("فك قفل فيديو"). */
     PARENT_PIN,
 
-    /** Adult profile: the 10 second hold plus the typed phrase, recorded as a [SurrenderEvent]. */
+    /** Adult profile: the long press (10 s by default) plus the typed phrase, recorded as a [SurrenderEvent]. */
     EXIT_CHALLENGE,
 }
 
@@ -56,7 +56,13 @@ data class PlayedPart(val playedMs: Long, val leftMs: Long) {
      * to its end, or jumping there, is leaving before the end: the lock stays.
      */
     val endedByItself: Boolean
-        get() = leftMs <= 0 || playedMs >= leftMs - SKIP_ALLOWANCE_MS || playedMs * 2 >= leftMs
+        get() = endedByItself(SkipAllowance())
+
+    /** [endedByItself] with the parent's own allowance (Settings → «الوضع الجاد»). */
+    fun endedByItself(allowance: SkipAllowance): Boolean =
+        leftMs <= 0 ||
+            playedMs >= leftMs - allowance.skipMillis.coerceAtLeast(0) ||
+            playedMs * 100 >= leftMs * allowance.playedPercent.coerceIn(1, 100)
 
     companion object {
         /** Skipping this much (in all) never counts: a short outro, an intro, a sponsor segment. */

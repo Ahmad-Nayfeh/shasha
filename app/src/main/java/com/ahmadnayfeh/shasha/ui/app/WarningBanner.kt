@@ -38,6 +38,7 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
+import com.ahmadnayfeh.shasha.ui.components.LocalBehavior
 import com.ahmadnayfeh.shasha.policy.SessionState
 import com.ahmadnayfeh.shasha.ui.components.LocalTopClearance
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
@@ -54,7 +55,7 @@ import kotlinx.coroutines.flow.Flow
  * ([LocalTopClearance]: the player's title while its controls are up).
  */
 @Composable
-fun WarningBanner(warnings: Flow<SessionState.Warning>, state: SessionState, modifier: Modifier = Modifier, showMs: Long = SHOW_MS) {
+fun WarningBanner(warnings: Flow<SessionState.Warning>, state: SessionState, modifier: Modifier = Modifier, showMs: Long = LocalBehavior.current.warningBannerSeconds * 1000L) {
     var visible by remember { mutableStateOf(false) }
     var remaining by remember { mutableLongStateOf(0L) }
     var shownAt by remember { mutableLongStateOf(0L) }
@@ -120,8 +121,6 @@ fun WarningCard(remainingSeconds: Long, modifier: Modifier = Modifier) {
         }
     }
 }
-
-private const val SHOW_MS = 12_000L
 
 /** From the top of the screen, when nothing is there. */
 private val TOP = 28.dp

@@ -123,22 +123,50 @@ class RealSocketTest {
         assertThrows(IllegalStateException::class.java) { server.start(loopback, 0) }
     }
 
-    @Test
-    fun parentSessions_dieWithTheServer() {
-        val server = server()
-        val port = server.start(loopback, 0)
+    private fun login(port: Int): String {
         val conn = URI("http://127.0.0.1:$port/api/parent/login").toURL().openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.doOutput = true
         conn.setRequestProperty("Authorization", "Bearer $TOKEN")
         conn.setRequestProperty("Content-Type", "application/json")
         conn.outputStream.use { it.write("""{"pin":"1234"}""".toByteArray()) }
-        val session = Regex("\"session\":\"([^\"]+)\"").find(conn.inputStream.use { it.readBytes().decodeToString() })!!.groupValues[1]
-        server.stop()
-        server.start(loopback, port)
+        return Regex("\"session\":\"([^\"]+)\"").find(conn.inputStream.use { it.readBytes().decodeToString() })!!.groupValues[1]
+    }
+
+    private fun parentCall(port: Int, session: String): Int {
         val check = URI("http://127.0.0.1:$port/api/parent/subscriptions").toURL().openConnection() as HttpURLConnection
         check.setRequestProperty("Authorization", "Bearer $TOKEN")
         check.setRequestProperty(PARENT_SESSION_HEADER, session)
-        assertThat(check.responseCode).isEqualTo(403)
+        return try {
+            check.responseCode
+        } finally {
+            check.disconnect()
+        }
+    }
+
+    @Test
+    fun parentSessions_dieWithTheServer() {
+        val server = server()
+        val port = server.start(loopback, 0)
+        val session = login(port)
+        server.stop()
+        server.start(loopback, port)
+        assertThat(parentCall(port, session)).isEqualTo(403)
+    }
+
+    @Test
+    fun movingToAnotherPort_keepsTheParentSessions_onlyWhenAskedTo() {
+        val server = server()
+        val port = server.start(loopback, 0)
+        val session = login(port)
+        // The parent chose a new port: the page follows the server there and stays logged in.
+        server.stop(endSessions = false)
+        val moved = server.start(loopback, 0)
+        assertThat(parentCall(moved, session)).isEqualTo(200)
+        // Any other stop (network change, the remote switched off) ends them, even while stopped.
+        server.stop(endSessions = false)
+        server.stop()
+        val again = server.start(loopback, 0)
+        assertThat(parentCall(again, session)).isEqualTo(403)
     }
 }

@@ -111,6 +111,28 @@ class RemoteEndToEndTest {
     }
 
     @Test
+    fun v11_settingsOverHttp_theTvKeepsWhatThePhoneShows_andTheAdultPinSettingIsHonoured() = runBlocking<Unit> {
+        assertThat(call("GET", "/api/parent/settings").code).isEqualTo(401)
+        val session = call("POST", "/api/parent/login", """{"pin":"$PIN"}""").json["session"]!!.jsonPrimitive.content
+        val page = call("GET", "/api/parent/settings", parent = session)
+        assertThat(page.code).isEqualTo(200)
+        val change = call("POST", "/api/parent/settings", """{"key":"adult_entry_pin","value":false}""", parent = session)
+        assertThat(change.json["ok"]!!.jsonPrimitive.boolean).isTrue()
+        assertThat(change.body).contains("\"key\":\"adult_entry_pin\"")
+        assertThat(env.behavior.current().adultEntryPin).isFalse()
+        val refused = call("POST", "/api/parent/settings", """{"key":"warning_minutes","value":999}""", parent = session)
+        assertThat(refused.code).isEqualTo(200)
+        assertThat(refused.json["ok"]!!.jsonPrimitive.boolean).isFalse()
+        assertThat(call("POST", "/api/parent/schedule", """{"profileId":"kid","fromMinute":480}""", parent = session).code).isEqualTo(400)
+        assertThat(call("POST", "/api/parent/schedule", """{"profileId":"kid","fromMinute":480,"untilMinute":1200}""", parent = session).code).isEqualTo(200)
+        assertThat(env.profiles.get("kid")!!.schedule!!.allowedUntilMinute).isEqualTo(1200)
+        // The page is served with a policy that lets it follow the server to another port of the same TV.
+        val conn = URI("http://127.0.0.1:$port/?t=$TOKEN").toURL().openConnection() as HttpURLConnection
+        assertThat(conn.getHeaderField("Content-Security-Policy")).contains("connect-src 'self' http://127.0.0.1:*")
+        conn.disconnect()
+    }
+
+    @Test
     fun theParentSection_needsASession_andTheLogin_worksWhileTheTvIsLockedOut() = runBlocking<Unit> {
         val quota = """{"profileId":"kid","minutes":15}"""
         assertThat(call("POST", "/api/parent/quota", quota).code).isEqualTo(401)

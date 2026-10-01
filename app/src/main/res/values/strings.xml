@@ -229,7 +229,7 @@
     <string name="search_filter_channels">قنوات</string>
     <string name="search_filter_playlists">قوائم تشغيل</string>
     <string name="search_idle_title">عمّ تبحث؟</string>
-    <string name="search_idle_body">اضغط OK على خانة البحث لتظهر لوحة المفاتيح، ثم اضغط زر البحث فيها.</string>
+    <string name="search_idle_body">اضغط زر الميكروفون وقل ما تبحث عنه، أو اضغط OK على خانة البحث لتكتب بلوحة المفاتيح.</string>
     <string name="search_loading">جارٍ البحث…</string>
     <!-- The query sits in FSI…PDI so that English text keeps its place inside the Arabic sentence. -->
     <string name="search_no_results">لا نتائج لـ «&#x2068;%1$s&#x2069;»</string>
@@ -370,7 +370,7 @@
     <string name="pin_locked_out">محاولات خاطئة كثيرة. حاول بعد %1$s</string>
     <string name="pin_not_set">لم يُضبط رمز الوالدين بعد.</string>
     <string name="pin_required">هذا الاختيار يحتاج رمز الوالدين.</string>
-    <string name="pin_switch_playback_locked">فيديو مقفول قيد المشاهدة. أنهِه أولاً ثم بدّل الملف.</string>
+    <string name="pin_switch_playback_locked">فيديو في الوضع الجاد قيد المشاهدة. أنهِه أولاً ثم بدّل الملف.</string>
     <string name="pin_switch_not_found">هذا الملف لم يعد موجوداً.</string>
     <string name="pin_check_failed">تعذّر التحقق من الرمز. حاول مرة أخرى.</string>
     <string name="pin_enter_body">للدخول إلى ملف &#x2068;%1$s&#x2069;</string>
@@ -428,7 +428,7 @@
     <string name="deny_title_shorts_hidden">المقاطع القصيرة مخفية</string>
     <string name="deny_title_time_up">انتهى الوقت</string>
     <string name="deny_title_outside_schedule">خارج أوقات المشاهدة</string>
-    <string name="deny_title_locked">فيديو مقفول</string>
+    <string name="deny_title_locked">الوضع الجاد</string>
 
     <!-- Time: the quiet notice, "time up", outside the allowed hours -->
     <!-- %1$s: count_minutes, e.g. «5 دقائق». -->
@@ -564,10 +564,10 @@
     <!-- The in-app lock (SPEC §4): a child leaves a video with the parent PIN; the adult holds a button
          for 10 seconds, then types a phrase on the app's own keyboard (recorded as a surrender). -->
     <string name="lock_child_title">الخروج يحتاج رمز الوالدين</string>
-    <string name="lock_child_body">هذا الفيديو مقفل حتى ينتهي. اطلب من أحد والديك إدخال الرمز.</string>
+    <string name="lock_child_body">الوضع الجاد: هذا الفيديو يُشاهَد حتى نهايته. اطلب من أحد والديك إدخال الرمز.</string>
     <string name="lock_back_to_video">«رجوع» يعيدك إلى الفيديو</string>
-    <string name="lock_pin_not_for_adult">هذا القفل لا يُفتح بالرمز، بل بالضغط المطوّل ثم كتابة الجملة.</string>
-    <string name="lock_adult_hint">للخروج قبل نهاية الفيديو: اضغط مطوّلاً على «رجوع» أو «&#x2068;OK&#x2069;» لمدة 10 ثوانٍ</string>
+    <string name="lock_pin_not_for_adult">الخروج من الوضع الجاد في ملف الكبار لا يكون بالرمز، بل بالضغط المطوّل ثم كتابة العبارة.</string>
+    <string name="lock_adult_hint">الوضع الجاد: للخروج قبل نهاية الفيديو اضغط مطوّلاً على «رجوع» أو «&#x2068;OK&#x2069;» لمدة %1$s</string>
     <string name="lock_hold_title">واصل الضغط للخروج</string>
     <string name="lock_hold_body">أفلِت الزر لتبقى مع الفيديو</string>
     <string name="lock_hold_key_back">زر «رجوع»</string>
@@ -581,9 +581,9 @@
         <item>ثانية</item>
     </string-array>
     <string name="lock_phrase_step">الخطوة الأخيرة</string>
-    <string name="lock_phrase_title">اكتب هذه الجملة للخروج</string>
+    <string name="lock_phrase_title">اكتب هذه العبارة للخروج</string>
     <string name="lock_phrase_placeholder">اكتب بلوحة المفاتيح أدناه</string>
-    <string name="lock_phrase_mismatch">الجملة غير مطابقة. اكتبها كما تظهر تماماً.</string>
+    <string name="lock_phrase_mismatch">العبارة غير مطابقة. اكتبها كما تظهر تماماً.</string>
     <string name="lock_phrase_exit">خروج</string>
     <string name="lock_phrase_cancel">متابعة المشاهدة</string>
     <string name="lock_phrase_note">يُسجَّل الخروج قبل نهاية الفيديو استسلاماً في الإحصائيات.</string>
@@ -593,7 +593,7 @@
     <string name="lock_surrendered">خرجت قبل نهاية الفيديو، وسُجّل ذلك استسلاماً.</string>
 
     <!-- A locked video reached by fast-forwarding to its end (not watched): its lock stays. -->
-    <string name="player_skipped_still_locked">الوصول إلى النهاية بالتقديم لا يُنهي القفل: الفيديو ما زال مقفلاً.</string>
+    <string name="player_skipped_still_locked">الوصول إلى النهاية بالتقديم لا يُنهي الوضع الجاد: الفيديو ما زال يُشاهَد حتى نهايته.</string>
 
     <!-- A child's video (or playlist) that ended: its lock is released and the child goes back home. -->
     <string name="player_kids_home">الرئيسية</string>
@@ -609,12 +609,12 @@
     <string name="guard_cover_text">لحظة… نعود إلى «شاشة»</string>
     <string name="guard_channel_name">الحماية</string>
     <string name="guard_notification_title">الحماية تعمل</string>
-    <string name="guard_notification_text">تُبقي «شاشة» في المقدمة طوال ملف الطفل، وأثناء قفل فيديو، وعند انتهاء الوقت، وخارج أوقات المشاهدة.</string>
+    <string name="guard_notification_text">تُبقي «شاشة» في المقدمة طوال ملف الطفل، وأثناء فيديو في الوضع الجاد، وعند انتهاء الوقت، وخارج أوقات المشاهدة.</string>
     <string name="guard_cover_child">في ملف الطفل تبقى «شاشة» في المقدمة. الخروج منه برمز الوالدين.</string>
 
     <!-- «حالة الحماية» (Settings, SPEC §4 and §7): what the guard has, what is missing and how to grant it. -->
     <string name="protection_title">حالة الحماية</string>
-    <string name="protection_subtitle">الحارس يُبقي «شاشة» في المقدمة: ملف الطفل، قفل فيديو، انتهاء الوقت، خارج الجدول</string>
+    <string name="protection_subtitle">الحارس يُبقي «شاشة» في المقدمة: ملف الطفل، الوضع الجاد، انتهاء الوقت، خارج الجدول</string>
     <string name="protection_all_good">الحماية تعمل</string>
     <string-array name="protection_missing_count">
         <item>ينقص شيء واحد</item>
@@ -628,7 +628,7 @@
     <string name="protection_section_other">إعدادات أخرى</string>
     <string name="protection_section_returns">سرعة العودة</string>
     <string name="protection_section_limits">حدود الحماية</string>
-    <string name="protection_commands_note">الأوامر تُنفَّذ من حاسوب على شبكة الشاشة نفسها بعد «&#x2068;adb connect&#x2069;»، أو أعد تشغيل سكربت «&#x2068;adb-setup&#x2069;».</string>
+    <string name="protection_commands_note">الأوامر تُنفَّذ من حاسوب على شبكة الشاشة نفسها بعد «&#x2068;adb connect&#x2069;»، أو شغّل المثبّت من جديد كما في «دليل شاشة».</string>
     <string name="protection_overlay_title">العرض فوق التطبيقات</string>
     <string name="protection_overlay_body">ليغطي أي تطبيق آخر فوراً ويعيد «شاشة» إلى المقدمة.</string>
     <string name="protection_usage_title">الوصول إلى بيانات الاستخدام</string>
@@ -660,9 +660,9 @@
     <string name="protection_return_seconds">%1$s ث</string>
     <string name="protection_return_from">من &#x2068;%1$s&#x2069; · %2$s</string>
     <string name="protection_return_unknown_app">تطبيق غير معروف</string>
-    <string name="protection_limits_outside">في ملف الكبار لا يتدخل الحارس إلا أثناء قفل فيديو أو عند انتهاء الوقت، ولا بعد الخروج من ملف طفل برمز الوالدين حتى يُختار ملف آخر: من يصل عندها إلى إعدادات الشاشة يستطيع إيقاف التطبيق أو مسح بياناته أو إزالته، أو سحب هاتين الصلاحيتين، أو إعادة يوتيوب.</string>
+    <string name="protection_limits_outside">في ملف الكبار لا يتدخل الحارس إلا أثناء فيديو في الوضع الجاد أو عند انتهاء الوقت، ولا بعد الخروج من ملف طفل برمز الوالدين حتى يُختار ملف آخر: من يصل عندها إلى إعدادات الشاشة يستطيع إيقاف التطبيق أو مسح بياناته أو إزالته، أو سحب هاتين الصلاحيتين، أو إعادة يوتيوب.</string>
     <string name="protection_limits_force_stop">«فرض الإيقاف» من الإعدادات يوقف الحارس حتى يُفتح التطبيق من جديد، ولا تعيده إعادة تشغيل الشاشة.</string>
-    <string name="protection_limits_keys">في ملف الطفل وأثناء القفل لا يُمنع زر Home، ولا أزرار التطبيقات في الريموت، ولا الأوامر الصوتية، ولا البث من الجوال، ولا مصدر HDMI: يُغطّى ما يظهر وتعود «شاشة» خلال ثانية أو اثنتين.</string>
+    <string name="protection_limits_keys">في ملف الطفل وفي الوضع الجاد لا يُمنع زر Home، ولا أزرار التطبيقات في الريموت، ولا الأوامر الصوتية، ولا البث من الجوال، ولا مصدر HDMI: يُغطّى ما يظهر وتعود «شاشة» خلال ثانية أو اثنتين.</string>
     <string name="protection_limits_owner">منع ذلك كله يحتاج وضع «مالك الجهاز» (&#x2068;Device Owner&#x2069;)، وقد استُبعد عمداً: القفل ليس منيعاً.</string>
     <string name="protection_limits_pin_lockout">في ملف الطفل، وعند انتهاء الوقت وخارج أوقات المشاهدة، لا يُخرج من «شاشة» إلا رمز الوالدين (على الشاشة، أو تبديل الملف من صفحة الجوال بعدّادها المستقل). إن قُفل الرمز بعد محاولات خاطئة (من 5 دقائق حتى 4 ساعات، ولا تنهي إعادة التشغيل المهلة) أو نُسي، تبقى الشاشة كلها على «شاشة» حتى تنتهي المهلة أو المنع. المخرج: من الحاسوب الذي جهّزها، وتصحيح الأخطاء ما زال مفعّلاً، نفّذ &#x2068;%1$s&#x2069; (يتوقف الحارس حتى يُفتح التطبيق من جديد).</string>
 
@@ -686,14 +686,14 @@
     <string name="remote_link_not_youtube">هذا ليس رابطاً من يوتيوب. أرسل رابط فيديو أو قائمة تشغيل أو قناة.</string>
     <string name="remote_playlist_nothing_allowed">لا يوجد في قائمة التشغيل فيديو مسموح في هذا الملف.</string>
     <string name="remote_screen_off">الشاشة في وضع الاستعداد. شغّلها ثم أعد الإرسال.</string>
-    <string name="remote_not_in_front">افتح «شاشة» على التلفاز ثم أعد الإرسال. ليفتح وحده يحتاج إذن «العرض فوق التطبيقات» من سكربت &#x2068;adb-setup&#x2069;.</string>
+    <string name="remote_not_in_front">افتح «شاشة» على التلفاز ثم أعد الإرسال. ليفتح وحده يحتاج إذن «العرض فوق التطبيقات»: شغّل المثبّت من جديد كما في «دليل شاشة».</string>
     <string name="remote_no_profile">اختر الملف على الشاشة أولاً، ثم أعد الإرسال.</string>
     <string name="remote_profile_changed">تغيّر الملف على الشاشة قبل أن يُفتح الرابط. أعد الإرسال.</string>
     <string name="remote_show_failed">لم تستجب الشاشة. أعد المحاولة.</string>
     <string name="remote_timeout">استغرقت الشاشة وقتاً طويلاً. أعد المحاولة.</string>
     <string name="remote_nothing_playing">لا شيء يُعرض الآن.</string>
     <string name="remote_stopped">أُوقف التشغيل.</string>
-    <string name="remote_video_locked">الفيديو مقفول حتى ينتهي. يفكّ الأب القفل من قسم الأب.</string>
+    <string name="remote_video_locked">الوضع الجاد: الفيديو يُشاهَد حتى نهايته. يُنهيه الأب من قسم الأب.</string>
     <string name="remote_player_ended">انتهى الفيديو. «إعادة التشغيل» على الشاشة تبدؤه من جديد.</string>
     <string name="remote_player_live">لا يمكن التقديم في البث المباشر.</string>
     <string name="remote_player_covered">على الشاشة طلب رمز الآن، ويُستأنف الفيديو بعده.</string>
@@ -711,17 +711,17 @@
     <!-- %1$s: count_minutes_after. The TV's own PIN pad keeps its own count. -->
     <string name="remote_pin_locked">محاولات خاطئة كثيرة. حاول بعد %1$s، أو أدخل الرمز على التلفاز.</string>
     <string name="remote_pin_not_set">لم يُضبط رمز الوالدين بعد. اضبطه من «شاشة» على التلفاز أولاً.</string>
-    <string name="remote_switch_locked">فيديو مقفول قيد المشاهدة. فكّ قفله من قسم الأب أولاً، ثم بدّل الملف.</string>
+    <string name="remote_switch_locked">فيديو في الوضع الجاد قيد المشاهدة. أنهِ الوضع الجاد له من قسم الأب أولاً، ثم بدّل الملف.</string>
     <string name="remote_quota_saved">حُفظت الحصة اليومية لملف «&#x2068;%1$s&#x2069;»: %2$s.</string>
     <string name="remote_quota_unlimited">ملف «&#x2068;%1$s&#x2069;» بلا حد يومي الآن.</string>
     <string name="remote_time_rest_of_today">فُتح الوقت لملف «&#x2068;%1$s&#x2069;» لبقية اليوم.</string>
     <string name="remote_time_added">أُضيفت %2$s إلى وقت ملف «&#x2068;%1$s&#x2069;».</string>
     <string name="remote_time_no_limit">ملف «&#x2068;%1$s&#x2069;» لا يوقفه شيء الآن.</string>
     <string name="remote_time_failed">تعذّر حفظ الوقت الإضافي. حاول مرة أخرى.</string>
-    <string name="remote_video_unlocked">فُكّ قفل الفيديو. يمكن الخروج منه الآن.</string>
-    <string name="remote_video_unlocked_adult">فُكّ قفل الفيديو، وسُجّل الخروج قبل نهايته استسلاماً في الإحصائيات.</string>
-    <string name="remote_video_not_locked">لا يوجد فيديو مقفول الآن.</string>
-    <string name="remote_video_unlock_failed">تعذّر حفظ فك القفل. حاول مرة أخرى.</string>
+    <string name="remote_video_unlocked">أُنهي الوضع الجاد لهذا الفيديو. يمكن الخروج منه الآن.</string>
+    <string name="remote_video_unlocked_adult">أُنهي الوضع الجاد لهذا الفيديو، وسُجّل الخروج قبل نهايته استسلاماً في الإحصائيات.</string>
+    <string name="remote_video_not_locked">لا يوجد فيديو في الوضع الجاد الآن.</string>
+    <string name="remote_video_unlock_failed">تعذّر حفظ إنهاء الوضع الجاد. حاول مرة أخرى.</string>
     <string name="remote_allowlist_child_only">قائمة السماح لملفات الأطفال فقط.</string>
     <string name="remote_allowlist_bad_link">أرسل رابط قناة (مثل &#x2068;youtube.com/@name&#x2069;) أو رابط قائمة تشغيل.</string>
     <string name="remote_allowlist_added">أُضيفت «&#x2068;%1$s&#x2069;» إلى قائمة سماح «&#x2068;%2$s&#x2069;».</string>
@@ -737,7 +737,7 @@
     <string name="remote_takeout_added">أُضيفت %1$s من Google Takeout، وتصل فيديوهاتها خلال دقائق.</string>
     <string name="remote_takeout_added_some_present">أُضيفت %1$s من Google Takeout، و%2$s موجودة من قبل.</string>
     <string name="remote_takeout_all_present">كل قنوات الملف موجودة من قبل (%1$s).</string>
-    <string name="remote_backup_locked">فيديو مقفول قيد المشاهدة. فكّ قفله أولاً، ثم استعد النسخة.</string>
+    <string name="remote_backup_locked">فيديو في الوضع الجاد قيد المشاهدة. أنهِ الوضع الجاد له أولاً، ثم استعد النسخة.</string>
 
     <!-- Settings → التحكم من الجوال -->
     <string name="remote_title">التحكم من الجوال</string>
@@ -823,7 +823,7 @@
     <string name="hub_updates_summary">الإصدار المثبّت، وآخر إصدار على GitHub Releases</string>
     <string name="hub_diagnostics_summary">ما يعينك حين يتعطّل يوتيوب: فيديوهات تجريبية ومعلومات الشاشة</string>
     <string name="hub_about">حول</string>
-    <string name="hub_about_summary">الإصدار، ومصدر بيانات التخطي، والمكتبات ورخصها</string>
+    <string name="hub_about_summary">المطوّر وتطبيقاته، والإصدار، ومصدر بيانات التخطي، والرخص</string>
     <string name="hub_loading">جارٍ التحميل…</string>
 
     <!-- A parental pane before the parent PIN. -->
@@ -835,7 +835,6 @@
     <!-- الملفات ورمز الوالدين -->
     <string name="hub_profiles_manage">إدارة الملفات</string>
     <string name="hub_profiles_manage_body">إضافة ملف طفل، والأسماء والصور، وإخفاء المقاطع القصيرة، وحذف ملف</string>
-    <string name="hub_pin_note">رمز الوالدين يفتح ملفك وهذه الإعدادات، ويُخرج الأطفال من ملفاتهم، ويمنح وقتاً إضافياً. وخمس محاولات خاطئة توقفه من 5 دقائق حتى 4 ساعات.</string>
 
     <!-- قوائم السماح والحظر -->
     <string name="hub_blocklist_section">الحظر · في كل الملفات</string>
@@ -896,7 +895,7 @@
     <string name="hub_build_line">رقم البناء %1$s · مكتبة الاستخراج %2$s</string>
     <string name="hub_updates_how">يقرأ آخر إصدار من GitHub Releases، وينزّله ويفتح مثبّت النظام: أندرويد لا يسمح بتحديث صامت.</string>
     <string name="hub_updates_when">حين يتعطّل يوتيوب فالحل غالباً إصدار أحدث من مكتبة الاستخراج.</string>
-    <string name="hub_updates_adb">وبديلاً: ثبّت الإصدار الجديد عبر ADB كما في README.</string>
+    <string name="hub_updates_adb">وبديلاً: ثبّت الإصدار الجديد بتشغيل المثبّت من جديد، كما في «دليل شاشة».</string>
 
     <!-- تشخيص -->
     <string name="hub_diag_videos_body">عادي، وبث مباشر، ومصنّف للأطفال، ومحذوف، وفيه إعلان يتخطاه SponsorBlock: تعرف في ثوانٍ ما الذي تعطّل</string>
@@ -911,11 +910,9 @@
     <string name="hub_fact_feed">الاشتراكات: %1$s · آخر تحديث %2$s</string>
     <!-- %1$s: a number of channels (digits). The last error follows on its own line, as it is. -->
     <string name="hub_fact_feed_failed">قنوات تعذّر تحديثها في آخر محاولة: %1$s</string>
-    <string name="hub_diag_hint">حين يتعطّل شيء: شغّل الفيديوهات التجريبية أولاً، ثم «فحص التحديثات». وملف MAINTENANCE.md يشرح الباقي.</string>
+    <string name="hub_diag_hint">حين يتعطّل شيء: شغّل الفيديوهات التجريبية أولاً، ثم «فحص التحديثات». و«دليل شاشة» يشرح الباقي.</string>
 
     <!-- حول -->
-    <string name="hub_about_terms_title">للاستخدام الشخصي فقط</string>
-    <string name="hub_about_terms_body">«شاشة» يخالف شروط خدمة يوتيوب. صُنع للاستخدام الشخصي في هذا البيت فقط، فلا يُنشر ولا يُباع. لا يسجّل الدخول، ولا يعرض الإعلانات، ولا يرسل بياناتك إلى أي مكان، والقفل فيه ليس منيعاً.</string>
     <string name="hub_about_data_title">بيانات تخطي المقاطع</string>
     <string name="hub_about_licenses">المكتبات ورخصها</string>
     <string name="hub_about_ideas">أفكار من مشاريع مفتوحة المصدر، بشيفرة كُتبت من جديد</string>
@@ -937,4 +934,36 @@
     <string name="license_role_plex">خط الواجهة العربي</string>
     <string name="license_role_smarttube">تجربة الريموت، ومزامنة الاشتراكات دون إثقال التشغيل</string>
     <string name="license_role_tv_app_lock">الحارس الذي يعيد التطبيق إلى المقدمة</string>
+    <!-- v1.1 voice search and suggestions (search screen). -->
+    <string name="voice_mic">البحث بالصوت</string>
+    <string name="voice_language_toggle">لغة البحث الصوتي: %1$s. اضغط للتبديل</string>
+    <string name="voice_alternatives">أو ربما:</string>
+    <string name="search_recent">عمليات بحث سابقة:</string>
+    <string name="search_recent_clear">مسح</string>
+    <string name="voice_speak_now">تكلّم الآن…</string>
+    <string name="voice_hearing">أسمعك…</string>
+    <string name="voice_processing">لحظة…</string>
+    <string name="voice_hint_ar">قل ما تبحث عنه بالعربية</string>
+    <string name="voice_hint_en">قل ما تبحث عنه بالإنجليزية</string>
+    <string name="voice_retry">أعد المحاولة</string>
+    <string name="voice_close">إغلاق</string>
+    <string name="voice_prompt">قل ما تبحث عنه</string>
+    <string name="voice_error_no_match">لم أفهم ما قيل</string>
+    <string name="voice_error_no_match_body">جرّب مرة أخرى، وتكلّم بوضوح قريباً من الريموت.</string>
+    <string name="voice_error_timeout">لم أسمع شيئاً</string>
+    <string name="voice_error_timeout_body">اضغط «أعد المحاولة» ثم تكلّم حين تتحرك الدائرة.</string>
+    <string name="voice_error_network">التعرّف على الصوت يحتاج الإنترنت</string>
+    <string name="voice_error_network_body">تأكد من اتصال التلفاز ثم أعد المحاولة، أو اكتب ما تبحث عنه.</string>
+    <string name="voice_error_busy">الميكروفون مشغول الآن</string>
+    <string name="voice_error_busy_body">ربما يستخدمه المساعد أو تطبيق آخر. انتظر لحظة ثم أعد المحاولة.</string>
+    <string name="voice_error_audio">لم يصل صوت من الميكروفون</string>
+    <string name="voice_error_audio_body">تأكد أن الريموت متصل وبطاريته جيدة، ثم أعد المحاولة.</string>
+    <string name="voice_error_permission">البحث الصوتي يحتاج إذن الميكروفون</string>
+    <string name="voice_error_permission_body">اسمح لـ«شاشة» باستخدام الميكروفون حين يسألك التلفاز. إن رفضته من قبل فافتحه من إعدادات التلفاز ← التطبيقات ← شاشة ← الأذونات.</string>
+    <string name="voice_error_language">هذه اللغة غير متاحة للتعرّف على الصوت</string>
+    <string name="voice_error_language_body">جرّب اللغة الأخرى من زر «ع / EN» بجانب الميكروفون.</string>
+    <string name="voice_error_unavailable">لا يوجد تعرّف على الصوت في هذا التلفاز</string>
+    <string name="voice_error_unavailable_body">اكتب ما تبحث عنه بالريموت، أو ابحث من الجوال.</string>
+    <string name="voice_error_other">تعذّر البحث الصوتي</string>
+    <string name="voice_error_other_body">أعد المحاولة بعد لحظة.</string>
 </resources>

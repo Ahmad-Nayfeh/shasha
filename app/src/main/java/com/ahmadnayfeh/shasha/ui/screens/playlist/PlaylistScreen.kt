@@ -69,10 +69,12 @@ import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.ui.paging.LoadMoreWhenNearEnd
 import com.ahmadnayfeh.shasha.ui.paging.PagedState
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
+import com.ahmadnayfeh.shasha.ui.theme.AppTextDirection
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
 /** [adult]: the adult profile's page, with the parental menu (add to a child's allowlist). */
 @Composable
@@ -183,16 +185,25 @@ private fun Info(
         )
         Text(
             details?.title.orEmpty(),
-            style = MaterialTheme.typography.headlineSmall.copy(textDirection = TextDirection.ContentOrRtl),
-            textAlign = TextAlign.Right,
+            style = MaterialTheme.typography.headlineSmall.copy(textDirection = TextDirection.Content),
+            textAlign = StartTextAlign,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth(),
         )
-        val facts = listOfNotNull(details?.channelName, details?.videoCount?.let { formats.count(R.array.count_videos, it) })
+        // The channel's name is isolated so its own direction can't reorder the line (it reads in the app's direction).
+        val facts = listOfNotNull(
+            details?.channelName?.let { "\u2068$it\u2069" },
+            details?.videoCount?.let { formats.count(R.array.count_videos, it) },
+        )
         if (facts.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
-            Text(facts.joinToString("  ·  "), style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Muted, maxLines = 1)
+            Text(
+                facts.joinToString("  ·  "),
+                style = MaterialTheme.typography.bodyMedium.copy(textDirection = AppTextDirection),
+                color = ShashaColors.Muted,
+                maxLines = 1,
+            )
         }
         Spacer(Modifier.height(22.dp))
         if (videos.items.isNotEmpty()) {
@@ -288,8 +299,8 @@ private fun PlaylistRow(index: Int, item: VideoUi, watched: Float?, onClick: () 
             Column(Modifier.weight(1f)) {
                 Text(
                     video.title,
-                    style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.ContentOrRtl),
-                    textAlign = TextAlign.Right,
+                    style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.Content),
+                    textAlign = StartTextAlign,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.fillMaxWidth(),

@@ -237,7 +237,7 @@ private fun Header(
             Column(Modifier.weight(1f).padding(top = AvatarSize / 2 + 6.dp)) {
                 Text(
                     name,
-                    style = MaterialTheme.typography.headlineMedium.copy(textDirection = TextDirection.ContentOrRtl),
+                    style = MaterialTheme.typography.headlineMedium.copy(textDirection = TextDirection.Content),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -269,7 +269,7 @@ private fun Banner(url: String?) {
             .fillMaxWidth()
             .height(BannerHeight)
             .clip(shape)
-            .background(Brush.linearGradient(listOf(Color(0xFF0E3B37), ShashaColors.SurfaceVariant, ShashaColors.Surface))),
+            .background(Brush.linearGradient(listOf(if (ShashaColors.isLight) Color(0xFFCDEEEA) else Color(0xFF0E3B37), ShashaColors.SurfaceVariant, ShashaColors.Surface))),
     ) {
         if (url != null) {
             AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())

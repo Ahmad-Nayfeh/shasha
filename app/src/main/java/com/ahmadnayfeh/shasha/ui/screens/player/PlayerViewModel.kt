@@ -94,6 +94,8 @@ class PlayerViewModel(
     private val playlistId: String? = null,
     startAtMs: Long? = null,
     allowLowQuality: Boolean = false,
+    /** The speed a video starts at (Settings → التشغيل, 1× by default). */
+    defaultSpeed: Float = 1f,
 ) : ViewModel() {
 
     sealed interface Load {
@@ -114,7 +116,7 @@ class PlayerViewModel(
     val load: StateFlow<Load> = _load.asStateFlow()
 
     /** Survives the player being released while the app is in the background, and re-extractions. */
-    var resume: ResumeState = ResumeState()
+    var resume: ResumeState = ResumeState(speed = defaultSpeed)
 
     private val _resumedFromMs = MutableStateFlow<Long?>(null)
 

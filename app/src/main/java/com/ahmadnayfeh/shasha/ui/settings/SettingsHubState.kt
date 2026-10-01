@@ -3,6 +3,11 @@ package com.ahmadnayfeh.shasha.ui.settings
 import android.os.Build
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import androidx.datastore.preferences.core.Preferences
+import com.ahmadnayfeh.shasha.data.AppLanguage
+import com.ahmadnayfeh.shasha.data.AppTheme
+import com.ahmadnayfeh.shasha.data.Behavior
+import com.ahmadnayfeh.shasha.data.PhraseMode
 import com.ahmadnayfeh.shasha.data.PlaybackSettings
 import com.ahmadnayfeh.shasha.data.SyncHealth
 import com.ahmadnayfeh.shasha.lock.ProtectionStatus
@@ -65,6 +70,12 @@ data class SettingsHubState(
     val device: DeviceFacts? = null,
     /** "Now" for texts like «منذ 5 دقائق». */
     val nowMs: Long = 0,
+    /** The parent's adjustable behaviour (Serious Mode, timings, the PIN's brake). */
+    val behavior: Behavior? = null,
+    /** The phone remote's chosen port. */
+    val remotePort: Int? = null,
+    /** «الدليل والفيديو»: the explainer video of the app's language is in this build. */
+    val explainerAvailable: Boolean = true,
 )
 
 /**
@@ -92,4 +103,34 @@ class SettingsHubActions(
     val resetSponsorCategories: () -> Unit = {},
     val setMaxQuality: (height: Int) -> Unit = {},
     val setRemoteEnabled: (enabled: Boolean) -> Unit = {},
+    val behavior: BehaviorActions = BehaviorActions(),
+    /** «المظهر واللغة» (not behind the PIN: nothing in them is a rule). */
+    val setAppLanguage: (AppLanguage) -> Unit = {},
+    val setAppTheme: (AppTheme) -> Unit = {},
+    /** «الدليل والفيديو». */
+    val openGuide: () -> Unit = {},
+    val openExplainer: () -> Unit = {},
+)
+
+/** Changes to [Behavior] (every one behind the parent PIN: the route guards them). */
+@Stable
+class BehaviorActions(
+    val setSeriousMode: (Boolean) -> Unit = {},
+    val setAdultEscape: (Boolean) -> Unit = {},
+    val setAdultEntryPin: (Boolean) -> Unit = {},
+    val setVoiceLanguage: (String) -> Unit = {},
+    val setNumber: (key: Preferences.Key<Int>, value: Int) -> Unit = { _, _ -> },
+    val setPhraseMode: (PhraseMode) -> Unit = {},
+    /** Already checked with AdultExitChallenge.cleanPhrase. */
+    val addPhrase: (String) -> Unit = {},
+    val removePhrase: (String) -> Unit = {},
+    val setCustomPhrase: (String) -> Unit = {},
+    val setExtraMinutes: (List<Int>) -> Unit = {},
+    val setDefaultSpeed: (Float) -> Unit = {},
+    /** These settings back to their defaults. */
+    val reset: (keys: List<Preferences.Key<*>>) -> Unit = {},
+    val setPort: (Int) -> Unit = {},
+    val resetPort: () -> Unit = {},
+    /** «إرجاع كل الإعدادات إلى وضعها الأصلي» (already confirmed). */
+    val resetEverything: () -> Unit = {},
 )

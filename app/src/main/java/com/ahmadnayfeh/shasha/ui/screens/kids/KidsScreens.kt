@@ -33,7 +33,6 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -71,6 +70,7 @@ import com.ahmadnayfeh.shasha.ui.screens.error.ErrorLayout
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.youtube.VideoItem
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
 @Composable
 fun KidsHomeRoute(focus: ContentFocus, actions: BrowseActions) {
@@ -204,8 +204,8 @@ private fun StripCard(item: PlaylistUi, formats: Formats, onClick: () -> Unit, t
         Spacer(Modifier.height(10.dp))
         Text(
             playlist.title,
-            style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.ContentOrRtl),
-            textAlign = TextAlign.Right,
+            style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.Content),
+            textAlign = StartTextAlign,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth(),

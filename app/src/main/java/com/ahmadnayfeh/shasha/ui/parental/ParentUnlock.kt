@@ -14,10 +14,15 @@ import com.ahmadnayfeh.shasha.ui.components.toCheck
  * while a child walks by). One per adult profile session (its ViewModel store): the picker or a switch
  * locks it again. [elapsed] is a clock the viewer cannot set.
  */
-class ParentUnlock(private val pin: ParentPinRepository, private val elapsed: () -> Long = SystemClock::elapsedRealtime) : ViewModel() {
+class ParentUnlock(
+    private val pin: ParentPinRepository,
+    private val elapsed: () -> Long = SystemClock::elapsedRealtime,
+    /** How long the PIN keeps the parental parts open (Settings → رمز الوالدين; [UNLOCK_MS] by default). */
+    private val unlockMs: () -> Long = { UNLOCK_MS },
+) : ViewModel() {
     private var unlockedAt: Long? = null
 
-    val isUnlocked: Boolean get() = unlockedAt?.let { elapsed() - it in 0 until UNLOCK_MS } ?: false
+    val isUnlocked: Boolean get() = unlockedAt?.let { elapsed() - it in 0 until unlockMs() } ?: false
 
     /** Checks [value] through the app's one attempt limiter; a correct PIN opens the parental parts. */
     suspend fun check(value: String): PinCheck {

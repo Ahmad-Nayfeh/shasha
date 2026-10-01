@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.io.IOException
@@ -39,10 +40,22 @@ class PlaybackSettings(private val store: DataStore<Preferences>, scope: Corouti
         .distinctUntilChanged()
         .stateIn(scope, SharingStarted.Eagerly, DEFAULT_MAX_QUALITY)
 
+    /** What the file holds right now (after a write returns, this already has it; [maxQuality] follows a moment later). */
+    suspend fun current(): Int = try {
+        decode(store.data.first()[MAX_QUALITY])
+    } catch (e: IOException) {
+        DEFAULT_MAX_QUALITY
+    }
+
     /** One of [QUALITY_CAPS]; the next video plays with it. */
     suspend fun setMaxQuality(height: Int) {
         require(height in QUALITY_CAPS) { "Not a quality cap: $height" }
         store.edit { it[MAX_QUALITY] = height }
+    }
+
+    /** Back to [DEFAULT_MAX_QUALITY] («إرجاع كل الإعدادات»). */
+    suspend fun reset() {
+        store.edit { it.remove(MAX_QUALITY) }
     }
 
     companion object {

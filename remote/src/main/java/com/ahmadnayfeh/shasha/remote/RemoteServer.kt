@@ -25,9 +25,18 @@ class RemoteServer internal constructor(
     private val controller: RemoteController,
     private val tokenProvider: () -> String,
     nowMillis: () -> Long,
+    pinFailuresBeforeBlock: () -> Int = { DEFAULT_PIN_FAILURES },
 ) {
     constructor(controller: RemoteController, tokenProvider: () -> String) :
         this(controller, tokenProvider, { System.nanoTime() / 1_000_000 })
+
+    /**
+     * [pinFailuresBeforeBlock]: the wrong PINs in a row the server's own brake lets through, read at every PIN check:
+     * the parent's PIN brake setting («المحاولات قبل الإيقاف»), so the brake never refuses the phone before the TV's
+     * count says no attempts are left.
+     */
+    constructor(controller: RemoteController, pinFailuresBeforeBlock: () -> Int, tokenProvider: () -> String) :
+        this(controller, tokenProvider, { System.nanoTime() / 1_000_000 }, pinFailuresBeforeBlock)
 
     /**
      * Receives what would otherwise be lost: controller exceptions (the phone only gets a generic
@@ -39,7 +48,7 @@ class RemoteServer internal constructor(
 
     private val sessions = ParentSessions(nowMillis)
     // Unlike sessions it survives stop/start: restarting the server must not hand out fresh PIN guesses.
-    private val pinGate = PinGate(nowMillis)
+    private val pinGate = PinGate(freeFailures = pinFailuresBeforeBlock, nowMillis = nowMillis)
     private val pages by lazy { RemotePages.fromClasspath() }
     private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
 
@@ -109,13 +118,17 @@ class RemoteServer internal constructor(
             ?: IOException("The remote server did not start", e)
     }
 
-    /** Graceful but short: in-flight requests get [GRACE_MILLIS], everything ends within [TIMEOUT_MILLIS]. Idempotent. */
+    /**
+     * Graceful but short: in-flight requests get [GRACE_MILLIS], everything ends within [TIMEOUT_MILLIS]. Idempotent.
+     * [endSessions] false keeps the parent sessions for the next [start]: only for moving to another port on the same
+     * address (the parent asked for it, and the pages follow the server there); any other stop ends them.
+     */
     @Synchronized
-    fun stop() {
+    fun stop(endSessions: Boolean = true) {
+        if (endSessions) sessions.clear()
         val running = server ?: return
         server = null
         boundPort = null
-        sessions.clear()
         running.stop(GRACE_MILLIS, TIMEOUT_MILLIS)
     }
 
@@ -137,8 +150,11 @@ class RemoteServer internal constructor(
         var failure: Throwable? = null
     }
 
-    private companion object {
-        const val GRACE_MILLIS = 300L
-        const val TIMEOUT_MILLIS = 1_500L
+    companion object {
+        /** The server's PIN brake without a setting: as many wrong PINs as the TV's default count. */
+        const val DEFAULT_PIN_FAILURES = PinGate.FREE_FAILURES
+
+        private const val GRACE_MILLIS = 300L
+        private const val TIMEOUT_MILLIS = 1_500L
     }
 }

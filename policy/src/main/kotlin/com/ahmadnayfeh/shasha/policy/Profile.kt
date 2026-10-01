@@ -104,6 +104,13 @@ data class Schedule(val allowedFromMinute: Int, val allowedUntilMinute: Int) {
     companion object {
         fun of(fromHour: Int, fromMinute: Int, untilHour: Int, untilMinute: Int) =
             Schedule(fromHour * 60 + fromMinute, untilHour * 60 + untilMinute)
+
+        /**
+         * A window picked as two clock times (0..1439 each, the TV's picker and the phone's): the same time twice is no
+         * window at all (all day, null), and "until 0:00" is the midnight that ends the day.
+         */
+        fun fromPicker(fromMinute: Int, untilMinute: Int): Schedule? =
+            if (fromMinute == untilMinute) null else Schedule(fromMinute, if (untilMinute == 0) MINUTES_PER_DAY else untilMinute)
     }
 }
 

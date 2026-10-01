@@ -1,5 +1,7 @@
 package com.ahmadnayfeh.shasha.remote
 
+import kotlinx.serialization.json.JsonElement
+
 /**
  * What the phone can ask the TV to do. Implemented by :app.
  *
@@ -75,6 +77,54 @@ interface RemoteController {
     suspend fun exportBackup(): ByteArray
 
     suspend fun importBackup(bytes: ByteArray): RemoteResult
+
+    // v1.1: every setting of the TV's Settings, with the TV's own choices and checks.
+
+    suspend fun settings(): RemoteSettingsPage
+
+    /**
+     * [value] as [RemoteSetting.value] has it; refused (ok = false, the page as it is) when the TV would not offer it,
+     * or when [base] (the value the page showed when the change began; null: not given) is no longer what the TV has:
+     * another phone or the TV changed it meanwhile, and a whole list sent over it would undo that change unseen.
+     */
+    suspend fun changeSetting(key: String, value: JsonElement, base: JsonElement? = null): RemoteSettingsResult
+
+    /** [group]: one [RemoteSettingGroup.id] back to its defaults; null: every setting («إرجاع كل الإعدادات»). */
+    suspend fun resetSettings(group: String?): RemoteSettingsResult
+
+    suspend fun profilesPage(): RemoteProfilesPage
+
+    /**
+     * A new child profile, as the TV's «إضافة ملف طفل» makes it (its default rules and the household's blocks). [name] is
+     * trimmed; refused ([RemoteResult.error]) when it is empty or too long, or [avatar] is not a child's.
+     */
+    suspend fun createChild(name: String, avatar: String): RemoteResult
+
+    /** A new [name] and/or [avatar] (null leaves it as it is), with the TV's checks. */
+    suspend fun editProfile(profileId: String, name: String?, avatar: String?): RemoteResult
+
+    /** Refused for the last adult profile and for the profile on the TV now ([RemoteProfileDetails.deleteBlockedReason]). */
+    suspend fun deleteProfile(profileId: String): RemoteResult
+
+    /** null leaves that switch as it is. */
+    suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult
+
+    /** Minutes since midnight (0..1439); both null = all day. The same time twice also means all day. */
+    suspend fun setSchedule(profileId: String, fromMinute: Int?, untilMinute: Int?): RemoteResult
+
+    /** The household's blocklist (it applies to every profile). */
+    suspend fun blocklist(): RemoteBlocklist
+
+    suspend fun blockKeyword(keyword: String): RemoteResult
+
+    suspend fun unblockKeyword(keyword: String): RemoteResult
+
+    /** Any channel link. */
+    suspend fun blockChannel(link: String): RemoteResult
+
+    suspend fun unblockChannel(channelId: String): RemoteResult
+
+    suspend fun stats(): List<RemoteStats>
 }
 
 /** Thrown by a [RemoteController] to refuse a request; the phone shows [userMessage] (HTTP 403). */

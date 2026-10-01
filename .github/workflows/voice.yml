@@ -1,0 +1,36 @@
+# Voice: generates narration and voice samples with ElevenLabs, using the repository secret ELEVEN_LABS.
+# The key stays inside GitHub; the audio is uploaded as the run's "voice-output" artifact.
+# Edit promo/voice/request.json and push it to run the jobs it lists (see promo/voice/run.py).
+
+name: Voice
+
+on:
+  push:
+    paths: ['promo/voice/request.json']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: voice-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Only the voice folder: the repository carries large videos and the setup kit.
+          sparse-checkout: promo/voice
+      - name: Run the requested jobs
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVEN_LABS }}
+        run: python3 promo/voice/run.py promo/voice/request.json "$RUNNER_TEMP/voice-output"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: voice-output
+          path: ${{ runner.temp }}/voice-output
+          retention-days: 3

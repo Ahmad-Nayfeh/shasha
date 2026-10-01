@@ -86,18 +86,21 @@ import com.ahmadnayfeh.shasha.player.PlaybackProgress
 import com.ahmadnayfeh.shasha.player.PlayerAction
 import com.ahmadnayfeh.shasha.player.PlayerUiState
 import com.ahmadnayfeh.shasha.player.QualityChoice
-import com.ahmadnayfeh.shasha.player.SEEK_STEP_MS
 import com.ahmadnayfeh.shasha.player.SeekAccelerator
 import com.ahmadnayfeh.shasha.player.formatDuration
 import com.ahmadnayfeh.shasha.player.formatSpeed
 import com.ahmadnayfeh.shasha.ui.components.LocalTopClearance
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
+import com.ahmadnayfeh.shasha.ui.components.LocalBehavior
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoader
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 import kotlinx.coroutines.delay
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
+import com.ahmadnayfeh.shasha.ui.theme.OsdColors
+import com.ahmadnayfeh.shasha.ui.theme.Accents
 
+/** The controls' default wait before hiding (Settings may change it: [LocalBehavior]). */
 const val OSD_AUTO_HIDE_MS = 3_000L
 
 private val DPAD_KEYS = setOf(
@@ -132,12 +135,13 @@ fun PlayerOsd(
     modifier: Modifier = Modifier,
     initiallyVisible: Boolean = true,
     initialMenu: OsdMenu? = null,
-    autoHideMs: Long = OSD_AUTO_HIDE_MS,
+    autoHideMs: Long = LocalBehavior.current.controlsHideSeconds * 1000L,
     savedForLater: Boolean? = null,
     onToggleWatchLater: () -> Unit = {},
     resumedFromMs: Long? = null,
     resumeHintMs: Long = RESUME_HINT_MS,
     suspended: Boolean = false,
+    seekStepMs: Long = LocalBehavior.current.seekStepSeconds * 1000L,
 ) {
     var visible by remember { mutableStateOf(initiallyVisible || initialMenu != null) }
     var menu by remember { mutableStateOf(initialMenu) }
@@ -152,7 +156,7 @@ fun PlayerOsd(
     var titleBottom by remember { mutableStateOf(0.dp) }
     // Key code whose key-up must be swallowed (its key-down only revealed the controls).
     val swallowUp = remember { IntArray(1) { NO_KEY } }
-    val accelerator = remember { SeekAccelerator() }
+    val accelerator = remember(seekStepMs) { SeekAccelerator(baseStepMs = seekStepMs) }
 
     val rootFocus = remember { FocusRequester() }
     val seekFocus = remember { FocusRequester() }
@@ -434,6 +438,7 @@ fun PlayerOsd(
                         chipFocus = chipFocus,
                         onAction = onAction,
                         onSeekBy = ::seekBy,
+                        seekStepMs = seekStepMs,
                         onOpenMenu = ::openMenu,
                         savedForLater = savedForLater,
                         onToggleWatchLater = {
@@ -450,10 +455,12 @@ fun PlayerOsd(
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)))
         }
 
+        // The panel sits at the start (the right in Arabic) and slides in from that side.
+        val fromStart = if (LocalLayoutDirection.current == LayoutDirection.Rtl) 1 else -1
         AnimatedVisibility(
             visible = menu != null,
-            enter = fadeIn(tween(200)) + slideInHorizontally(tween(260)) { it / 2 },
-            exit = fadeOut(tween(200)) + slideOutHorizontally(tween(260)) { it / 2 },
+            enter = fadeIn(tween(200)) + slideInHorizontally(tween(260)) { fromStart * it / 2 },
+            exit = fadeOut(tween(200)) + slideOutHorizontally(tween(260)) { fromStart * it / 2 },
             modifier = Modifier.align(Alignment.BottomStart),
         ) {
             val current = lastMenu
@@ -500,13 +507,14 @@ private fun TitleBar(state: PlayerUiState, endReserve: Dp = 0.dp, onTextBottom: 
             Text(
                 state.title,
                 style = MaterialTheme.typography.headlineSmall.copy(textDirection = TextDirection.Content),
-                textAlign = TextAlign.Right,
+                color = OsdColors.Text,
+                textAlign = StartTextAlign,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.widthIn(max = 760.dp).testTag("osd_title_text"),
             )
             state.channelName?.let {
-                Text(it, style = MaterialTheme.typography.titleMedium, color = ShashaColors.Muted, maxLines = 1)
+                Text(it, style = MaterialTheme.typography.titleMedium, color = OsdColors.Muted, maxLines = 1)
             }
         }
     }
@@ -522,6 +530,7 @@ private fun ControlsRow(
     chipFocus: Map<OsdMenu, FocusRequester>,
     onAction: (PlayerAction) -> Unit,
     onSeekBy: (Long) -> Unit,
+    seekStepMs: Long,
     onOpenMenu: (OsdMenu) -> Unit,
     savedForLater: Boolean?,
     onToggleWatchLater: () -> Unit,
@@ -550,16 +559,16 @@ private fun ControlsRow(
         OsdIconButton(
             icon = ShashaIcons.Replay,
             contentDescription = stringResource(R.string.player_rewind),
-            onClick = { onSeekBy(-SEEK_STEP_MS) },
-            badge = "10",
+            onClick = { onSeekBy(-seekStepMs) },
+            badge = (seekStepMs / 1000).toString(),
             modifier = upToBar,
         )
         Spacer(Modifier.width(10.dp))
         OsdIconButton(
             icon = ShashaIcons.Forward,
             contentDescription = stringResource(R.string.player_forward),
-            onClick = { onSeekBy(SEEK_STEP_MS) },
-            badge = "10",
+            onClick = { onSeekBy(seekStepMs) },
+            badge = (seekStepMs / 1000).toString(),
             modifier = upToBar,
         )
         Spacer(Modifier.width(22.dp))
@@ -652,12 +661,12 @@ private fun ResumeHint(positionMs: Long) {
     Row(
         Modifier
             .background(Color.Black.copy(alpha = 0.62f), RoundedCornerShape(percent = 50))
-            .border(1.dp, LocalAccent.current.tint(0.45f), RoundedCornerShape(percent = 50))
+            .border(1.dp, Accents.overDark(LocalAccent.current).tint(0.45f), RoundedCornerShape(percent = 50))
             .padding(start = 14.dp, end = 18.dp, top = 6.dp, bottom = 6.dp)
             .testTag("osd_resume_hint"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(ShashaIcons.History, contentDescription = null, tint = LocalAccent.current.bright, modifier = Modifier.size(22.dp))
+        Icon(ShashaIcons.History, contentDescription = null, tint = Accents.overDark(LocalAccent.current).bright, modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(10.dp))
         Text(
             stringResource(R.string.player_resumed_from, formatDuration(positionMs)),

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hub_appearance">Appearance &amp; language</string>
+    <string name="hub_appearance_summary">English or العربية, dark or light</string>
+    <string name="hub_guide">Guide &amp; video</string>
+    <string name="hub_guide_summary">The illustrated Shasha Guide and a short explainer video</string>
+
+    <string name="appearance_language">Language</string>
+    <string name="appearance_language_ar_body">Right-to-left layout, in Arabic</string>
+    <string name="appearance_language_en_body">Left-to-right layout</string>
+    <string name="appearance_language_note">The whole app switches at once. Voice search keeps its own language, set under “Playback &amp; alerts”.</string>
+    <string name="appearance_theme">Theme</string>
+    <string name="appearance_theme_dark">Dark</string>
+    <string name="appearance_theme_dark_body">Shasha\'s original colors, easy on the eyes in a dim room</string>
+    <string name="appearance_theme_light">Light</string>
+    <string name="appearance_theme_light_body">Bright colors for a well-lit room. The player stays dark over the video.</string>
+
+    <string name="guide_open">Shasha Guide</string>
+    <string name="guide_open_body">Illustrated pages that walk you through the app, step by step</string>
+    <string name="explainer_open">Explainer video</string>
+    <string name="explainer_open_body">A short, narrated tour of Shasha</string>
+    <string name="guide_language_note">The guide and the video follow the app\'s language.</string>
+    <string name="explainer_unavailable">Not available</string>
+
+    <string name="guide_page_of">Page %1$s of %2$s</string>
+    <string name="guide_hint_pages">Left and right: pages</string>
+    <string name="guide_hint_scroll">Up and down: scroll</string>
+    <string name="guide_page_failed">This page couldn\'t be opened.</string>
+
+    <string name="explainer_missing_title">The video isn\'t included in this version</string>
+    <string name="explainer_missing_body">You can read the guide in the meantime. The video will come with an update.</string>
+    <string name="explainer_hint">OK pauses and plays; the arrows skip 10 seconds back or ahead</string>
+    <string name="explainer_failed">The video couldn\'t be played.</string>
+
+    <string name="about_dev_title">Made by Ahmad Nayfeh</string>
+    <string name="about_dev_subtitle">Made with love for my family</string>
+    <string name="about_more_apps">More apps by the developer</string>
+    <string name="about_more_apps_hint">Scan a code with your phone\'s camera to open the link.</string>
+    <string name="app_shadra_name">Shadra</string>
+    <string name="app_shadra_desc">A quiet home for the lines you don\'t want to lose: save quotes from any book or screen, and write what they stirred in you.</string>
+    <string name="app_silah_name">Silah</string>
+    <string name="app_silah_desc">Reminds you each day of one person to check on, and opens their WhatsApp chat in one tap. Private and offline.</string>
+    <string name="app_masarif_name">Masarif</string>
+    <string name="app_masarif_desc">Reads your bank SMS on your phone, sorts your spending and shows your stats and subscriptions, offline. Currently supports Alinma Bank.</string>
+    <string name="app_khatwa_name">Khatwa</string>
+    <string name="app_khatwa_desc">Counts your steps, locks your phone until you walk, and suggests a nearby place to walk each day at the best time.</string>
+    <string name="about_qr_website">Website</string>
+    <string name="about_qr_description">QR code: %1$s</string>
+
+    <string name="quoted_name">“&#x2068;%1$s&#x2069;”</string>
+    <string name="list_separator">", "</string>
+    <string-array name="weekdays_chart">
+        <item>Mon</item>
+        <item>Tue</item>
+        <item>Wed</item>
+        <item>Thu</item>
+        <item>Fri</item>
+        <item>Sat</item>
+        <item>Sun</item>
+    </string-array>
+
+    <string name="setup_made_by">Made by Ahmad Nayfeh</string>
+</resources>

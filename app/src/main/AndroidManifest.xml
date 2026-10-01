@@ -33,8 +33,18 @@
 
     <!-- «حالة الحماية» says whether the official YouTube app is still enabled (targetSdk 30+ hides other
          packages unless they are named here). -->
+    <!-- v1.1 voice search: the remote's microphone through Android's speech recognition (asked for on first use). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <queries>
         <package android:name="com.google.android.youtube.tv" />
+        <!-- Voice search: the recognition service (SpeechRecognizer) and the system's voice screen (the fallback). -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
     </queries>
 
     <!-- A TV app driven by the remote: no touchscreen, and it also installs on non-Leanback devices. -->
@@ -42,6 +52,8 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <!-- The phone remote's Wi-Fi permissions must not make Wi-Fi required: a TV on Ethernet reaches the phone too. -->
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
+    <!-- RECORD_AUDIO must not make a microphone required: typing and the phone still search without one. -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <!-- The label is a literal, so it reads «شاشة» whatever the TV's system language is. -->
     <application

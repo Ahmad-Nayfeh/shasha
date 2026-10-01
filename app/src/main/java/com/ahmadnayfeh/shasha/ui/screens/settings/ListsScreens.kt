@@ -69,6 +69,7 @@ import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 import kotlinx.coroutines.launch
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
 @Composable
 fun AllowlistRoute(profileId: String) {
@@ -82,7 +83,7 @@ fun AllowlistRoute(profileId: String) {
         profile = profile,
         onRemove = { id, name ->
             vm.remove(id)
-            messages?.show(resources.getString(R.string.message_allowlist_removed, "«\u2068$name\u2069»", profile.name))
+            messages?.show(resources.getString(R.string.message_allowlist_removed, resources.getString(R.string.quoted_name, name), profile.name))
         },
         onAddFromSubscriptions = { picking = true },
     )
@@ -209,9 +210,9 @@ private fun RemovableRow(
             Column(Modifier.weight(1f)) {
                 Text(
                     title,
-                    style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.ContentOrRtl),
+                    style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.Content),
                     // A Latin name lines up with the Arabic ones, on the right.
-                    textAlign = TextAlign.Right,
+                    textAlign = StartTextAlign,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.fillMaxWidth(),
@@ -278,8 +279,8 @@ fun SubscriptionsPickerPanel(profile: Profile, subscriptions: List<ListedChannel
                         Spacer(Modifier.width(12.dp))
                         Text(
                             channel.name,
-                            style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.ContentOrRtl),
-                            textAlign = TextAlign.Right,
+                            style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.Content),
+                            textAlign = StartTextAlign,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f),
@@ -305,11 +306,11 @@ fun BlocklistRoute() {
         subscribed = subscribed,
         onUnblock = { channel ->
             vm.unblock(channel.channelId)
-            messages?.show(resources.getString(R.string.message_unblocked, "«\u2068${channel.name}\u2069»"))
+            messages?.show(resources.getString(R.string.message_unblocked, resources.getString(R.string.quoted_name, channel.name)))
         },
         onUnsubscribe = { channel ->
             vm.unsubscribe(channel.channelId)
-            messages?.show(resources.getString(R.string.message_unsubscribed, "«\u2068${channel.name}\u2069»"))
+            messages?.show(resources.getString(R.string.message_unsubscribed, resources.getString(R.string.quoted_name, channel.name)))
         },
         onAddKeyword = { word ->
             scope.launch {
@@ -432,7 +433,7 @@ private fun KeywordChip(keyword: String, onRemove: () -> Unit) {
         modifier = Modifier.testTag("keyword_$keyword"),
     ) {
         Row(Modifier.padding(start = 16.dp, end = 12.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(keyword, style = MaterialTheme.typography.labelLarge.copy(textDirection = TextDirection.ContentOrRtl))
+            Text(keyword, style = MaterialTheme.typography.labelLarge.copy(textDirection = TextDirection.Content))
             Spacer(Modifier.width(8.dp))
             Icon(ShashaIcons.Close, contentDescription = stringResource(R.string.action_remove), modifier = Modifier.size(16.dp))
         }

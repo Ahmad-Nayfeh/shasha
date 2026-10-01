@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -78,6 +80,11 @@ class LockController(
     private val pinLockMillis: suspend () -> Long,
     private val surrenders: SurrenderLog,
     private val scope: CoroutineScope,
+    /**
+     * «الوضع الجاد» on or off (Settings). Turned off, the lock that holds a video now ends at once (no surrender:
+     * the parent chose it), and no video is locked any more ([PolicyEngine.lockFor]).
+     */
+    seriousMode: Flow<Boolean> = flowOf(true),
 ) {
     private val mutex = Mutex()
     private val _lock = MutableStateFlow<PlaybackLock?>(null)
@@ -91,6 +98,13 @@ class LockController(
     init {
         scope.launch {
             for ((what, report) in reports) runCatchingLogged(what) { report() }
+        }
+        scope.launch {
+            seriousMode.filter { !it }.collect {
+                runCatchingLogged("end the lock (Serious Mode off)") {
+                    mutex.withLock { if (store.current() != null) write(null) }
+                }
+            }
         }
         // The stored lock at start, changes made elsewhere (a PIN profile switch ends a child's lock), and a
         // current profile that is not the lock's. Each is read again from the store, under the mutex, so a
@@ -133,14 +147,15 @@ class LockController(
     }
 
     /**
-     * [videoId] started in [profileId]: it is locked ([PolicyEngine.lockPlayback]). A lock that already holds
-     * this very video (a restart, back from Home, the playlist video the lock moved to) is kept as it is.
+     * [videoId] started in [profileId]: it is locked ([PolicyEngine.lockFor]; not while «الوضع الجاد» is off). A lock
+     * that already holds this very video (a restart, back from Home, the playlist video the lock moved to) is kept.
      */
     suspend fun onVideoStarted(profileId: String, videoId: String, playlistId: String?) = mutex.withLock {
         val current = profile.value?.takeIf { it.id == profileId } ?: return@withLock // the profile changed meanwhile
         val lock = store.current()
         if (lock != null && lock.profileId == profileId && lock.videoId == videoId) return@withLock
-        write(engine.lockPlayback(current, videoId, playlistId))
+        val next = engine.lockFor(current, videoId, playlistId)
+        if (next != null || lock != null) write(next)
     }
 
     /**

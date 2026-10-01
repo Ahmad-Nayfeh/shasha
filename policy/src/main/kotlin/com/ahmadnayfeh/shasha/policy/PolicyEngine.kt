@@ -13,7 +13,14 @@ import java.time.LocalDateTime
  * time of that instant is inside the window. Every prediction the engine makes (seconds left, the
  * next opening) is the exact instant at which that answer changes, daylight-saving jumps included.
  */
-class PolicyEngine(private val clock: Clock) {
+class PolicyEngine(
+    private val clock: Clock,
+    /** The parent's adjustable rules (Settings), read on every decision: a change applies at once. */
+    private val config: () -> PolicyConfig = { PolicyConfig.DEFAULT },
+) {
+
+    /** The rules in force right now. */
+    fun config(): PolicyConfig = config.invoke()
 
     /** Local epoch day in the clock's zone; quota counters and [QuotaOverride]s are keyed by it. */
     fun today(): Long = LocalDate.now(clock).toEpochDay()
@@ -92,12 +99,15 @@ class PolicyEngine(private val clock: Clock) {
         return Decision.Allow
     }
 
-    /** Short: flagged short-form, a "/shorts/" url, or a known non-live duration of at most 3 minutes. */
+    /**
+     * Short: flagged short-form, a "/shorts/" url, or a known non-live duration of at most
+     * [PolicyConfig.shortsMaxSeconds] (3 minutes unless the parent changed it).
+     */
     fun isShort(item: Candidate): Boolean {
         if (item.isShortFormFlag) return true
         if (item.url.contains("/shorts/", ignoreCase = true)) return true
         val duration = item.durationSeconds ?: return false
-        return !item.isLive && duration in 1..SHORTS_MAX_SECONDS
+        return !item.isLive && duration in 1..config().shortsMaxSeconds
     }
 
     /**
@@ -112,14 +122,15 @@ class PolicyEngine(private val clock: Clock) {
 
     fun features(profile: Profile): Features {
         val adult = profile.isAdult
+        val rules = config()
         return Features(
             search = adult,
             textInput = adult,
             comments = adult && !profile.hideComments,
             undoSponsorSkip = adult,
-            enterNeedsPin = adult,
+            enterNeedsPin = adult && rules.adultEntryNeedsPin,
             exitNeedsPin = !adult,
-            adultExitChallenge = adult,
+            adultExitChallenge = adult && rules.escape != null,
             channelBrowsing = true,
         )
     }
@@ -152,7 +163,8 @@ class PolicyEngine(private val clock: Clock) {
         val scheduleRemaining = schedule?.let { secondsUntilScheduleEnd(it, now, scheduleOverrideUntil) }
 
         val remaining = listOfNotNull(quotaRemaining, scheduleRemaining).minOrNull()
-        return if (remaining != null && remaining <= WARNING_SECONDS) {
+        val warning = config().warningSeconds
+        return if (remaining != null && warning > 0 && remaining <= warning) {
             SessionState.Warning(remaining)
         } else {
             SessionState.Ok(remaining)
@@ -173,7 +185,14 @@ class PolicyEngine(private val clock: Clock) {
 
     // ---- Playback lock (SPEC section 4) ------------------------------------------------------
 
-    /** Starting a video or a playlist locks it, in both kinds of profile (see [PlaybackLock]). */
+    /**
+     * The lock a video or playlist that starts gets: [lockPlayback] while «الوضع الجاد» is on, none when the parent
+     * turned it off ([PolicyConfig.seriousMode]: videos are then never locked, in any profile).
+     */
+    fun lockFor(profile: Profile, videoId: String, playlistId: String? = null): PlaybackLock? =
+        if (config().seriousMode) lockPlayback(profile, videoId, playlistId) else null
+
+    /** Starting a video or a playlist locks it, in both kinds of profile (see [PlaybackLock]); see [lockFor]. */
     fun lockPlayback(profile: Profile, videoId: String, playlistId: String? = null): PlaybackLock =
         PlaybackLock(
             profileId = profile.id,
@@ -200,7 +219,7 @@ class PolicyEngine(private val clock: Clock) {
      */
     fun onVideoEnded(lock: PlaybackLock, nextVideoId: String? = null, played: PlayedPart? = null): PlaybackLock? = when {
         nextVideoId != null && lock.unlock == UnlockMethod.PARENT_PIN -> lock.copy(videoId = nextVideoId)
-        played != null && !played.endedByItself -> lock
+        played != null && !played.endedByItself(config().skipAllowance) -> lock
         else -> null
     }
 
@@ -243,14 +262,16 @@ class PolicyEngine(private val clock: Clock) {
         if (lock.unlock == UnlockMethod.EXIT_CHALLENGE) SurrenderEvent(lock.profileId, nowEpochMs(), lock.videoId) else null
 
     /**
-     * The adult leaves early: when the button was held for [AdultExitChallenge.HOLD_MILLIS] and
-     * [typed] matches [phrase] (one of [AdultExitChallenge.phrases]), the lock ends and the returned
-     * [SurrenderEvent] must be stored for the stats. Otherwise null, and the lock stays.
+     * The adult leaves early: when the button was held for [AdultEscape.holdMillis] and [typed] matches
+     * [phrase] (one of [AdultEscape.phrases]), the lock ends and the returned [SurrenderEvent] must be stored
+     * for the stats. Otherwise null, and the lock stays; always null while the parent turned the escape off
+     * ([PolicyConfig.escape]).
      */
     fun exitWithChallenge(lock: PlaybackLock, heldMillis: Long, phrase: String, typed: String): SurrenderEvent? {
         if (lock.unlock != UnlockMethod.EXIT_CHALLENGE) return null
-        if (phrase !in AdultExitChallenge.phrases) return null
-        if (!AdultExitChallenge.isHoldComplete(heldMillis) || !AdultExitChallenge.matches(phrase, typed)) return null
+        val escape = config().escape ?: return null
+        if (phrase !in escape.phrases) return null
+        if (!escape.isHoldComplete(heldMillis) || !AdultExitChallenge.matches(phrase, typed)) return null
         return SurrenderEvent(lock.profileId, nowEpochMs(), lock.videoId)
     }
 

@@ -7,6 +7,7 @@ import com.ahmadnayfeh.shasha.data.PinResult
 import com.ahmadnayfeh.shasha.data.PolicyStore
 import com.ahmadnayfeh.shasha.policy.MonotonicClock
 import com.ahmadnayfeh.shasha.policy.PinAttemptLimiter
+import com.ahmadnayfeh.shasha.policy.PinLockoutConfig
 import com.ahmadnayfeh.shasha.policy.PinAttemptResult
 import com.ahmadnayfeh.shasha.policy.PinAttemptState
 import com.ahmadnayfeh.shasha.policy.PinHasher
@@ -52,6 +53,8 @@ class PhonePin(
     private val hasher: PinHasher = PinHasher(),
     private val cpu: CoroutineDispatcher = Dispatchers.Default,
     private val uptime: MonotonicClock? = null,
+    /** The parent's PIN brake (Settings → رمز الوالدين): failures before a lockout and how long it lasts. */
+    private val lockout: () -> PinLockoutConfig = { PinLockoutConfig() },
 ) {
     private val mutex = Mutex()
     private var limiter: PinAttemptLimiter? = null
@@ -79,7 +82,7 @@ class PhonePin(
         val limiter = limiter()
         val locked = limiter.remainingLockMillis()
         val state = limiter.state
-        PhonePinStatus(wrong = state.lockouts * PinAttemptLimiter.MAX_FAILURES + state.consecutiveFailures, lockedMillis = locked)
+        PhonePinStatus(wrong = state.lockouts * lockout().maxFailures + state.consecutiveFailures, lockedMillis = locked)
     }
 
     /**
@@ -104,6 +107,6 @@ class PhonePin(
         val saved = store.data.first()[PolicyStore.PHONE_PIN_ATTEMPTS]
             ?.let { PolicyJson.decodeOrNull(PinAttemptState.serializer(), it) }
             ?: PinAttemptState()
-        PinAttemptLimiter(clock, saved, uptime).also { limiter = it }
+        PinAttemptLimiter(clock, saved, uptime, lockout).also { limiter = it }
     }
 }

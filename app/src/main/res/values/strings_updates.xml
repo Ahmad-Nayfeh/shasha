@@ -21,10 +21,10 @@
     <string name="updates_installed_title">ثُبّت التحديث</string>
     <string name="updates_installed_body">افتح «شاشة» من جديد لتعمل بالإصدار الجديد.</string>
     <string name="updates_not_allowed_title">تثبيت التحديثات غير مسموح بعد</string>
-    <string name="updates_not_allowed_body">امنح «شاشة» إذن تثبيت التطبيقات مرة واحدة من حاسوب على شبكة الشاشة نفسها (سكربت adb-setup يفعل ذلك)، ثم اضغط «إعادة المحاولة»:</string>
+    <string name="updates_not_allowed_body">امنح «شاشة» إذن تثبيت التطبيقات مرة واحدة من حاسوب على شبكة الشاشة نفسها (تشغيل المثبّت من جديد يفعل ذلك، كما في «دليل شاشة»)، ثم اضغط «إعادة المحاولة»:</string>
     <string name="updates_token_title">فحص التحديثات يحتاج رمز قراءة</string>
-    <string name="updates_token_body">مستودع «شاشة» على GitHub خاص، فلا تُقرأ إصداراته إلا برمز قراءة فقط يُضاف إلى أسرار المستودع (UPDATE_TOKEN) قبل البناء، كما في README. هذا الإصدار بُني بلا رمز.</string>
-    <string name="updates_token_adb">وبديلاً: نزّل آخر APK من صفحة Releases على الحاسوب، وثبّته فوق هذا الإصدار عبر ADB (أو بسكربت adb-setup):</string>
+    <string name="updates_token_body">مستودع «شاشة» على GitHub خاص، فلا تُقرأ إصداراته إلا برمز قراءة فقط يُضاف إلى أسرار المستودع (UPDATE_TOKEN) قبل البناء، كما في «دليل شاشة». هذا الإصدار بُني بلا رمز.</string>
+    <string name="updates_token_adb">وبديلاً: نزّل آخر APK من صفحة Releases على الحاسوب، وثبّته فوق هذا الإصدار بتشغيل المثبّت من جديد، أو عبر ADB:</string>
     <string name="updates_installed_version">المثبّت</string>
     <string name="updates_latest_version">الأحدث</string>
     <!-- %1$s versionName, %2$s versionCode. -->
@@ -37,7 +37,7 @@
     <string name="updates_error_network_title">تعذّر الوصول إلى GitHub</string>
     <string name="updates_error_network_body">تأكّد من اتصال الشاشة بالإنترنت ثم أعد المحاولة.</string>
     <string name="updates_error_token_title">رمز القراءة مرفوض</string>
-    <string name="updates_error_token_body">رفض GitHub رمز القراءة الذي بُني به هذا الإصدار: انتهت صلاحيته أو أُلغي. جدّده وضعه في سر UPDATE_TOKEN، ثم ثبّت الإصدار التالي عبر ADB كما في README.</string>
+    <string name="updates_error_token_body">رفض GitHub رمز القراءة الذي بُني به هذا الإصدار: انتهت صلاحيته أو أُلغي. جدّده وضعه في سر UPDATE_TOKEN، ثم ثبّت الإصدار التالي بتشغيل المثبّت من جديد، كما في «دليل شاشة».</string>
     <string name="updates_error_forbidden_title">رفض GitHub الطلب</string>
     <string name="updates_error_forbidden_body">إما أن الطلبات تجاوزت الحد المسموح (انتظر قليلاً ثم أعد المحاولة)، أو أن رمز القراءة لا يملك إذن قراءة المستودع.</string>
     <string name="updates_error_not_found_title">لم نجد إصداراً منشوراً</string>

@@ -17,8 +17,17 @@ import com.ahmadnayfeh.shasha.ui.screens.diagnostics.TestVideo
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 
-/** 1920x1080 px at xhdpi (960x540 dp): the Android TV reference canvas. */
-const val TV_1080P = "w960dp-h540dp-land-television-xhdpi"
+/** 1920x1080 px at xhdpi (960x540 dp): the Android TV reference canvas, without a language. */
+const val TV_DEVICE = "w960dp-h540dp-land-television-xhdpi"
+
+/**
+ * The TV canvas in the app's default language, Arabic (values/, RTL): what the screens' tests read. Robolectric's
+ * own default (en-US) would pick values-en now that it exists.
+ */
+const val TV_1080P = "ar-$TV_DEVICE"
+
+/** The same TV in English (values-en, LTR). */
+const val TV_1080P_EN = "en-$TV_DEVICE"
 
 object Fixtures {
     fun error(kind: SourceErrorKind, technical: String, message: String? = null) = SourceException(kind, technical, message, null)

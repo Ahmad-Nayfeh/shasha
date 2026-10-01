@@ -32,7 +32,7 @@ android {
         versionCode = ciEnv("SHASHA_VERSION_CODE")
             ?.let { it.toIntOrNull() ?: error("SHASHA_VERSION_CODE must be an integer, got '$it'") }
             ?: 1
-        versionName = "1.0.0"
+        versionName = "1.1.0"
         // SPEC §6's updater reads this repository's GitHub Releases. The repository is private, so it needs a
         // read-only token (CI's SHASHA_UPDATE_TOKEN); empty = the updater explains that it has none.
         buildConfigField("String", "UPDATE_REPO", javaString("Ahmad-Nayfeh/shasha"))
@@ -69,6 +69,10 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
     testOptions { unitTests.isIncludeAndroidResources = true }
+    // The bundled explainer videos (assets/video) stay uncompressed: Media3 reads and seeks them in place.
+    androidResources { noCompress += "mp4" }
+    // The app switches between Arabic and English itself (Settings → المظهر واللغة): an app bundle keeps both languages.
+    bundle { language { enableSplit = false } }
 }
 
 roborazzi {

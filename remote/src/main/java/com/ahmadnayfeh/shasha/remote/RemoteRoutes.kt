@@ -10,6 +10,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.call
+import io.ktor.server.request.host
 import io.ktor.server.request.httpMethod
 import io.ktor.server.request.path
 import io.ktor.server.response.header
@@ -22,6 +23,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import java.time.LocalDate
 
 internal const val PARENT_SESSION_HEADER = "X-Parent-Session"
@@ -38,11 +41,26 @@ internal const val PARENT_SESSION_HEADER = "X-Parent-Session"
 @Serializable internal data class AllowlistRemoveRequest(val profileId: String, val id: String)
 @Serializable internal data class LinkRequest(val link: String)
 @Serializable internal data class ChannelRequest(val channelId: String)
+@Serializable internal data class SettingRequest(val key: String, val value: JsonElement, val base: JsonElement? = null)
+@Serializable internal data class SettingsResetRequest(val group: String? = null)
+@Serializable internal data class ProfileFlagsRequest(val profileId: String, val hideShorts: Boolean? = null, val hideComments: Boolean? = null)
+// No defaults: a request that forgets the times must not mean "all day".
+@Serializable internal data class ScheduleRequest(val profileId: String, val fromMinute: Int?, val untilMinute: Int?)
+@Serializable internal data class BlockRequest(val kind: String, val value: String)
+@Serializable internal data class CreateChildRequest(val name: String, val avatar: String)
+@Serializable internal data class EditProfileRequest(val profileId: String, val name: String? = null, val avatar: String? = null)
+@Serializable internal data class ProfileIdRequest(val profileId: String)
 
 private const val MAX_TEXT = 2048
 private const val MAX_QUERY = 200
 private const val MAX_MINUTES = 24 * 60
 private const val MAX_SEEK_SECONDS = 24 * 60 * 60
+private const val MAX_KEY = 64
+private const val MAX_KEYWORD = 100
+
+/** Longer than any name the TV takes (the controller applies the TV's own limit and says it). */
+private const val MAX_NAME = 64
+private val AVATAR_KEY = Regex("[a-z][a-z0-9_]{0,31}")
 
 internal fun Application.remoteModule(
     controller: RemoteController,
@@ -129,8 +147,13 @@ internal fun Application.remoteModule(
                 val result = if (pin == null) {
                     controller.switchProfile(req.id, null)
                 } else {
-                    // A switch can succeed without checking the PIN (e.g. to the current profile): never a reset.
-                    pinGate.check(isWrong = { !it.ok }, isVerified = { false }) { controller.switchProfile(req.id, pin) }
+                    // A switch can succeed without checking the PIN (e.g. to the current profile): never a reset. A refusal
+                    // because a video is locked (SPEC §4: the TV refuses those before it looks at the PIN) is no wrong PIN:
+                    // the parent's own right PIN must never end in "too many wrong attempts".
+                    pinGate.check(isWrong = { (answer, locked) -> !answer.ok && !locked }, isVerified = { false }) {
+                        val answer = controller.switchProfile(req.id, pin)
+                        answer to (!answer.ok && controller.status().let { it.videoLocked && it.profileId != req.id })
+                    }.first
                 }
                 call.respondJson(result)
             }
@@ -235,6 +258,105 @@ internal fun Application.remoteModule(
                     val upload = call.receiveUpload(Limits.BACKUP_BYTES)
                     call.respondJson(controller.importBackup(upload.bytes))
                 }
+                get("/settings") {
+                    call.requireParent(sessions)
+                    call.respondJson(controller.settings())
+                }
+                post("/settings") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<SettingRequest>()
+                    if (req.key.isBlank() || req.key.length > MAX_KEY) throw badRequest()
+                    call.respondJson(controller.changeSetting(req.key, req.value, req.base?.takeUnless { it is JsonNull }))
+                }
+                post("/settings/reset") {
+                    call.requireParent(sessions)
+                    val group = call.receiveJson<SettingsResetRequest>().group
+                    if (group != null && (group.isBlank() || group.length > MAX_KEY)) throw badRequest()
+                    call.respondJson(controller.resetSettings(group))
+                }
+                get("/profiles") {
+                    call.requireParent(sessions)
+                    call.respondJson(controller.profilesPage())
+                }
+                post("/profile/create") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<CreateChildRequest>()
+                    val name = req.name.trim()
+                    if (name.isEmpty() || name.length > MAX_NAME) throw badRequest(ServerMessages.BAD_NAME)
+                    if (!AVATAR_KEY.matches(req.avatar)) throw badRequest()
+                    call.respondJson(controller.createChild(name, req.avatar))
+                }
+                post("/profile/edit") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<EditProfileRequest>()
+                    requireText(req.profileId)
+                    val name = req.name?.trim()
+                    if (name == null && req.avatar == null) throw badRequest()
+                    if (name != null && (name.isEmpty() || name.length > MAX_NAME)) throw badRequest(ServerMessages.BAD_NAME)
+                    if (req.avatar != null && !AVATAR_KEY.matches(req.avatar)) throw badRequest()
+                    call.respondJson(controller.editProfile(req.profileId, name, req.avatar))
+                }
+                post("/profile/delete") {
+                    call.requireParent(sessions)
+                    val id = call.receiveJson<ProfileIdRequest>().profileId
+                    requireText(id)
+                    call.respondJson(controller.deleteProfile(id))
+                }
+                post("/profile/flags") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<ProfileFlagsRequest>()
+                    requireText(req.profileId)
+                    if (req.hideShorts == null && req.hideComments == null) throw badRequest()
+                    call.respondJson(controller.setProfileFlags(req.profileId, req.hideShorts, req.hideComments))
+                }
+                post("/schedule") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<ScheduleRequest>()
+                    requireText(req.profileId)
+                    val from = req.fromMinute
+                    val until = req.untilMinute
+                    if ((from == null) != (until == null)) throw badRequest()
+                    if (from != null && (from !in 0 until MAX_MINUTES || until!! !in 0 until MAX_MINUTES)) throw badRequest()
+                    call.respondJson(controller.setSchedule(req.profileId, from, until))
+                }
+                get("/blocklist") {
+                    call.requireParent(sessions)
+                    call.respondJson(controller.blocklist())
+                }
+                post("/blocklist/add") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<BlockRequest>()
+                    val value = req.value.trim()
+                    call.respondJson(
+                        when (req.kind) {
+                            "keyword" -> {
+                                if (value.isEmpty() || value.length > MAX_KEYWORD) throw badRequest(ServerMessages.BAD_KEYWORD)
+                                controller.blockKeyword(value)
+                            }
+                            "channel" -> {
+                                requireText(value, ServerMessages.EMPTY_LINK)
+                                controller.blockChannel(value)
+                            }
+                            else -> throw badRequest()
+                        },
+                    )
+                }
+                post("/blocklist/remove") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<BlockRequest>()
+                    requireText(req.value)
+                    call.respondJson(
+                        when (req.kind) {
+                            "keyword" -> controller.unblockKeyword(req.value)
+                            "channel" -> controller.unblockChannel(req.value)
+                            else -> throw badRequest()
+                        },
+                    )
+                }
+                get("/stats") {
+                    call.requireParent(sessions)
+                    call.respondJson(controller.stats())
+                }
             }
         }
 
@@ -262,7 +384,7 @@ private fun ApplicationCall.requireParent(sessions: ParentSessions) {
 
 private suspend fun ApplicationCall.respondPage(page: WebPage, status: HttpStatusCode) {
     response.header(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
-    response.header("Content-Security-Policy", page.contentSecurityPolicy)
+    response.header("Content-Security-Policy", page.contentSecurityPolicy(runCatching { request.host() }.getOrNull()))
     respondBytes(page.bytes, ContentType.Text.Html.withCharset(Charsets.UTF_8), status)
 }
 

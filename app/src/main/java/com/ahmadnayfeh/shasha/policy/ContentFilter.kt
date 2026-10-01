@@ -45,6 +45,15 @@ class ContentFilter private constructor(private val engine: PolicyEngine?, val p
     fun videos(videos: List<VideoItem>): List<VideoItem> = videos.filter { allows(it) }
 
     /**
+     * A text the screen would show as it is (a search suggestion, a recent search, words heard by the microphone):
+     * none of the profile's blocked title words in it, matched as titles are. Nothing before a profile is loaded.
+     */
+    fun allowsText(text: String): Boolean {
+        val p = profile ?: return false
+        return TextNormalizer.firstMatch(text, p.blocklist.titleKeywords) == null
+    }
+
+    /**
      * The profile hides shorts and [video]'s duration is unknown (RSS): the shorts rule cannot judge it
      * yet ([PolicyEngine.needsDuration]). Lists that can learn durations leave such videos out until then.
      */

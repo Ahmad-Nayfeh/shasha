@@ -44,6 +44,8 @@ class ShashaApp : Application(), SingletonImageLoader.Factory {
     private fun startPolicy() {
         container.appScope.launch {
             withContext(Dispatchers.IO) { container.currentProfile }
+            // The parent's settings (the warning, the lock) before the session's first answer.
+            container.awaitSettings()
             container.startPolicy(spendingTime(ProcessLifecycleOwner.get().lifecycle, container.profileScreensShown))
         }
     }

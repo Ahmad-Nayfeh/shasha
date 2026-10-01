@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.ahmadnayfeh.shasha.AppContainer
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.data.ActiveProfile
+import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.ParentPinRepository
 import com.ahmadnayfeh.shasha.data.ProfileRepository
 import com.ahmadnayfeh.shasha.lock.LockController
@@ -78,6 +79,8 @@ class RootDeps(
      * next). The guard, which keeps a child profile inside the app, stands down meanwhile (owner decision).
      */
     val childLetOut: MutableStateFlow<Boolean> = MutableStateFlow(false),
+    /** The parent's adjustable behaviour (Settings): the screens read it through LocalBehavior. */
+    val behavior: StateFlow<Behavior> = MutableStateFlow(Behavior.DEFAULT),
 )
 
 /**
@@ -95,6 +98,8 @@ class RootDeps(
  *   profile was deleted, the phone switched), the picker comes back first.
  * - While the picker asks who is watching, a child profile the phone chose ([RootDeps.phoneChoices]) opens:
  *   the choice is made (nobody needs a PIN to enter a child profile). The adult profile is still asked for here.
+ * - Unless the parent turned the adult's PIN off (Settings → «رمز الوالدين», v1.1): then nobody needs a PIN to enter the
+ *   adult profile either, and the TV follows the phone's choice of it as it follows a child's (no picker first).
  * - The guard keeps a current child profile inside the app (owner decision); a child's «خروج» with the parent
  *   PIN lets it out until the picker's choice, BACK or the relock ([RootDeps.childLetOut]): the TV is never kept
  *   on a picker the parent has already opened.
@@ -166,7 +171,8 @@ class RootViewModel(
     private suspend fun onPhoneChoice(deps: RootDeps, profileId: String) {
         if (_screen.value !is RootScreen.Picker) return
         val profile = deps.active.awaitProfile()
-        if (profile.id != profileId || !profile.isChild || _screen.value !is RootScreen.Picker) return
+        // The adult only when its PIN is off: then the picker would not ask for anything anyway.
+        if (profile.id != profileId || (profile.isAdult && adultEntryPin()) || _screen.value !is RootScreen.Picker) return
         trusted = profile.id
         forgetExitPin()
         _screen.value = RootScreen.Browse
@@ -175,13 +181,16 @@ class RootViewModel(
     private fun onProfile(profile: Profile) {
         // On the picker the next choice decides anyway; the setup only renames the owner.
         if (profile.id == trusted || _screen.value != RootScreen.Browse) return
-        if (profile.isAdult) {
-            forgetExitPin()
+        if (profile.isAdult) forgetExitPin()
+        if (profile.isAdult && adultEntryPin()) {
             _screen.value = RootScreen.Picker(PickerMode.START)
         } else {
             trusted = profile.id
         }
     }
+
+    /** Entering the adult profile asks for the parent PIN (Settings → «رمز الوالدين»; on unless the parent turned it off). */
+    private fun adultEntryPin(): Boolean = _deps.value?.behavior?.value?.adultEntryPin ?: true
 
     /** The setup is done: with a child profile to choose, the picker; otherwise the owner's profile. */
     fun finishSetup() {
@@ -244,7 +253,9 @@ class RootViewModel(
     fun onAppShown(ownRequest: Boolean = false) {
         val since = hiddenAt ?: return
         hiddenAt = null
-        if (ownRequest || elapsed() - since < RELOCK_AFTER_MS) return
+        // Settings → رمز الوالدين may make it shorter or longer.
+        val relockAfter = _deps.value?.behavior?.value?.relockSeconds?.let { it * 1000L } ?: RELOCK_AFTER_MS
+        if (ownRequest || elapsed() - since < relockAfter) return
         forgetExitPin()
         val screen = _screen.value
         if (screen is RootScreen.Picker && screen.mode == PickerMode.FROM_CHILD_EXIT) {
@@ -284,9 +295,10 @@ class RootViewModel(
         val mode = (_screen.value as? RootScreen.Picker)?.mode ?: PickerMode.START
         if (exitPinFor(target) != null) return false
         return when {
-            target.isAdult -> !(mode == PickerMode.FROM_ADULT && target.id == current.id)
+            target.isAdult && adultEntryPin() -> !(mode == PickerMode.FROM_ADULT && target.id == current.id)
             target.id == current.id -> false
-            else -> current.isChild // leaving a child profile
+            // Leaving a child profile (always the PIN); the adult profile itself when the parent turned its PIN off.
+            else -> current.isChild
         }
     }
 
@@ -343,6 +355,7 @@ class RootViewModel(
                             container.lock,
                             container.phoneProfileChoices.chosen,
                             container.childLetOut,
+                            container.behavior.values,
                         )
                     }
                 })

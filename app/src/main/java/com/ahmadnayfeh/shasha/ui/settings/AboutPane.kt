@@ -30,25 +30,19 @@ import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
 /**
- * «حول»: the version and its build number, the extractor's version, the plain note that the app breaks
- * YouTube's terms and is for personal use only, SponsorBlock's attribution (CC BY-NC-SA 4.0), and every
- * library the APK carries with its licence. Each block takes the focus in turn, so the D-pad reads the page
- * from top to bottom.
+ * «حول»: who made Shasha and his other apps (a QR code each), the version and its build number, the extractor's
+ * version, SponsorBlock's attribution (CC BY-NC-SA 4.0), and every library the APK carries with its licence. Each
+ * block takes the focus in turn, so the D-pad reads the page from top to bottom.
  */
 @Composable
 internal fun AboutPane(state: SettingsHubState, first: FocusRequester) {
     PaneColumn(spacing = 12.dp) {
-        ReadingCard(Modifier.focusRequester(first).paneItem("about_version")) {
+        DeveloperCard(Modifier.focusRequester(first).paneItem("about_developer"))
+        Spacer(Modifier.height(2.dp))
+        MoreApps()
+        Spacer(Modifier.height(2.dp))
+        ReadingCard(Modifier.paneItem("about_version")) {
             VersionBlock(state.versions)
-        }
-        ReadingCard(Modifier.paneItem("about_terms"), tone = ShashaColors.Secondary) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(SettingsIcons.Warning, contentDescription = null, tint = ShashaColors.Secondary, modifier = Modifier.size(22.dp))
-                Spacer(Modifier.width(10.dp))
-                Text(stringResource(R.string.hub_about_terms_title), style = MaterialTheme.typography.titleMedium, color = ShashaColors.Secondary)
-            }
-            Spacer(Modifier.height(6.dp))
-            Text(stringResource(R.string.hub_about_terms_body), style = MaterialTheme.typography.bodyMedium)
         }
         ReadingCard(Modifier.paneItem("about_sponsorblock")) {
             Row(verticalAlignment = Alignment.CenterVertically) {
