@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * Builds the home feed from 20 real channels over the real network (SPEC acceptance: "RSS builds the
  * home page from 20 channels"). Skipped unless run with:
  *   ./gradlew :app:testDebugUnitTest --tests '*FeedSyncRealNetworkTest' -Dyoutube.realNetwork=true
- * It prints "FEED-SYNC" lines; docs/feed-sync-results.md is written from them.
+ * It prints "FEED-SYNC" lines; docs/dev/feed-sync-results.md is written from them.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35], application = Application::class)

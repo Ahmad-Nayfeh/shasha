@@ -8,10 +8,12 @@ import kotlinx.coroutines.sync.withLock
  * The server's own brake on PIN guessing from the phone, whatever the controller does with the PIN.
  *
  * Every route that checks a PIN (parent login, profile switch with a PIN) goes through one gate: the
- * checks run one at a time, and wrong PINs are counted together for all of them. After [FREE_FAILURES]
- * in a row, each further failure blocks every PIN check for [FIRST_BLOCK_MILLIS], doubling up to
- * [MAX_BLOCK_MILLIS]; while blocked the server answers 429 without asking the controller, so a blocked
- * guess reveals nothing. That leaves a script about one guess an hour instead of hundreds a second.
+ * checks run one at a time, and wrong PINs are counted together for all of them. After [freeFailures] in a
+ * row (the parent's PIN brake setting, «المحاولات قبل الإيقاف», [FREE_FAILURES] by default: the brake never
+ * stops the phone before the TV's own count does, which would contradict its "N attempts left"), each further
+ * failure blocks every PIN check for [FIRST_BLOCK_MILLIS], doubling up to [MAX_BLOCK_MILLIS]; while blocked
+ * the server answers 429 without asking the controller, so a blocked guess reveals nothing. That leaves a
+ * script about one guess an hour instead of hundreds a second.
  *
  * Only a verified PIN (a successful parent login) resets the count: a profile switch can succeed without
  * checking anything (e.g. to the profile already on screen), so it must not. The count is also forgotten
@@ -23,7 +25,11 @@ import kotlinx.coroutines.sync.withLock
  * One count for every paired phone: the server cannot tell them apart (they share the pairing token), so a
  * phone that guesses blocks the PIN checks of the others too, for as long as the block lasts.
  */
-internal class PinGate(private val nowMillis: () -> Long) {
+internal class PinGate(
+    /** Wrong PINs in a row before the first block, read at every check (at least 1). */
+    private val freeFailures: () -> Int = { FREE_FAILURES },
+    private val nowMillis: () -> Long,
+) {
     private val mutex = Mutex()
     private var failures = 0
     private var lastFailureAt = 0L
@@ -36,18 +42,19 @@ internal class PinGate(private val nowMillis: () -> Long) {
      */
     suspend fun <T> check(isWrong: (T) -> Boolean, isVerified: (T) -> Boolean, check: suspend () -> T): T = mutex.withLock {
         val now = nowMillis()
+        val free = freeFailures().coerceAtLeast(1)
         if (failures > 0 && now - lastFailureAt >= FORGET_MILLIS) failures = 0
         val wait = blockedUntil - now
-        if (failures >= FREE_FAILURES && wait > 0) throw blocked(wait)
+        if (failures >= free && wait > 0) throw blocked(wait)
         val result = try {
             check()
         } catch (e: RemoteRejection) {
-            recordFailure()
+            recordFailure(free)
             throw e
         }
         when {
             isVerified(result) -> failures = 0
-            isWrong(result) -> recordFailure()
+            isWrong(result) -> recordFailure(free)
         }
         result
     }
@@ -59,12 +66,12 @@ internal class PinGate(private val nowMillis: () -> Long) {
         blockedUntil = 0L
     }
 
-    private fun recordFailure() {
+    private fun recordFailure(free: Int) {
         val now = nowMillis()
         failures++
         lastFailureAt = now
-        if (failures >= FREE_FAILURES) {
-            val doublings = (failures - FREE_FAILURES).coerceAtMost(MAX_DOUBLINGS)
+        if (failures >= free) {
+            val doublings = (failures - free).coerceAtMost(MAX_DOUBLINGS)
             blockedUntil = now + (FIRST_BLOCK_MILLIS shl doublings).coerceAtMost(MAX_BLOCK_MILLIS)
         }
     }

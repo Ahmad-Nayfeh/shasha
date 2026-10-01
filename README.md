@@ -17,4 +17,4 @@
 
 ---
 
-للمطوّر: [MAINTENANCE.md](MAINTENANCE.md)
+للمطوّر: [MAINTENANCE.md](docs/dev/MAINTENANCE.md) · [ARCHITECTURE.md](docs/dev/ARCHITECTURE.md)

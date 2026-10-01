@@ -31,6 +31,7 @@ import com.ahmadnayfeh.shasha.policy.UnlockMethod
 import com.ahmadnayfeh.shasha.ui.format.Thumbnails
 import com.ahmadnayfeh.shasha.ui.navigation.Screen
 import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
+import com.ahmadnayfeh.shasha.ui.screens.settings.QuotaOptions
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.SourceException
@@ -189,7 +190,8 @@ class TvRemoteController(
      * the playlist's own ([PlayOrigin.Playlist]).
      */
     private suspend fun playPlaylist(playlistId: String, profileId: String): RemoteResult {
-        blockedBySession()?.let { return it }
+        // Content first, then the time, as for a video link (PolicyEngine.canPlay): a playlist the profile may never
+        // open says so, even at bedtime, instead of a "time up" that the parent's extra time would not change.
         denied(rules().playlist(playlistId, ownerChannelId = null))?.let { return it }
         val page = source.playlist(playlistId)
         val filter = rules()
@@ -197,6 +199,7 @@ class TvRemoteController(
         val videos = page.videos.distinctBy { it.videoId }
         val index = videos.indexOfFirst { filter.playlistVideos(playlistId, listOf(it)).isNotEmpty() }
         if (index < 0) return error(R.string.remote_playlist_nothing_allowed)
+        blockedBySession()?.let { return it }
         val first = videos[index]
         val check = gate.checkPlay(first.videoId, PlayOrigin.Playlist(playlistId), known = first)
         if (check is PlayCheck.Denied) return RemoteResult.error(texts.deny(check.reason))
@@ -207,9 +210,10 @@ class TvRemoteController(
     }
 
     private suspend fun openChannel(link: YouTubeLink.Channel, profileId: String): RemoteResult {
-        blockedBySession()?.let { return it }
         val channelId = source.resolveChannelId(link)
+        // Content first, then the time (see playPlaylist).
         denied(rules().channel(channelId))?.let { return it }
+        blockedBySession()?.let { return it }
         val shown = display.show(Screen.Channel(channelId), profileId)
         if (shown != ShowResult.SHOWN) return RemoteResult.error(texts.show(shown))
         return RemoteResult.ok(texts.get(R.string.remote_play_channel))
@@ -305,6 +309,9 @@ class TvRemoteController(
     // ---- The parent section (the server lets only a logged-in parent reach these) -----------------------
 
     override suspend fun setQuota(profileId: String, minutes: Int?): RemoteResult {
+        // Only what the TV's own quota picker offers (the phone gets the TV's choices and checks, owner decision): a value
+        // the TV would never offer is not stored.
+        if (minutes !in QuotaOptions) return RemoteResult.error(texts.get(R.string.phone_setting_refused, texts.get(R.string.profile_quota)))
         val updated = try {
             whole { profiles.update(profileId) { it.copy(dailyQuotaMinutes = minutes) } }
         } catch (e: IllegalArgumentException) {

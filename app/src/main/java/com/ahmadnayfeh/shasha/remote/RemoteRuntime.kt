@@ -70,6 +70,11 @@ class RemoteRuntime(
     private val io: CoroutineDispatcher = Dispatchers.IO,
     /** The phone's PIN count, forgotten with the phones that guessed ([regenerateToken]). */
     private val phonePin: PhonePin? = null,
+    /**
+     * Wrong PINs in a row the server's own brake lets through: the parent's PIN brake setting («المحاولات قبل الإيقاف»), so
+     * the brake never refuses the phone while [phonePin] still has attempts left.
+     */
+    pinFailures: () -> Int = { RemoteServer.DEFAULT_PIN_FAILURES },
 ) {
     @Volatile
     private var token: String = ""
@@ -79,7 +84,7 @@ class RemoteRuntime(
     /** The pairing token of the QR code (null until read). */
     val pairingToken: StateFlow<String?> = _token.asStateFlow()
 
-    val server = RemoteServer(controller) { token }.apply {
+    val server = RemoteServer(controller, pinFailures) { token }.apply {
         onError = { Log.w(TAG, "Remote request failed", it) }
     }
 

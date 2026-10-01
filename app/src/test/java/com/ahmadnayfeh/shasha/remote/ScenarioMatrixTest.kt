@@ -148,9 +148,14 @@ class ScenarioMatrixTest(private val row: MxRow) {
         // HttpURLConnection silently re-sends a POST whose connection broke: a write must never go twice here.
         System.setProperty("sun.net.http.retryPost", "false")
         Dispatchers.setMain(Dispatchers.Unconfined)
+        val results = File(System.getProperty("user.dir"), "build/scenario-matrix").apply { mkdirs() }
         val tv = MxTv(tmp.root)
         try {
             runBlocking { withTimeout(row.timeoutMs) { row.body(tv) } }
+            File(results, "${row.id}.result").writeText("PASS\t${row.title}\n")
+        } catch (e: Throwable) {
+            File(results, "${row.id}.result").writeText("FAIL\t${row.title}\n${e.toString().take(2_000)}\n")
+            throw e
         } finally {
             tv.close()
             Dispatchers.resetMain()
@@ -166,7 +171,8 @@ class ScenarioMatrixTest(private val row: MxRow) {
 
 /** One row of the matrix: [id] as in the document. */
 class MxRow(val id: String, val title: String, val timeoutMs: Long = 60_000, val body: suspend MxTv.() -> Unit) {
-    override fun toString() = "$id $title"
+    // The test's name: ASCII only (Gradle names report files after it, in the file system's encoding).
+    override fun toString() = "$id " + title.map { if (it.code in 32..126) it else '_' }.joinToString("")
 }
 
 private fun row(id: String, title: String, timeoutMs: Long = 60_000, body: suspend MxTv.() -> Unit) = MxRow(id, title, timeoutMs, body)
@@ -359,7 +365,10 @@ class MxTv(dir: File) : Closeable {
             movingTo = { runtime.movingTo.value },
             adultEntryPin = { behavior.policyConfig().adultEntryNeedsPin },
         )
-        runtime = RemoteRuntime(remoteSettings, controller, MxSilent, findAddress = { address }, phonePin = phonePin)
+        runtime = RemoteRuntime(
+            remoteSettings, controller, MxSilent, findAddress = { address }, phonePin = phonePin,
+            pinFailures = { behavior.pinLockout().maxFailures },
+        )
         // AppContainer: a new parent PIN logs every phone out of the parent section.
         scope.launch { parentPin.changes.collect { runtime.revokeParentSessions() } }
         seedYouTube()
@@ -538,7 +547,7 @@ class MxTv(dir: File) : Closeable {
             source = source, phonePin = PhonePin(policyStore, clock, lockout = { behavior.pinLockout() }), backup = backup, player = hub,
             display = screens, playQueues = PlayQueues(), texts = texts, main = Dispatchers.Unconfined,
         )
-        val server = RemoteServer(restartedController) { token }
+        val server = RemoteServer(restartedController, { behavior.pinLockout().maxFailures }) { token }
         extraServers += server
         return server to server.start(MX_LOOPBACK, 0)
     }
@@ -668,8 +677,8 @@ class MxSource : VideoSource {
 
 /** An HTTP answer. */
 class MxAnswer(val code: Int, val body: String, val headers: Map<String, List<String>>) {
-    val json: JsonElement by lazy { Json.parseToJsonElement(body) }
-    val obj: JsonObject get() = json.jsonObject
+    val json: JsonElement by lazy { if (body.isBlank()) JsonObject(emptyMap()) else Json.parseToJsonElement(body) }
+    val obj: JsonObject get() = json as? JsonObject ?: JsonObject(emptyMap())
     val arr: JsonArray get() = json.jsonArray
     val ok: Boolean get() = obj["ok"]?.jsonPrimitive?.booleanOrNull == true
     val message: String get() = obj["message"]?.jsonPrimitive?.contentOrNull.orEmpty()
@@ -708,8 +717,8 @@ class MxPhone(private val tv: MxTv, val name: String, var token: String?) {
             contentType?.let { conn.setRequestProperty("Content-Type", it) }
             conn.outputStream.use { it.write(body) }
         } else if (method == "POST") {
+            // An empty body, buffered: in streaming mode HttpURLConnection drops the body of a 401.
             conn.doOutput = true
-            conn.setFixedLengthStreamingMode(0)
             conn.outputStream.close()
         }
         try {
@@ -995,18 +1004,18 @@ private fun sessionRows() = listOf(
     row("PS-01", "no parent session: 401 on every parent route, nothing changes") {
         val before = snapshot()
         everyParentRoute(phone()) { route, a ->
-            assertWithMessage(route).that(a.code).isEqualTo(401)
-            assertWithMessage(route).that(a.errorCode).isEqualTo("parent_session")
-            assertWithMessage(route).that(a.message).isEqualTo(ServerTexts.PARENT_REQUIRED)
+            assertWithMessage("$route: $a").that(a.code).isEqualTo(401)
+            assertWithMessage("$route: $a").that(a.errorCode).isEqualTo("parent_session")
+            assertWithMessage("$route: $a").that(a.message).isEqualTo(ServerTexts.PARENT_REQUIRED)
         }
         assertThat(snapshot()).isEqualTo(before)
     },
     row("PS-02", "an unknown session: 403 on every parent route, nothing changes") {
         val before = snapshot()
         everyParentRoute(phone().apply { session = "made-up-session-id" }) { route, a ->
-            assertWithMessage(route).that(a.code).isEqualTo(403)
-            assertWithMessage(route).that(a.errorCode).isEqualTo("parent_session")
-            assertWithMessage(route).that(a.message).isEqualTo(ServerTexts.PARENT_EXPIRED)
+            assertWithMessage("$route: $a").that(a.code).isEqualTo(403)
+            assertWithMessage("$route: $a").that(a.errorCode).isEqualTo("parent_session")
+            assertWithMessage("$route: $a").that(a.message).isEqualTo(ServerTexts.PARENT_EXPIRED)
         }
         assertThat(snapshot()).isEqualTo(before)
     },
@@ -1237,6 +1246,7 @@ private fun statusRows() = listOf(
     row("ST-11", "Serious Mode on, a video started: videoLocked") {
         startVideo(OUTSIDE)
         assertThat(phone().status().bool("videoLocked")).isTrue()
+        assertThat(lock.unlockByParent()).isTrue()
         child()
         startVideo(INSIDE)
         assertThat(phone().status().bool("videoLocked")).isTrue()
@@ -1517,7 +1527,7 @@ private fun linkRows() = listOf(
         phone().play(watch(OUTSIDE)).isRefusedWith(texts.get(R.string.remote_screen_off))
         nothingShown()
     },
-    row("PL-26", "allowed, «شاشة» in the background without the overlay permission") {
+    row("PL-26", "allowed, the app in the background without the overlay permission") {
         screens.answer = ShowResult.NOT_IN_FRONT
         phone().play(watch(OUTSIDE)).isRefusedWith(texts.get(R.string.remote_not_in_front))
         nothingShown()
@@ -1579,14 +1589,14 @@ private fun controlRows() = listOf(
         for (action in listOf("PLAY", "PAUSE", "TOGGLE", "STOP")) p.control(action).isRefusedWith(texts.get(R.string.remote_nothing_playing))
         p.control("SEEK_BY", 10).isRefusedWith(texts.get(R.string.remote_nothing_playing))
     },
-    row("CT-02", "playing → PAUSE") {
+    row("CT-02", "playing, PAUSE") {
         serious(false)
         val v = startVideo(OUTSIDE)
         phone().control("PAUSE").isOkWith()
         assertThat(v.playing).isFalse()
         assertThat(v.commands).containsExactly(PlayerCommand.Pause)
     },
-    row("CT-03", "paused → PLAY") {
+    row("CT-03", "paused, PLAY") {
         serious(false)
         val v = startVideo(OUTSIDE).apply { playing = false }
         phone().control("PLAY").isOkWith()
@@ -1600,7 +1610,7 @@ private fun controlRows() = listOf(
         phone().control("TOGGLE").isOkWith()
         assertThat(v.playing).isTrue()
     },
-    row("CT-05", "SEEK_BY ±10") {
+    row("CT-05", "SEEK_BY plus and minus 10") {
         serious(false)
         val v = startVideo(OUTSIDE)
         phone().control("SEEK_BY", 10).isOkWith()
@@ -1714,7 +1724,7 @@ private fun profileRows() = listOf(
         adultEntryPin(false)
         assertThat(phone().profileList().first { it.str("id") == "adult2" }.bool("needsPin")).isFalse()
     },
-    row("PR-04", "adult → child without a PIN: the TV is on the child, the guard holds it") {
+    row("PR-04", "adult to child without a PIN: the TV is on the child, the guard holds it") {
         phone().switchTo("kid").isOkWith(texts.get(R.string.remote_profile_switched, "سارة"))
         assertThat(current().id).isEqualTo("kid")
         settle()
@@ -1726,20 +1736,20 @@ private fun profileRows() = listOf(
         phone().switchTo("adult", MX_WRONG).isOkWith(texts.get(R.string.remote_profile_current, "الكبار"))
         assertThat(phonePin.status().wrong).isEqualTo(0)
     },
-    row("PR-06", "child → adult without a PIN: needs the PIN, nothing counted") {
+    row("PR-06", "child to adult without a PIN: needs the PIN, nothing counted") {
         child()
         phone().switchTo("adult").isRefusedWith(texts.get(R.string.remote_profile_needs_pin))
         assertThat(current().id).isEqualTo("kid")
         assertThat(phonePin.status().wrong).isEqualTo(0)
     },
-    row("PR-07", "child → adult with a wrong PIN: attempts left; the phone counts it, the TV does not") {
+    row("PR-07", "child to adult with a wrong PIN: attempts left; the phone counts it, the TV does not") {
         child()
         phone().switchTo("adult", MX_WRONG).isRefusedWith(texts.wrongPin(4))
         assertThat(current().id).isEqualTo("kid")
         assertThat(phonePin.status().wrong).isEqualTo(1)
         assertThat(parentPin.verify(MX_WRONG)).isEqualTo(PinResult.Wrong(4))
     },
-    row("PR-08", "adultEntryPin on: child → adult with the PIN; the TV asks for it again") {
+    row("PR-08", "adultEntryPin on: child to adult with the PIN; the TV asks for it again") {
         child()
         val root = root()
         waitFor("the picker at start") { root.screen.value is RootScreen.Picker }
@@ -1750,7 +1760,7 @@ private fun profileRows() = listOf(
         waitFor("the TV asks who is watching") { root.screen.value == RootScreen.Picker(PickerMode.START) }
         assertThat(root.needsPin(profiles.get("adult")!!)).isTrue()
     },
-    row("PR-09", "adultEntryPin off: child → adult with the PIN; no PIN on the TV, and the answer does not promise one") {
+    row("PR-09", "adultEntryPin off: child to adult with the PIN; no PIN on the TV, and the answer does not promise one") {
         adultEntryPin(false)
         child()
         val root = root()
@@ -1765,7 +1775,7 @@ private fun profileRows() = listOf(
         waitFor("the TV settles") { root.screen.value != RootScreen.Browse || current().isAdult }
         assertThat(root.needsPin(profiles.get("adult")!!)).isFalse()
     },
-    row("PR-10", "child → another child: the PIN is needed, then it switches") {
+    row("PR-10", "child to another child: the PIN is needed, then it switches") {
         addChild2()
         child()
         phone().switchTo("kid2").isRefusedWith(texts.get(R.string.remote_profile_needs_pin))
@@ -1810,14 +1820,14 @@ private fun profileRows() = listOf(
         assertThat(a.header("Retry-After")!!.toLong()).isGreaterThan(0L)
         assertThat(current().id).isEqualTo("kid")
     },
-    row("PR-16", "a child in time up → the adult with the PIN: no time-up screen for the adult") {
+    row("PR-16", "a child in time up to the adult with the PIN: no time-up screen for the adult") {
         child()
         used(3600)
         phone().switchTo("adult", MX_PIN).isOkWith()
         settle()
         assertThat(phone().status().str("sessionState")).isEqualTo("OK")
     },
-    row("PR-17", "adult → a child whose time is up: the child's time-up screen") {
+    row("PR-17", "adult to a child whose time is up: the child's time-up screen") {
         used(3600, "kid")
         phone().switchTo("kid").isOkWith()
         settle()
@@ -2312,6 +2322,7 @@ private fun takeoutRows() = listOf(
 private fun backupRows() = listOf(
     row("BK-01", "the export: an attachment, no-store, everything but secrets and caches") {
         number(BehaviorKeys.SEEK_STEP_SECONDS, 30)
+        playback.setMaxQuality(720)
         val a = phone().loggedIn().get("/api/parent/backup")
         assertThat(a.code).isEqualTo(200)
         assertThat(a.header("Content-Disposition")).contains("shasha-backup-")
@@ -2984,7 +2995,7 @@ private fun twoPhoneRows() = listOf(
         val a = phone("A").loggedIn()
         val b = phone("B").loggedIn()
         a.post("/api/parent/logout").isOkWith()
-        a.get("/api/parent/settings").isError(401, "parent_session")
+        a.get("/api/parent/settings").isError(403, "parent_session")
         assertThat(b.get("/api/parent/settings").code).isEqualTo(200)
     },
     row("P2-04", "both on the settings page: B's change over A's newer value is refused with A's value") {
@@ -3222,8 +3233,10 @@ class ScenarioMatrixPageServer {
                                 tv.lock.unlockByParent()
                                 tv.releasePlayer()
                                 tv.behavior.resetAll()
+                                withTimeout(5_000) { tv.behavior.values.first { it == com.ahmadnayfeh.shasha.data.Behavior.DEFAULT } }
                                 tv.at("2026-10-%02dT12:00".format(day))
                                 if (tv.current().id != "adult") tv.tvSwitch("adult")
+                                tv.quota("kid", 60)
                                 tv.phonePin.forget()
                                 tv.runtime.server.forgetPinFailures()
                                 "ok"
@@ -3240,7 +3253,12 @@ class ScenarioMatrixPageServer {
                             "release" -> { tv.releasePlayer(); "ok" }
                             "serious" -> { tv.serious(args[1] == "on"); "ok" }
                             "aep" -> { tv.adultEntryPin(args[1] == "on"); "ok" }
-                            "extra" -> { tv.behavior.setExtraMinutes(args[1].split(',').map { it.toInt() }); "ok" }
+                            "extra" -> {
+                                val minutes = args[1].split(',').map { it.toInt() }
+                                tv.behavior.setExtraMinutes(minutes)
+                                withTimeout(5_000) { tv.behavior.values.first { it.extraMinutes == minutes.sorted() } }
+                                "ok"
+                            }
                             "revoke" -> { tv.runtime.revokeParentSessions(); "ok" }
                             "phonelock" -> { tv.lockOutPhonePin(); "ok" }
                             "quota" -> { tv.quota(args[1], args[2].toIntOrNull()); "ok" }

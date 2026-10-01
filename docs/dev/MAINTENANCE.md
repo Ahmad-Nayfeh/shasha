@@ -129,7 +129,7 @@ newpipeExtractor = "v0.26.6"
   ```
 
 - أو شغّل «YouTube canary» يدوياً على فرعك (Run workflow ← اختر الفرع).
-- سجّل ما تغيّر في [docs/youtube-test-results.md](docs/youtube-test-results.md).
+- سجّل ما تغيّر في [youtube-test-results.md](youtube-test-results.md).
 
 ### 8. ابنِ
 
@@ -234,11 +234,11 @@ newpipeExtractor = "v0.26.6"
 **ما قيس من خادم التطوير (عنوان مركز بيانات) في 2026-09-28 و29:**
 
 - رابط itag 18 لأربعة فيديوهات أطفال (`it3OtbTxQk0` و`DLxCHtoi518` و`WjZ2f71dFck` و`O7-GZ_xOAg8`) رد بـ 403، بطلب POST كالمشغّل وبطلب GET عادي.
-- **لكن** من العنوان نفسه ردّت روابط المكتبة المباشرة بـ 403 لمعظم الفيديوهات العادية أيضاً (مثل `jNQXAC9IVRw` و`9bZkp7q19f0` و`aqz-KE-bpKQ`)، ولم يعمل منها إلا `dQw4w9WgXcQ`. **فالـ 403 لا يثبت أن فيديوهات الأطفال مرفوضة؛ قد يكون حظراً لعنوان الخادم.** وهذا يصحّح ما كُتب أولاً في [docs/youtube-test-results.md](docs/youtube-test-results.md).
+- **لكن** من العنوان نفسه ردّت روابط المكتبة المباشرة بـ 403 لمعظم الفيديوهات العادية أيضاً (مثل `jNQXAC9IVRw` و`9bZkp7q19f0` و`aqz-KE-bpKQ`)، ولم يعمل منها إلا `dQw4w9WgXcQ`. **فالـ 403 لا يثبت أن فيديوهات الأطفال مرفوضة؛ قد يكون حظراً لعنوان الخادم.** وهذا يصحّح ما كُتب أولاً في [youtube-test-results.md](youtube-test-results.md).
 - عبر SABR تعرض عملاء WEB وMWEB وTV_SIMPLY لفيديوهات الأطفال الجودات كاملة (حتى 1080p وأكثر)، لكن الخادم طلب «إعادة تحميل» ثم ردّ بأنها غير قابلة للتشغيل؛ من هذا العنوان، ولفيديوهات الأطفال ومعظم الفيديوهات العادية معاً.
 - بالطريقة القديمة أعطى عميلا iOS وMWEB مسارات حتى 720p ردّت عليها googlevideo بـ 403، وقال `web_embedded` «This video is unavailable»، وطلب TVHTML5 «Sign in to confirm you're not a bot»؛ من العنوان نفسه، فالحكم معلّق كذلك.
 
-**المجهول حتى تجربة الشاشة:** هل يعمل itag 18 (‏360p) من عنوان البيت. خطوات التجربة في [docs/acceptance.md](docs/acceptance.md).
+**المجهول حتى تجربة الشاشة:** هل يعمل itag 18 (‏360p) من عنوان البيت. خطوات التجربة في [acceptance.md](acceptance.md).
 
 **قرار صاحب البيت:** في ملف الطفل، حين لا يتاح إلا 360p، يُشغَّل الفيديو بدقة 360p مع شارة ظاهرة «جودة منخفضة: 360p». وفي ملف الكبار تبقى شاشة الخطأ الموحدة (كما في المواصفات) مع زر إضافي «شغّل بجودة 360p على أي حال». وإن رُفض 360p أيضاً ظهرت شاشة الخطأ في الملفين. يطلب التطبيق ذلك صراحةً من `:youtube` (معامل `allowLowQuality`)، وبدونه يبقى 360p وحده خطأ `LOW_QUALITY_ONLY` كما كان.
 
@@ -277,7 +277,7 @@ python3 branding/tools/logo_reveal.py
 
 - السكربت `build_brand.py`: ملفات SVG في `branding/`، وصور PNG في `branding/exports/`، ولوحة الهوية، وموارد أندرويد في `app/src/main/res/` (الأيقونة التكيفية وصورها، ولافتة التلفاز، وشاشة البدء).
 - السكربت `logo_reveal.py` (اختياري): فيديو كشف الشعار MP4، ويحتاج `imageio-ffmpeg` من الملف نفسه.
-- الألوان والهندسة في `branding/tools/brandgeo.py`، والخط يُقرأ من `app/src/main/res/font/`. التفاصيل في [branding/README.md](branding/README.md).
+- الألوان والهندسة في `branding/tools/brandgeo.py`، والخط يُقرأ من `app/src/main/res/font/`. التفاصيل في [branding/README.md](../../branding/README.md).
 - بعدها ابنِ وجرّب الأيقونة واللافتة على الشاشة، وإن تغيّرت لقطات مرجعية فسجّلها بـ `./gradlew :app:recordRoborazziDebug`.
 
 ## تدوير رمز الاقتران
@@ -384,11 +384,11 @@ python3 branding/tools/logo_reveal.py
 
 ## المثبّت من الداخل
 
-المستخدم يتبع «دليل شاشة» ([docs/دليل-شاشة.pdf](docs/دليل-شاشة.pdf)، ومصدره [docs/guide/](docs/guide/)). هذا ما يجري تحته.
+المستخدم يتبع «دليل شاشة» ([docs/دليل-شاشة.pdf](../دليل-شاشة.pdf)، ومصدره [docs/guide/](../guide/)). هذا ما يجري تحته.
 
 ### ماذا يفعل المثبّت
 
-المثبّتان (`Windows - ثبّت شاشة.bat`، و`Mac - ثبّت شاشة.command` الذي يشغّله `install-linux.sh` أيضاً) يفعلان الشيء نفسه، وتفاصيلهما في [`Shasha-Setup/README.md`](Shasha-Setup/README.md):
+المثبّتان (`Windows - ثبّت شاشة.bat`، و`Mac - ثبّت شاشة.command` الذي يشغّله `install-linux.sh` أيضاً) يفعلان الشيء نفسه، وتفاصيلهما في [`Shasha-Setup/README.md`](../../Shasha-Setup/README.md):
 
 1. **يستخدم `adb` المرفق** في `Shasha-Setup/tools/` (أو الموجود في PATH)، ويسأل عن العنوان إن لم يُكتب بعد اسمه.
 2. **يتصل بالشاشة** على المنفذ 5555 (أو المنفذ المكتوب بعد العنوان، مثل `192.168.1.50:5555`) وينتظر موافقتك حتى 60 ثانية. وإن رفضت الشاشة الاتصال عرض الإقران برمز: عنوان الإقران والرمز من 6 أرقام (`adb pair`)، ثم عنوان الاتصال (يجده وحده عبر mDNS أو يسألك عنه).
@@ -453,7 +453,7 @@ bash Shasha-Setup/install-linux.sh --undo 192.168.1.50                  # الت
 
 يعامل يوتيوب الفيديوهات المصنّفة «للأطفال» (made for kids) معاملة خاصة، ومكتبة الاستخراج الحالية (NewPipeExtractor v0.26.5) **لا تستخرج لها إلا نسخة مدمجة واحدة بدقة 360p**، بلا الجودات الأعلى. هذا ثابت مهما كانت الشبكة.
 
-وهل تعمل حتى نسخة 360p من شبكة البيت؟ **لم يُعرف بعد:** رُفضت التجربة (403) من خادم التطوير، لكن الخادم نفسه كان مرفوضاً لمعظم الفيديوهات العادية أيضاً، فالنتيجة لا تُثبت شيئاً. جرّبها على الشاشة كما في [docs/acceptance.md](docs/acceptance.md). وهذا ما يفعله التطبيق (قرار صاحب البيت):
+وهل تعمل حتى نسخة 360p من شبكة البيت؟ **لم يُعرف بعد:** رُفضت التجربة (403) من خادم التطوير، لكن الخادم نفسه كان مرفوضاً لمعظم الفيديوهات العادية أيضاً، فالنتيجة لا تُثبت شيئاً. جرّبها على الشاشة كما في [acceptance.md](acceptance.md). وهذا ما يفعله التطبيق (قرار صاحب البيت):
 
 | الحالة | في ملف الطفل | في ملف الكبار |
 |---|---|---|
@@ -605,13 +605,13 @@ gh secret set UPDATE_TOKEN --repo Ahmad-Nayfeh/shasha
 
 الإصدارات تُنشر من الفرع `main`: ادمج فيه العمل (طلب الدمج من فرع التطوير)، فيبني CI ويُصدر أول Release. أو شغّله يدوياً: Actions ← Android ← Run workflow ← `main`.
 
-إن انتهى كل تشغيل في Actions بالفشل خلال ثوانٍ بلا سجلات، فالمهمة لم تبدأ أصلاً (وهذا حال هذا المستودع منذ 2026-09-29 حتى كتابة هذا الدليل، انظر [docs/acceptance.md](docs/acceptance.md)): افتح صفحة التشغيل واقرأ السبب المكتوب فيها، وراجع إعدادات الفوترة وحدود الإنفاق في حسابك على GitHub، فدقائق Actions في المستودعات الخاصة محدودة.
+إن انتهى كل تشغيل في Actions بالفشل خلال ثوانٍ بلا سجلات، فالمهمة لم تبدأ أصلاً (وهذا حال هذا المستودع منذ 2026-09-29 حتى كتابة هذا الدليل، انظر [acceptance.md](acceptance.md)): افتح صفحة التشغيل واقرأ السبب المكتوب فيها، وراجع إعدادات الفوترة وحدود الإنفاق في حسابك على GitHub، فدقائق Actions في المستودعات الخاصة محدودة.
 
 ## كيف تُنتَج الإصدارات
 
 | المُطلِق | ما يحدث |
 |---|---|
-| دفع (push) إلى `main` | اختبارات، ثم بناء موقّع، ثم GitHub Release جديد. الدفع الذي لا يغيّر إلا ملفات `.md` أو `docs/` أو `Shasha-Setup/` أو `Shasha-Setup.zip` أو `tools/` أو `branding/` لا يبني شيئاً. |
+| دفع (push) إلى `main` | اختبارات، ثم بناء موقّع، ثم GitHub Release جديد. الدفع الذي لا يغيّر إلا ملفات `.md` أو `docs/` أو `Shasha-Setup/` أو `Shasha-Setup.zip` أو `tools/` أو `branding/` أو `promo/` لا يبني شيئاً. |
 | أسبوعياً، الجمعة 03:17 UTC | يعيد بناء `main` للتأكد أنه ما زال يُبنى، ولا ينشر إصداراً إن كان هذا الـ commit منشوراً من قبل (فلا تعرض الشاشة «تحديثاً» لا يغيّر شيئاً). |
 | يدوياً: Actions ← Android ← Run workflow | على `main`: إصدار جديد. على فرع آخر: APK موقّع يُرفع كملف (Artifact) لمدة 14 يوماً للتجربة على الشاشة، بلا إصدار. |
 
@@ -621,7 +621,7 @@ gh secret set UPDATE_TOKEN --repo Ahmad-Nayfeh/shasha
 2. مهمة **Release APK**: تفك المفتاح وتتحقق منه، وتبني نسخة Release مع R8، وتتأكد أن R8 لم يغيّر أسماء الاستثناءات (تظهر في شاشة الخطأ)، وتحفظ ملف mapping لتسعين يوماً، وتتحقق من اسم الحزمة ورقم البناء وبصمة شهادة التوقيع.
 3. مهمة **GitHub Release**: تنشر الإصدار بوسم `v<versionName>-<versionCode>` وملف `shasha-<versionName>-<versionCode>.apk`، وفي ملاحظاته إصدار NewPipeExtractor والـ commit ورابط البناء وبصمة الشهادة وأمر التثبيت، وتعلّمه «الأحدث» (وهو ما يقرؤه المحدِّث).
 
-رقم البناء `versionCode` = 1000 + رقم التشغيل، فيزيد دائماً. و`versionName` مكتوب في `app/build.gradle.kts`. وإلى جانبها مهمة «YouTube canary» (`.github/workflows/youtube-canary.yml`): الثلاثاء والجمعة 04:41 UTC، ويدوياً، وعلى كل طلب دمج يغيّر `gradle/libs.versions.toml` أو `youtube/`. وDependabot يفتح طلبات التحديث كل خميس (`.github/dependabot.yml`).
+رقم البناء `versionCode` = 1000 + رقم التشغيل، فيزيد دائماً. و`versionName` مكتوب في `app/build.gradle.kts`. وإلى جانبها مهمة «YouTube canary» (`.github/workflows/youtube-canary.yml`): الثلاثاء والجمعة 04:41 UTC، ويدوياً، وعلى كل طلب دمج يغيّر `gradle/libs.versions.toml` أو `youtube/`. وDependabot يفتح طلبات التحديث كل خميس (`.github/dependabot.yml`). ومهمة «Voice» (`.github/workflows/voice.yml`) تولّد التعليق الصوتي بمفتاح ElevenLabs المحفوظ سراً باسم `ELEVEN_LABS`: عدّل `promo/voice/request.json` وادفعه، ثم نزّل الناتج من صفحة التشغيل (Artifact باسم `voice-output`).
 
 ## البناء على حاسوبك
 
@@ -671,7 +671,8 @@ gh secret set UPDATE_TOKEN --repo Ahmad-Nayfeh/shasha
 | `Shasha-Setup/` | حقيبة التثبيت التي يُبنى منها `Shasha-Setup.zip`: المثبّتان، وملف التطبيق، وأداة `adb` المرفقة، و«دليل شاشة.pdf» (`Shasha-Setup/README.md`). |
 | `tools/` | بناء الحقيبة (`make-setup-zip.sh`). |
 | `branding/` | الهوية البصرية وأدوات توليدها (`branding/README.md`). |
-| `docs/` | «دليل شاشة» (`docs/guide/` ← `docs/دليل-شاشة.pdf`)، وصور التثبيت، والفيديو، ومعايير القبول ونتائج الاختبارات الحقيقية. |
+| `promo/` | مصدر فيديو الشرح (Remotion) ونصوص التعليق الصوتي، وأداة الصوت `promo/voice/` التي تعمل على GitHub. |
+| `docs/` | «دليل شاشة» (`docs/guide/` ← `docs/دليل-شاشة.pdf`)، وصور التثبيت، والفيديو. ومستندات المطوّر في `docs/dev/`: المواصفات الأصلية، وهذا الملف، وخريطة الشيفرة (`ARCHITECTURE.md`)، ومعايير القبول، ونتائج الاختبارات الحقيقية. |
 | `.github/` | مهمتا Actions و`dependabot.yml`. |
 
 الوحدة `:app` تعتمد على الوحدات الثلاث؛ والتطبيق لا يستورد NewPipeExtractor أبداً، فاستبدال مكتبة الاستخراج تعديلٌ في `:youtube` وحدها (انظر [MAINTENANCE.md](#استبدال-مكتبة-الاستخراج)).
@@ -703,11 +704,12 @@ gh secret set UPDATE_TOKEN --repo Ahmad-Nayfeh/shasha
 
 | الملف | ما فيه |
 |---|---|
-| [docs/دليل-شاشة.pdf](docs/دليل-شاشة.pdf) | «دليل شاشة»: الدليل الوحيد للبيت (التثبيت، والاستخدام، والوالدين، والإعدادات، وحل المشاكل). مصدره [docs/guide/](docs/guide/)، ويُبنى بـ `bash docs/guide/build.sh` فيُنسخ أيضاً إلى الحقيبة باسم «دليل شاشة.pdf». |
-| [docs/video/shasha-explainer.mp4](docs/video/shasha-explainer.mp4) | فيديو الشرح. |
-| [docs/acceptance.md](docs/acceptance.md) | معايير القبول، وحالة كل معيار ودليله، وخطوات تجربته على الشاشة. |
-| [docs/youtube-test-results.md](docs/youtube-test-results.md) | نتائج اختبارات `:youtube` على يوتيوب الحقيقي. |
-| [docs/feed-sync-results.md](docs/feed-sync-results.md) | نتائج بناء «الرئيسية» من 20 قناة حقيقية. |
-| [Shasha-Setup/README.md](Shasha-Setup/README.md) | حقيبة التثبيت والمثبّتان: ما يفعلانه، وسطر الأوامر، والتراجع، وتحديث `adb` المرفق. |
-| [branding/README.md](branding/README.md) | الهوية البصرية وإعادة توليدها. |
+| [docs/دليل-شاشة.pdf](../دليل-شاشة.pdf) | «دليل شاشة»: الدليل الوحيد للبيت (التثبيت، والاستخدام، والوالدين، والإعدادات، وحل المشاكل). مصدره [docs/guide/](../guide/)، ويُبنى بـ `bash docs/guide/build.sh` فيُنسخ أيضاً إلى الحقيبة باسم «دليل شاشة.pdf». |
+| [docs/video/shasha-explainer.mp4](../video/shasha-explainer.mp4) | فيديو الشرح. |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | خريطة الشيفرة (بالإنجليزية): الوحدات والحزم، والتخزين، والحارس، وخادم الجوال، والمحدِّث، وCI، وأين الاختبارات. |
+| [acceptance.md](acceptance.md) | معايير القبول، وحالة كل معيار ودليله، وخطوات تجربته على الشاشة. |
+| [youtube-test-results.md](youtube-test-results.md) | نتائج اختبارات `:youtube` على يوتيوب الحقيقي. |
+| [feed-sync-results.md](feed-sync-results.md) | نتائج بناء «الرئيسية» من 20 قناة حقيقية. |
+| [Shasha-Setup/README.md](../../Shasha-Setup/README.md) | حقيبة التثبيت والمثبّتان: ما يفعلانه، وسطر الأوامر، والتراجع، وتحديث `adb` المرفق. |
+| [branding/README.md](../../branding/README.md) | الهوية البصرية وإعادة توليدها. |
 | [SPEC.md](SPEC.md) | المواصفات الأصلية. |

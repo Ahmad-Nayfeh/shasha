@@ -13,7 +13,7 @@ import org.junit.Test
 /**
  * Talks to the real YouTube. Skipped unless run with:
  *   ./gradlew :youtube:testDebugUnitTest -Dyoutube.realNetwork=true
- * Every test prints one "REAL-RESULT" line; docs/youtube-test-results.md is written from them.
+ * Every test prints one "REAL-RESULT" line; docs/dev/youtube-test-results.md is written from them.
  */
 class RealNetworkVideoSourceTest {
 
