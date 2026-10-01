@@ -182,6 +182,88 @@ class PhoneSettingsTest {
         withTimeout(5_000) { while (env.restarts < 2) delay(10) }
     }
 
+    // ---- Two phones, or a phone and the TV: nobody undoes a change unseen ---------------------------------------
+
+    @Test
+    fun aChangeMadeOverAValueThatChangedMeanwhile_isRefused_withTheValueAsItIsNow() = runBlocking<Unit> {
+        val key = BehaviorKeys.EXTRA_MINUTES.name
+        val shown = JsonArray(listOf(15, 30, 60).map(::JsonPrimitive))
+        // Phone A drops 60; phone B, still showing 15/30/60, adds 90 over it.
+        assertThat(controller.changeSetting(key, JsonArray(listOf(15, 30).map(::JsonPrimitive)), base = shown).ok).isTrue()
+        val late = controller.changeSetting(key, JsonArray(listOf(15, 30, 60, 90).map(::JsonPrimitive)), base = shown)
+        assertThat(late.ok).isFalse()
+        assertThat(late.message).isEqualTo(text(R.string.phone_setting_changed_elsewhere, text(R.string.playback_extra)))
+        assertThat(late.settings!!.value(key)).isEqualTo(JsonArray(listOf(15, 30).map(::JsonPrimitive)))
+        assertThat(env.behavior.current().extraMinutes).containsExactly(15, 30).inOrder()
+        // Over what the TV has now it goes through; numbers compare by value (the page may send 1 for the TV's 1.0).
+        assertThat(controller.changeSetting(key, JsonArray(listOf(15, 30, 90).map(::JsonPrimitive)), base = late.settings!!.value(key)).ok).isTrue()
+        assertThat(controller.changeSetting(BehaviorKeys.DEFAULT_SPEED.name, JsonPrimitive(2), base = JsonPrimitive(1)).ok).isTrue()
+        assertThat(env.behavior.current().defaultSpeed).isEqualTo(2f)
+        // Without a base a change applies as it is (the TV's own screens, older pages).
+        assertThat(controller.changeSetting(BehaviorKeys.SERIOUS_MODE.name, JsonPrimitive(false)).ok).isTrue()
+    }
+
+    @Test
+    fun theStatusMark_movesWithEveryChange_fromThePhoneOrTheTv_andOnlyThen() = runBlocking<Unit> {
+        suspend fun rev() = controller.status().rev
+        suspend fun movesAfter(what: String, change: suspend () -> Unit) {
+            val before = rev()
+            change()
+            try {
+                withTimeout(5_000) { while (rev() == before) delay(10) }
+            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                throw AssertionError("The mark did not move after $what", e)
+            }
+        }
+        val quiet = rev()
+        delay(300)
+        assertThat(rev()).isEqualTo(quiet) // polling alone changes nothing
+        movesAfter("a setting from the phone") { controller.changeSetting(BehaviorKeys.WARNING_MINUTES.name, JsonPrimitive(10)) }
+        movesAfter("a setting on the TV") { env.behavior.setSeriousMode(false) }
+        movesAfter("a quota from the phone") { controller.setQuota("kid", 30) }
+        movesAfter("a profile edited on the TV") { env.profiles.update("kid") { it.copy(hideShorts = !it.hideShorts) } }
+        movesAfter("a blocked word") { controller.blockKeyword("رعب") }
+        movesAfter("SponsorBlock") { env.sponsorSettings.setCategories(setOf(SponsorCategory.SPONSOR)) }
+        movesAfter("the quality") { env.playbackSettings.setMaxQuality(720) }
+        env.source.channels["UCnewchannel0000000000AB"] = ChannelItem("UCnewchannel0000000000AB", "قناة جديدة", null, null)
+        movesAfter("a subscription") { controller.addSubscription("https://www.youtube.com/channel/UCnewchannel0000000000AB") }
+        // Where the server is going shows in the status as it is announced.
+        assertThat(controller.status().movingTo).isNull()
+        env.movingTo = 9321
+        assertThat(controller.status().movingTo).isEqualTo(9321)
+    }
+
+    @Test
+    fun theCustomPhrase_isWrittenFromThePhone_andOnlyThenChosen() = runBlocking<Unit> {
+        val page = controller.settings()
+        // «عبارتي الخاصة» shows while the random list is used: it is where the phrase is written first.
+        assertThat(page.item(BehaviorKeys.CUSTOM_PHRASE.name).visibleWhen.keys).containsExactly("serious_mode", "adult_escape")
+        val custom = page.item(BehaviorKeys.PHRASE_MODE.name).choices.single { it.value == JsonPrimitive(PhraseMode.CUSTOM.name) }
+        assertThat(custom.disabledReason).isEqualTo(text(R.string.phone_setting_custom_first))
+        assertThat(page.item(BehaviorKeys.PHRASE_MODE.name).choices.single { it.value == JsonPrimitive(PhraseMode.RANDOM.name) }.disabledReason).isNull()
+
+        val written = controller.changeSetting(BehaviorKeys.CUSTOM_PHRASE.name, JsonPrimitive("انا اخرج الان"))
+        assertThat(written.ok).isTrue()
+        assertThat(written.settings!!.value(BehaviorKeys.PHRASE_MODE.name)).isEqualTo(JsonPrimitive(PhraseMode.CUSTOM.name))
+        assertThat(written.settings!!.item(BehaviorKeys.PHRASE_MODE.name).choices.all { it.disabledReason == null }).isTrue()
+        // Back to the list and to the phrase again: both choosable now.
+        assertThat(controller.changeSetting(BehaviorKeys.PHRASE_MODE.name, JsonPrimitive(PhraseMode.RANDOM.name)).ok).isTrue()
+        assertThat(controller.changeSetting(BehaviorKeys.PHRASE_MODE.name, JsonPrimitive(PhraseMode.CUSTOM.name)).ok).isTrue()
+        assertThat(env.behavior.current().exitPhrases).containsExactly("انا اخرج الان")
+    }
+
+    @Test
+    fun aPortAnotherAppHolds_isRefusedBeforeAnythingMoves() = runBlocking<Unit> {
+        env.takenPorts += 9444
+        val r = controller.changeSetting(PhoneSettings.KEY_PORT, JsonPrimitive(9444))
+        assertThat(r.ok).isFalse()
+        assertThat(r.message).isEqualTo(text(R.string.phone_port_taken, "9444"))
+        assertThat(r.reconnectPort).isNull()
+        assertThat(env.remoteSettings.port.first()).isEqualTo(RemoteSettings.DEFAULT_PORT)
+        delay(200)
+        assertThat(env.restarts).isEqualTo(0)
+    }
+
     // ---- The optional adult PIN, on the TV's rules and the phone's switch alike ---------------------------------
 
     @Test

@@ -26,6 +26,14 @@ data class RemoteStatus(
     val videoLocked: Boolean,
     /** «الوضع الجاد» is on: videos that start are locked until they end (off: nothing is ever locked). */
     val seriousMode: Boolean = true,
+    /**
+     * Changes whenever something the parent section shows changes on the TV (a setting, a profile's rules, a list, the
+     * subscriptions), whoever changed it: this phone, another phone or the TV itself. A page that sees a new value
+     * reads again what it shows. Only equality means anything (it starts anywhere).
+     */
+    val rev: Long = 0,
+    /** The server moves to this port in a moment (a new port was chosen): every open page follows it there. */
+    val movingTo: Int? = null,
 )
 
 @Serializable
@@ -143,8 +151,9 @@ enum class RemoteSettingKind {
     TEXT_LIST,
 }
 
+/** [disabledReason]: this choice cannot be taken now, and why (the page shows it dimmed, with the reason). */
 @Serializable
-data class RemoteChoice(val value: JsonElement, val label: String)
+data class RemoteChoice(val value: JsonElement, val label: String, val disabledReason: String? = null)
 
 /**
  * One setting as the TV has it now. [value] and [defaultValue] are JSON (a boolean, a number, a string or an array).

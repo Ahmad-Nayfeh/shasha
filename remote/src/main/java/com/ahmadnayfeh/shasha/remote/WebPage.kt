@@ -13,8 +13,9 @@ internal class WebPage(val bytes: ByteArray) {
 
     /**
      * The policy for a page served to [host] (the address the phone used): the page may also reach the same TV on
-     * another port, which is how it follows the server to a new port. Anything that is not a plain host name or IPv4
-     * address gets the strict policy.
+     * another port, which is how it follows the server to a new port (it loads the icon from there, which only this
+     * TV with this pairing token serves, before it moves). Anything that is not a plain host name or IPv4 address gets
+     * the strict policy.
      */
     fun contentSecurityPolicy(host: String?): String =
         if (host != null && HOST.matches(host)) buildCsp(html, "http://$host:*") else contentSecurityPolicy
@@ -39,7 +40,7 @@ internal class WebPage(val bytes: ByteArray) {
                 "default-src 'none'",
                 "script-src ${hashes.ifEmpty { "'none'" }}",
                 "style-src 'unsafe-inline'",
-                "img-src 'self' data: https:",
+                "img-src 'self' data: https:" + (otherPorts?.let { " $it" } ?: ""),
                 "connect-src 'self'" + (otherPorts?.let { " $it" } ?: ""),
                 "base-uri 'none'",
                 "form-action 'none'",

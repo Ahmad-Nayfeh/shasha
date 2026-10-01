@@ -4,6 +4,7 @@ import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,6 +14,8 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.BindException
 import java.net.Inet4Address
+import java.net.InetSocketAddress
+import java.net.ServerSocket
 
 /** Where the phone remote stands, for «التحكم من الجوال» and the first start's last step. */
 sealed interface RemoteState {
@@ -86,6 +89,14 @@ class RemoteRuntime(
     private val binding = Mutex()
     private var boundAddress: Inet4Address? = null
 
+    private val _movingTo = MutableStateFlow<Int?>(null)
+
+    /**
+     * The port the server moves to in a moment ([restart] after a new port was chosen), for the status: every page
+     * that polls reads it before the old port closes, and follows the server there.
+     */
+    val movingTo: StateFlow<Int?> = _movingTo.asStateFlow()
+
     /** The pairing link of the QR code, while running. */
     fun pairingUrl(): String? {
         val running = _state.value as? RemoteState.Running ?: return null
@@ -123,17 +134,48 @@ class RemoteRuntime(
     }
 
     /**
-     * Listens again from scratch, on the preferred port (the parent just chose another one): the old QR code and
-     * saved links stop working. Nothing happens while the server is not running (it binds the new port when it starts).
+     * Moves the server to the preferred port (the parent just chose another one): the old QR code and saved links stop
+     * working. The open pages are told first ([movingTo], for [announceMs]: they poll every 2 s) and follow it, still
+     * logged in to the parent section (the sessions survive a move on the same address). Nothing happens while the
+     * server is not running (it binds the new port when it starts), or when it already listens there.
      */
-    suspend fun restart(): RemoteState = binding.withLock {
+    suspend fun restart(announceMs: Long = MOVE_ANNOUNCE_MS): RemoteState = binding.withLock {
         withContext(io) {
-            if (_state.value !is RemoteState.Running) return@withContext _state.value
-            val address = findAddress()
-            stopLocked()
-            _state.value = if (address == null) RemoteState.NoNetwork else RemoteState.Starting
-            if (address != null) _state.value = bind(address)
+            val running = _state.value as? RemoteState.Running ?: return@withContext _state.value
+            val preferred = settings.preferredPort()
+            if (preferred == running.port && server.isRunning) return@withContext _state.value
+            _movingTo.value = preferred
+            try {
+                delay(announceMs)
+                val address = findAddress()
+                stopLocked(endSessions = address != boundAddress)
+                _state.value = if (address == null) RemoteState.NoNetwork else RemoteState.Starting
+                if (address != null) _state.value = bind(address)
+            } finally {
+                _movingTo.value = null
+            }
             _state.value
+        }
+    }
+
+    /**
+     * Whether the server could listen on [port] now: the phone asks before it moves the server there, so a port another
+     * app holds is refused instead of sending every phone to a port nobody answers on. The port it listens on counts as
+     * free. Best effort: an app may still take it before the move (the server then falls back as always).
+     */
+    suspend fun portAvailable(port: Int): Boolean = withContext(io) {
+        val running = _state.value as? RemoteState.Running
+        if (running?.port == port) return@withContext true
+        val address = running?.address ?: findAddress() ?: return@withContext true
+        try {
+            ServerSocket().use { socket ->
+                // Like the server's own socket: a port that only lingers after old connections is free.
+                socket.reuseAddress = true
+                socket.bind(InetSocketAddress(address, port))
+            }
+            true
+        } catch (e: IOException) {
+            false
         }
     }
 
@@ -205,10 +247,10 @@ class RemoteRuntime(
         return RemoteState.Failed
     }
 
-    /** Inside [binding], on [io]. */
-    private fun stopLocked() {
+    /** Inside [binding], on [io]. [endSessions] false only for a move on the same address. */
+    private fun stopLocked(endSessions: Boolean = true) {
         announcer.unregister()
-        server.stop()
+        server.stop(endSessions)
         boundAddress = null
     }
 
@@ -217,5 +259,8 @@ class RemoteRuntime(
 
         /** 8765 to 8774 before any free port: a saved link most likely still matches. */
         const val FALLBACK_PORTS = 10
+
+        /** How long the pages are told where the server goes before it leaves (they poll every 2 s). */
+        const val MOVE_ANNOUNCE_MS = 2_500L
     }
 }

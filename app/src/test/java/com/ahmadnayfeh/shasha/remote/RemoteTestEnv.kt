@@ -61,7 +61,9 @@ import com.ahmadnayfeh.shasha.youtube.VideoSource
 import com.ahmadnayfeh.shasha.youtube.YouTubeLink
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.io.File
@@ -97,6 +99,12 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
 
     /** Server restarts the phone settings asked for (a new port). */
     @Volatile var restarts = 0
+
+    /** Ports "another app" holds on this TV: the phone's port change is refused for them. */
+    val takenPorts: MutableSet<Int> = java.util.concurrent.ConcurrentHashMap.newKeySet()
+
+    /** Where the status says the server is moving ([RemoteStatus.movingTo]). */
+    @Volatile var movingTo: Int? = null
     val filesDir = File(dir, "files").apply { mkdirs() }
 
     val source = RemoteFakeSource()
@@ -117,6 +125,7 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
     val hub = PlayerHub()
     val display = FakeDisplay()
     val texts = RemoteTexts(ApplicationProvider.getApplicationContext<Context>().resources)
+    val revision: RemoteRevision
     val controller: TvRemoteController
 
     /** Feed syncs the subscriptions asked for (new channels). */
@@ -142,6 +151,8 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
             pinLockMillis = { parentPin.remainingLockMillis() },
             surrenders = { usage.recordSurrender(it) },
             scope = scope,
+            // As the app wires it: Serious Mode turned off ends the lock that holds a video now.
+            seriousMode = behavior.values.map { it.seriousMode }.distinctUntilChanged(),
         )
         subscriptions = SubscriptionRepository(db, source, clock = { clock.millis() }, onChannelsAdded = { syncs++ })
         backup = BackupManager(
@@ -152,6 +163,10 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
             appVersion = "test",
             filesDir = { filesDir },
             afterRestore = afterRestore,
+        )
+        revision = RemoteRevision(
+            scope,
+            listOf(behavior.values, sponsorSettings.categories, playbackSettings.maxQuality, remoteSettings.port, profiles.observeAll(), subscriptions.observe()),
         )
         controller = newController(phonePin)
         source.videos[INSIDE_VIDEO] = clip(INSIDE_VIDEO, channelId = ALLOWED_CHANNEL, title = "Allowed cartoon")
@@ -164,7 +179,14 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
      * A controller over this TV's rules with [phonePin]: `PhonePin(policyStore, clock)` is the phone's count as a new
      * process reads it back from the store.
      */
-    fun newController(phonePin: PhonePin) = TvRemoteController(
+    fun newController(
+        phonePin: PhonePin,
+        display: RemoteDisplay = this.display,
+        restartRemote: suspend () -> Unit = { restarts++ },
+        restartDelayMs: Long = 50,
+        portAvailable: suspend (Int) -> Boolean = { it !in takenPorts },
+        movingTo: () -> Int? = { this.movingTo },
+    ) = TvRemoteController(
         gate = gate,
         profiles = profiles,
         session = session,
@@ -188,8 +210,9 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
             remote = remoteSettings,
             resources = ApplicationProvider.getApplicationContext<Context>().resources,
             scope = scope,
-            restartRemote = { restarts++ },
-            restartDelayMs = 50,
+            restartRemote = restartRemote,
+            restartDelayMs = restartDelayMs,
+            portAvailable = portAvailable,
         ),
         parental = PhoneParental(
             profiles = profiles,
@@ -202,6 +225,8 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
             errors = texts::sourceError,
             currentId = { active.awaitProfile().id },
         ),
+        revision = { revision.value },
+        movingTo = movingTo,
     )
 
     fun close() {

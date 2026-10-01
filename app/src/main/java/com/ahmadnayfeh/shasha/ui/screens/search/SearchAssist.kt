@@ -367,7 +367,7 @@ private fun Listening(state: VoiceState, languageTag: String) {
     )
     Spacer(Modifier.height(10.dp))
     Text(
-        partial.ifEmpty { stringResource(R.string.voice_hint, stringResource(if (languageTag.startsWith("en")) R.string.voice_language_en else R.string.voice_language_ar)) },
+        partial.ifEmpty { stringResource(if (languageTag.startsWith("en")) R.string.voice_hint_en else R.string.voice_hint_ar) },
         style = if (partial.isEmpty()) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.headlineSmall.copy(textDirection = TextDirection.Content),
         color = if (partial.isEmpty()) ShashaColors.Muted else accent.bright,
         textAlign = TextAlign.Center,

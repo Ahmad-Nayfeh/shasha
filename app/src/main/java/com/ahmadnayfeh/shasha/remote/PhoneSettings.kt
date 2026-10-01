@@ -28,8 +28,10 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -43,7 +45,11 @@ import kotlinx.serialization.json.jsonPrimitive
  * and to their end ([NonCancellable]): a phone that goes away loses only the answer.
  *
  * A new port (or a reset that moves it) answers first and moves the server a moment later ([restartDelayMs]): stopping
- * the server inside the request that asked for it would cut that very answer.
+ * the server inside the request that asked for it would cut that very answer. A port another app holds on the TV is
+ * refused before anything moves ([portAvailable]).
+ *
+ * Two phones (or a phone and the TV) never undo each other's change unseen: a change carries the value the page showed
+ * when it began (`base`), and one made over a value that changed meanwhile is refused with the value as it is now.
  */
 class PhoneSettings(
     private val behavior: BehaviorSettings,
@@ -54,6 +60,8 @@ class PhoneSettings(
     private val scope: CoroutineScope,
     private val restartRemote: suspend () -> Unit,
     private val restartDelayMs: Long = RESTART_DELAY_MS,
+    /** Whether the TV could listen on a port now (another app may hold it). */
+    private val portAvailable: suspend (Int) -> Boolean = { true },
 ) {
     private val formats = Formats(resources)
     private val texts = BehaviorTexts(resources, formats, TimeTexts(resources, formats))
@@ -65,10 +73,14 @@ class PhoneSettings(
 
     suspend fun page(): RemoteSettingsPage = build(snapshot())
 
-    suspend fun change(key: String, value: JsonElement): RemoteSettingsResult = whole {
+    /** [base]: the value the page showed when this change began (null: none given, the change applies as it is). */
+    suspend fun change(key: String, value: JsonElement, base: JsonElement? = null): RemoteSettingsResult = whole {
         val def = definitions.firstOrNull { it.key == key }
             ?: return@whole RemoteSettingsResult(false, get(R.string.phone_setting_unknown), build(snapshot()))
         val before = snapshot()
+        if (base != null && !sameValue(def.build(before).value, base)) {
+            return@whole RemoteSettingsResult(false, get(R.string.phone_setting_changed_elsewhere, def.label()), build(before))
+        }
         val outcome = try {
             def.apply(value, before)
         } catch (e: CancellationException) {
@@ -209,10 +221,12 @@ class PhoneSettings(
         private val encode: (T) -> JsonElement,
         private val write: suspend (JsonElement, Snapshot) -> Outcome,
         private val visibleWhen: Map<String, JsonElement> = emptyMap(),
+        /** Why an option cannot be chosen now (null: it can). */
+        private val disabled: (T, Snapshot) -> String? = { _, _ -> null },
     ) : Def(key, group, title) {
         override fun build(s: Snapshot) = RemoteSetting(
             key = key, label = label(), kind = RemoteSettingKind.CHOICE, value = encode(read(s)), defaultValue = encode(default),
-            help = help?.let(::get), choices = options.map { (v, text) -> RemoteChoice(encode(v), text) }, visibleWhen = visibleWhen,
+            help = help?.let(::get), choices = options.map { (v, text) -> RemoteChoice(encode(v), text, disabled(v, s)) }, visibleWhen = visibleWhen,
         )
 
         override suspend fun apply(value: JsonElement, before: Snapshot): Outcome = write(value, before)
@@ -247,6 +261,8 @@ class PhoneSettings(
                 }
             },
             visibleWhen = escape,
+            // Shown dimmed with the reason until «عبارتي الخاصة» below has a phrase (saving it also chooses it).
+            disabled = { mode, s -> if (mode == PhraseMode.CUSTOM && s.behavior.customPhrase.isBlank()) get(R.string.phone_setting_custom_first) else null },
         ),
         PhraseList(),
         CustomPhrase(),
@@ -322,8 +338,10 @@ class PhoneSettings(
     private inner class CustomPhrase : Def(BehaviorKeys.CUSTOM_PHRASE.name, GROUP_SERIOUS, R.string.serious_phrase_custom) {
         override fun build(s: Snapshot) = RemoteSetting(
             key = key, label = label(), kind = RemoteSettingKind.TEXT, value = JsonPrimitive(s.behavior.customPhrase),
-            defaultValue = JsonPrimitive(Behavior.DEFAULT.customPhrase), help = get(R.string.serious_phrases_note), maxLength = MAX_PHRASE_LENGTH,
-            visibleWhen = escape + (BehaviorKeys.PHRASE_MODE.name to JsonPrimitive(PhraseMode.CUSTOM.name)),
+            defaultValue = JsonPrimitive(Behavior.DEFAULT.customPhrase),
+            help = "${get(R.string.phone_setting_custom_help)} ${get(R.string.serious_phrases_note)}", maxLength = MAX_PHRASE_LENGTH,
+            // Whatever the mode: this is where the phrase is written before it can be chosen (the TV's editor).
+            visibleWhen = escape,
         )
 
         // Like the TV's editor: the phrase is stored and chosen at once.
@@ -376,7 +394,11 @@ class PhoneSettings(
 
         override suspend fun apply(value: JsonElement, before: Snapshot): Outcome {
             val port = value.int()
-            if (port != before.port) remote.setPort(port)
+            if (port == before.port) return Outcome.Saved
+            require(port in RemoteSettings.PORT_RANGE) { "Port $port" }
+            // Another app on the TV holds it: say so now, instead of moving the phones to a port the server cannot take.
+            if (!portAvailable(port)) return Outcome.Refused(get(R.string.phone_port_taken, port.toString()))
+            remote.setPort(port)
             return Outcome.Saved
         }
     }
@@ -414,5 +436,17 @@ class PhoneSettings(
 
         private fun JsonElement.string(): String =
             (this as? JsonPrimitive)?.takeIf { it.isString }?.content ?: throw IllegalArgumentException("Not a text: $this")
+
+        /** Whether two setting values are the same one (numbers by value: the page may send 1 for the TV's 1.0). */
+        internal fun sameValue(a: JsonElement, b: JsonElement): Boolean = when {
+            a is JsonNull || b is JsonNull -> a == b
+            a is JsonArray && b is JsonArray -> a.size == b.size && a.indices.all { sameValue(a[it], b[it]) }
+            a is JsonPrimitive && b is JsonPrimitive -> when {
+                a.isString || b.isString -> a.isString == b.isString && a.content == b.content
+                a.booleanOrNull != null || b.booleanOrNull != null -> a.booleanOrNull == b.booleanOrNull
+                else -> a.doubleOrNull != null && a.doubleOrNull == b.doubleOrNull
+            }
+            else -> false
+        }
     }
 }

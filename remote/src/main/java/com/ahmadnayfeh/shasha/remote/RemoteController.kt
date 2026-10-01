@@ -82,8 +82,12 @@ interface RemoteController {
 
     suspend fun settings(): RemoteSettingsPage
 
-    /** [value] as [RemoteSetting.value] has it; refused (ok = false, the page as it is) when the TV would not offer it. */
-    suspend fun changeSetting(key: String, value: JsonElement): RemoteSettingsResult
+    /**
+     * [value] as [RemoteSetting.value] has it; refused (ok = false, the page as it is) when the TV would not offer it,
+     * or when [base] (the value the page showed when the change began; null: not given) is no longer what the TV has:
+     * another phone or the TV changed it meanwhile, and a whole list sent over it would undo that change unseen.
+     */
+    suspend fun changeSetting(key: String, value: JsonElement, base: JsonElement? = null): RemoteSettingsResult
 
     /** [group]: one [RemoteSettingGroup.id] back to its defaults; null: every setting («إرجاع كل الإعدادات»). */
     suspend fun resetSettings(group: String?): RemoteSettingsResult

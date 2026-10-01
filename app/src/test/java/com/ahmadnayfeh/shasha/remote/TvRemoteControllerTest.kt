@@ -392,6 +392,23 @@ class TvRemoteControllerTest {
     }
 
     @Test
+    fun addingMinutes_whileTimeIsLeft_addsThemOnTop() = runBlocking<Unit> {
+        env.enterChild()
+        env.used("kid", 40 * 60) // 20 of 60 minutes left
+        assertThat(controller.status().timeLeftMinutes).isEqualTo(20)
+        val result = controller.unlockTimeUp(15)
+        assertThat(result).isEqualTo(RemoteResult.ok(text(R.string.remote_time_added, "سارة", env.texts.minutes(15))))
+        // The message is true: 35 minutes now, not "at least 15" (which 20 already were).
+        assertThat(controller.status().timeLeftMinutes).isEqualTo(35)
+        // Near bedtime the bedtime moves too: 21:50, quota plenty, the schedule ends at 22:00.
+        env.clock.set("2026-09-28T21:50")
+        env.session.refresh()
+        assertThat(controller.status().timeLeftMinutes).isEqualTo(10)
+        assertThat(controller.unlockTimeUp(30).ok).isTrue()
+        assertThat(controller.status().timeLeftMinutes).isEqualTo(40)
+    }
+
+    @Test
     fun unlockTimeUp_forAProfileWithoutLimits_saysSo() = runBlocking<Unit> {
         assertThat(controller.unlockTimeUp(15)).isEqualTo(RemoteResult.ok(text(R.string.remote_time_no_limit, "الكبار")))
     }

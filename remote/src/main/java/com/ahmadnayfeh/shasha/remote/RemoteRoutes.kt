@@ -24,6 +24,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import java.time.LocalDate
 
 internal const val PARENT_SESSION_HEADER = "X-Parent-Session"
@@ -40,7 +41,7 @@ internal const val PARENT_SESSION_HEADER = "X-Parent-Session"
 @Serializable internal data class AllowlistRemoveRequest(val profileId: String, val id: String)
 @Serializable internal data class LinkRequest(val link: String)
 @Serializable internal data class ChannelRequest(val channelId: String)
-@Serializable internal data class SettingRequest(val key: String, val value: JsonElement)
+@Serializable internal data class SettingRequest(val key: String, val value: JsonElement, val base: JsonElement? = null)
 @Serializable internal data class SettingsResetRequest(val group: String? = null)
 @Serializable internal data class ProfileFlagsRequest(val profileId: String, val hideShorts: Boolean? = null, val hideComments: Boolean? = null)
 // No defaults: a request that forgets the times must not mean "all day".
@@ -253,7 +254,7 @@ internal fun Application.remoteModule(
                     call.requireParent(sessions)
                     val req = call.receiveJson<SettingRequest>()
                     if (req.key.isBlank() || req.key.length > MAX_KEY) throw badRequest()
-                    call.respondJson(controller.changeSetting(req.key, req.value))
+                    call.respondJson(controller.changeSetting(req.key, req.value, req.base?.takeUnless { it is JsonNull }))
                 }
                 post("/settings/reset") {
                     call.requireParent(sessions)

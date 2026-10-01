@@ -42,6 +42,7 @@ import com.ahmadnayfeh.shasha.remote.PhoneParental
 import com.ahmadnayfeh.shasha.remote.PhonePin
 import com.ahmadnayfeh.shasha.remote.PhoneSettings
 import com.ahmadnayfeh.shasha.remote.PhoneProfileChoices
+import com.ahmadnayfeh.shasha.remote.RemoteRevision
 import com.ahmadnayfeh.shasha.remote.RemoteRuntime
 import com.ahmadnayfeh.shasha.remote.RemoteSettings
 import com.ahmadnayfeh.shasha.remote.RemoteTexts
@@ -303,6 +304,24 @@ class AppContainer(context: Context) {
     val phoneProfileChoices: PhoneProfileChoices = PhoneProfileChoices()
 
     /**
+     * What makes the phone pages read their parent section again: every setting, the profiles (rules and lists) and the
+     * subscriptions, changed from any phone or from the TV itself.
+     */
+    private val remoteRevision: RemoteRevision by lazy {
+        RemoteRevision(
+            CoroutineScope(appScope.coroutineContext + Dispatchers.Default),
+            listOf(
+                behavior.values,
+                sponsorBlockSettings.categories,
+                playbackSettings.maxQuality,
+                remoteSettings.port,
+                profiles.observeAll(),
+                subscriptions.observe(),
+            ),
+        )
+    }
+
+    /**
      * The phone remote's server and its controller. [com.ahmadnayfeh.shasha.remote.RemoteService] starts and
      * stops it; creating it starts nothing.
      */
@@ -331,6 +350,7 @@ class AppContainer(context: Context) {
                 resources = appContext.resources,
                 scope = appScope,
                 restartRemote = { remote.restart() },
+                portAvailable = { port -> remote.portAvailable(port) },
             ),
             parental = PhoneParental(
                 profiles = profiles,
@@ -343,6 +363,8 @@ class AppContainer(context: Context) {
                 errors = RemoteTexts(appContext.resources)::sourceError,
                 currentId = { currentProfile.awaitProfile().id },
             ),
+            revision = { remoteRevision.value },
+            movingTo = { remote.movingTo.value },
         )
         RemoteRuntime(remoteSettings, controller, NsdAnnouncer(NsdAdvertiser(appContext)), phonePin = phonePin).also { runtime ->
             // A new parent PIN logs every phone out of the parent section.
@@ -389,16 +411,15 @@ class AppContainer(context: Context) {
     /** The highest quality "Auto" reaches (1080p unless Settings changed it); the player reads it for each video. */
     val playbackSettings: PlaybackSettings by lazy { PlaybackSettings(playbackStore, appScope) }
 
-    /**
-     * Starts the session state and the usage tracker ([foreground]: [spendingTime], the app visible and a
-     * profile's screens shown). Main thread; the current profile must have been created (see [currentProfile]).
-     */
     /** Waits (a moment at most) for the parent's settings to be read. */
     suspend fun awaitSettings() {
         withTimeoutOrNull(SETTINGS_WAIT_MS) { behavior.awaitLoaded() }
     }
 
-
+    /**
+     * Starts the session state and the usage tracker ([foreground]: [spendingTime], the app visible and a
+     * profile's screens shown). Main thread; the current profile must have been created (see [currentProfile]).
+     */
     fun startPolicy(foreground: Flow<Boolean>) {
         session.start()
         usageTracker.start(foreground)

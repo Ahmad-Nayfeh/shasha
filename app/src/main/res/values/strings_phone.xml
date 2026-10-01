@@ -4,11 +4,14 @@
     <string name="phone_setting_saved">حُفظ: «&#x2068;%1$s&#x2069;».</string>
     <string name="phone_setting_refused">لم يُحفظ «&#x2068;%1$s&#x2069;»: هذه القيمة غير متاحة على الشاشة.</string>
     <string name="phone_setting_unknown">هذا الإعداد غير موجود على الشاشة. حدّث الصفحة.</string>
-    <string name="phone_setting_custom_first">اكتب عبارتك الخاصة أولاً، ثم اخترها.</string>
+    <string name="phone_setting_custom_first">اكتب عبارتك الخاصة أدناه واحفظها أولاً، فتُختار وحدها.</string>
+    <string name="phone_setting_custom_help">حفظها يجعلها العبارة المطلوبة عند الخروج.</string>
+    <string name="phone_setting_changed_elsewhere">تغيّر «&#x2068;%1$s&#x2069;» على الشاشة أو من جوال آخر قبل لحظات، فلم يُحفظ تغييرك. هذه قيمته الآن.</string>
     <string name="phone_setting_phrases_invalid">لم تُحفظ القائمة: كل عبارة حروف عربية ومسافات فقط حتى 30 حرفاً، ومن عبارة واحدة إلى 30.</string>
     <string name="phone_setting_failed">تعذّر حفظ الإعداد على الشاشة. حاول مرة أخرى.</string>
     <string name="phone_reset_group">عادت إعدادات «&#x2068;%1$s&#x2069;» إلى وضعها الأصلي.</string>
     <string name="phone_port_moving">سينتقل الخادم إلى المنفذ %1$s خلال لحظة، وتتبعه الصفحة وحدها.</string>
+    <string name="phone_port_taken">المنفذ %1$s يستخدمه تطبيق آخر على التلفاز. اختر رقماً غيره.</string>
     <string name="phone_extra_value">+%1$s دقيقة</string>
 
     <string name="phone_profile_not_found">هذا الملف غير موجود على الشاشة.</string>

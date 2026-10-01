@@ -106,7 +106,7 @@
     <string name="playback_voice_language">لغة البحث الصوتي</string>
     <string name="playback_voice_language_body">اللغة التي يسمعها الميكروفون في شاشة البحث</string>
     <string name="voice_language_ar">العربية</string>
-    <string name="voice_language_en">English</string>
+    <string name="voice_language_en">الإنجليزية</string>
 
     <!-- The parent PIN's settings (in «الملفات ورمز الوالدين»). -->
     <string name="pin_settings_failures">المحاولات قبل الإيقاف</string>

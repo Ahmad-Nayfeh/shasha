@@ -126,6 +126,27 @@ class SessionController(
     }
 
     /**
+     * The phone's «+N» ([minutes] more than what is left now): while the profile may still watch, its time grows by
+     * [minutes] on top of the quota or the bedtime, whichever ends it first ([grantUnlock] of the whole); when nothing
+     * is left it is exactly [grantUnlock]. A profile without any limit gets nothing.
+     */
+    suspend fun addTime(minutes: Int): SessionState = granting.withLock {
+        require(minutes > 0) { "minutes must be > 0, was $minutes" }
+        val p = profile.filterNotNull().first()
+        val today = engine.today()
+        val used = usage.foregroundSeconds(p.id, today)
+        val current = overrides.current()
+        val leftSeconds = when (val now = engine.session(p, used, current)) {
+            is SessionState.Ok -> now.remainingSeconds ?: return@withLock refresh() ?: _state.value
+            is SessionState.Warning -> now.remainingSeconds
+            SessionState.TimeUp, is SessionState.OutsideSchedule -> 0L
+        }
+        val total = ((leftSeconds.coerceAtLeast(0) + minutes * 60L + 59) / 60).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        overrides.add(engine.grantUnlock(p, used, current, total), today, engine.nowEpochMs())
+        refresh() ?: _state.value
+    }
+
+    /**
      * The parent's "for the rest of today" ([PolicyEngine.grantRestOfToday]): no quota until midnight,
      * and when the schedule is what stops the profile now, no schedule until the end of the day either.
      */

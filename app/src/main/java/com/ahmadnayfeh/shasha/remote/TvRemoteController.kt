@@ -91,6 +91,10 @@ class TvRemoteController(
     private val settings: PhoneSettings? = null,
     /** v1.1: profile rules, the block list and the stats. */
     private val parental: PhoneParental? = null,
+    /** v1.1: the mark that moves when anything the parent section shows changes ([RemoteRevision]). */
+    private val revision: () -> Long = { 0L },
+    /** v1.1: the port the server moves to in a moment ([RemoteRuntime.movingTo]): every open page follows it. */
+    private val movingTo: () -> Int? = { null },
 ) : RemoteController {
 
     // ---- Everyone ---------------------------------------------------------------------------------------
@@ -109,6 +113,8 @@ class TvRemoteController(
             sessionState = state.remote(),
             videoLocked = lock.lock.value != null,
             seriousMode = seriousMode(),
+            rev = revision(),
+            movingTo = movingTo(),
         )
     }
 
@@ -309,10 +315,11 @@ class TvRemoteController(
     }
 
     /**
-     * The phone's «فتح الوقت»: the same grants as the TV's time-up screen after the PIN, for the profile on
-     * the TV now. Works for the quota and for the schedule (bedtime) alike: [SessionController.grantUnlock]
-     * gives what is missing of both; «بقية اليوم» lifts the quota and, when the schedule stops the profile
-     * now, the schedule until the end of the day. The TV's "time up" screen goes away by itself.
+     * The phone's «+N دقيقة» / «بقية اليوم» for the profile on the TV now: N minutes more than what is left
+     * ([SessionController.addTime]: after "time up" the same grants as the TV's time-up screen after the PIN; while
+     * time is left, on top of it). Works for the quota and for the schedule (bedtime) alike; «بقية اليوم» lifts the
+     * quota and, when the schedule stops the profile now, the schedule until the end of the day. The TV's "time up"
+     * screen goes away by itself.
      */
     override suspend fun unlockTimeUp(extraMinutes: Int?): RemoteResult {
         val profile = currentProfile()
@@ -320,7 +327,7 @@ class TvRemoteController(
             return RemoteResult.ok(texts.get(R.string.remote_time_no_limit, profile.name))
         }
         val after = try {
-            whole { if (extraMinutes == null) session.unlimitedToday() else session.grantUnlock(extraMinutes) }
+            whole { if (extraMinutes == null) session.unlimitedToday() else session.addTime(extraMinutes) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -458,7 +465,8 @@ class TvRemoteController(
 
     override suspend fun settings(): RemoteSettingsPage = settingsOrRefuse().page()
 
-    override suspend fun changeSetting(key: String, value: JsonElement): RemoteSettingsResult = settingsOrRefuse().change(key, value)
+    override suspend fun changeSetting(key: String, value: JsonElement, base: JsonElement?): RemoteSettingsResult =
+        settingsOrRefuse().change(key, value, base)
 
     override suspend fun resetSettings(group: String?): RemoteSettingsResult = settingsOrRefuse().reset(group)
 

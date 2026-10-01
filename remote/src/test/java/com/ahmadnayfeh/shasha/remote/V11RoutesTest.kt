@@ -38,6 +38,16 @@ class V11RoutesTest {
     }
 
     @Test
+    fun settings_theBaseValueReachesTheController_nullMeansNone() = remoteTest { h ->
+        val s = session()
+        client.call("POST", "/api/parent/settings", """{"key":"extra_minutes","value":[15,30],"base":[15,30,60]}""", parent = s)
+        client.call("POST", "/api/parent/settings", """{"key":"serious_mode","value":false,"base":null}""", parent = s)
+        assertThat(h.controller.calls.filter { it.startsWith("changeSetting") }).containsExactly(
+            "changeSetting(extra_minutes,[15,30],base=[15,30,60])", "changeSetting(serious_mode,false)",
+        ).inOrder()
+    }
+
+    @Test
     fun settings_reconnectPortIsPassedOn() = remoteTest { h ->
         h.controller.settingsResult = RemoteSettingsResult(true, "ينتقل", h.controller.settingsPage, reconnectPort = 9000)
         val res = client.call("POST", "/api/parent/settings", """{"key":"remote_port","value":9000}""", parent = session())
@@ -112,6 +122,8 @@ class V11RoutesTest {
         val res = client.get("/?t=$TOKEN") { header(HttpHeaders.Host, "192.168.1.20:8765") }
         val csp = res.headers["Content-Security-Policy"]!!
         assertThat(csp).contains("connect-src 'self' http://192.168.1.20:*")
+        // The page proves the new port is this TV by loading its icon (token needed) from there.
+        assertThat(csp).contains("img-src 'self' data: https: http://192.168.1.20:*")
         // A strange Host header gets the strict policy.
         val odd = client.get("/?t=$TOKEN") { header(HttpHeaders.Host, "evil.com\" *") }
         assertThat(odd.headers["Content-Security-Policy"]).contains("connect-src 'self';")

@@ -943,7 +943,8 @@
     <string name="voice_speak_now">تكلّم الآن…</string>
     <string name="voice_hearing">أسمعك…</string>
     <string name="voice_processing">لحظة…</string>
-    <string name="voice_hint">قل ما تبحث عنه بـ%1$s</string>
+    <string name="voice_hint_ar">قل ما تبحث عنه بالعربية</string>
+    <string name="voice_hint_en">قل ما تبحث عنه بالإنجليزية</string>
     <string name="voice_retry">أعد المحاولة</string>
     <string name="voice_close">إغلاق</string>
     <string name="voice_prompt">قل ما تبحث عنه</string>

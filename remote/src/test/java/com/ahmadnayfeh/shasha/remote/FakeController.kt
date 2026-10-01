@@ -84,8 +84,11 @@ class FakeController : RemoteController {
     var settingsResult: RemoteSettingsResult? = null
 
     override suspend fun settings() = record("settings", settingsPage)
-    override suspend fun changeSetting(key: String, value: JsonElement) =
-        record("changeSetting($key,$value)", settingsResult ?: RemoteSettingsResult(true, "حُفظ", settingsPage))
+    override suspend fun changeSetting(key: String, value: JsonElement, base: JsonElement?) =
+        record(
+            "changeSetting($key,$value" + (base?.let { ",base=$it" } ?: "") + ")",
+            settingsResult ?: RemoteSettingsResult(true, "حُفظ", settingsPage),
+        )
     override suspend fun resetSettings(group: String?) =
         record("resetSettings($group)", settingsResult ?: RemoteSettingsResult(true, "أُرجع", settingsPage))
     override suspend fun profileDetails() = record(

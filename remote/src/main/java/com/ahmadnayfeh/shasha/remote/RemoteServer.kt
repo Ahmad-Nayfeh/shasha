@@ -109,13 +109,17 @@ class RemoteServer internal constructor(
             ?: IOException("The remote server did not start", e)
     }
 
-    /** Graceful but short: in-flight requests get [GRACE_MILLIS], everything ends within [TIMEOUT_MILLIS]. Idempotent. */
+    /**
+     * Graceful but short: in-flight requests get [GRACE_MILLIS], everything ends within [TIMEOUT_MILLIS]. Idempotent.
+     * [endSessions] false keeps the parent sessions for the next [start]: only for moving to another port on the same
+     * address (the parent asked for it, and the pages follow the server there); any other stop ends them.
+     */
     @Synchronized
-    fun stop() {
+    fun stop(endSessions: Boolean = true) {
+        if (endSessions) sessions.clear()
         val running = server ?: return
         server = null
         boundPort = null
-        sessions.clear()
         running.stop(GRACE_MILLIS, TIMEOUT_MILLIS)
     }
 
