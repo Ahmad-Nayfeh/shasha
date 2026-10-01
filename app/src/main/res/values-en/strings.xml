@@ -873,7 +873,7 @@
     <string name="hub_fact_feed_never">Subscriptions: %1$s · not refreshed yet</string>
     <string name="hub_fact_feed">Subscriptions: %1$s · last refreshed %2$s</string>
     <string name="hub_fact_feed_failed">Channels that failed to refresh last time: %1$s</string>
-    <string name="hub_diag_hint">When something breaks: play the test videos first, then “Check for updates”. MAINTENANCE.md explains the rest.</string>
+    <string name="hub_diag_hint">When something breaks: play the test videos first, then “Check for updates”. The Shasha Guide explains the rest.</string>
 
     <!-- حول -->
     <string name="hub_about_data_title">Segment skip data</string>

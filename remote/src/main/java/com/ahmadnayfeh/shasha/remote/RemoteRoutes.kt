@@ -147,8 +147,13 @@ internal fun Application.remoteModule(
                 val result = if (pin == null) {
                     controller.switchProfile(req.id, null)
                 } else {
-                    // A switch can succeed without checking the PIN (e.g. to the current profile): never a reset.
-                    pinGate.check(isWrong = { !it.ok }, isVerified = { false }) { controller.switchProfile(req.id, pin) }
+                    // A switch can succeed without checking the PIN (e.g. to the current profile): never a reset. A refusal
+                    // because a video is locked (SPEC §4: the TV refuses those before it looks at the PIN) is no wrong PIN:
+                    // the parent's own right PIN must never end in "too many wrong attempts".
+                    pinGate.check(isWrong = { (answer, locked) -> !answer.ok && !locked }, isVerified = { false }) {
+                        val answer = controller.switchProfile(req.id, pin)
+                        answer to (!answer.ok && controller.status().let { it.videoLocked && it.profileId != req.id })
+                    }.first
                 }
                 call.respondJson(result)
             }

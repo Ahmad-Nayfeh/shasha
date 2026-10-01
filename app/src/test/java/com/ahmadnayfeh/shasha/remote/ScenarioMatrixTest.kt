@@ -1718,11 +1718,14 @@ private fun profileRows() = listOf(
             assertThat(list.first { it.str("id") == "kid" }.bool("needsPin")).isFalse()
         }
     },
-    row("PR-03", "from the adult: a second adult needs the PIN only while adultEntryPin is on") {
+    row("PR-03", "from the adult: a second adult needs the PIN only while adultEntryPin is on, and the switch agrees") {
         addAdult2()
         assertThat(phone().profileList().first { it.str("id") == "adult2" }.bool("needsPin")).isTrue()
+        phone().switchTo("adult2").isRefusedWith(texts.get(R.string.remote_profile_needs_pin))
         adultEntryPin(false)
         assertThat(phone().profileList().first { it.str("id") == "adult2" }.bool("needsPin")).isFalse()
+        phone().switchTo("adult2").isOkWith()
+        assertThat(current().id).isEqualTo("adult2")
     },
     row("PR-04", "adult to child without a PIN: the TV is on the child, the guard holds it") {
         phone().switchTo("kid").isOkWith(texts.get(R.string.remote_profile_switched, "سارة"))
@@ -1741,6 +1744,14 @@ private fun profileRows() = listOf(
         phone().switchTo("adult").isRefusedWith(texts.get(R.string.remote_profile_needs_pin))
         assertThat(current().id).isEqualTo("kid")
         assertThat(phonePin.status().wrong).isEqualTo(0)
+    },
+    row("PR-20", "adultEntryPin off: leaving a child for the adult still needs the PIN") {
+        adultEntryPin(false)
+        child()
+        phone().switchTo("adult").isRefusedWith(texts.get(R.string.remote_profile_needs_pin))
+        assertThat(current().id).isEqualTo("kid")
+        phone().switchTo("adult", MX_PIN).isOkWith()
+        assertThat(current().id).isEqualTo("adult")
     },
     row("PR-07", "child to adult with a wrong PIN: attempts left; the phone counts it, the TV does not") {
         child()
@@ -1785,7 +1796,7 @@ private fun profileRows() = listOf(
     row("PR-11", "a locked video: every switch refused, the PIN not even checked") {
         child()
         lockedVideo(INSIDE)
-        phone().switchTo("adult", MX_PIN).isRefusedWith(texts.get(R.string.remote_switch_locked))
+        assertThat(phone().switchTo("adult", MX_PIN).isNotAccepted().message).isEqualTo(texts.get(R.string.remote_switch_locked))
         assertThat(current().id).isEqualTo("kid")
         assertThat(lock.current()!!.videoId).isEqualTo(INSIDE)
         assertThat(phonePin.status().wrong).isEqualTo(0)
@@ -1793,7 +1804,7 @@ private fun profileRows() = listOf(
         assertThat(lock.unlockByParent()).isTrue()
         tvSwitch("adult")
         lockedVideo(OUTSIDE)
-        phone().switchTo("kid").isRefusedWith(texts.get(R.string.remote_switch_locked))
+        assertThat(phone().switchTo("kid").isNotAccepted().message).isEqualTo(texts.get(R.string.remote_switch_locked))
         assertThat(current().id).isEqualTo("adult")
     },
     row("PR-12", "an unknown profile") {
@@ -1832,6 +1843,17 @@ private fun profileRows() = listOf(
         phone().switchTo("kid").isOkWith()
         settle()
         assertThat(phone().status().str("sessionState")).isEqualTo("TIME_UP")
+    },
+    row("PR-19", "switches refused only because a video is locked, with the RIGHT PIN, never count as wrong PINs") {
+        child()
+        lockedVideo(INSIDE)
+        val p = phone()
+        repeat(6) { p.switchTo("adult", MX_PIN).isNotAccepted() }
+        assertThat(phonePin.status().wrong).isEqualTo(0)
+        // The parent's own PIN still opens the parent section at once (no "too many wrong attempts").
+        p.login().isOkWith(ServerTexts.PARENT_WELCOME)
+        p.post("/api/parent/unlock-video").isOkWith()
+        p.switchTo("adult", MX_PIN).isOkWith()
     },
     row("PR-18", "the TV asks who is watching: the child the phone chose opens there") {
         addChild2()
@@ -2090,6 +2112,27 @@ private fun timeRows() = listOf(
         val s = p.status()
         assertThat(s.str("sessionState")).isEqualTo("OK")
         assertThat(s.bool("videoLocked")).isTrue()
+    },
+    row("UT-11", "outside the schedule AND the quota used up (23:00), +15: 15 minutes (both lifted)") {
+        child()
+        used(3600)
+        at("2026-09-28T23:00")
+        val p = phone().loggedIn()
+        assertThat(p.status().str("sessionState")).isEqualTo("OUTSIDE_SCHEDULE")
+        p.unlockTime(15).isOkWith()
+        val s = p.status()
+        assertThat(s.str("sessionState")).isEqualTo("OK")
+        assertThat(s.int("timeLeftMinutes")).isEqualTo(15)
+    },
+    row("UT-12", "outside the schedule AND the quota used up (23:00), rest of today: open until midnight") {
+        child()
+        used(3600)
+        at("2026-09-28T23:00")
+        val p = phone().loggedIn()
+        p.unlockTime(null).isOkWith(texts.get(R.string.remote_time_rest_of_today, "سارة"))
+        val s = p.status()
+        assertThat(s.str("sessionState")).isEqualTo("OK")
+        assertThat(s.int("timeLeftMinutes")).isEqualTo(60)
     },
     row("UT-10", "the adult with a quota, time up, +15") {
         quota("adult", 30)
@@ -2459,8 +2502,25 @@ private val settingCases = listOf(
     SettingCase("SET-15", "custom_phrase", "\"\"", "\"اللهم بارك\"", listOf("\"hello\"", json("ب".repeat(31))),
         stored = { "\"" + behavior.current().customPhrase + "\"" },
         after = { assertThat(behavior.current().phraseMode.name).isEqualTo("CUSTOM") }),
-    SettingCase("SET-16", "skip_allowance_seconds", "30", "60", listOf("45", "-1"), stored = { behavior.current().skipAllowanceSeconds.toString() }),
-    SettingCase("SET-17", "played_percent", "50", "75", listOf("60", "101"), stored = { behavior.current().playedPercent.toString() }),
+    SettingCase("SET-16", "skip_allowance_seconds", "30", "60", listOf("45", "-1"), stored = { behavior.current().skipAllowanceSeconds.toString() },
+        after = {
+            // The TV's lock follows it: 60 s skipped of a locked video still ends it by itself (played share set aside).
+            number(BehaviorKeys.PLAYED_PERCENT, 100)
+            child()
+            lockedVideo(INSIDE)
+            lock.onVideoEnded("kid", INSIDE, nextVideoId = null, played = PlayedPart(playedMs = 540_000, leftMs = 600_000))
+            assertThat(lock.current()).isNull()
+        }),
+    SettingCase("SET-17", "played_percent", "50", "75", listOf("60", "101"), stored = { behavior.current().playedPercent.toString() },
+        after = {
+            // 70 % played is not enough now (the lock stays); 80 % is.
+            child()
+            lockedVideo(INSIDE)
+            lock.onVideoEnded("kid", INSIDE, nextVideoId = null, played = PlayedPart(playedMs = 420_000, leftMs = 600_000))
+            assertThat(lock.current()).isNotNull()
+            lock.onVideoEnded("kid", INSIDE, nextVideoId = null, played = PlayedPart(playedMs = 480_000, leftMs = 600_000))
+            assertThat(lock.current()).isNull()
+        }),
     SettingCase("SET-18", "warning_minutes", "5", "0", listOf("4", "16"), stored = { behavior.current().warningMinutes.toString() },
         after = { assertThat(engine.config().warningSeconds).isEqualTo(0L) }),
     SettingCase("SET-19", "warning_banner_seconds", "12", "20", listOf("15"), stored = { behavior.current().warningBannerSeconds.toString() }),
@@ -2481,10 +2541,32 @@ private val settingCases = listOf(
         }),
     SettingCase("SET-29", "voice_language", "\"ar-SA\"", "\"en-US\"", listOf("\"fr-FR\""), stored = { "\"" + behavior.current().voiceLanguage + "\"" }),
     SettingCase("SET-30", "pin_max_failures", "5", "3", listOf("7"), stored = { behavior.current().pinMaxFailures.toString() },
-        after = { assertThat(behavior.pinLockout().maxFailures).isEqualTo(3) }),
-    SettingCase("SET-31", "pin_first_lockout_minutes", "5", "1", listOf("3"), stored = { behavior.current().pinFirstLockoutMinutes.toString() }),
+        after = {
+            assertThat(behavior.pinLockout().maxFailures).isEqualTo(3)
+            // The TV's own PIN pads lock after 3 too.
+            repeat(2) { assertThat(parentPin.verify(MX_WRONG)).isInstanceOf(PinResult.Wrong::class.java) }
+            assertThat(parentPin.verify(MX_WRONG)).isInstanceOf(PinResult.LockedOut::class.java)
+        }),
+    SettingCase("SET-31", "pin_first_lockout_minutes", "5", "1", listOf("3"), stored = { behavior.current().pinFirstLockoutMinutes.toString() },
+        after = {
+            repeat(5) { parentPin.verify(MX_WRONG) }
+            assertThat(parentPin.remainingLockMillis()).isIn(1L..60_000L)
+        }),
     SettingCase("SET-32", "parent_unlock_minutes", "5", "10", listOf("4"), stored = { behavior.current().parentUnlockMinutes.toString() }),
-    SettingCase("SET-33", "relock_seconds", "15", "60", listOf("45"), stored = { behavior.current().relockSeconds.toString() }),
+    SettingCase("SET-33", "relock_seconds", "15", "60", listOf("45"), stored = { behavior.current().relockSeconds.toString() },
+        after = {
+            // The TV asks who is watching only after 60 s out of sight now.
+            var up = 1_000_000L
+            val root = root { up }
+            waitFor("the picker at start") { root.screen.value == RootScreen.Picker(PickerMode.START) }
+            assertThat(root.choose(profiles.get("adult")!!, MX_PIN)).isEqualTo(com.ahmadnayfeh.shasha.ui.components.PinCheck.Accepted)
+            waitFor("the adult's screens") { root.screen.value == RootScreen.Browse }
+            root.onAppHidden(); up += 20_000; root.onAppShown()
+            delay(200)
+            assertThat(root.screen.value).isEqualTo(RootScreen.Browse)
+            root.onAppHidden(); up += 61_000; root.onAppShown()
+            waitFor("asked again") { root.screen.value == RootScreen.Picker(PickerMode.START) }
+        }),
     SettingCase("SET-34", "adult_entry_pin", "true", "false", listOf("\"off\""), stored = { behavior.current().adultEntryPin.toString() },
         after = { phone ->
             assertThat(engine.config().adultEntryNeedsPin).isFalse()
@@ -3187,7 +3269,7 @@ private fun networkRows() = listOf(
 
 /**
  * Serves the phone page on 127.0.0.1 in front of [MxTv] (the TV's real rules) for the Playwright checks of the matrix
- * (scenarios/ui.mjs). Skipped unless SHASHA_MATRIX_DIR names a directory: it writes the pairing link to "ready" there and
+ * (app/src/test/playwright/phone-tv-scenarios.mjs). Skipped unless SHASHA_MATRIX_DIR names a directory: it writes the pairing link to "ready" there and
  * runs the commands a script writes to "cmd" (answers in "cmd.out") until a "stop" file appears (20 minutes at most).
  */
 @RunWith(AndroidJUnit4::class)
@@ -3260,6 +3342,8 @@ class ScenarioMatrixPageServer {
                                 "ok"
                             }
                             "revoke" -> { tv.runtime.revokeParentSessions(); "ok" }
+                            // «إعادة توليد الرمز» on the TV: the answer is the new pairing token.
+                            "rotate" -> tv.runtime.regenerateToken()
                             "phonelock" -> { tv.lockOutPhonePin(); "ok" }
                             "quota" -> { tv.quota(args[1], args[2].toIntOrNull()); "ok" }
                             "status" -> tv.controller.status().let { "kind=${it.profileKind} state=${it.sessionState} locked=${it.videoLocked} playing=${it.nowPlaying?.videoId}" }

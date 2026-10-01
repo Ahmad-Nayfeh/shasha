@@ -910,7 +910,7 @@
     <string name="hub_fact_feed">الاشتراكات: %1$s · آخر تحديث %2$s</string>
     <!-- %1$s: a number of channels (digits). The last error follows on its own line, as it is. -->
     <string name="hub_fact_feed_failed">قنوات تعذّر تحديثها في آخر محاولة: %1$s</string>
-    <string name="hub_diag_hint">حين يتعطّل شيء: شغّل الفيديوهات التجريبية أولاً، ثم «فحص التحديثات». وملف MAINTENANCE.md يشرح الباقي.</string>
+    <string name="hub_diag_hint">حين يتعطّل شيء: شغّل الفيديوهات التجريبية أولاً، ثم «فحص التحديثات». و«دليل شاشة» يشرح الباقي.</string>
 
     <!-- حول -->
     <string name="hub_about_data_title">بيانات تخطي المقاطع</string>
