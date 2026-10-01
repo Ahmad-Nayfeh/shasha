@@ -91,6 +91,35 @@ class V11RoutesTest {
     }
 
     @Test
+    fun profiles_thePageCarriesTheTvsChoices_andCreateEditDelete_areChecked() = remoteTest { h ->
+        val s = session()
+        val page = client.call("GET", "/api/parent/profiles", parent = s).json()
+        assertThat(page.getValue("profiles").jsonArray).hasSize(2)
+        assertThat(page.getValue("quotaChoices").jsonArray.first().toString()).isEqualTo("null")
+        assertThat(page.str("nameMaxLength")).isEqualTo("20")
+
+        client.call("POST", "/api/parent/profile/create", """{"name":"  ليلى  ","avatar":"star"}""", parent = s)
+        client.call("POST", "/api/parent/profile/edit", """{"profileId":"c1","name":" سارة "}""", parent = s)
+        client.call("POST", "/api/parent/profile/edit", """{"profileId":"c1","avatar":"cat"}""", parent = s)
+        client.call("POST", "/api/parent/profile/delete", """{"profileId":"c1"}""", parent = s)
+        // Empty or long names, odd avatar keys, an edit that changes nothing: refused before the controller.
+        for ((path, body) in listOf(
+            "create" to """{"name":"   ","avatar":"star"}""",
+            "create" to """{"name":"${"ن".repeat(65)}","avatar":"star"}""",
+            "create" to """{"name":"ليلى","avatar":"../x"}""",
+            "create" to """{"name":"ليلى"}""",
+            "edit" to """{"profileId":"c1"}""",
+            "edit" to """{"profileId":"c1","name":""}""",
+            "edit" to """{"profileId":"c1","avatar":"Star!"}""",
+            "edit" to """{"profileId":"","name":"x"}""",
+            "delete" to """{"profileId":""}""",
+        )) assertThat(client.call("POST", "/api/parent/profile/$path", body, parent = s).status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(h.controller.calls.filter { it.endsWith(")") && (it.startsWith("create") || it.startsWith("edit") || it.startsWith("delete")) }).containsExactly(
+            "createChild(ليلى,star)", "editProfile(c1,سارة,null)", "editProfile(c1,null,cat)", "deleteProfile(c1)",
+        ).inOrder()
+    }
+
+    @Test
     fun blocklist_kindsAndLimits() = remoteTest { h ->
         val s = session()
         val list = client.call("GET", "/api/parent/blocklist", parent = s).json()

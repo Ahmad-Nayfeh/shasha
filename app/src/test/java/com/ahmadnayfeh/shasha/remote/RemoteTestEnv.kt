@@ -166,7 +166,10 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
         )
         revision = RemoteRevision(
             scope,
-            listOf(behavior.values, sponsorSettings.categories, playbackSettings.maxQuality, remoteSettings.port, profiles.observeAll(), subscriptions.observe()),
+            listOf(
+                behavior.values, sponsorSettings.categories, playbackSettings.maxQuality, remoteSettings.port, profiles.observeAll(), active.id,
+                subscriptions.observe(),
+            ),
         )
         controller = newController(phonePin)
         source.videos[INSIDE_VIDEO] = clip(INSIDE_VIDEO, channelId = ALLOWED_CHANNEL, title = "Allowed cartoon")

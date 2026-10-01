@@ -150,6 +150,9 @@ class BackupManagerTest {
         behavior.setNumber(BehaviorKeys.WARNING_MINUTES, 10)
         behavior.setDefaultSpeed(1.25f)
         behavior.addPhrase("وقتي لعملي")
+        // v1.1 part B: the optional adult PIN (off here) and the voice language.
+        behavior.setAdultEntryPin(false)
+        behavior.setVoiceLanguage("en-US")
     }
 
     private suspend fun Tv.behaviorNow(): Behavior {
@@ -203,6 +206,8 @@ class BackupManagerTest {
         assertThat(restoredBehavior.warningMinutes).isEqualTo(10)
         assertThat(restoredBehavior.defaultSpeed).isEqualTo(1.25f)
         assertThat(restoredBehavior.phrases).contains("وقتي لعملي")
+        assertThat(restoredBehavior.adultEntryPin).isFalse()
+        assertThat(restoredBehavior.voiceLanguage).isEqualTo("en-US")
         // The second TV keeps its own pairing: its phones are paired again from its QR code.
         assertThat(second.remoteSettings.token()).isNotEqualTo(token)
     }
@@ -233,8 +238,12 @@ class BackupManagerTest {
         val first = tv("first").apply { fill() }
         val file = first.backup.export().json()
         val settings = JsonObject(file["settings"]!!.jsonObject - BehaviorSettings.FILE_NAME)
+        assertThat(first.behaviorNow().adultEntryPin).isFalse()
         first.backup.import(JsonObject(file + ("settings" to settings)).toString().toByteArray())
         assertThat(first.behaviorNow()).isEqualTo(Behavior.DEFAULT)
+        // The adult PIN is asked for again (the default), the language is Arabic again.
+        assertThat(first.behaviorNow().adultEntryPin).isTrue()
+        assertThat(first.behaviorNow().voiceLanguage).isEqualTo("ar-SA")
     }
 
     @Test

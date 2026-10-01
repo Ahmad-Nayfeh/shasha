@@ -296,7 +296,7 @@ class PhoneSettingsTest {
     @Test
     fun profiles_flagsAndSchedule_likeTheTvsEditor() = runBlocking<Unit> {
         env.used("kid", 20 * 60)
-        val kid = controller.profileDetails().first { it.id == "kid" }
+        val kid = controller.profilesPage().profiles.first { it.id == "kid" }
         assertThat(kid.kind).isEqualTo(RemoteProfileKind.CHILD)
         assertThat(kid.dailyQuotaMinutes).isEqualTo(60)
         assertThat(kid.scheduleFrom).isEqualTo(7 * 60)
@@ -316,12 +316,81 @@ class PhoneSettingsTest {
         // The TV picker's rule: until 0:00 is the end of the day, the same time twice is all day.
         assertThat(controller.setSchedule("kid", 8 * 60, 0).ok).isTrue()
         assertThat(env.profiles.get("kid")!!.schedule).isEqualTo(Schedule(8 * 60, 24 * 60))
-        assertThat(controller.profileDetails().first { it.id == "kid" }.scheduleUntil).isEqualTo(0)
+        assertThat(controller.profilesPage().profiles.first { it.id == "kid" }.scheduleUntil).isEqualTo(0)
         assertThat(controller.setSchedule("kid", 9 * 60, 9 * 60).ok).isTrue()
         assertThat(env.profiles.get("kid")!!.schedule).isNull()
         assertThat(controller.setSchedule("kid", 20 * 60, 6 * 60).ok).isTrue()
         assertThat(env.profiles.get("kid")!!.schedule!!.wrapsMidnight).isTrue()
         assertThat(controller.setSchedule("kid", null, null).message).isEqualTo(text(R.string.phone_schedule_all_day, "سارة"))
+    }
+
+    @Test
+    fun profilesPage_carriesTheTvsOwnChoices_andWhyAProfileCannotBeDeleted() = runBlocking<Unit> {
+        val page = controller.profilesPage()
+        assertThat(page.quotaChoices).isEqualTo(com.ahmadnayfeh.shasha.ui.screens.settings.QuotaOptions)
+        assertThat(page.avatars).isEqualTo(com.ahmadnayfeh.shasha.ui.components.Avatars.keys)
+        assertThat(page.childAvatars).isEqualTo(com.ahmadnayfeh.shasha.ui.components.Avatars.childKeys)
+        assertThat(page.nameMaxLength).isEqualTo(com.ahmadnayfeh.shasha.ui.screens.settings.PROFILE_NAME_MAX)
+        // The adult is on the TV (and the last adult): it cannot go; the child can.
+        assertThat(page.profiles.first { it.id == "adult" }.deleteBlockedReason).isEqualTo(text(R.string.phone_profile_delete_current))
+        assertThat(page.profiles.first { it.id == "kid" }.deleteBlockedReason).isNull()
+        env.enterChild()
+        val switched = controller.profilesPage().profiles
+        assertThat(switched.first { it.id == "adult" }.deleteBlockedReason).isEqualTo(text(R.string.phone_profile_delete_last_adult))
+        assertThat(switched.first { it.id == "kid" }.deleteBlockedReason).isEqualTo(text(R.string.phone_profile_delete_current))
+    }
+
+    @Test
+    fun aNewChild_fromThePhone_isTheTvsNewChild_withTheHouseholdsBlocks() = runBlocking<Unit> {
+        controller.blockKeyword("رعب")
+        val r = controller.createChild("  ليلى  ", "cat")
+        assertThat(r.ok).isTrue()
+        assertThat(r.message).isEqualTo(text(R.string.phone_profile_created, "ليلى"))
+        val created = env.profiles.all().single { it.name == "ليلى" }
+        val defaults = com.ahmadnayfeh.shasha.policy.Profile.newChild("ليلى", id = created.id, avatar = "cat")
+        assertThat(created.copy(blocklist = defaults.blocklist)).isEqualTo(defaults)
+        assertThat(created.blocklist.titleKeywords).containsExactly("رعب")
+        // The TV's checks: a name 1..20 characters, a child's avatar.
+        val tooLong = "ن".repeat(com.ahmadnayfeh.shasha.ui.screens.settings.PROFILE_NAME_MAX + 1)
+        for ((name, avatar) in listOf("   " to "cat", tooLong to "cat", "سامي" to "person", "سامي" to "dragon")) {
+            assertThat(controller.createChild(name, avatar).ok).isFalse()
+        }
+        assertThat(env.profiles.all()).hasSize(3)
+    }
+
+    @Test
+    fun renameAvatarAndDelete_withTheTvsRules() = runBlocking<Unit> {
+        assertThat(controller.editProfile("kid", " سارة الصغيرة ", null).ok).isTrue()
+        assertThat(controller.editProfile("kid", null, "moon").ok).isTrue()
+        assertThat(env.profiles.get("kid")!!.name).isEqualTo("سارة الصغيرة")
+        assertThat(env.profiles.get("kid")!!.avatar).isEqualTo("moon")
+        // "person" is the adults' own; an adult may take any.
+        assertThat(controller.editProfile("kid", null, "person").ok).isFalse()
+        assertThat(controller.editProfile("adult", null, "crown").ok).isTrue()
+        assertThat(controller.editProfile("kid", "", null).ok).isFalse()
+        assertThat(controller.editProfile("gone", "x", null).ok).isFalse()
+        assertThat(env.profiles.get("kid")!!.avatar).isEqualTo("moon")
+
+        // The profile on the TV is never deleted from the phone; the last adult never at all.
+        assertThat(controller.deleteProfile("adult").message).isEqualTo(text(R.string.phone_profile_delete_current))
+        env.enterChild()
+        assertThat(controller.deleteProfile("kid").message).isEqualTo(text(R.string.phone_profile_delete_current))
+        assertThat(controller.deleteProfile("adult").message).isEqualTo(text(R.string.phone_profile_delete_last_adult))
+        assertThat(controller.switchProfile("adult", PIN).ok).isTrue()
+        val deleted = controller.deleteProfile("kid")
+        assertThat(deleted.ok).isTrue()
+        assertThat(deleted.message).isEqualTo(text(R.string.phone_profile_deleted, "سارة الصغيرة"))
+        assertThat(env.profiles.get("kid")).isNull()
+        assertThat(controller.deleteProfile("kid").ok).isFalse()
+    }
+
+    @Test
+    fun aProfileSwitch_movesTheMark_andTheStatusSaysWhichProfile() = runBlocking<Unit> {
+        val before = controller.status()
+        assertThat(before.profileId).isEqualTo("adult")
+        env.enterChild()
+        withTimeout(5_000) { while (controller.status().rev == before.rev) delay(10) }
+        assertThat(controller.status().profileId).isEqualTo("kid")
     }
 
     @Test

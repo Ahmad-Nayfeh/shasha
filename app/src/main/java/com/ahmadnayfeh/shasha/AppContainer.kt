@@ -316,6 +316,8 @@ class AppContainer(context: Context) {
                 playbackSettings.maxQuality,
                 remoteSettings.port,
                 profiles.observeAll(),
+                // A switch changes which profile is on the TV (it cannot be deleted then).
+                currentProfile.id,
                 subscriptions.observe(),
             ),
         )

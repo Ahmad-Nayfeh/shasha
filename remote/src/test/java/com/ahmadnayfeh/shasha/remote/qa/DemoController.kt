@@ -19,6 +19,7 @@ import com.ahmadnayfeh.shasha.remote.RemoteStatus
 import com.ahmadnayfeh.shasha.remote.RemoteBlocklist
 import com.ahmadnayfeh.shasha.remote.RemoteChannelUsage
 import com.ahmadnayfeh.shasha.remote.RemoteProfileDetails
+import com.ahmadnayfeh.shasha.remote.RemoteProfilesPage
 import com.ahmadnayfeh.shasha.remote.RemoteSettingsPage
 import com.ahmadnayfeh.shasha.remote.RemoteSettingsResult
 import com.ahmadnayfeh.shasha.remote.RemoteStats
@@ -42,7 +43,7 @@ internal class DemoController(
     )
 
     private class Profile(
-        val id: String, val name: String, val kind: RemoteProfileKind, val avatar: String,
+        val id: String, var name: String, val kind: RemoteProfileKind, var avatar: String,
         var quota: Int?, var usedMinutes: Int, var extraMinutes: Int = 0, var unlimitedToday: Boolean = false,
         var scheduleFrom: Int? = null, var scheduleUntil: Int? = null, var hideShorts: Boolean = false, var hideComments: Boolean = false,
     )
@@ -64,12 +65,12 @@ internal class DemoController(
         Video("k1dsSc13nc", "لماذا السماء زرقاء؟ تجربة ممتعة", "UCkids00000000000000000b", "العلوم للصغار", 402, DemoArt.science),
     )
 
-    private val profiles = listOf(
+    private val profiles = mutableListOf(
         Profile("ahmad", "أحمد", RemoteProfileKind.ADULT, "person", quota = null, usedMinutes = 95),
         Profile("sara", "سارة", RemoteProfileKind.CHILD, "star", quota = 60, usedMinutes = 22, scheduleFrom = 420, scheduleUntil = 1260, hideShorts = true, hideComments = true),
         Profile("yousef", "يوسف", RemoteProfileKind.CHILD, "rocket", quota = 45, usedMinutes = 45, hideShorts = true, hideComments = true),
     )
-    private val allowlists = mapOf(
+    private val allowlists = mutableMapOf(
         "sara" to Lists(
             mutableListOf(
                 RemoteListEntry("UCkids00000000000000000a", "حكايات قبل النوم"),
@@ -149,6 +150,7 @@ internal class DemoController(
             seriousMode = settings.seriousMode,
             rev = revStart + changes + settings.revision,
             movingTo = movingTo,
+            profileId = p.id,
         )
     }
 
@@ -366,11 +368,54 @@ internal class DemoController(
 
     override suspend fun resetSettings(group: String?): RemoteSettingsResult = locked("resetSettings($group)") { settings.reset(group, movePort) }
 
-    override suspend fun profileDetails(): List<RemoteProfileDetails> = locked("profileDetails") {
-        profiles.map {
-            RemoteProfileDetails(it.id, it.name, it.kind, it.avatar, it.id == currentId, it.quota, it.scheduleFrom, it.scheduleUntil,
-                it.hideShorts, it.hideComments || it.kind == RemoteProfileKind.CHILD, it.usedMinutes)
+    override suspend fun profilesPage(): RemoteProfilesPage = locked("profilesPage") {
+        val adults = profiles.count { it.kind == RemoteProfileKind.ADULT }
+        RemoteProfilesPage(
+            profiles = profiles.map {
+                RemoteProfileDetails(it.id, it.name, it.kind, it.avatar, it.id == currentId, it.quota, it.scheduleFrom, it.scheduleUntil,
+                    it.hideShorts, it.hideComments || it.kind == RemoteProfileKind.CHILD, it.usedMinutes,
+                    deleteBlockedReason = when {
+                        it.id == currentId -> "هذا الملف على الشاشة الآن. بدّل الملف على التلفاز أولاً."
+                        it.kind == RemoteProfileKind.ADULT && adults <= 1 -> "لا يُحذف آخر ملف للكبار."
+                        else -> null
+                    })
+            },
+            quotaChoices = listOf(null, 15, 30, 45, 60, 90, 120, 180, 240),
+            avatars = AVATARS,
+            childAvatars = AVATARS - "person",
+            nameMaxLength = NAME_MAX,
+        )
+    }
+
+    override suspend fun createChild(name: String, avatar: String): RemoteResult = changing("createChild($name,$avatar)") {
+        if (name.isBlank() || name.length > NAME_MAX) return@changing RemoteResult.error("اكتب اسماً من حرف إلى $NAME_MAX حرفاً.")
+        if (avatar !in AVATARS - "person") return@changing RemoteResult.error("هذه الصورة غير متاحة لهذا الملف.")
+        val id = "kid" + (profiles.size + 1)
+        profiles += Profile(id, name, RemoteProfileKind.CHILD, avatar, quota = 60, usedMinutes = 0, scheduleFrom = 420, scheduleUntil = 1320,
+            hideShorts = true, hideComments = true)
+        allowlists[id] = Lists(mutableListOf(), mutableListOf())
+        RemoteResult.ok("أُنشئ ملف «$name». اختر ما يشاهده من «قوائم السماح».")
+    }
+
+    override suspend fun editProfile(profileId: String, name: String?, avatar: String?): RemoteResult = changing("editProfile($profileId,$name,$avatar)") {
+        val p = profiles.firstOrNull { it.id == profileId } ?: return@changing RemoteResult.error("هذا الملف غير موجود على الشاشة.")
+        if (name != null && (name.isBlank() || name.length > NAME_MAX)) return@changing RemoteResult.error("اكتب اسماً من حرف إلى $NAME_MAX حرفاً.")
+        val allowed = if (p.kind == RemoteProfileKind.CHILD) AVATARS - "person" else AVATARS
+        if (avatar != null && avatar !in allowed) return@changing RemoteResult.error("هذه الصورة غير متاحة لهذا الملف.")
+        name?.let { p.name = it }
+        avatar?.let { p.avatar = it }
+        RemoteResult.ok("حُفظ ملف «${p.name}».")
+    }
+
+    override suspend fun deleteProfile(profileId: String): RemoteResult = changing("deleteProfile($profileId)") {
+        val p = profiles.firstOrNull { it.id == profileId } ?: return@changing RemoteResult.error("هذا الملف غير موجود على الشاشة.")
+        if (p.id == currentId) return@changing RemoteResult.error("هذا الملف على الشاشة الآن. بدّل الملف على التلفاز أولاً.")
+        if (p.kind == RemoteProfileKind.ADULT && profiles.count { it.kind == RemoteProfileKind.ADULT } <= 1) {
+            return@changing RemoteResult.error("لا يُحذف آخر ملف للكبار.")
         }
+        profiles.remove(p)
+        allowlists.remove(p.id)
+        RemoteResult.ok("حُذف ملف «${p.name}» وسجلّه.")
     }
 
     override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult =
@@ -421,14 +466,15 @@ internal class DemoController(
     }
 
     override suspend fun stats(): List<RemoteStats> = locked("stats") {
-        listOf(
+        val known = listOf(
             RemoteStats("ahmad", "أحمد", RemoteProfileKind.ADULT, listOf(80, 45, 120, 30, 95, 60, 95), 525, 610, -14,
                 listOf(RemoteChannelUsage("عالم الوثائقيات", 140), RemoteChannelUsage("Space Explained (English)", 85), RemoteChannelUsage("رحّالة", 60)), 2),
             RemoteStats("sara", "سارة", RemoteProfileKind.CHILD, listOf(40, 55, 60, 35, 20, 58, 22), 290, 250, 16,
                 listOf(RemoteChannelUsage("حكايات قبل النوم", 120), RemoteChannelUsage("العلوم للصغار", 90)), 0),
             RemoteStats("yousef", "يوسف", RemoteProfileKind.CHILD, listOf(0, 0, 30, 45, 45, 45, 45), 210, 0, null,
                 listOf(RemoteChannelUsage("ألغاز وحكايات", 150)), 0),
-        )
+        ).associateBy { it.profileId }
+        profiles.map { p -> known[p.id]?.copy(name = p.name) ?: RemoteStats(p.id, p.name, p.kind, List(7) { 0 }, 0, 0, null, emptyList(), 0) }
     }
 
     private fun minutesText(n: Int) = when {
@@ -448,6 +494,10 @@ internal class DemoController(
 
     private companion object {
         const val PIN = "1234"
+        const val NAME_MAX = 20
+
+        /** The TV's avatar keys, in its order ("person" is the adult's). */
+        val AVATARS = listOf("person", "star", "rocket", "cat", "bear", "fish", "sun", "moon", "flower", "heart", "crown", "planet", "balloon")
         val VIDEO_ID = Regex("""(?:v=|youtu\.be/|shorts/|live/)([0-9A-Za-z_-]{11})""")
         val PLAYLIST = Regex("""[?&]list=([0-9A-Za-z_-]+)""")
         val HANDLE = Regex("""youtube\.com/(?:@|c/|user/|channel/)([^/?#\s]+)""")

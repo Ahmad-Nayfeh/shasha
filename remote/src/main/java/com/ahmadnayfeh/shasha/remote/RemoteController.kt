@@ -92,7 +92,19 @@ interface RemoteController {
     /** [group]: one [RemoteSettingGroup.id] back to its defaults; null: every setting («إرجاع كل الإعدادات»). */
     suspend fun resetSettings(group: String?): RemoteSettingsResult
 
-    suspend fun profileDetails(): List<RemoteProfileDetails>
+    suspend fun profilesPage(): RemoteProfilesPage
+
+    /**
+     * A new child profile, as the TV's «إضافة ملف طفل» makes it (its default rules and the household's blocks). [name] is
+     * trimmed; refused ([RemoteResult.error]) when it is empty or too long, or [avatar] is not a child's.
+     */
+    suspend fun createChild(name: String, avatar: String): RemoteResult
+
+    /** A new [name] and/or [avatar] (null leaves it as it is), with the TV's checks. */
+    suspend fun editProfile(profileId: String, name: String?, avatar: String?): RemoteResult
+
+    /** Refused for the last adult profile and for the profile on the TV now ([RemoteProfileDetails.deleteBlockedReason]). */
+    suspend fun deleteProfile(profileId: String): RemoteResult
 
     /** null leaves that switch as it is. */
     suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult

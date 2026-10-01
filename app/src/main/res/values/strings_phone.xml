@@ -15,6 +15,13 @@
     <string name="phone_extra_value">+%1$s دقيقة</string>
 
     <string name="phone_profile_not_found">هذا الملف غير موجود على الشاشة.</string>
+    <string name="phone_profile_created">أُنشئ ملف «&#x2068;%1$s&#x2069;» بحصة ساعة يومياً من 7:00 حتى 22:00. اختر ما يشاهده من «قوائم السماح».</string>
+    <string name="phone_profile_saved">حُفظ ملف «&#x2068;%1$s&#x2069;».</string>
+    <string name="phone_profile_deleted">حُذف ملف «&#x2068;%1$s&#x2069;» مع سجلّه وإحصائياته.</string>
+    <string name="phone_profile_delete_current">هذا الملف على الشاشة الآن، فلا يُحذف. بدّل الملف على التلفاز أولاً.</string>
+    <string name="phone_profile_delete_last_adult">هذا آخر ملف للكبار، فلا يُحذف.</string>
+    <string name="phone_profile_name_invalid">اكتب اسماً من حرف واحد إلى %1$s حرفاً.</string>
+    <string name="phone_profile_avatar_invalid">هذه الصورة غير متاحة لهذا الملف.</string>
     <string name="phone_flags_saved">حُفظ لـ«&#x2068;%1$s&#x2069;».</string>
     <string name="phone_comments_child">التعليقات مخفية دائماً في ملفات الأطفال.</string>
     <string name="phone_schedule_saved">أوقات «&#x2068;%1$s&#x2069;»: من %2$s إلى %3$s.</string>

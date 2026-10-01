@@ -91,13 +91,23 @@ class FakeController : RemoteController {
         )
     override suspend fun resetSettings(group: String?) =
         record("resetSettings($group)", settingsResult ?: RemoteSettingsResult(true, "أُرجع", settingsPage))
-    override suspend fun profileDetails() = record(
-        "profileDetails",
-        listOf(
-            RemoteProfileDetails("a", "أحمد", RemoteProfileKind.ADULT, "person", true, null, null, null, hideShorts = false, hideComments = false),
-            RemoteProfileDetails("c1", "سارة", RemoteProfileKind.CHILD, "star", false, 60, 420, 1320, hideShorts = true, hideComments = true),
+    override suspend fun profilesPage() = record(
+        "profilesPage",
+        RemoteProfilesPage(
+            listOf(
+                RemoteProfileDetails("a", "أحمد", RemoteProfileKind.ADULT, "person", true, null, null, null, hideShorts = false, hideComments = false,
+                    deleteBlockedReason = "على الشاشة"),
+                RemoteProfileDetails("c1", "سارة", RemoteProfileKind.CHILD, "star", false, 60, 420, 1320, hideShorts = true, hideComments = true),
+            ),
+            quotaChoices = listOf(null, 15, 30, 60),
+            avatars = listOf("person", "star"),
+            childAvatars = listOf("star"),
+            nameMaxLength = 20,
         ),
     )
+    override suspend fun createChild(name: String, avatar: String) = record("createChild($name,$avatar)", result)
+    override suspend fun editProfile(profileId: String, name: String?, avatar: String?) = record("editProfile($profileId,$name,$avatar)", result)
+    override suspend fun deleteProfile(profileId: String) = record("deleteProfile($profileId)", result)
     override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?) =
         record("setProfileFlags($profileId,$hideShorts,$hideComments)", result)
     override suspend fun setSchedule(profileId: String, fromMinute: Int?, untilMinute: Int?) =

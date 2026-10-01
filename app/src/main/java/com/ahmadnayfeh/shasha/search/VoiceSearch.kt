@@ -282,11 +282,17 @@ class VoiceSearchRequests(private val now: () -> Long = System::currentTimeMilli
         _pending.value = now()
     }
 
-    /** The search screen takes the request (true) and starts listening. */
+    /**
+     * Whether the request made at [at] still stands. An old one (pressed in a profile without search, or before a
+     * long wait) must neither open the search tab nor the microphone later: [consume] drops it.
+     */
+    fun isFresh(at: Long): Boolean = now() - at <= MAX_AGE_MS
+
+    /** The search screen takes the request (true) and starts listening; false (and dropped) when there is none or it is old. */
     fun consume(): Boolean {
         val at = _pending.value ?: return false
         _pending.value = null
-        return now() - at <= MAX_AGE_MS
+        return isFresh(at)
     }
 
     private companion object {

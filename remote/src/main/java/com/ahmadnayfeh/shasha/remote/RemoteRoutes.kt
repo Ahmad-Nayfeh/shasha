@@ -47,6 +47,9 @@ internal const val PARENT_SESSION_HEADER = "X-Parent-Session"
 // No defaults: a request that forgets the times must not mean "all day".
 @Serializable internal data class ScheduleRequest(val profileId: String, val fromMinute: Int?, val untilMinute: Int?)
 @Serializable internal data class BlockRequest(val kind: String, val value: String)
+@Serializable internal data class CreateChildRequest(val name: String, val avatar: String)
+@Serializable internal data class EditProfileRequest(val profileId: String, val name: String? = null, val avatar: String? = null)
+@Serializable internal data class ProfileIdRequest(val profileId: String)
 
 private const val MAX_TEXT = 2048
 private const val MAX_QUERY = 200
@@ -54,6 +57,10 @@ private const val MAX_MINUTES = 24 * 60
 private const val MAX_SEEK_SECONDS = 24 * 60 * 60
 private const val MAX_KEY = 64
 private const val MAX_KEYWORD = 100
+
+/** Longer than any name the TV takes (the controller applies the TV's own limit and says it). */
+private const val MAX_NAME = 64
+private val AVATAR_KEY = Regex("[a-z][a-z0-9_]{0,31}")
 
 internal fun Application.remoteModule(
     controller: RemoteController,
@@ -264,7 +271,31 @@ internal fun Application.remoteModule(
                 }
                 get("/profiles") {
                     call.requireParent(sessions)
-                    call.respondJson(controller.profileDetails())
+                    call.respondJson(controller.profilesPage())
+                }
+                post("/profile/create") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<CreateChildRequest>()
+                    val name = req.name.trim()
+                    if (name.isEmpty() || name.length > MAX_NAME) throw badRequest(ServerMessages.BAD_NAME)
+                    if (!AVATAR_KEY.matches(req.avatar)) throw badRequest()
+                    call.respondJson(controller.createChild(name, req.avatar))
+                }
+                post("/profile/edit") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<EditProfileRequest>()
+                    requireText(req.profileId)
+                    val name = req.name?.trim()
+                    if (name == null && req.avatar == null) throw badRequest()
+                    if (name != null && (name.isEmpty() || name.length > MAX_NAME)) throw badRequest(ServerMessages.BAD_NAME)
+                    if (req.avatar != null && !AVATAR_KEY.matches(req.avatar)) throw badRequest()
+                    call.respondJson(controller.editProfile(req.profileId, name, req.avatar))
+                }
+                post("/profile/delete") {
+                    call.requireParent(sessions)
+                    val id = call.receiveJson<ProfileIdRequest>().profileId
+                    requireText(id)
+                    call.respondJson(controller.deleteProfile(id))
                 }
                 post("/profile/flags") {
                     call.requireParent(sessions)

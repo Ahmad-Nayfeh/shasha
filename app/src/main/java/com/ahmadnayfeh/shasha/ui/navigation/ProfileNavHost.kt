@@ -231,8 +231,10 @@ private fun FollowVoiceSearchKey(nav: NavHostController, lock: LockController?) 
     LaunchedEffect(requests, nav) {
         requests.pending.collect { at ->
             if (at == null) return@collect
-            if (lock?.lock?.value != null) {
-                requests.consume() // SPEC §4: nothing but the locked video
+            // SPEC §4: nothing but the locked video. And a request left over from a profile without search (or one
+            // nobody took in time) never switches tabs later.
+            if (lock?.lock?.value != null || !requests.isFresh(at)) {
+                requests.consume()
                 return@collect
             }
             runCatching {

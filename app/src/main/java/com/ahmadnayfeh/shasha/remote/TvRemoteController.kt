@@ -115,6 +115,7 @@ class TvRemoteController(
             seriousMode = seriousMode(),
             rev = revision(),
             movingTo = movingTo(),
+            profileId = profile.id,
         )
     }
 
@@ -470,7 +471,14 @@ class TvRemoteController(
 
     override suspend fun resetSettings(group: String?): RemoteSettingsResult = settingsOrRefuse().reset(group)
 
-    override suspend fun profileDetails(): List<RemoteProfileDetails> = parentalOrRefuse().details()
+    override suspend fun profilesPage(): RemoteProfilesPage = parentalOrRefuse().page()
+
+    override suspend fun createChild(name: String, avatar: String): RemoteResult = parentalOrRefuse().createChild(name, avatar)
+
+    override suspend fun editProfile(profileId: String, name: String?, avatar: String?): RemoteResult =
+        parentalOrRefuse().editProfile(profileId, name, avatar)
+
+    override suspend fun deleteProfile(profileId: String): RemoteResult = parentalOrRefuse().deleteProfile(profileId)
 
     override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult =
         parentalOrRefuse().setFlags(profileId, hideShorts, hideComments)

@@ -190,8 +190,13 @@ class SearchAssistTest {
         assertThat(requests.consume()).isTrue()
         assertThat(requests.consume()).isFalse()
         requests.request()
+        val at = requests.pending.value!!
+        assertThat(requests.isFresh(at)).isTrue()
         now += 60_000
+        // Left over (pressed in a child profile, say): neither the tab nor the microphone opens for it any more.
+        assertThat(requests.isFresh(at)).isFalse()
         assertThat(requests.consume()).isFalse()
+        assertThat(requests.pending.value).isNull()
         assertThat(SearchViewModel.voiceTag("en-US")).isEqualTo("en-US")
         assertThat(SearchViewModel.voiceTag("xx")).isEqualTo("ar-SA")
     }

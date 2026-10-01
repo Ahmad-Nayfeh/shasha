@@ -34,6 +34,8 @@ data class RemoteStatus(
     val rev: Long = 0,
     /** The server moves to this port in a moment (a new port was chosen): every open page follows it there. */
     val movingTo: Int? = null,
+    /** The current profile's id: a switch between two profiles of the same name and kind is still a switch. */
+    val profileId: String = "",
 )
 
 @Serializable
@@ -211,6 +213,22 @@ data class RemoteProfileDetails(
     val hideComments: Boolean,
     /** Minutes of today counted so far (the quota's use). */
     val usedTodayMinutes: Int = 0,
+    /** Why this profile cannot be deleted now (the last adult, the profile on the TV), shown beside «حذف»; null: it can. */
+    val deleteBlockedReason: String? = null,
+)
+
+/** The parent's «الملفات»: every profile, and the TV's own choices for editing them (the phone offers nothing else). */
+@Serializable
+data class RemoteProfilesPage(
+    val profiles: List<RemoteProfileDetails>,
+    /** The TV's daily quota choices, in its order; null = no daily limit. */
+    val quotaChoices: List<Int?>,
+    /** Avatar keys an adult profile may take (the TV's picker, in its order). */
+    val avatars: List<String>,
+    /** Avatar keys a child profile may take. */
+    val childAvatars: List<String>,
+    /** The longest name the TV takes. */
+    val nameMaxLength: Int,
 )
 
 @Serializable
