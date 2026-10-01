@@ -189,7 +189,8 @@ internal fun AssistRow(
         LazyRow(
             Modifier.weight(1f).focusGroup().testTag(if (row.alternative) "voice_alternatives" else if (row.clearable) "search_recent" else "search_suggestions"),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+            // Room for the focused chip's scale at both ends (the row clips what it scrolls).
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
         ) {
             itemsIndexed(row.items, key = { _, it -> it }) { index, item ->
                 AssistChip(item, row.icon, onClick = {
