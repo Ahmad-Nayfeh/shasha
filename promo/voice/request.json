@@ -1,0 +1,14 @@
+{
+  "id": "arabic-male-samples-1",
+  "jobs": [
+    {"type": "subscription"},
+    {
+      "type": "samples",
+      "text": "مرحباً بك في شاشة. تطبيق هادئ لمشاهدة يوتيوب في بيتك، بلا إعلانات، ومع حماية كاملة لأطفالك.",
+      "filters": {"language": "ar", "gender": "male"},
+      "count": 8,
+      "exclude": ["rPNcQ53R703tTmtue1AT"],
+      "model_id": "eleven_multilingual_v2"
+    }
+  ]
+}
