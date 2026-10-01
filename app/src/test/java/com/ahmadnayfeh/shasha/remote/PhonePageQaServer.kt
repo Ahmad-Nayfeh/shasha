@@ -113,6 +113,8 @@ class PhonePageQaServer {
         env.source.channels[OTHER_CHANNEL] = ChannelItem(OTHER_CHANNEL, "عالم الوثائقيات", null, null)
         env.source.handles["@docs"] = OTHER_CHANNEL
         env.subscriptions.add(ChannelItem(OTHER_CHANNEL, "عالم الوثائقيات", null, 1_200_000))
+        // A second adult: the optional adult PIN shows on switching between adults.
+        env.profiles.upsert(com.ahmadnayfeh.shasha.policy.Profile.newAdult("ضيف", id = "guest", avatar = "crown"))
     }
 
     /**
@@ -121,7 +123,9 @@ class PhonePageQaServer {
      * `serious on|off` · `adultEntry on|off` · `extra <m,m,…>` (the TV's own Settings) · `quota <profile> <minutes|none>`
      * (the TV's profile editor) · `switch <profile>` (the TV's picker, no PIN: a child) · `revoke` (every phone's parent
      * session ends) · `tvpin <pin>` (a PIN typed on the TV) · `phonepin` (the phone's PIN count) · `serverdown <ms>` (the
-     * TV's network drops for a moment) · `endvideo` (the video ends by itself).
+     * TV's network drops for a moment) · `endvideo` (the video ends by itself) · `shows` (how many times the TV was asked
+     * to show something) · `behavior` (the stored settings the checks look at) · `profile <id>` (a profile's rules) ·
+     * `pinreset` (the phone's PIN count and the server's brake forgotten, as a new pairing token does).
      */
     private suspend fun command(args: List<String>): String = when (args[0]) {
         "status" -> {
@@ -163,6 +167,20 @@ class PhonePageQaServer {
             delay(args[1].toLong())
             runtime.refresh().toString()
         }
+        "shows" -> display.shows.toString()
+        "behavior" -> env.behavior.current().let {
+            "serious=${it.seriousMode} adultEntry=${it.adultEntryPin} warning=${it.warningMinutes} extra=${it.extraMinutes.joinToString(",")} " +
+                "speed=${it.defaultSpeed} language=${it.voiceLanguage}"
+        }
+        "profile" -> env.profiles.get(args[1])?.let {
+            "name=${it.name} avatar=${it.avatar} quota=${it.dailyQuotaMinutes} schedule=${it.schedule?.let { s -> "${s.allowedFromMinute}-${s.allowedUntilMinute}" }} " +
+                "shorts=${it.hideShorts} comments=${it.hideComments}"
+        } ?: "none"
+        "pinreset" -> {
+            env.phonePin.forget()
+            runtime.server.forgetPinFailures()
+            "ok"
+        }
         "endvideo" -> {
             val p = display.player ?: return "none"
             env.lock.onVideoEnded(env.current().id, p.videoId, nextVideoId = null)
@@ -176,7 +194,10 @@ class PhonePageQaServer {
     private inner class QaDisplay : RemoteDisplay {
         @Volatile var player: QaPlayer? = null
 
+        @Volatile var shows = 0
+
         override suspend fun show(destination: Screen, profileId: String): ShowResult {
+            shows++
             if (destination is Screen.Player) {
                 val video = env.source.videos[destination.videoId]
                 player?.leave()
