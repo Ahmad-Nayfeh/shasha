@@ -262,8 +262,7 @@ main{max-width:600px;margin:0 auto;padding:4px var(--g) calc(var(--tabs) + var(-
 .ptile .k{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
 .ptile .k svg{width:14px;height:14px}
 .ptile .now{position:absolute;top:10px;inset-inline-start:10px}
-.av{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-size:28px;font-weight:800;background:linear-gradient(160deg,#2EC4B6,#127C73);color:#04201D;flex:none}
-.av.kid{background:linear-gradient(160deg,#FFD166,#E7A93A);color:#2B1A00}
+.av{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-size:28px;font-weight:800;background:linear-gradient(160deg,#34D1C2,#0E6F66);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.28);flex:none}
 .av.sm{width:30px;height:30px;font-size:15px}
 .av.md{width:42px;height:42px;font-size:19px}
 .av.emo{font-size:31px}
@@ -322,7 +321,18 @@ main{max-width:600px;margin:0 auto;padding:4px var(--g) calc(var(--tabs) + var(-
 /* profile editor */
 .pe{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;margin-bottom:12px}
 .pe-h{display:flex;align-items:center;gap:10px;padding-bottom:6px}
-.pe-h b{flex:1;min-width:0;font-size:16px}
+.pe-h b{flex:1;min-width:0;font-size:16px;overflow-wrap:anywhere}
+.pe-h .btn.sm{min-height:36px;padding:0 10px}
+.pe-h .nm{flex:1;min-width:0}
+.pe-h .nm b{display:block;font-size:16px;line-height:1.4;overflow-wrap:anywhere}
+.pe-h .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.pe-foot{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.pe-foot .why{flex:1;min-width:160px;font-size:12.5px;color:var(--muted);line-height:1.6}
+.btn.red{color:var(--error)}
+.avgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:8px;margin:14px 0 4px}
+.avpick{display:grid;place-items:center;height:58px;border-radius:16px;border:2px solid transparent;background:var(--surface-2);transition:border-color .2s,transform .15s}
+.avpick.on{border-color:var(--accent);background:var(--accent-soft)}
+.avpick:active{transform:scale(.94)}
 .stepper{display:flex;align-items:center;gap:6px;flex:none}
 .stepper .v{min-width:78px;text-align:center;font-weight:800;font-size:14px;line-height:1.3}
 .stepper .btn{width:42px;min-height:42px;padding:0;font-size:22px;border-radius:12px}
@@ -465,6 +475,7 @@ details.card[open] .chev{transform:rotate(180deg)}
   <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 6v12l9-6z" fill="currentColor" stroke="none"/><path d="M18 6v12"/></symbol>
   <symbol id="i-hd" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="3"/><path d="M7.5 9.5v5M10.5 9.5v5M7.5 12h3M13.5 9.5v5h1.5a2.5 2.5 0 0 0 0-5z"/></symbol>
   <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16 7l2.5 2.5M14 9l2 2"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M14.5 5.5l4 4M4.5 19.5l1-4.6L15.3 5.1a1.9 1.9 0 0 1 2.7 0l.9.9a1.9 1.9 0 0 1 0 2.7l-9.8 9.8-4.6 1z"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A7.5 7.5 0 1 1 9.5 4.5a6 6 0 0 0 10 10z"/></symbol>
 </svg>
 
@@ -648,6 +659,16 @@ details.card[open] .chev{transform:rotate(180deg)}
     }
     return n + ' دقيقة';
   }
+  // Counted nouns the Arabic way: 1 «قناة واحدة», 2 «قناتان», 3–10 «3 قنوات», 11 and up «11 قناة». [w]: the four forms.
+  const count = (n, w) => n === 1 ? w[0] : n === 2 ? w[1] : n >= 3 && n <= 10 ? n + ' ' + w[2] : n + ' ' + w[3];
+  const W = {
+    channels: ['قناة واحدة', 'قناتان', 'قنوات', 'قناة'],
+    words: ['كلمة واحدة', 'كلمتان', 'كلمات', 'كلمة'],
+    profiles: ['ملف واحد', 'ملفان', 'ملفات', 'ملفاً'],
+    settings: ['إعداد واحد', 'إعدادان', 'إعدادات', 'إعداداً'],
+    categories: ['فئة واحدة', 'فئتين', 'فئات', 'فئة'],
+    choices: ['خيار واحد', 'خياران', 'خيارات', 'خياراً'],
+  };
   const clock = m => pad(Math.floor(m / 60) % 24) + ':' + pad(m % 60);
   const parseClock = s => { const m = /^(\d{1,2}):(\d{2})/.exec(s || ''); return m ? (Number(m[1]) * 60 + Number(m[2])) % 1440 : null; };
   const vibrate = ms => { try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(ms); } catch (e) { /* none */ } };
@@ -657,15 +678,22 @@ details.card[open] .chev{transform:rotate(180deg)}
   const isoQuotes = msg => String(msg).replace(/«([^«»⁨⁩]+)»/g, (m, inner) => quote(inner));
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const shake = el => { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); };
-  const AVATARS = { star: '⭐', rocket: '🚀', cat: '🐱', dog: '🐶', bear: '🐻', panda: '🐼', fox: '🦊', lion: '🦁', rabbit: '🐰', bunny: '🐰',
-    unicorn: '🦄', car: '🚗', ball: '⚽', football: '⚽', flower: '🌸', moon: '🌙', sun: '☀️', heart: '💛', crown: '👑', robot: '🤖',
-    dino: '🦖', dinosaur: '🦖', owl: '🦉', fish: '🐟', butterfly: '🦋', tree: '🌳', book: '📚', music: '🎵', game: '🎮', art: '🎨',
-    palette: '🎨', turtle: '🐢', penguin: '🐧', whale: '🐳', rainbow: '🌈', planet: '🪐', train: '🚂', plane: '✈️' };
+  // The TV's avatars (ProfileAvatar.kt): the same keys and colours, a picture for the figure. "person" is the name's first
+  // letter, as on the TV; an unknown key gets the TV's grey.
+  const AVATARS = {
+    person: ['#34D1C2', '#0E6F66'], star: ['#FFCB5C', '#E0831A', '⭐'], rocket: ['#7E8BFF', '#3A3FB0', '🚀'], cat: ['#FF9180', '#D2435A', '🐱'],
+    bear: ['#DDA56C', '#8A5628', '🐻'], fish: ['#58C8F8', '#1B72CC', '🐟'], sun: ['#FFD86E', '#F08C00', '☀️'], moon: ['#9A8BFF', '#45369E', '🌙'],
+    flower: ['#FFA3CB', '#CF437C', '🌸'], heart: ['#FF7B95', '#C22D4C', '❤️'], crown: ['#BE8CFF', '#6630C2', '👑'], planet: ['#63D9A0', '#1C8454', '🪐'],
+    balloon: ['#FFAA66', '#DF522B', '🎈'],
+  };
   function avatar(p, size) {
-    const emo = AVATARS[p.avatar];
+    const art = AVATARS[p.avatar] || ['#5B6778', '#2E3947'];
+    const emo = art[2];
     const text = emo || Array.from((p.name || '?').trim())[0] || '?';
-    return h('span', { class: 'av' + (p.kind === 'CHILD' ? ' kid' : '') + (size ? ' ' + size : '') + (emo ? ' emo' : ''), 'aria-hidden': 'true', text });
+    return h('span', { class: 'av' + (size ? ' ' + size : '') + (emo ? ' emo' : ''), 'aria-hidden': 'true', text,
+      style: 'background:linear-gradient(160deg,' + art[0] + ',' + art[1] + ')' });
   }
+  const profileById = id => S.profiles.find(p => p.id === id) || (S.P.details && S.P.details.profiles.find(p => p.id === id)) || null;
   function itemUrl(it) {
     const id = encodeURIComponent(it.id);
     if (it.type === 'channel') return 'https://www.youtube.com/channel/' + id;
@@ -917,6 +945,7 @@ details.card[open] .chev{transform:rotate(180deg)}
     S.online = on;
     renderConn();
     $('#offline').hidden = !(S.online === false && S.failures >= 2);
+    $('#offline-msg').textContent = S.failures >= 4 ? OFFLINE + ' وإن غُيّر منفذ الخادم على التلفاز فامسح رمز QR من جديد.' : OFFLINE;
     $('#np').classList.toggle('stale', S.online === false);
     if (back) refreshAll();
   }
@@ -955,6 +984,7 @@ details.card[open] .chev{transform:rotate(180deg)}
   }
   function statusFailed(e) {
     if (!(e instanceof ApiError)) { console.error(e); return; }
+    if (e.code === 'network' && S.failures >= 3) seekServer();
     if (e.code === 'pairing' || e.code === 'stopped' || e.code === 'network') return;
     S.statusError = e.code === 'timeout' ? 'الشاشة لا تجيب الآن.' : e.message;
     renderConn();
@@ -977,8 +1007,8 @@ details.card[open] .chev{transform:rotate(180deg)}
     who.hidden = false;
     who.classList.toggle('kid', kid);
     $('#who-name').textContent = st.profileName;
-    const cur = S.profiles.find(p => p.isCurrent);
-    $('#who-av').replaceWith(Object.assign(avatar(cur && cur.name === st.profileName ? cur : { name: st.profileName, kind: st.profileKind }, 'sm'), { id: 'who-av' }));
+    const cur = S.profiles.find(p => p.id === st.profileId);
+    $('#who-av').replaceWith(Object.assign(avatar(cur || { name: st.profileName, kind: st.profileKind }, 'sm'), { id: 'who-av' }));
     $('#search-lock').hidden = st.canSearch;
     renderNowPlaying();
     renderScreen();
@@ -989,7 +1019,7 @@ details.card[open] .chev{transform:rotate(180deg)}
     const changed = S.rev !== null && st.rev !== S.rev;
     S.rev = st.rev;
     if (changed) onRevChange();
-    else if (prev && (prev.profileName !== st.profileName || prev.profileKind !== st.profileKind)) loadProfiles();
+    else if (prev && (prev.profileId !== st.profileId || prev.profileName !== st.profileName || prev.profileKind !== st.profileKind)) loadProfiles();
     // The server is about to move to another port: follow it.
     if (st.movingTo && String(st.movingTo) !== location.port) startMoving(st.movingTo);
   }
@@ -997,6 +1027,8 @@ details.card[open] .chev{transform:rotate(180deg)}
     loadProfiles();
     if (!S.parent) return;
     for (const k in S.P.at) S.P.at[k] = 0;
+    // The child shown is read again below; the others when they are chosen.
+    for (const k in S.P.allow) if (k !== S.P.allowSel) delete S.P.allow[k];
     if (S.view === 'parent') refreshParentView(true);
   }
   async function refreshAll() {
@@ -1130,6 +1162,8 @@ details.card[open] .chev{transform:rotate(180deg)}
         let ok = false;
         try { const r = await api('/api/control', { json: body }); ok = r.ok; if (!r.ok) showResult(r); }
         catch (e) { quietError(e); }
+        // A status asked for while this command was on its way may show the screen from before it: not shown.
+        S.epoch++;
         CQ.items.shift();
         if (!ok) { failed = true; CQ.items = []; }
       }
@@ -1246,21 +1280,21 @@ details.card[open] .chev{transform:rotate(180deg)}
     if (r) { showResult(r); if (r.ok) vibrate(15); }
     return r;
   }
-  $('#send-form').addEventListener('submit', async e => {
-    e.preventDefault();
+  $('#send-form').addEventListener('submit', e => { e.preventDefault(); sendTyped(); });
+  async function sendTyped() {
     const input = $('#send-url'), sent = input.value, url = normalizeLink(sent);
     if (blockedNow()) { toast(blockedNow(), 'err'); return; }
     if (!url) { toast('الصق رابط يوتيوب أولاً.', 'err'); input.focus(); return; }
     const r = await play(url, $('#send-btn'));
     if (r && r.ok && input.value === sent) { input.value = ''; input.blur(); }
-  });
+  }
   $('#paste').addEventListener('click', async () => {
     if (blockedNow()) { toast(blockedNow(), 'err'); return; }
     try {
       const text = await navigator.clipboard.readText();
       if (!text) { toast('الحافظة فارغة.', 'err'); return; }
       $('#send-url').value = text.trim();
-      $('#send-form').requestSubmit();
+      sendTyped();
     } catch (e) { toast('لم يُسمح بقراءة الحافظة. اضغط مطولاً على الخانة واختر «لصق».', 'err'); $('#send-url').focus(); }
   });
   if (!(navigator.clipboard && navigator.clipboard.readText && window.isSecureContext)) $('#paste').hidden = true;
@@ -1295,7 +1329,7 @@ details.card[open] .chev{transform:rotate(180deg)}
     });
     act(() => api('/api/play', { json: { url }, timeout: 60000 }))
       .then(r => setState(r.ok, r.message))
-      .catch(e => { if (e.code !== 'pairing') setState(false, e.message); });
+      .catch(e => { if (e.code !== 'pairing' && e.code !== 'stopped') setState(false, e.message); });
   }
   async function confirmShared(raw) {
     const yes = await openSheet((sheet, close) => {
@@ -1484,9 +1518,12 @@ details.card[open] .chev{transform:rotate(180deg)}
     if (!S.parent) return Promise.resolve();
     const fresh = S.P.at[name] && Date.now() - S.P.at[name] < 20000;
     if (fresh && !force && S.P[name]) return Promise.resolve();
-    if (loading[name]) return loading[name];
-    loading[name] = LOAD[name]().then(v => { S.P[name] = v; S.P.at[name] = Date.now(); }).finally(() => { loading[name] = null; });
-    return loading[name];
+    // A read already on its way may have left before the change that asks for this one: wait for it, then read again.
+    if (loading[name]) return force ? loading[name].catch(() => null).then(() => load(name, true)) : loading[name];
+    const run = LOAD[name]().then(v => { if (S.parent) { S.P[name] = v; S.P.at[name] = Date.now(); } })
+      .finally(() => { if (loading[name] === run) loading[name] = null; });
+    loading[name] = run;
+    return run;
   }
   async function loadAllow(pid, force) {
     if (S.P.allow[pid] && !force) return;
@@ -1541,10 +1578,17 @@ details.card[open] .chev{transform:rotate(180deg)}
   function summaryOf(id) {
     const P = S.P;
     switch (id) {
-      case 'profiles': return { text: P.details ? P.details.length + (P.details.length === 1 ? ' ملف' : P.details.length === 2 ? ' ملفان' : ' ملفات') + ' · الحصص والأوقات والقصيرة' : 'الحصة اليومية، أوقات المشاهدة، القصيرة' };
-      case 'allow': { const k = P.details && P.details.filter(p => p.kind === 'CHILD').length; return { text: k == null ? 'ما يشاهده كل طفل' : k ? 'لـ' + (k === 1 ? 'طفل واحد' : k === 2 ? 'طفلين' : k + ' أطفال') : 'لا ملفات أطفال بعد' }; }
-      case 'block': return { text: P.block ? P.block.keywords.length + ' كلمات · ' + P.block.channels.length + ' قنوات' : 'كلمات وقنوات محظورة في كل الملفات' };
-      case 'subs': return { text: P.subs ? P.subs.length + ' قناة · واستيراد Takeout' : 'القنوات التي تملأ الرئيسية' };
+      case 'profiles': return { text: P.details ? count(P.details.profiles.length, W.profiles) + ' · الأسماء والحصص والأوقات' : 'الأسماء والحصص وأوقات المشاهدة' };
+      case 'allow': {
+        const k = P.details && P.details.profiles.filter(p => p.kind === 'CHILD').length;
+        return { text: k == null ? 'ما يشاهده كل طفل' : k ? (k === 1 ? 'لطفل واحد' : k === 2 ? 'لطفلين' : k <= 10 ? 'لـ' + k + ' أطفال' : 'لـ' + k + ' طفلاً') : 'لا ملفات أطفال بعد' };
+      }
+      case 'block': {
+        if (!P.block) return { text: 'كلمات وقنوات محظورة في كل الملفات' };
+        const kw = P.block.keywords.length, ch = P.block.channels.length;
+        return { text: kw || ch ? [kw ? count(kw, W.words) : null, ch ? count(ch, W.channels) : null].filter(Boolean).join(' · ') : 'لا شيء محظور بعد' };
+      }
+      case 'subs': return { text: P.subs ? (P.subs.length ? count(P.subs.length, W.channels) : 'لا اشتراكات بعد') + ' · واستيراد ' + iso('Takeout') : 'القنوات التي تملأ الرئيسية' };
       case 'stats': return { text: 'آخر 7 أيام لكل ملف' };
       case 'backup': return { text: 'تنزيل نسخة أو استعادتها' };
       case 'reset': return { text: 'كل الإعدادات إلى وضعها الأصلي' };
@@ -1554,10 +1598,10 @@ details.card[open] .chev{transform:rotate(180deg)}
     if (id === 'serious') { const s = settingOf('serious_mode'); return valueOf(s) === false ? { text: 'متوقف: «رجوع» يُخرج من أي فيديو', warn: true } : { text: 'مفعّل: الفيديو يُشاهَد حتى نهايته' }; }
     if (id === 'quality') { const s = g.items[0]; const c = s && s.choices.find(x => same(x.value, valueOf(s))); return { text: c ? c.label : '' }; }
     if (id === 'remote') { const s = settingOf('remote_port'); return { text: 'المنفذ ' + (s ? valueOf(s) : '') }; }
-    if (id === 'sponsorblock') { const s = g.items[0]; const n = s ? (valueOf(s) || []).length : 0; return n ? { text: 'تتخطى ' + (n === 1 ? 'فئة واحدة' : n === 2 ? 'فئتين' : n + ' فئات') } : { text: 'متوقف: لا تخطٍّ', warn: true }; }
+    if (id === 'sponsorblock') { const s = g.items[0]; const n = s ? (valueOf(s) || []).length : 0; return n ? { text: 'تتخطى ' + count(n, W.categories) } : { text: 'متوقف: لا تخطٍّ', warn: true }; }
     if (id === 'pin') { const s = settingOf('adult_entry_pin'); if (s && valueOf(s) === false) return { text: 'ملف الكبار يُفتح دون رمز', warn: true }; }
     const n = nonDefault(g);
-    return { text: n ? n + (n === 1 ? ' إعداد مختلف عن الأصل' : ' إعدادات مختلفة عن الأصل') : 'كلها على وضعها الأصلي' };
+    return { text: n ? count(n, W.settings) + ' ' + (n === 1 ? 'مختلف' : n === 2 ? 'مختلفان' : n <= 10 ? 'مختلفة' : 'مختلفاً') + ' عن الأصل' : 'كلها على وضعها الأصلي' };
   }
   function renderParent(dir) {
     const on = !!S.parent;
@@ -1598,7 +1642,7 @@ details.card[open] .chev{transform:rotate(180deg)}
       : st.sessionState === 'OUTSIDE_SCHEDULE' ? h('span', { class: 'tag bad' }, ic('moon'), 'خارج الأوقات')
         : st.sessionState === 'WARNING' ? h('span', { class: 'tag warn' }, ic('clock'), 'متبقٍ ' + mins(st.timeLeftMinutes))
           : limited ? h('span', { class: 'tag ok' }, ic('clock'), 'متبقٍ ' + mins(st.timeLeftMinutes)) : h('span', { class: 'tag' }, 'بلا حد يومي');
-    card.append(h('div', { class: 'who2' }, avatar({ name: st.profileName, kind: st.profileKind }, 'md'),
+    card.append(h('div', { class: 'who2' }, avatar(profileById(st.profileId) || { name: st.profileName, kind: st.profileKind }, 'md'),
       h('div', { class: 'grow' }, h('b', { dir: 'auto', text: st.profileName }), h('span', { text: 'على الشاشة الآن' })), pill));
     if (limited) {
       const s = settingOf('extra_minutes');
@@ -1731,6 +1775,10 @@ details.card[open] .chev{transform:rotate(180deg)}
     return Q.chain;
   }
 
+  const TV_ONLY = {
+    pin: 'من التلفاز فقط: «تغيير رمز الوالدين» في الإعدادات ← الملفات ورمز الوالدين، ويُطلب الرمز الحالي أولاً.',
+    remote: 'من التلفاز فقط: «تشغيل الخادم»، فإيقافه من هنا يقطع هذه الصفحة؛ و«رمز الاقتران QR» وإعادة توليده، فبه تنفصل كل الجوالات.',
+  };
   function renderSettingsPage(gid, body) {
     const g = groupOf(gid);
     if (!g) { skel(body); return; }
@@ -1740,6 +1788,9 @@ details.card[open] .chev{transform:rotate(180deg)}
     if (gid === 'remote') {
       nodes.push(h('div', { class: 'note' }, ic('info'), h('span', { text: 'بعد تغيير المنفذ تتبعه صفحات الجوال المفتوحة وحدها، وتبقى داخل قسم الأب. أما الاختصارات القديمة والجوالات المغلقة فتحتاج رمز QR الجديد من التلفاز.' })));
     }
+    // What stays on the TV, and why (the phone cannot do it without cutting itself off, or it is the PIN itself).
+    const tvOnly = TV_ONLY[gid];
+    if (tvOnly) nodes.push(h('div', { class: 'note', style: 'margin-top:10px' }, ic('tv'), h('span', { text: tvOnly })));
     const n = nonDefault(g);
     const reset = h('button', { class: 'btn ghost sm', type: 'button' }, ic('refresh'), n ? 'إرجاع إعدادات هذا القسم إلى الأصل' : 'كلها على وضعها الأصلي');
     reset.disabled = n === 0;
@@ -1802,10 +1853,10 @@ details.card[open] .chev{transform:rotate(180deg)}
             const now2 = (valueOf(s) || []).slice();
             const i = now2.findIndex(x => same(x, c.value));
             if (i >= 0) {
-              if (now2.length <= (s.minCount || 0)) { toast('اختر ' + (s.minCount === 1 ? 'خياراً واحداً' : s.minCount + ' خيارات') + ' على الأقل.', 'err'); return; }
+              if (now2.length <= (s.minCount || 0)) { toast('اختر ' + (s.minCount === 1 ? 'خياراً واحداً' : count(s.minCount, W.choices)) + ' على الأقل.', 'err'); return; }
               now2.splice(i, 1);
             } else {
-              if (s.maxCount != null && now2.length >= s.maxCount) { toast('حتى ' + s.maxCount + ' خيارات فقط. أزل واحداً أولاً.', 'err'); return; }
+              if (s.maxCount != null && now2.length >= s.maxCount) { toast('حتى ' + count(s.maxCount, W.choices) + ' فقط. أزل واحداً أولاً.', 'err'); return; }
               now2.push(c.value);
             }
             // The TV's order (its list of choices), whatever the order of taps.
@@ -1816,7 +1867,7 @@ details.card[open] .chev{transform:rotate(180deg)}
           wrap.append(el);
         });
         node.append(wrap);
-        if (full) node.append(h('span', { class: 'why', text: 'اخترت ' + s.maxCount + ' خيارات، وهو الحد. أزل واحداً لتختار غيره.' }));
+        if (full) node.append(h('span', { class: 'why', text: 'اخترت ' + count(s.maxCount, W.choices) + '، وهو الحد. أزل واحداً لتختار غيره.' }));
         break;
       }
       case 'NUMBER': {
@@ -1885,6 +1936,30 @@ details.card[open] .chev{transform:rotate(180deg)}
   }
 
   // ---------- the server moves to another port: follow it ----------
+  const USUAL_PORTS = Array.from({ length: 10 }, (_, i) => 8765 + i);
+  // Loading the icon proves it is this TV (it needs the pairing token); any other server would fail.
+  const iconAnswers = p => new Promise(res => {
+    const im = new Image();
+    const t = setTimeout(() => { im.src = ''; res(false); }, 2500);
+    im.onload = () => { clearTimeout(t); res(true); };
+    im.onerror = () => { clearTimeout(t); res(false); };
+    im.src = 'http://' + location.hostname + ':' + p + '/icon.png?t=' + encodeURIComponent(TOKEN) + '&r=' + Date.now();
+  });
+  const followTo = p => location.replace('http://' + location.hostname + ':' + p + '/?t=' + encodeURIComponent(TOKEN) +
+    (S.parent ? '&ps=' + encodeURIComponent(S.parent) : '') + location.hash);
+  // Unreachable for a while: the TV may have moved while this page was hidden (it never saw the announcement), or found its
+  // port taken after a restart. Its usual ports are tried, all at once, now and then.
+  let seekAt = 0;
+  async function seekServer() {
+    if (S.moving || S.fatal || Date.now() - seekAt < 15000) return;
+    seekAt = Date.now();
+    const ports = USUAL_PORTS.filter(p => String(p) !== location.port);
+    const found = await new Promise(res => {
+      let left = ports.length;
+      ports.forEach(p => iconAnswers(p).then(ok => { if (ok) res(p); else if (--left === 0) res(null); }));
+    });
+    if (found && !S.moving && !S.fatal && S.online === false) { S.moving = found; followTo(found); }
+  }
   function startMoving(port, message) {
     if (S.moving) return;
     S.moving = port;
@@ -1895,22 +1970,12 @@ details.card[open] .chev{transform:rotate(180deg)}
     $('#moving-retry').hidden = true;
     $('#moving-t').textContent = 'ينتقل الخادم إلى المنفذ ' + port + '…';
     $('#moving-s').textContent = message ? isoQuotes(message) : 'تتبعه الصفحة وحدها بعد لحظة. لا تغلقها.';
-    const host = location.hostname;
     const started = Date.now();
-    // Loading the icon proves it is this TV (it needs the pairing token); any other server would fail.
-    const answers = p => new Promise(res => {
-      const im = new Image();
-      const t = setTimeout(() => { im.src = ''; res(false); }, 2500);
-      im.onload = () => { clearTimeout(t); res(true); };
-      im.onerror = () => { clearTimeout(t); res(false); };
-      im.src = 'http://' + host + ':' + p + '/icon.png?t=' + encodeURIComponent(TOKEN) + '&r=' + Date.now();
-    });
-    const follow = p => location.replace('http://' + host + ':' + p + '/?t=' + encodeURIComponent(TOKEN) + (S.parent ? '&ps=' + encodeURIComponent(S.parent) : '') + location.hash);
     // The port asked for first; if another app took it meanwhile the TV falls back to 8765…8774.
-    const fallback = [port].concat(Array.from({ length: 10 }, (_, i) => 8765 + i)).filter((p, i, a) => a.indexOf(p) === i && String(p) !== location.port);
+    const fallback = [port].concat(USUAL_PORTS).filter((p, i, a) => a.indexOf(p) === i && String(p) !== location.port);
     const probe = async () => {
       const list = Date.now() - started < 9000 ? [port] : fallback;
-      for (const p of list) if (await answers(p)) { follow(p); return; }
+      for (const p of list) if (await iconAnswers(p)) { followTo(p); return; }
       if (Date.now() - started > 30000) {
         $('#moving-ring').hidden = true;
         $('#moving-t').textContent = 'لم تظهر الشاشة على المنفذ ' + port;
@@ -1925,7 +1990,8 @@ details.card[open] .chev{transform:rotate(180deg)}
   }
 
   // ---------- parent pages ----------
-  // Profiles: quota, schedule, shorts, comments. Each profile's writes go one at a time; then the TV's state is read.
+  // Profiles: name and picture, quota, schedule, shorts, comments; a new child; deleting one. The TV's own choices come with
+  // the page (its quota list, its pictures, its longest name). Each profile's writes go one at a time; then the TV's state is read.
   const chains = {};
   const PQ = { quota: {}, timers: {}, sched: {} };
   function profileWrite(pid, fn) {
@@ -1937,26 +2003,96 @@ details.card[open] .chev{transform:rotate(180deg)}
     chains[pid] = run;
     return run;
   }
-  const QUOTA_STEPS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240, 300, 360, 480, 600, 720, 1440];
   const quotaOf = p => (p.id in PQ.quota ? PQ.quota[p.id] : p.dailyQuotaMinutes);
+  const quotaText = q => q == null ? 'بلا حد يومي' : q === 0 ? 'لا مشاهدة' : mins(q);
+  // The TV's quota choices from the least up, «بلا حد» last. A quota the TV does not list (a restore) steps to its neighbours.
+  function nextQuota(cur, dir) {
+    const choices = (S.P.details && S.P.details.quotaChoices) || [];
+    const rank = x => (x == null ? Infinity : x);
+    const steps = choices.slice().sort((a, b) => rank(a) - rank(b));
+    if (dir > 0) { const up = steps.find(x => rank(x) > rank(cur)); return up === undefined ? cur : up; }
+    const down = steps.filter(x => rank(x) < rank(cur));
+    return down.length ? down[down.length - 1] : cur;
+  }
   function renderProfilesPage(body) {
-    const list = S.P.details;
-    if (!list) { skel(body); return; }
-    body.replaceChildren(h('p', { class: 'lead', style: 'margin:0 4px 12px', text: 'تُحفظ كل التغييرات على الشاشة فوراً، وتسري على الملف في الحال.' }), ...list.map(profileEditor));
+    const page = S.P.details;
+    if (!page) { skel(body); return; }
+    const add = h('button', { class: 'btn block', type: 'button' }, ic('plus'), 'إضافة ملف طفل');
+    add.addEventListener('click', () => profileSheet(null));
+    body.replaceChildren(h('p', { class: 'lead', style: 'margin:0 4px 12px', text: 'تُحفظ كل التغييرات على الشاشة فوراً، وتسري على الملف في الحال.' }),
+      ...page.profiles.map(profileEditor), h('div', { style: 'margin-top:4px' }, add));
+  }
+  // The name and the picture of [p], or of a new child (p null): the TV's own pictures and longest name.
+  function profileSheet(p) {
+    const page = S.P.details;
+    if (!page) return;
+    const kid = !p || p.kind === 'CHILD';
+    const keys = kid ? page.childAvatars : page.avatars;
+    let chosen = p ? p.avatar : keys[0];
+    return openSheet((sheet, close) => {
+      const input = h('input', { class: 'input', type: 'text', maxlength: String(page.nameMaxLength), dir: 'auto', value: p ? p.name : '',
+        placeholder: kid ? 'اسم الطفل' : 'الاسم', 'aria-label': 'الاسم', autocomplete: 'off' });
+      const err = h('div', { class: 'err-line', role: 'alert' });
+      const grid = h('div', { class: 'avgrid', role: 'radiogroup', 'aria-label': 'الصورة' });
+      const draw = () => grid.replaceChildren(...keys.map(k => {
+        const b = h('button', { class: 'avpick' + (k === chosen ? ' on' : ''), type: 'button', role: 'radio', 'aria-checked': String(k === chosen), 'aria-label': 'صورة ' + (keys.indexOf(k) + 1) },
+          avatar({ avatar: k, name: input.value || (p && p.name) || '؟', kind: kid ? 'CHILD' : 'ADULT' }, 'md'));
+        b.addEventListener('click', () => { chosen = k; vibrate(5); draw(); });
+        return b;
+      }));
+      draw();
+      input.addEventListener('input', () => { if (chosen === 'person') draw(); });
+      const ok = h('button', { class: 'btn primary', type: 'submit', text: p ? 'حفظ' : 'إنشاء' });
+      const form = h('form', { autocomplete: 'off', novalidate: true }, input, grid, err,
+        h('div', { class: 'acts' }, h('button', { class: 'btn', type: 'button', onclick: () => close(null), text: 'إلغاء' }), ok));
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const name = input.value.replace(/\s+/g, ' ').trim();
+        if (!name) { err.textContent = 'اكتب اسماً للملف.'; shake(input); input.focus(); return; }
+        if (p && name === p.name && chosen === p.avatar) { close(null); return; }
+        if (ok.classList.contains('busy')) return;
+        ok.classList.add('busy');
+        err.textContent = '';
+        let r = null;
+        try {
+          r = await act(() => parentApi(p ? '/api/parent/profile/edit' : '/api/parent/profile/create', {
+            json: p ? { profileId: p.id, name: name !== p.name ? name : null, avatar: chosen !== p.avatar ? chosen : null } : { name, avatar: chosen },
+          }));
+        } catch (x) {
+          if (x.code === 'parent_gone' || x.code === 'stopped' || x.code === 'pairing') { close(null); return; }
+          err.textContent = isoQuotes(x.message || OFFLINE);
+        } finally { ok.classList.remove('busy'); }
+        if (!r) return;
+        if (!r.ok) { err.textContent = isoQuotes(r.message); shake(input); return; }
+        close(true);
+        showResult(r);
+        vibrate(15);
+        try { await load('details', true); } catch (x) { quietError(x); }
+        loadProfiles();
+        rerender();
+      });
+      sheet.append(h('h3', { text: p ? 'ملف ' + iso(p.name) : 'ملف طفل جديد' }),
+        p ? null : h('p', { class: 's', text: 'بحصة ساعة يومياً من 7:00 حتى 22:00، والفيديوهات القصيرة مخفية. يُغيَّر كل ذلك بعد إنشائه.' }), form);
+    });
   }
   function profileEditor(p) {
     const kid = p.kind === 'CHILD';
     const q = quotaOf(p);
-    const val = h('span', { class: 'v num', text: q == null ? 'بلا حد' : q === 0 ? 'لا مشاهدة' : mins(q) });
+    const val = h('span', { class: 'v num', text: quotaText(q) });
+    const minus = h('button', { class: 'btn', type: 'button', 'aria-label': 'حصة أقل', text: '−' });
+    const plus = h('button', { class: 'btn', type: 'button', 'aria-label': 'حصة أكثر', text: '+' });
+    const bounds = cur => {
+      const lo = nextQuota(cur, -1) === cur, hi = nextQuota(cur, 1) === cur;
+      minus.classList.toggle('off', lo); minus.setAttribute('aria-disabled', String(lo));
+      plus.classList.toggle('off', hi); plus.setAttribute('aria-disabled', String(hi));
+    };
+    bounds(q);
     const step = dir => {
-      const cur = quotaOf(p);
-      // Up past a whole day is «بلا حد»; down from «بلا حد» starts at 3 hours; below 15 minutes is none today.
-      const next = dir > 0
-        ? (cur == null ? null : (QUOTA_STEPS.find(x => x > cur) ?? null))
-        : (cur == null ? 180 : ([...QUOTA_STEPS].reverse().find(x => x < cur) ?? 0));
-      if (next === cur) { toast(dir > 0 ? 'هذا أعلى ما يكون: بلا حد يومي.' : 'هذا أقل ما يكون: لا مشاهدة اليوم.', 'err'); return; }
+      const cur = quotaOf(p), next = nextQuota(cur, dir);
+      if (next === cur) { toast(dir > 0 ? 'هذا أعلى ما يكون: بلا حد يومي.' : 'هذه أقل حصة يقدّمها التلفاز.', 'err'); return; }
       PQ.quota[p.id] = next;
-      val.textContent = next == null ? 'بلا حد' : next === 0 ? 'لا مشاهدة' : mins(next);
+      val.textContent = quotaText(next);
+      bounds(next);
       vibrate(5);
       clearTimeout(PQ.timers[p.id]);
       PQ.timers[p.id] = setTimeout(() => profileWrite(p.id, async () => {
@@ -1968,9 +2104,9 @@ details.card[open] .chev{transform:rotate(180deg)}
         } finally { if (PQ.quota[p.id] === minutes) delete PQ.quota[p.id]; }
       }), 600);
     };
-    const stepper = h('div', { class: 'stepper' },
-      h('button', { class: 'btn', type: 'button', 'aria-label': 'أقل', onclick: () => step(-1), text: '−' }), val,
-      h('button', { class: 'btn', type: 'button', 'aria-label': 'أكثر', onclick: () => step(1), text: '+' }));
+    minus.addEventListener('click', () => step(-1));
+    plus.addEventListener('click', () => step(1));
+    const stepper = h('div', { class: 'stepper' }, minus, val, plus);
     const used = p.usedTodayMinutes || 0;
     const bar = q ? h('div', { class: 'used' + (used >= q ? ' over' : '') }, h('span', { style: 'width:' + Math.min(100, used / q * 100) + '%' })) : null;
     // The schedule: a switch, then two times (the TV's rule: until 00:00 is the end of the day).
@@ -1980,17 +2116,16 @@ details.card[open] .chev{transform:rotate(180deg)}
     const fromV = sch && sch.on ? sch.from : hasSchedule ? p.scheduleFrom : 420;
     const untilV = sch && sch.on ? sch.until : hasSchedule ? p.scheduleUntil : 1260;
     const from = h('input', { type: 'time', value: clock(fromV), 'aria-label': 'من', step: 300, 'data-k': 'from:' + p.id });
-    const until = h('input', { type: 'time', value: clock(untilV), 'aria-label': 'إلى', step: 300, 'data-k': 'until:' + p.id });
+    const until = h('input', { type: 'time', value: clock(untilV), 'aria-label': 'حتى', step: 300, 'data-k': 'until:' + p.id });
     const times = h('div', { class: 'sched' }, h('label', null, 'من', from), h('label', null, 'حتى', until));
     times.hidden = !hasSchedule;
-    let schedTimer = 0;
     const sendSchedule = on => {
       const f = parseClock(from.value), u = parseClock(until.value);
       if (on && (f == null || u == null)) { toast('اختر وقتين صحيحين.', 'err'); return; }
       if (on && f === u) { toast('اختر وقتين مختلفين، أو أوقف «أوقات محددة» لتُسمح المشاهدة طوال اليوم.', 'err'); return; }
       PQ.sched[p.id] = { on, from: f, until: u };
-      clearTimeout(schedTimer);
-      schedTimer = setTimeout(() => profileWrite(p.id, async () => {
+      clearTimeout(PQ.timers['s:' + p.id]);
+      PQ.timers['s:' + p.id] = setTimeout(() => profileWrite(p.id, async () => {
         const want = PQ.sched[p.id];
         if (!want) return;
         try {
@@ -2017,20 +2152,36 @@ details.card[open] .chev{transform:rotate(180deg)}
       });
       return h('div', { class: 'row' }, h('div', { class: 't' }, h('b', { text: label }), help ? h('span', { text: help }) : null), sw);
     };
+    const edit = h('button', { class: 'btn ghost sm', type: 'button', 'aria-label': 'الاسم والصورة: ' + p.name }, ic('edit'), 'تعديل');
+    edit.addEventListener('click', () => profileSheet(p));
+    const blocked = p.deleteBlockedReason;
+    const del = h('button', { class: 'btn ghost sm red' + (blocked ? ' off' : ''), type: 'button', 'aria-disabled': String(!!blocked) }, ic('trash'), 'حذف الملف');
+    del.addEventListener('click', async () => {
+      if (blocked) { toast(blocked, 'err'); return; }
+      if (!await confirmSheet('حذف ملف ' + quote(p.name) + '؟', 'يُحذف الملف مع سجلّه ومواضع الاستكمال و«شاهد لاحقاً» وإحصائياته، ولا يمكن التراجع.', 'حذف', true)) return;
+      profileWrite(p.id, async () => {
+        const r = await parentApi('/api/parent/profile/delete', { json: { profileId: p.id } });
+        showResult(r);
+        if (r.ok) { delete S.P.allow[p.id]; loadProfiles(); }
+      });
+    });
     return h('div', { class: 'pe' },
-      h('div', { class: 'pe-h' }, avatar(p, 'md'), h('b', { dir: 'auto', text: p.name }),
-        p.isCurrent ? h('span', { class: 'tag ok' }, 'على الشاشة') : null, h('span', { class: 'tag' + (kid ? ' kid' : ''), text: kid ? 'طفل' : 'كبار' })),
+      h('div', { class: 'pe-h' }, avatar(p, 'md'),
+        h('div', { class: 'nm' }, h('b', { dir: 'auto', text: p.name }),
+          h('div', { class: 'tags' }, h('span', { class: 'tag' + (kid ? ' kid' : ''), text: kid ? 'طفل' : 'كبار' }), p.isCurrent ? h('span', { class: 'tag ok' }, 'على الشاشة') : null)),
+        edit),
       h('div', { class: 'row' }, h('div', { class: 't' }, h('b', { text: 'الحصة اليومية' }), h('span', { text: 'شوهد اليوم: ' + (used ? mins(used) : 'لا شيء') }), bar), stepper),
       h('div', { class: 'row' }, h('div', { class: 't' }, h('b', { text: 'أوقات محددة' }), h('span', { text: hasSchedule ? 'المشاهدة مسموحة بين الوقتين فقط' : 'المشاهدة مسموحة طوال اليوم' })), schedSw),
       times,
       flag('hideShorts', 'إخفاء الفيديوهات القصيرة', 'Shorts وكل فيديو قصير المدة', p.hideShorts),
-      flag('hideComments', 'إخفاء التعليقات', kid ? 'مخفية دائماً في ملفات الأطفال' : null, p.hideComments || kid, kid ? 'التعليقات مخفية دائماً في ملفات الأطفال.' : null));
+      flag('hideComments', 'إخفاء التعليقات', kid ? 'مخفية دائماً في ملفات الأطفال' : null, p.hideComments || kid, kid ? 'التعليقات مخفية دائماً في ملفات الأطفال.' : null),
+      h('div', { class: 'pe-foot' }, del, blocked ? h('span', { class: 'why', text: blocked }) : null));
   }
 
   // Allowlists (children only).
   function renderAllowPage(body) {
     if (!S.P.details) { skel(body); return; }
-    const kids = S.P.details.filter(p => p.kind === 'CHILD');
+    const kids = S.P.details.profiles.filter(p => p.kind === 'CHILD');
     if (!kids.length) {
       body.replaceChildren(h('div', { class: 'card lock-card' }, h('div', { class: 'big' }, ic('star')), h('b', { text: 'لا ملفات أطفال بعد' }), h('p', { class: 'lead', text: 'أنشئ ملف طفل من «الإعدادات ← الملفات» على التلفاز، ثم اختر هنا ما يشاهده.' })));
       return;
@@ -2189,7 +2340,7 @@ details.card[open] .chev{transform:rotate(180deg)}
       const change = s.changePercent == null ? null : h('span', { class: 'tag ' + (s.changePercent > 0 ? 'warn' : 'ok') },
         '⁦' + (s.changePercent > 0 ? '+' : '') + s.changePercent + '%⁩ عن الأسبوع الماضي');
       return h('div', { class: 'pe' + (kid ? ' kidstat' : '') },
-        h('div', { class: 'pe-h' }, avatar({ name: s.name, kind: s.kind }, 'md'), h('b', { dir: 'auto', text: s.name }), h('span', { class: 'tag', text: mins(s.thisWeekMinutes) + ' هذا الأسبوع' })),
+        h('div', { class: 'pe-h' }, avatar(profileById(s.profileId) || { name: s.name, kind: s.kind }, 'md'), h('b', { dir: 'auto', text: s.name }), h('span', { class: 'tag', text: mins(s.thisWeekMinutes) + ' هذا الأسبوع' })),
         h('div', { class: 'bars', 'aria-label': 'دقائق كل يوم' }, ...s.days.map((m, i) => h('div', { class: 'b' + (i === 6 ? ' today' : '') },
           h('small', { class: 'num', text: m ? String(m) : '' }), h('i', { style: 'height:' + Math.max(3, Math.round(m / max * 64)) + 'px' }), h('small', { text: dayNames[i] })))),
         h('div', { class: 'stat-nums' }, change, h('span', { class: 'tag', text: 'الأسبوع الماضي: ' + mins(s.previousWeekMinutes) }),
@@ -2247,7 +2398,7 @@ details.card[open] .chev{transform:rotate(180deg)}
     body.replaceChildren(h('div', { class: 'card' },
       h('p', { class: 'lead', text: 'الوضع الجاد، والتشغيل والتنبيهات، ورمز الوالدين، وفئات التخطي، والجودة، والمنفذ. لا يُحذف شيء مما صنعته.' }),
       h('div', { class: 'note' + (changed ? ' amber' : ''), style: 'margin:12px 0' }, ic(changed ? 'alert' : 'check'),
-        h('span', { text: changed == null ? 'جارٍ قراءة الإعدادات…' : changed ? (changed === 1 ? 'إعداد واحد مختلف عن الأصل.' : changed + ' إعدادات مختلفة عن الأصل.') : 'كل الإعدادات على وضعها الأصلي.' })),
+        h('span', { text: changed == null ? 'جارٍ قراءة الإعدادات…' : changed ? count(changed, W.settings) + ' ' + (changed === 1 ? 'مختلف' : changed === 2 ? 'مختلفان' : changed <= 10 ? 'مختلفة' : 'مختلفاً') + ' عن الأصل.' : 'كل الإعدادات على وضعها الأصلي.' })),
       btn));
   }
 
