@@ -121,7 +121,7 @@ class PhonePageQaServer {
      * What the script asks of the TV side (answers are one line each):
      * `status` · `player` (the commands the player got) · `used <profile> <seconds>` (watched time today) ·
      * `serious on|off` · `adultEntry on|off` · `extra <m,m,…>` (the TV's own Settings) · `quota <profile> <minutes|none>`
-     * (the TV's profile editor) · `switch <profile>` (the TV's picker, no PIN: a child) · `revoke` (every phone's parent
+     * (the TV's profile editor) · `switch <profile> [pin]` (the TV's picker; the PIN typed on the TV) · `revoke` (every phone's parent
      * session ends) · `tvpin <pin>` (a PIN typed on the TV) · `phonepin` (the phone's PIN count) · `serverdown <ms>` (the
      * TV's network drops for a moment) · `endvideo` (the video ends by itself) · `shows` (how many times the TV was asked
      * to show something) · `behavior` (the stored settings the checks look at) · `profile <id>` (a profile's rules) ·
@@ -155,7 +155,7 @@ class PhonePageQaServer {
             env.session.refresh()
             "ok"
         }
-        "switch" -> env.gate.switchProfile(args[1], pin = null).toString()
+        "switch" -> env.gate.switchProfile(args[1], pin = args.getOrNull(2)).toString()
         "revoke" -> {
             runtime.revokeParentSessions()
             "ok"

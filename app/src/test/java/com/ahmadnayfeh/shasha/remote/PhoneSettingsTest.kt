@@ -274,7 +274,10 @@ class PhoneSettingsTest {
         // From a child: leaving it needs the PIN, whatever the setting.
         assertThat(controller.profiles().first { it.id == "adult" }.needsPin).isTrue()
         assertThat(controller.switchProfile("adult", null).ok).isFalse()
-        assertThat(controller.switchProfile("adult", PIN).ok).isTrue()
+        val switched = controller.switchProfile("adult", PIN)
+        assertThat(switched.ok).isTrue()
+        // The TV follows at once (no «من يشاهد الآن؟» asking for a PIN nobody needs): the phone says just that.
+        assertThat(switched.message).isEqualTo(text(R.string.remote_profile_switched, "الكبار"))
         // From the adult to another adult or back: the TV's gate says no PIN is needed to enter an adult profile.
         env.profiles.upsert(com.ahmadnayfeh.shasha.policy.Profile.newAdult("ضيف", id = "guest"))
         assertThat(controller.profiles().first { it.id == "guest" }.needsPin).isFalse()
@@ -289,6 +292,10 @@ class PhoneSettingsTest {
         assertThat(controller.profiles().first { it.id == "guest" }.needsPin).isTrue()
         assertThat(controller.switchProfile("guest", null).ok).isFalse()
         assertThat(env.current().id).isEqualTo("adult")
+        // With the PIN: switched, and the TV asks for the adult profile again on its own screen (the phone says so).
+        val switched = controller.switchProfile("guest", PIN)
+        assertThat(switched.ok).isTrue()
+        assertThat(switched.message).isEqualTo(text(R.string.remote_profile_switched_adult, "ضيف"))
     }
 
     // ---- Profiles, the block list, the stats ----------------------------------------------------------------

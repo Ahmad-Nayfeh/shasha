@@ -367,6 +367,7 @@ class AppContainer(context: Context) {
             ),
             revision = { remoteRevision.value },
             movingTo = { remote.movingTo.value },
+            adultEntryPin = { behavior.policyConfig().adultEntryNeedsPin },
         )
         RemoteRuntime(remoteSettings, controller, NsdAnnouncer(NsdAdvertiser(appContext)), phonePin = phonePin).also { runtime ->
             // A new parent PIN logs every phone out of the parent section.

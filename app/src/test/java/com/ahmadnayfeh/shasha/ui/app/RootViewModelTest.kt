@@ -374,6 +374,30 @@ class RootViewModelTest {
     }
 
     @Test
+    fun adultEntryPinOff_thePhonesSwitchToTheAdult_opensIt_withoutThePickerFirst() {
+        withPin()
+        withChild()
+        behavior.value = Behavior(adultEntryPin = false)
+        val vm = root()
+        vm.shows(RootScreen.Picker(PickerMode.START))
+        assertThat(wait { vm.choose(child, pin = null) }).isEqualTo(PinCheck.Accepted)
+        vm.isIn(child)
+        vm.shows(RootScreen.Browse)
+        // The phone switched the TV to the adult (leaving the child: with the PIN, on the phone). Nobody needs a PIN to
+        // enter the adult profile now, so the TV does not ask «من يشاهد الآن؟» first.
+        assertThat(wait { gate.switchProfile(adult.id, PIN) }).isEqualTo(SwitchResult.Switched)
+        vm.isIn(adult)
+        wait { kotlinx.coroutines.delay(200) }
+        vm.shows(RootScreen.Browse)
+
+        // On the picker (the relock, the start), the adult the phone chose opens there too.
+        vm.openPicker()
+        phoneChooses(adult.id)
+        vm.shows(RootScreen.Browse)
+        vm.isIn(adult)
+    }
+
+    @Test
     fun onThePicker_theChildTheTvWasLeftIn_chosenOnThePhone_opens() {
         withPin()
         withChild()

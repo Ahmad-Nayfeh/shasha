@@ -230,6 +230,7 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
         ),
         revision = { revision.value },
         movingTo = movingTo,
+        adultEntryPin = { behavior.policyConfig().adultEntryNeedsPin },
     )
 
     fun close() {

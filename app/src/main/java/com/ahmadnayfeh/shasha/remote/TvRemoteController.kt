@@ -95,6 +95,8 @@ class TvRemoteController(
     private val revision: () -> Long = { 0L },
     /** v1.1: the port the server moves to in a moment ([RemoteRuntime.movingTo]): every open page follows it. */
     private val movingTo: () -> Int? = { null },
+    /** v1.1: entering the adult profile asks for the parent PIN (on the TV too, after a switch from the phone). */
+    private val adultEntryPin: () -> Boolean = { true },
 ) : RemoteController {
 
     // ---- Everyone ---------------------------------------------------------------------------------------
@@ -280,7 +282,9 @@ class TvRemoteController(
         return when (val result = whole { gate.switchProfile(id, pin, verifyPin = phonePin::check) }) {
             SwitchResult.Switched -> {
                 profileChoices.chose(target.id)
-                RemoteResult.ok(texts.get(if (target.isAdult) R.string.remote_profile_switched_adult else R.string.remote_profile_switched, target.name))
+                // The TV asks for the adult again (whoever holds its remote now) unless the adult's PIN is off.
+                val asksOnTv = target.isAdult && adultEntryPin()
+                RemoteResult.ok(texts.get(if (asksOnTv) R.string.remote_profile_switched_adult else R.string.remote_profile_switched, target.name))
             }
             SwitchResult.PinRequired -> error(R.string.remote_profile_needs_pin)
             is SwitchResult.WrongPin -> RemoteResult.error(texts.wrongPin(result.attemptsLeft))
