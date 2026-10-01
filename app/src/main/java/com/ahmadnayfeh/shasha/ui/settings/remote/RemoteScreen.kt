@@ -315,7 +315,7 @@ internal fun AddressBlock(url: String, serviceName: String, modifier: Modifier =
         Box(
             Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF070A0E), shape)
+                .background(ShashaColors.Code, shape)
                 .border(1.dp, ShashaColors.Outline, shape)
                 .padding(horizontal = 14.dp, vertical = 8.dp),
         ) {

@@ -79,6 +79,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.ahmadnayfeh.shasha.ui.components.brandLockup
 
 enum class SetupStep { WELCOME, PIN, OWNER, CHILD, PHONE }
 
@@ -216,9 +219,11 @@ fun SetupScreen(
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             // The Box lets each step keep its own size, centred in the room above the dots.
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                // The next step comes in from the reading direction (from the left in Arabic).
+                val forward = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1 else 1
                 AnimatedContent(
                     targetState = step,
-                    transitionSpec = { (fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(320)) { -it / 12 }) togetherWith fadeOut(tween(160)) },
+                    transitionSpec = { (fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(320)) { forward * it / 12 }) togetherWith fadeOut(tween(160)) },
                     contentAlignment = Alignment.Center,
                     label = "setupStep",
                 ) { shown ->
@@ -266,6 +271,15 @@ fun SetupScreen(
             Spacer(Modifier.height(12.dp))
             StepDots(step)
         }
+        // A quiet line at the welcome's foot, level with the step dots: who made the app.
+        if (step == SetupStep.WELCOME) {
+            Text(
+                stringResource(R.string.setup_made_by),
+                style = MaterialTheme.typography.labelMedium,
+                color = ShashaColors.Muted.copy(alpha = 0.8f),
+                modifier = Modifier.align(Alignment.BottomStart).testTag("setup_made_by"),
+            )
+        }
     }
 }
 
@@ -277,7 +291,7 @@ private fun Welcome(onStart: () -> Unit) {
         runCatching { start.requestFocus() }
     }
     Column(Modifier.widthIn(max = 760.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Image(painterResource(R.drawable.splash_lockup), contentDescription = null, modifier = Modifier.height(54.dp))
+        Image(painterResource(brandLockup()), contentDescription = null, modifier = Modifier.height(54.dp))
         Spacer(Modifier.height(24.dp))
         Text(stringResource(R.string.setup_welcome_title), style = MaterialTheme.typography.displaySmall, textAlign = TextAlign.Center)
         Spacer(Modifier.height(10.dp))

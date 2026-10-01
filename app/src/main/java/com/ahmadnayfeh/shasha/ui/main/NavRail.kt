@@ -52,6 +52,7 @@ import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
+import androidx.compose.ui.unit.LayoutDirection
 
 /** The rail's destinations. Which of them a profile has is [Tab.Adult] or [Tab.Kids]. */
 enum class Tab(@StringRes val label: Int, val icon: ImageVector) {
@@ -125,21 +126,27 @@ fun NavRail(
             .drawBehind {
                 // Collapsed: a faint shade behind the icons. Expanded: an opaque panel, and the content
                 // beside it recedes into a soft shadow (drawn left of the rail, outside its bounds).
-                val right = ShashaColors.Surface.copy(alpha = 0.55f + 0.45f * panel)
-                val left = ShashaColors.Surface.copy(alpha = panel)
+                // The rail is at the start: the right edge of the screen in Arabic, the left in English.
+                val rtl = layoutDirection == LayoutDirection.Rtl
+                val screenEdge = ShashaColors.Surface.copy(alpha = 0.55f + 0.45f * panel)
+                val innerEdge = ShashaColors.Surface.copy(alpha = panel)
+                val (left, right) = if (rtl) innerEdge to screenEdge else screenEdge to innerEdge
                 drawRect(Brush.horizontalGradient(listOf(left, right), startX = 0f, endX = size.width))
                 if (panel > 0f) {
                     val shade = ScrimWidth.toPx()
+                    val shadow = ShashaColors.Background.copy(alpha = 0.72f * panel)
+                    val from = if (rtl) -shade else size.width
                     drawRect(
                         Brush.horizontalGradient(
-                            listOf(Color.Transparent, ShashaColors.Background.copy(alpha = 0.72f * panel)),
-                            startX = -shade,
-                            endX = 0f,
+                            if (rtl) listOf(Color.Transparent, shadow) else listOf(shadow, Color.Transparent),
+                            startX = from,
+                            endX = from + shade,
                         ),
-                        topLeft = Offset(-shade, 0f),
+                        topLeft = Offset(from, 0f),
                         size = size.copy(width = shade),
                     )
-                    drawRect(ShashaColors.Outline.copy(alpha = panel), topLeft = Offset.Zero, size = size.copy(width = 1.dp.toPx()))
+                    val line = 1.dp.toPx()
+                    drawRect(ShashaColors.Outline.copy(alpha = panel), topLeft = Offset(if (rtl) 0f else size.width - line, 0f), size = size.copy(width = line))
                 }
             }
             .testTag("nav_rail"),

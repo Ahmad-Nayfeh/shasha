@@ -46,6 +46,8 @@ import com.ahmadnayfeh.shasha.ui.parental.ParentUnlock
 import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
 import com.ahmadnayfeh.shasha.ui.screens.channel.ChannelRoute
 import com.ahmadnayfeh.shasha.ui.screens.diagnostics.DiagnosticsRoute
+import com.ahmadnayfeh.shasha.ui.screens.guide.ExplainerRoute
+import com.ahmadnayfeh.shasha.ui.screens.guide.GuideRoute
 import com.ahmadnayfeh.shasha.ui.screens.home.HomeRoute
 import com.ahmadnayfeh.shasha.ui.screens.kids.AllowedChannelsRoute
 import com.ahmadnayfeh.shasha.ui.screens.kids.KidsHomeRoute
@@ -277,6 +279,12 @@ private fun NavGraphBuilder.adultDestinations(nav: NavHostController, actions: B
     composable<Screen.Protection> { ProtectionRoute() }
     composable<Screen.RemoteControl> { RemoteRoute() }
     composable<Screen.Backup> { BackupRoute() }
+    composable<Screen.Guide> { GuideRoute(onBack = dropUnlessResumed { nav.popBackStack() }) }
+    composable<Screen.Explainer>(
+        // The video is on a SurfaceView, which cannot fade or scale: leave it with a quick cut (like the player).
+        exitTransition = { fadeOut(tween(120)) },
+        popExitTransition = { fadeOut(tween(120)) },
+    ) { ExplainerRoute(onBack = dropUnlessResumed { nav.popBackStack() }) }
 }
 
 @Composable
@@ -323,4 +331,6 @@ private fun settingsActions(nav: NavHostController) = SettingsActions(
     openRemote = { nav.navigate(Screen.RemoteControl) { launchSingleTop = true } },
     openBackup = { nav.navigate(Screen.Backup) { launchSingleTop = true } },
     openUpdates = { nav.navigate(Screen.Updates) { launchSingleTop = true } },
+    openGuide = { nav.navigate(Screen.Guide) { launchSingleTop = true } },
+    openExplainer = { nav.navigate(Screen.Explainer) { launchSingleTop = true } },
 )

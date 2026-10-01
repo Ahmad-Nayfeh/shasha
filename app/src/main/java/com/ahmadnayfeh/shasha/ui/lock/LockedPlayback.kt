@@ -61,9 +61,10 @@ import com.ahmadnayfeh.shasha.policy.UnlockMethod
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.format.rememberFormats
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import kotlinx.coroutines.delay
 import kotlin.random.Random
+import com.ahmadnayfeh.shasha.ui.theme.OsdColors
+import com.ahmadnayfeh.shasha.ui.theme.Accents
 
 /** The lock screen in front of the player, if any. */
 internal sealed interface LockStep {
@@ -315,13 +316,13 @@ internal fun LockHintPill(modifier: Modifier = Modifier, escape: AdultEscape? = 
     } else {
         stringResource(R.string.lock_adult_hint, formats.count(R.array.count_seconds_after, escape.holdMillis / 1000))
     }
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     val shape = RoundedCornerShape(percent = 50)
     Row(
         modifier
             .widthIn(max = 820.dp)
             .shadow(18.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
-            .background(ShashaColors.SurfaceHigh.copy(alpha = 0.96f), shape)
+            .background(OsdColors.SurfaceHigh.copy(alpha = 0.96f), shape)
             .border(1.dp, accent.tint(0.5f), shape)
             .padding(start = 18.dp, end = 24.dp, top = 11.dp, bottom = 11.dp)
             .testTag("lock_hint"),

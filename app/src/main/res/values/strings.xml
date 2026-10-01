@@ -823,7 +823,7 @@
     <string name="hub_updates_summary">الإصدار المثبّت، وآخر إصدار على GitHub Releases</string>
     <string name="hub_diagnostics_summary">ما يعينك حين يتعطّل يوتيوب: فيديوهات تجريبية ومعلومات الشاشة</string>
     <string name="hub_about">حول</string>
-    <string name="hub_about_summary">الإصدار، ومصدر بيانات التخطي، والمكتبات ورخصها</string>
+    <string name="hub_about_summary">المطوّر وتطبيقاته، والإصدار، ومصدر بيانات التخطي، والرخص</string>
     <string name="hub_loading">جارٍ التحميل…</string>
 
     <!-- A parental pane before the parent PIN. -->

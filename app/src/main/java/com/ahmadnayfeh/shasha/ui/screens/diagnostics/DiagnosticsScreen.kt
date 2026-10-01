@@ -45,7 +45,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -70,6 +69,8 @@ import com.ahmadnayfeh.shasha.ui.screens.error.ErrorTexts
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 import java.util.Locale
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
+import com.ahmadnayfeh.shasha.ui.components.brandLockup
 
 /** Stateful entry point: runs the checks and opens the player. */
 @Composable
@@ -152,7 +153,7 @@ fun DiagnosticsScreen(
 @Composable
 private fun Header(extractorVersion: String, appVersion: String, onRecheck: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Image(painterResource(R.drawable.splash_lockup), contentDescription = stringResource(R.string.app_name), modifier = Modifier.height(40.dp))
+        Image(painterResource(brandLockup()), contentDescription = stringResource(R.string.app_name), modifier = Modifier.height(40.dp))
         Box(
             Modifier
                 .padding(horizontal = 20.dp)
@@ -197,7 +198,7 @@ private fun DiagnosticRow(item: DiagnosticItem, onClick: () -> Unit, modifier: M
                 Text(stringResource(item.video.label), style = MaterialTheme.typography.titleMedium, maxLines = 1)
                 Text(
                     text = (item.status as? CheckStatus.Ready)?.summary?.title ?: stringResource(item.video.about),
-                    style = MaterialTheme.typography.bodySmall.copy(textDirection = TextDirection.ContentOrRtl),
+                    style = MaterialTheme.typography.bodySmall.copy(textDirection = TextDirection.Content),
                     color = ShashaColors.Muted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -328,8 +329,8 @@ private fun Preview(item: DiagnosticItem) {
                 // Latin titles keep their reading order but hang from the right edge like the rest.
                 Text(
                     status.summary.title,
-                    style = MaterialTheme.typography.titleLarge.copy(textDirection = TextDirection.ContentOrRtl),
-                    textAlign = TextAlign.Right,
+                    style = MaterialTheme.typography.titleLarge.copy(textDirection = TextDirection.Content),
+                    textAlign = StartTextAlign,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.fillMaxWidth(),
@@ -384,7 +385,7 @@ private fun CaseBadge(video: TestVideo, modifier: Modifier = Modifier) {
 private fun Fact(text: String, color: Color = ShashaColors.Text, ltr: Boolean = false) {
     Text(
         text,
-        style = MaterialTheme.typography.labelLarge.copy(textDirection = if (ltr) TextDirection.Ltr else TextDirection.ContentOrRtl),
+        style = MaterialTheme.typography.labelLarge.copy(textDirection = if (ltr) TextDirection.Ltr else TextDirection.Content),
         color = color,
         maxLines = 1,
         modifier = Modifier

@@ -43,6 +43,9 @@ class TimeTexts(private val resources: Resources, private val formats: Formats) 
 
     fun weekday(day: LocalDate): String = resources.getStringArray(R.array.weekdays)[day.dayOfWeek.value - 1]
 
+    /** Under a chart column: the full name in Arabic, "Wed" in English. */
+    fun weekdayChart(day: LocalDate): String = resources.getStringArray(R.array.weekdays_chart)[day.dayOfWeek.value - 1]
+
     /** "45 دقيقة", "ساعة واحدة", "ساعتان و10 دقائق". */
     fun duration(totalMinutes: Long): String {
         val minutes = totalMinutes.coerceAtLeast(0)

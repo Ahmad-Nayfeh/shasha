@@ -41,9 +41,10 @@ import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.format.rememberFormats
 import com.ahmadnayfeh.shasha.ui.theme.Accent
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import kotlin.math.cos
 import kotlin.math.sin
+import com.ahmadnayfeh.shasha.ui.theme.OsdColors
+import com.ahmadnayfeh.shasha.ui.theme.Accents
 
 /** Which remote button the adult holds to leave a locked video. */
 enum class HeldKey { BACK, OK }
@@ -55,7 +56,7 @@ enum class HeldKey { BACK, OK }
  */
 @Composable
 fun HoldToExitRing(progress: Float, secondsLeft: Int, key: HeldKey, modifier: Modifier = Modifier) {
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     val unit = rememberFormats().count(R.array.lock_hold_seconds, secondsLeft.toLong())
     Box(
         modifier
@@ -83,13 +84,13 @@ fun HoldToExitRing(progress: Float, secondsLeft: Int, key: HeldKey, modifier: Mo
                         color = Color.White,
                         modifier = Modifier.testTag("lock_hold_seconds"),
                     )
-                    Text(unit, style = MaterialTheme.typography.titleMedium, color = ShashaColors.Muted)
+                    Text(unit, style = MaterialTheme.typography.titleMedium, color = OsdColors.Muted)
                 }
             }
             Spacer(Modifier.height(26.dp))
             Text(stringResource(R.string.lock_hold_title), style = MaterialTheme.typography.headlineMedium, color = Color.White, textAlign = TextAlign.Center)
             Spacer(Modifier.height(4.dp))
-            Text(stringResource(R.string.lock_hold_body), style = MaterialTheme.typography.bodyLarge, color = ShashaColors.Muted, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.lock_hold_body), style = MaterialTheme.typography.bodyLarge, color = OsdColors.Muted, textAlign = TextAlign.Center)
         }
     }
 }
@@ -97,11 +98,11 @@ fun HoldToExitRing(progress: Float, secondsLeft: Int, key: HeldKey, modifier: Mo
 /** "زر «رجوع»" with its glyph: the button whose press is being counted. */
 @Composable
 private fun KeyChip(key: HeldKey) {
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     val shape = RoundedCornerShape(percent = 50)
     Row(
         Modifier
-            .background(ShashaColors.Surface.copy(alpha = 0.92f), shape)
+            .background(OsdColors.Surface.copy(alpha = 0.92f), shape)
             .border(1.dp, accent.tint(0.45f), shape)
             .padding(start = 8.dp, end = 18.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

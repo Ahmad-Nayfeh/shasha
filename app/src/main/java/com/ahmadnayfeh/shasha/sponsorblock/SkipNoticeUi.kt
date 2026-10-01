@@ -71,9 +71,11 @@ import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.ui.components.LocalTopClearance
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalLayoutDirection
+import com.ahmadnayfeh.shasha.ui.theme.OsdColors
+import com.ahmadnayfeh.shasha.ui.theme.Accents
 
 /**
  * SponsorBlock over the player's controls ([osd]): looks at [target] every [tickMs] ([SkipController.tick]) and
@@ -193,10 +195,12 @@ fun SkipNoticeHost(notice: SkipNotice?, highlighted: Boolean, modifier: Modifier
         modifier.fillMaxSize().padding(top = top, start = ShashaDimens.ScreenHorizontal, end = ShashaDimens.ScreenHorizontal),
         contentAlignment = Alignment.TopStart,
     ) {
+        // The notice sits at the start (the right in Arabic) and slides in from that side.
+        val fromStart = if (LocalLayoutDirection.current == LayoutDirection.Rtl) 1 else -1
         AnimatedVisibility(
             visible = notice != null,
-            enter = fadeIn(tween(220)) + slideInHorizontally(tween(320)) { it / 4 },
-            exit = fadeOut(tween(260)) + slideOutHorizontally(tween(320)) { it / 4 },
+            enter = fadeIn(tween(220)) + slideInHorizontally(tween(320)) { fromStart * it / 4 },
+            exit = fadeOut(tween(260)) + slideOutHorizontally(tween(320)) { fromStart * it / 4 },
         ) {
             if (shown != null) {
                 val window = (shown.untilMs - shown.shownAtMs).coerceAtLeast(1)
@@ -228,13 +232,13 @@ class UndoOffer(val highlighted: Boolean, val remaining: () -> Float)
 /** «⏭ تم تخطي: إعلان مموَّل», and for the adult the «تراجع عن التخطي» button with its time running out. */
 @Composable
 fun SkipNoticeCard(category: SponsorCategory, undo: UndoOffer?, modifier: Modifier = Modifier) {
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     val shape = RoundedCornerShape(percent = 50)
     Row(
         modifier
             .widthIn(max = 640.dp)
             .shadow(18.dp, shape, ambientColor = Color.Black, spotColor = Color.Black)
-            .background(ShashaColors.SurfaceHigh.copy(alpha = 0.96f), shape)
+            .background(OsdColors.SurfaceHigh.copy(alpha = 0.96f), shape)
             .border(1.dp, accent.tint(0.45f), shape)
             .padding(start = 8.dp, end = if (undo != null) 8.dp else 24.dp, top = 8.dp, bottom = 8.dp)
             .semantics { liveRegion = LiveRegionMode.Polite }
@@ -273,10 +277,10 @@ fun SkipNoticeCard(category: SponsorCategory, undo: UndoOffer?, modifier: Modifi
  */
 @Composable
 private fun UndoButton(offer: UndoOffer) {
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     val shape = RoundedCornerShape(percent = 50)
-    val container by animateColorAsState(if (offer.highlighted) accent.main else ShashaColors.SurfaceVariant, tween(200), label = "undoFill")
-    val content by animateColorAsState(if (offer.highlighted) accent.onMain else ShashaColors.Text, tween(200), label = "undoText")
+    val container by animateColorAsState(if (offer.highlighted) accent.main else OsdColors.SurfaceVariant, tween(200), label = "undoFill")
+    val content by animateColorAsState(if (offer.highlighted) accent.onMain else OsdColors.Text, tween(200), label = "undoText")
     val scale by animateFloatAsState(if (offer.highlighted) 1.04f else 1f, tween(200), label = "undoScale")
     val bar = if (offer.highlighted) accent.onMain.copy(alpha = 0.45f) else accent.tint(0.8f)
     Row(
@@ -285,7 +289,7 @@ private fun UndoButton(offer: UndoOffer) {
             .then(if (offer.highlighted) Modifier.shadow(12.dp, shape, ambientColor = accent.main, spotColor = accent.main) else Modifier)
             .clip(shape)
             .background(container)
-            .then(if (offer.highlighted) Modifier else Modifier.border(1.dp, ShashaColors.Outline, shape))
+            .then(if (offer.highlighted) Modifier else Modifier.border(1.dp, OsdColors.Outline, shape))
             .drawWithContent {
                 drawContent()
                 // A short rounded line inside the pill, from the reading start, shrinking as the time runs out.

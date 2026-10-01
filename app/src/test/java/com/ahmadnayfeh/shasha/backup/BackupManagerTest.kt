@@ -6,6 +6,9 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.BehaviorKeys
+import com.ahmadnayfeh.shasha.data.AppLanguage
+import com.ahmadnayfeh.shasha.data.AppTheme
+import com.ahmadnayfeh.shasha.data.Appearance
 import com.ahmadnayfeh.shasha.data.BehaviorSettings
 import com.ahmadnayfeh.shasha.data.OverridesRepository
 import com.ahmadnayfeh.shasha.data.ParentPinRepository
@@ -153,6 +156,9 @@ class BackupManagerTest {
         // v1.1 part B: the optional adult PIN (off here) and the voice language.
         behavior.setAdultEntryPin(false)
         behavior.setVoiceLanguage("en-US")
+        // v1.1 part E: «المظهر واللغة».
+        behavior.setAppLanguage(AppLanguage.ENGLISH)
+        behavior.setAppTheme(AppTheme.LIGHT)
     }
 
     private suspend fun Tv.behaviorNow(): Behavior {
@@ -208,6 +214,7 @@ class BackupManagerTest {
         assertThat(restoredBehavior.phrases).contains("وقتي لعملي")
         assertThat(restoredBehavior.adultEntryPin).isFalse()
         assertThat(restoredBehavior.voiceLanguage).isEqualTo("en-US")
+        assertThat(restoredBehavior.appearance).isEqualTo(Appearance(AppLanguage.ENGLISH, AppTheme.LIGHT))
         // The second TV keeps its own pairing: its phones are paired again from its QR code.
         assertThat(second.remoteSettings.token()).isNotEqualTo(token)
     }
@@ -244,6 +251,7 @@ class BackupManagerTest {
         // The adult PIN is asked for again (the default), the language is Arabic again.
         assertThat(first.behaviorNow().adultEntryPin).isTrue()
         assertThat(first.behaviorNow().voiceLanguage).isEqualTo("ar-SA")
+        assertThat(first.behaviorNow().appearance).isEqualTo(Appearance(AppLanguage.ARABIC, AppTheme.DARK))
     }
 
     @Test

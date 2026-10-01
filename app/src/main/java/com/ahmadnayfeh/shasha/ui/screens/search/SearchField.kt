@@ -54,7 +54,7 @@ fun SearchField(
         value = value,
         onValueChange = onValueChange,
         singleLine = true,
-        textStyle = MaterialTheme.typography.titleMedium.copy(color = ShashaColors.Text, textDirection = TextDirection.ContentOrRtl),
+        textStyle = MaterialTheme.typography.titleMedium.copy(color = ShashaColors.Text, textDirection = TextDirection.Content),
         cursorBrush = SolidColor(ShashaColors.PrimaryBright),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search, autoCorrectEnabled = false, showKeyboardOnFocus = false),
         keyboardActions = KeyboardActions(onSearch = { onSearch() }),

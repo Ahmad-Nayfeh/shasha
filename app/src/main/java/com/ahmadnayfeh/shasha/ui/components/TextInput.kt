@@ -62,7 +62,7 @@ fun ShashaTextField(
         value = value,
         onValueChange = { onValueChange(it.take(maxLength)) },
         singleLine = true,
-        textStyle = MaterialTheme.typography.titleMedium.copy(color = ShashaColors.Text, textDirection = TextDirection.ContentOrRtl),
+        textStyle = MaterialTheme.typography.titleMedium.copy(color = ShashaColors.Text, textDirection = TextDirection.Content),
         cursorBrush = SolidColor(accent.bright),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction, autoCorrectEnabled = false, showKeyboardOnFocus = false),
         keyboardActions = KeyboardActions(onAny = {

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_setting_saved">Saved: “&#x2068;%1$s&#x2069;”.</string>
+    <string name="phone_setting_refused">“&#x2068;%1$s&#x2069;” wasn\'t saved: the TV doesn\'t offer this value.</string>
+    <string name="phone_setting_unknown">The TV doesn\'t have this setting. Reload the page.</string>
+    <string name="phone_setting_custom_first">Type your own phrase below and save it first; it will then be the only one used.</string>
+    <string name="phone_setting_custom_help">Saving it makes it the phrase asked for when leaving.</string>
+    <string name="phone_setting_changed_elsewhere">“&#x2068;%1$s&#x2069;” was just changed on the TV or from another phone, so your change wasn\'t saved. This is its value now.</string>
+    <string name="phone_setting_phrases_invalid">The list wasn\'t saved: each phrase must be Arabic letters and spaces only, up to 30 characters, and the list must have 1 to 30 phrases.</string>
+    <string name="phone_setting_failed">The TV couldn\'t save the setting. Try again.</string>
+    <string name="phone_reset_group">“&#x2068;%1$s&#x2069;” settings are back to their defaults.</string>
+    <string name="phone_port_moving">The server will move to port %1$s in a moment, and the page will follow by itself.</string>
+    <string name="phone_port_taken">Another app on the TV is using port %1$s. Choose a different number.</string>
+    <string name="phone_extra_value">+%1$s min</string>
+
+    <string name="phone_profile_not_found">The TV doesn\'t have this profile.</string>
+    <string name="phone_profile_created">Profile “&#x2068;%1$s&#x2069;” created, with one hour a day from 7:00 to 22:00. Choose what it can watch under “Allowlists”.</string>
+    <string name="phone_profile_saved">Profile “&#x2068;%1$s&#x2069;” saved.</string>
+    <string name="phone_profile_deleted">Profile “&#x2068;%1$s&#x2069;” deleted, with its history and stats.</string>
+    <string name="phone_profile_delete_current">This profile is on the TV right now, so it can\'t be deleted. Switch profiles on the TV first.</string>
+    <string name="phone_profile_delete_last_adult">This is the last adult profile, so it can\'t be deleted.</string>
+    <string name="phone_profile_name_invalid">Type a name of 1 to %1$s characters.</string>
+    <string name="phone_profile_avatar_invalid">This picture isn\'t available for this profile.</string>
+    <string name="phone_flags_saved">Saved for “&#x2068;%1$s&#x2069;”.</string>
+    <string name="phone_comments_child">Comments are always hidden in kids\' profiles.</string>
+    <string name="phone_schedule_saved">Hours for “&#x2068;%1$s&#x2069;”: from %2$s to %3$s.</string>
+    <string name="phone_schedule_all_day">“&#x2068;%1$s&#x2069;”: watching is allowed all day.</string>
+
+    <string name="phone_keyword_blocked">The word “&#x2068;%1$s&#x2069;” is now blocked in every profile.</string>
+    <string name="phone_keyword_exists">The word “&#x2068;%1$s&#x2069;” is already blocked.</string>
+    <string name="phone_keyword_unblocked">The word “&#x2068;%1$s&#x2069;” is no longer blocked.</string>
+    <string name="phone_keyword_not_there">This word isn\'t on the blocklist.</string>
+    <string name="phone_channel_blocked">The channel “&#x2068;%1$s&#x2069;” is now blocked in every profile.</string>
+    <string name="phone_channel_unblocked">The channel “&#x2068;%1$s&#x2069;” is no longer blocked.</string>
+    <string name="phone_channel_not_there">This channel isn\'t on the blocklist.</string>
+    <string name="phone_not_a_channel">This isn\'t a YouTube channel link.</string>
+</resources>

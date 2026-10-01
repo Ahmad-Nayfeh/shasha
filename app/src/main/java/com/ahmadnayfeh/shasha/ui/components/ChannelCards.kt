@@ -36,6 +36,7 @@ import com.ahmadnayfeh.shasha.ui.model.PlaylistUi
 import com.ahmadnayfeh.shasha.ui.theme.PlexArabic
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
 /**
  * A channel's round picture. Channels imported from Takeout have none until their page is opened:
@@ -92,7 +93,7 @@ fun ChannelCard(channel: ChannelItem, subtitle: String?, onClick: () -> Unit, mo
         Spacer(Modifier.height(10.dp))
         Text(
             channel.name,
-            style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.ContentOrRtl),
+            style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.Content),
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -132,8 +133,8 @@ fun PlaylistCard(item: PlaylistUi, formats: Formats, onClick: () -> Unit, modifi
         Spacer(Modifier.height(10.dp))
         Text(
             playlist.title,
-            style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.ContentOrRtl),
-            textAlign = TextAlign.Right,
+            style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.Content),
+            textAlign = StartTextAlign,
             maxLines = 2,
             minLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -143,7 +144,7 @@ fun PlaylistCard(item: PlaylistUi, formats: Formats, onClick: () -> Unit, modifi
     }
 }
 
-private val ChannelTileBrush = Brush.radialGradient(listOf(ShashaColors.SurfaceHigh, ShashaColors.Surface))
+private val ChannelTileBrush: Brush get() = Brush.radialGradient(listOf(ShashaColors.SurfaceHigh, ShashaColors.Surface))
 
 private val AvatarColors = listOf(
     Color(0xFF1FAE9F) to Color(0xFF0E5E57),

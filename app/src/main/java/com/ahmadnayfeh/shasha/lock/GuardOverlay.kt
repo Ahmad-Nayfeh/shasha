@@ -34,6 +34,8 @@ import com.ahmadnayfeh.shasha.R
 class GuardOverlay(
     private val context: Context,
     private val handler: Handler,
+    /** The app's texts in «اللغة» of the moment (the context's own resources follow the TV's language). */
+    private val texts: () -> Context = { context },
     /** The cover is on screen (for the return time's measurements). */
     private val onShown: () -> Unit,
 ) {
@@ -93,6 +95,8 @@ class GuardOverlay(
         val density = context.resources.displayMetrics.density
         fun dp(value: Int) = (value * density).toInt()
         val font = runCatching { ResourcesCompat.getFont(context, R.font.plex_arabic_medium) }.getOrNull()
+        val texts = texts()
+        val direction = if (texts.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL) View.TEXT_DIRECTION_RTL else View.TEXT_DIRECTION_LTR
 
         val logo = ImageView(context).apply {
             setImageResource(R.drawable.splash_lockup)
@@ -100,12 +104,12 @@ class GuardOverlay(
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }
         val line = TextView(context).apply {
-            text = context.getString(R.string.guard_cover_text)
+            text = texts.getString(R.string.guard_cover_text)
             setTextColor(TEXT)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f)
             typeface = font
             gravity = Gravity.CENTER
-            textDirection = View.TEXT_DIRECTION_RTL
+            textDirection = direction
         }
         val dots = View(context).apply {
             background = GradientDrawable().apply {
@@ -127,7 +131,7 @@ class GuardOverlay(
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
                     typeface = font
                     gravity = Gravity.CENTER
-                    textDirection = View.TEXT_DIRECTION_RTL
+                    textDirection = direction
                 }
                 addView(why, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
             }

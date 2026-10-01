@@ -57,4 +57,4 @@ fun Thumbnail(
     }
 }
 
-private val PlaceholderBrush = Brush.linearGradient(listOf(ShashaColors.SurfaceHigh, ShashaColors.Surface))
+private val PlaceholderBrush: Brush get() = Brush.linearGradient(listOf(ShashaColors.SurfaceHigh, ShashaColors.Surface))

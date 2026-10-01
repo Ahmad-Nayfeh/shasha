@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sponsor_skipped">Skipped: %1$s</string>
+    <string name="sponsor_undo">Undo skip</string>
+
+    <string name="sponsor_category_sponsor">Sponsor</string>
+    <string name="sponsor_category_sponsor_body">A paid ad the creator reads inside the video.</string>
+    <string name="sponsor_category_selfpromo">Self-promotion</string>
+    <string name="sponsor_category_selfpromo_body">The creator promoting their own products, store or other channels.</string>
+    <string name="sponsor_category_interaction">Interaction reminder</string>
+    <string name="sponsor_category_interaction_body">Asking you to like, subscribe or comment in the middle of the video.</string>
+    <string name="sponsor_category_intro">Intro</string>
+    <string name="sponsor_category_intro_body">An opening sequence or a recurring break with no content.</string>
+    <string name="sponsor_category_outro">Outro</string>
+    <string name="sponsor_category_outro_body">End credits and end screens.</string>
+    <string name="sponsor_category_preview">Preview or recap</string>
+    <string name="sponsor_category_preview_body">Clips of what\'s coming up, or a recap of what came before.</string>
+    <string name="sponsor_category_hook">Greeting or teaser</string>
+    <string name="sponsor_category_hook_body">Greetings and teasers at the start that carry no information.</string>
+    <string name="sponsor_category_filler">Tangent</string>
+    <string name="sponsor_category_filler_body">Side talk or jokes off the video\'s topic.</string>
+    <string name="sponsor_category_music_offtopic">Non-music section</string>
+    <string name="sponsor_category_music_offtopic_body">In music videos: the parts that aren\'t music.</string>
+
+    <string name="sponsor_settings_subtitle">Shasha skips these parts automatically in every profile, with a small notice.</string>
+    <string name="sponsor_settings_default">Default</string>
+    <string name="sponsor_settings_none">Nothing is skipped: Shasha won\'t ask SponsorBlock about any video.</string>
+
+    <string name="sponsorblock_attribution">Skip data comes from SponsorBlock at sponsor.ajay.app, contributed by its community and licensed under CC BY-NC-SA 4.0.</string>
+</resources>

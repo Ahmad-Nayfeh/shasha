@@ -78,7 +78,7 @@ private const val MARK_WIDTH = SCREEN_W
 private val MARK_HEIGHT = DOTS_H + DOTS_TO_SCREEN + SCREEN_H
 
 private val ScreenBrush = Brush.verticalGradient(listOf(Color(0xFF48DCCD), Color(0xFF1FAE9F)))
-private val DotColor = ShashaColors.Secondary
+private val DotColor: Color get() = ShashaColors.Secondary
 
 private fun DrawScope.drawMark(t: Float) {
     val unit = minOf(size.width / MARK_WIDTH, size.height / MARK_HEIGHT)

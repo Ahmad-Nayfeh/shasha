@@ -62,6 +62,8 @@ import com.ahmadnayfeh.shasha.update.InstalledVersion
 import com.ahmadnayfeh.shasha.update.ReleaseInfo
 import com.ahmadnayfeh.shasha.update.UpdateErrorKind
 import java.util.Locale
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
+import com.ahmadnayfeh.shasha.ui.components.brandLockup
 
 /**
  * «فحص التحديثات» (SPEC §6), from Settings and from the unified error screen. Only the adult profile reaches the
@@ -179,7 +181,7 @@ private fun UpdatesLayout(
     }
     val main = @Composable { columnModifier: Modifier ->
         Column(columnModifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Image(painterResource(R.drawable.splash_lockup), contentDescription = null, modifier = Modifier.height(40.dp))
+            Image(painterResource(brandLockup()), contentDescription = null, modifier = Modifier.height(40.dp))
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, modifier = Modifier.testTag("updates_title"))
                 Text(body, style = MaterialTheme.typography.bodyLarge, color = ShashaColors.Muted, textAlign = TextAlign.Center)
@@ -310,7 +312,7 @@ private fun ReleaseNotesCard(notes: String) {
         Text(
             notes,
             style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content),
-            textAlign = TextAlign.Right,
+            textAlign = StartTextAlign,
             maxLines = NOTES_MAX_LINES,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth(),

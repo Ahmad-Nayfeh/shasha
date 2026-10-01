@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.1 part E: «المظهر واللغة», «الدليل والفيديو», the developer and his other apps in «حول».
+     Numbers are passed as ready-made text (%1$s + n.toString()), never %d. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="ar">
+    <!-- The settings list. -->
+    <string name="hub_appearance">المظهر واللغة</string>
+    <string name="hub_appearance_summary">العربية أو English، والمظهر الداكن أو الفاتح</string>
+    <string name="hub_guide">الدليل والفيديو</string>
+    <string name="hub_guide_summary">دليل شاشة المصوَّر، وفيديو تعريفي قصير</string>
+
+    <!-- «المظهر واللغة». Each language is named in its own script, in every language. -->
+    <string name="appearance_language">اللغة</string>
+    <string name="language_name_ar" translatable="false">العربية</string>
+    <string name="language_name_en" translatable="false">English</string>
+    <string name="appearance_language_ar_body">الواجهة من اليمين إلى اليسار</string>
+    <string name="appearance_language_en_body">الواجهة من اليسار إلى اليمين، بالإنجليزية</string>
+    <string name="appearance_language_note">تتغيّر لغة التطبيق كله فوراً. أما لغة البحث الصوتي فمستقلة، وتُضبط في «التشغيل والتنبيهات».</string>
+    <string name="appearance_theme">المظهر</string>
+    <string name="appearance_theme_dark">داكن</string>
+    <string name="appearance_theme_dark_body">ألوان شاشة الأصلية، مريحة في غرفة خافتة الضوء</string>
+    <string name="appearance_theme_light">فاتح</string>
+    <string name="appearance_theme_light_body">ألوان فاتحة لغرفة مضيئة. يبقى المشغّل داكناً فوق الفيديو.</string>
+
+    <!-- «الدليل والفيديو». -->
+    <string name="guide_open">دليل شاشة</string>
+    <string name="guide_open_body">صفحات مصوَّرة تشرح التطبيق خطوة بخطوة</string>
+    <string name="explainer_open">الفيديو التعريفي</string>
+    <string name="explainer_open_body">جولة قصيرة في شاشة بالصوت والصورة</string>
+    <string name="guide_language_note">يظهر الدليل والفيديو بلغة التطبيق.</string>
+    <string name="explainer_unavailable">غير متوفر</string>
+
+    <!-- The guide's pages, full screen. -->
+    <string name="guide_page_of">الصفحة %1$s من %2$s</string>
+    <string name="guide_hint_pages">السهمان الجانبيان: الصفحات</string>
+    <string name="guide_hint_scroll">أعلى وأسفل: التمرير</string>
+    <string name="guide_page_failed">تعذّر فتح هذه الصفحة.</string>
+
+    <!-- The explainer video, full screen. -->
+    <string name="explainer_missing_title">الفيديو غير متوفر في هذه النسخة</string>
+    <string name="explainer_missing_body">يمكنك قراءة الدليل في الأثناء، وسيصل الفيديو مع تحديث قادم.</string>
+    <string name="explainer_hint">زر OK للإيقاف والتشغيل، والسهمان للتقديم والإرجاع 10 ثوانٍ</string>
+    <string name="explainer_failed">تعذّر تشغيل الفيديو.</string>
+
+    <!-- «حول»: the developer, then his other apps (a QR code each, to scan with a phone). -->
+    <string name="about_dev_title">من صنع احمد نايفه</string>
+    <string name="about_dev_subtitle">صُنع بحب لعائلتي</string>
+    <string name="about_more_apps">تطبيقات أخرى من المطوّر</string>
+    <string name="about_more_apps_hint">امسح الرمز بكاميرا جوالك لتفتح الرابط.</string>
+    <string name="app_shadra_name">شذرة</string>
+    <string name="app_shadra_desc">بيتٌ هادئ للسطور التي لا تريد أن تفقدها: احفظ اقتباساتك من أي كتاب أو شاشة، واكتب ما حرّكته فيك.</string>
+    <string name="app_silah_name">صِلة</string>
+    <string name="app_silah_desc">يذكّرك كل يوم بشخص واحد تطمئن عليه، ويفتح محادثته على واتساب بضغطة. خاص وبلا إنترنت.</string>
+    <string name="app_masarif_name">مصاريف</string>
+    <string name="app_masarif_desc">يقرأ رسائل البنك على جوالك، ويصنّف مصروفاتك ويعرض إحصائياتك واشتراكاتك، بلا إنترنت. يدعم بنك الإنماء حالياً.</string>
+    <string name="app_khatwa_name">خطوة</string>
+    <string name="app_khatwa_desc">يعدّ خطواتك، ويقفل جوالك حتى تمشي، ويقترح عليك كل يوم مكاناً قريباً للمشي في أنسب وقت.</string>
+    <string name="about_qr_website">الموقع</string>
+    <string name="about_qr_play" translatable="false">Google Play</string>
+    <string name="about_qr_github" translatable="false">GitHub</string>
+    <string name="about_qr_description">رمز QR: %1$s</string>
+
+    <!-- A name from YouTube or a profile inside a sentence: quoted, and isolated (FSI…PDI) so Latin keeps its place. -->
+    <string name="quoted_name">«&#x2068;%1$s&#x2069;»</string>
+    <!-- Between the items of a short list. -->
+    <string name="list_separator">"، "</string>
+    <!-- Under the stats chart's columns, Monday first: Arabic keeps the full names, English abbreviates. -->
+    <string-array name="weekdays_chart">
+        <item>الاثنين</item>
+        <item>الثلاثاء</item>
+        <item>الأربعاء</item>
+        <item>الخميس</item>
+        <item>الجمعة</item>
+        <item>السبت</item>
+        <item>الأحد</item>
+    </string-array>
+
+    <!-- The first start's welcome, a quiet line at its foot. -->
+    <string name="setup_made_by">صُنع بواسطة احمد نايفه</string>
+</resources>
