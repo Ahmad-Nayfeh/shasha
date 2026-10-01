@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_owner_default_name">Adults</string>
+
+    <string name="policy_deny_not_in_allowlist">This isn\'t one of the channels or playlists allowed for this profile.</string>
+    <string name="policy_deny_blocked_channel">This channel is blocked for this profile.</string>
+    <string name="policy_deny_blocked_keyword">The title has a word that\'s blocked for this profile.</string>
+    <string name="policy_deny_shorts_hidden">Shorts are hidden for this profile.</string>
+    <string name="policy_deny_time_up">Watch time is over for today.</string>
+    <string name="policy_deny_outside_schedule">Watching isn\'t allowed at this time.</string>
+    <string name="policy_deny_locked">Serious Mode is on: no other video starts until this one ends or you leave it.</string>
+</resources>

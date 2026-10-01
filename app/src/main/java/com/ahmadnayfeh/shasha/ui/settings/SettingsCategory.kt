@@ -37,9 +37,11 @@ enum class SettingsCategory(
     PROTECTION(SettingsGroup.DEVICE, R.string.settings_protection, R.string.protection_subtitle, ShashaIcons.Shield),
     REMOTE(SettingsGroup.DEVICE, R.string.hub_remote, R.string.hub_remote_summary, RemoteIcons.Phone),
     DATA(SettingsGroup.DEVICE, R.string.settings_backup, R.string.hub_data_summary, RemoteIcons.Backup),
+    APPEARANCE(SettingsGroup.APP, R.string.hub_appearance, R.string.hub_appearance_summary, AppearanceIcons.Language),
     UPDATES(SettingsGroup.APP, R.string.action_check_updates, R.string.hub_updates_summary, ShashaIcons.SystemUpdate),
     DIAGNOSTICS(SettingsGroup.APP, R.string.settings_diagnostics, R.string.hub_diagnostics_summary, ShashaIcons.Build),
     RESET(SettingsGroup.APP, R.string.hub_reset, R.string.hub_reset_summary, ShashaIcons.Refresh, parental = true),
+    GUIDE(SettingsGroup.APP, R.string.hub_guide, R.string.hub_guide_summary, AppearanceIcons.MenuBook),
     ABOUT(SettingsGroup.APP, R.string.hub_about, R.string.hub_about_summary, ShashaIcons.Info),
     ;
 

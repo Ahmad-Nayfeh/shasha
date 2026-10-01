@@ -236,7 +236,7 @@ class BehaviorSettingsTest {
         val changed = shows { it.defaultSpeed == 2.5f && it.customPhrase.isNotEmpty() }
         val section = BehaviorSettings.backupSection(store)
         assertThat(section.sinceFormat).isEqualTo(2)
-        assertThat(section.keys.keys).containsExactlyElementsIn(BehaviorKeys.ALL.keys)
+        assertThat(section.keys.keys).containsExactlyElementsIn(BehaviorKeys.STORED.keys)
         val exported = section.export()
         settings.resetAll()
         shows { it == Behavior.DEFAULT }

@@ -4,6 +4,8 @@ import android.os.Build
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.datastore.preferences.core.Preferences
+import com.ahmadnayfeh.shasha.data.AppLanguage
+import com.ahmadnayfeh.shasha.data.AppTheme
 import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.PhraseMode
 import com.ahmadnayfeh.shasha.data.PlaybackSettings
@@ -72,6 +74,8 @@ data class SettingsHubState(
     val behavior: Behavior? = null,
     /** The phone remote's chosen port. */
     val remotePort: Int? = null,
+    /** «الدليل والفيديو»: the explainer video of the app's language is in this build. */
+    val explainerAvailable: Boolean = true,
 )
 
 /**
@@ -100,6 +104,12 @@ class SettingsHubActions(
     val setMaxQuality: (height: Int) -> Unit = {},
     val setRemoteEnabled: (enabled: Boolean) -> Unit = {},
     val behavior: BehaviorActions = BehaviorActions(),
+    /** «المظهر واللغة» (not behind the PIN: nothing in them is a rule). */
+    val setAppLanguage: (AppLanguage) -> Unit = {},
+    val setAppTheme: (AppTheme) -> Unit = {},
+    /** «الدليل والفيديو». */
+    val openGuide: () -> Unit = {},
+    val openExplainer: () -> Unit = {},
 )
 
 /** Changes to [Behavior] (every one behind the parent PIN: the route guards them). */

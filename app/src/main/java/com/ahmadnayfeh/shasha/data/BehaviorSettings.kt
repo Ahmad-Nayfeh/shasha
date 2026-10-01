@@ -82,7 +82,14 @@ data class Behavior(
     // Search.
     /** «لغة البحث الصوتي»: a BCP 47 tag of [BehaviorKeys.VOICE_LANGUAGES]. */
     val voiceLanguage: String = BehaviorKeys.VOICE_LANGUAGES.first(),
+    // «المظهر واللغة» (v1.1): the app's language (independent of the voice search's) and its theme.
+    val appLanguage: AppLanguage = AppLanguage.DEFAULT,
+    val appTheme: AppTheme = AppTheme.DEFAULT,
 ) {
+    /** The language and the theme on screen. */
+    val appearance: Appearance
+        get() = Appearance(appLanguage, appTheme)
+
     /** The phrases the exit challenge may ask for now. */
     val exitPhrases: List<String>
         get() = if (phraseMode == PhraseMode.CUSTOM && customPhrase.isNotBlank()) listOf(customPhrase) else phrases.ifEmpty { AdultExitChallenge.phrases }
@@ -137,6 +144,8 @@ object BehaviorKeys {
     val SHORTS_MAX_SECONDS = intPreferencesKey("shorts_max_seconds")
     val ADULT_ENTRY_PIN = booleanPreferencesKey("adult_entry_pin")
     val VOICE_LANGUAGE = stringPreferencesKey("voice_language")
+    val APP_LANGUAGE = stringPreferencesKey("app_language")
+    val APP_THEME = stringPreferencesKey("app_theme")
 
     /** «لغة البحث الصوتي»: Arabic (the default) or English. */
     val VOICE_LANGUAGES = listOf("ar-SA", "en-US")
@@ -193,6 +202,15 @@ object BehaviorKeys {
         ADULT_ENTRY_PIN.name to SettingType.BOOLEAN,
         VOICE_LANGUAGE.name to SettingType.STRING,
     )
+
+    /** «المظهر واللغة»: the TV's own (the phone's page is not in the TV's language), not the parent's rules. */
+    val APPEARANCE: Map<String, SettingType> = mapOf(
+        APP_LANGUAGE.name to SettingType.STRING,
+        APP_THEME.name to SettingType.STRING,
+    )
+
+    /** Every key of the file: what the backup keeps and what «إرجاع كل الإعدادات» brings back. */
+    val STORED: Map<String, SettingType> = ALL + APPEARANCE
 }
 
 /**
@@ -257,6 +275,12 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
         require(tag in BehaviorKeys.VOICE_LANGUAGES) { "Not an offered voice language: $tag" }
         put(BehaviorKeys.VOICE_LANGUAGE, tag)
     }
+
+    /** «اللغة»: the whole app switches at once (the activity is recreated, the services' notifications follow). */
+    suspend fun setAppLanguage(language: AppLanguage) = put(BehaviorKeys.APP_LANGUAGE, language.tag)
+
+    /** «المظهر»: dark or light, at once. */
+    suspend fun setAppTheme(theme: AppTheme) = put(BehaviorKeys.APP_THEME, theme.tag)
 
     suspend fun setPhraseMode(mode: PhraseMode) = put(BehaviorKeys.PHRASE_MODE, mode.name)
 
@@ -329,7 +353,7 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
 
     /** Every setting of this file back to its default. */
     suspend fun resetAll() {
-        store.edit { prefs -> prefs.asMap().keys.filter { it.name in BehaviorKeys.ALL }.forEach { prefs.remove(it) } }
+        store.edit { prefs -> prefs.asMap().keys.filter { it.name in BehaviorKeys.STORED }.forEach { prefs.remove(it) } }
     }
 
     private suspend fun <T> put(key: Preferences.Key<T>, value: T) {
@@ -391,6 +415,8 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
                 shortsMaxSeconds = num(BehaviorKeys.SHORTS_MAX_SECONDS, d.shortsMaxSeconds),
                 adultEntryPin = prefs[BehaviorKeys.ADULT_ENTRY_PIN] ?: d.adultEntryPin,
                 voiceLanguage = prefs[BehaviorKeys.VOICE_LANGUAGE]?.takeIf { it in BehaviorKeys.VOICE_LANGUAGES } ?: d.voiceLanguage,
+                appLanguage = AppLanguage.of(prefs[BehaviorKeys.APP_LANGUAGE]),
+                appTheme = AppTheme.of(prefs[BehaviorKeys.APP_THEME]),
             )
         }
 
@@ -415,6 +441,6 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
             )
 
         /** The manual backup keeps every choice (format 2 and later; older files leave them as they are). */
-        fun backupSection(store: DataStore<Preferences>) = SettingsSection(FILE_NAME, store, keys = BehaviorKeys.ALL, sinceFormat = 2)
+        fun backupSection(store: DataStore<Preferences>) = SettingsSection(FILE_NAME, store, keys = BehaviorKeys.STORED, sinceFormat = 2)
     }
 }

@@ -69,6 +69,10 @@ android {
         isCoreLibraryDesugaringEnabled = true
     }
     testOptions { unitTests.isIncludeAndroidResources = true }
+    // The bundled explainer videos (assets/video) stay uncompressed: Media3 reads and seeks them in place.
+    androidResources { noCompress += "mp4" }
+    // The app switches between Arabic and English itself (Settings → المظهر واللغة): an app bundle keeps both languages.
+    bundle { language { enableSplit = false } }
 }
 
 roborazzi {

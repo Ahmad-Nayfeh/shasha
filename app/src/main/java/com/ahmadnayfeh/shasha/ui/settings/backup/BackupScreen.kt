@@ -28,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -218,7 +217,7 @@ private fun CodeLine(command: String) {
     Box(
         Modifier
             .fillMaxWidth()
-            .background(Color(0xFF070A0E), shape)
+            .background(ShashaColors.Code, shape)
             .border(1.dp, ShashaColors.Outline, shape)
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {

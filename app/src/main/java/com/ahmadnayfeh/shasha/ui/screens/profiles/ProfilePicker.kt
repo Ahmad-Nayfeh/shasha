@@ -74,6 +74,7 @@ import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.ahmadnayfeh.shasha.ui.components.brandLockup
 
 /**
  * «من يشاهد الآن؟»: at start (when there are child profiles) and on every switch. A child's card enters
@@ -170,7 +171,7 @@ fun ProfilePickerScreen(
     ) {
         // The brand where reading starts (top right in Arabic), clear of the centred question.
         Image(
-            painterResource(R.drawable.splash_lockup),
+            painterResource(brandLockup()),
             contentDescription = null,
             modifier = Modifier.align(Alignment.TopStart).height(34.dp),
         )

@@ -24,7 +24,9 @@ import com.ahmadnayfeh.shasha.ui.components.containerViewModel
 import com.ahmadnayfeh.shasha.ui.navigation.SettingsActions
 import com.ahmadnayfeh.shasha.ui.parental.LocalParentUnlock
 import com.ahmadnayfeh.shasha.ui.parental.ParentUnlock
+import com.ahmadnayfeh.shasha.ui.screens.guide.ExplainerVideo
 import com.ahmadnayfeh.shasha.ui.screens.settings.rememberProtectionStatus
+import com.ahmadnayfeh.shasha.ui.theme.LocalAppLanguage
 import kotlinx.coroutines.delay
 
 /**
@@ -123,8 +125,14 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
                 resetPort = { gate.guarded { vm.resetPort() } },
                 resetEverything = { gate.guarded { vm.resetEverything { messages?.show(resetDone, ShashaIcons.Refresh) } } },
             ),
+            setAppLanguage = vm::setAppLanguage,
+            setAppTheme = vm::setAppTheme,
+            openGuide = settings.openGuide,
+            openExplainer = settings.openExplainer,
         )
     }
+    val language = LocalAppLanguage.current
+    val explainerAvailable = remember(language) { ExplainerVideo.isAvailable(context, language) }
 
     SettingsHubScreen(
         state = SettingsHubState(
@@ -143,6 +151,7 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
             nowMs = now,
             behavior = behavior,
             remotePort = remotePort,
+            explainerAvailable = explainerAvailable,
         ),
         selected = selected,
         onSelect = { selected = it },

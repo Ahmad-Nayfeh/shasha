@@ -35,7 +35,8 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
+import com.ahmadnayfeh.shasha.ui.theme.OsdColors
+import com.ahmadnayfeh.shasha.ui.theme.Accents
 
 /** Round transport button (play/pause, ±10 s). The accent with a glow when focused, like everything else. */
 @Composable
@@ -47,7 +48,7 @@ internal fun OsdIconButton(
     size: Dp = 52.dp,
     badge: String? = null,
 ) {
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     Surface(
         onClick = onClick,
         modifier = modifier.size(size).semantics { this.contentDescription = contentDescription },
@@ -88,7 +89,7 @@ internal fun OsdChip(
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(18.dp)
-    val accent = LocalAccent.current
+    val accent = Accents.overDark(LocalAccent.current)
     Surface(
         onClick = onClick,
         modifier = modifier,
@@ -130,7 +131,7 @@ internal fun OsdChip(
 internal fun LiveBadge(text: String, modifier: Modifier = Modifier) {
     Row(
         modifier
-            .background(ShashaColors.Error, RoundedCornerShape(8.dp))
+            .background(OsdColors.Error, RoundedCornerShape(8.dp))
             .padding(horizontal = 10.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -150,13 +151,13 @@ internal fun LowQualityBadge(height: Int, modifier: Modifier = Modifier) {
     val description = stringResource(R.string.player_low_quality, height.toString())
     Row(
         modifier
-            .background(ShashaColors.Secondary.copy(alpha = 0.16f), shape)
-            .border(1.dp, ShashaColors.Secondary.copy(alpha = 0.75f), shape)
+            .background(OsdColors.Secondary.copy(alpha = 0.16f), shape)
+            .border(1.dp, OsdColors.Secondary.copy(alpha = 0.75f), shape)
             .padding(horizontal = 10.dp, vertical = 2.dp)
             .semantics(mergeDescendants = true) { contentDescription = description }
             .testTag("osd_low_quality"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("${height}p", style = MaterialTheme.typography.labelLarge, color = ShashaColors.Secondary)
+        Text("${height}p", style = MaterialTheme.typography.labelLarge, color = OsdColors.Secondary)
     }
 }

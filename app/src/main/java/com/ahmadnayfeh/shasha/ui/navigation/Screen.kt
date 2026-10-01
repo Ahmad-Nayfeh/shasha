@@ -84,4 +84,12 @@ sealed interface Screen {
     /** Settings → الاستيراد والتصدير (behind the parent PIN): the manual JSON backup. */
     @Serializable
     data object Backup : Screen
+
+    /** Settings → الدليل والفيديو → «دليل شاشة»: its pages, in the app's language. */
+    @Serializable
+    data object Guide : Screen
+
+    /** Settings → الدليل والفيديو → the explainer video, in the app's language. */
+    @Serializable
+    data object Explainer : Screen
 }

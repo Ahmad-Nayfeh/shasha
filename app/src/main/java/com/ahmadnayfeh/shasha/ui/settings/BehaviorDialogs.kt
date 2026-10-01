@@ -228,7 +228,7 @@ private fun CheckRow(label: String, checked: Boolean, onClick: () -> Unit, modif
             Spacer(Modifier.width(12.dp))
             Text(
                 label,
-                style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.ContentOrRtl),
+                style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Content),
                 color = if (dimmed) ShashaColors.Muted else if (checked) accent.bright else ShashaColors.Text,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Counted phrases keep the Arabic forms' order (ONE, TWO, FEW, MANY, OTHER): English needs only one and other. -->
+    <string-array name="count_seconds">
+        <item>1 second</item>
+        <item>2 seconds</item>
+        <item>%1$s seconds</item>
+        <item>%1$s seconds</item>
+        <item>%1$s seconds</item>
+    </string-array>
+    <string-array name="count_seconds_after">
+        <item>1 second</item>
+        <item>2 seconds</item>
+        <item>%1$s seconds</item>
+        <item>%1$s seconds</item>
+        <item>%1$s seconds</item>
+    </string-array>
+    <string-array name="count_phrases">
+        <item>1 phrase</item>
+        <item>2 phrases</item>
+        <item>%1$s phrases</item>
+        <item>%1$s phrases</item>
+        <item>%1$s phrases</item>
+    </string-array>
+
+    <string name="lock_adult_no_escape">Serious Mode: this video plays to the end. A parent can end it from the parent section on the phone.</string>
+
+    <string name="behavior_default_tag">Default</string>
+    <string name="behavior_option_default">%1$s (default)</string>
+    <string name="behavior_reset_one">Restore defaults</string>
+    <string name="action_done">Done</string>
+    <string name="behavior_reset_pane_body">Puts this section\'s settings back as they were when installed</string>
+    <string name="behavior_off">Off</string>
+
+    <string name="hub_serious">Serious Mode</string>
+    <string name="hub_serious_summary">A video you start is watched to the end</string>
+    <string name="serious_switch">Serious Mode</string>
+    <string name="serious_switch_body">Kids leave a video with the parent PIN; adults hold a key, then type a phrase. When off, Back leaves any video.</string>
+    <string name="serious_off_note">Serious Mode is off: Back leaves any video, in every profile.</string>
+    <string name="serious_escape">Let adults leave before the end</string>
+    <string name="serious_escape_body">Hold a key, then type a phrase; it counts as giving up. When off, only the phone can end a video early.</string>
+    <string name="serious_hold">Hold duration</string>
+    <string name="serious_hold_body">How many seconds to hold Back or &#x2068;OK&#x2069; before the phrase appears</string>
+    <string name="serious_phrase_section">Exit phrase</string>
+    <string name="serious_phrase_random">A random phrase from the list</string>
+    <string name="serious_phrase_custom">My own phrase</string>
+    <string name="serious_phrase_custom_empty">Not written yet: press to write it</string>
+    <string name="serious_phrases_edit">Phrase list</string>
+    <string name="serious_phrases_edit_body">Add or remove a phrase</string>
+    <string name="serious_custom_edit">Write my phrase</string>
+    <string name="serious_phrases_title">Exit phrases</string>
+    <string name="serious_phrases_add">Add a phrase</string>
+    <string name="serious_phrases_remove">Remove</string>
+    <string name="serious_phrases_note">Arabic letters and spaces only, up to 30 characters: it\'s typed on the keyboard that appears when leaving.</string>
+    <string name="serious_phrases_last">At least one phrase stays on the list.</string>
+    <string name="serious_phrases_reset">Restore the ten original phrases</string>
+    <string name="serious_phrase_hint">Type the phrase</string>
+    <string name="serious_phrase_invalid">The exit keyboard can\'t type this phrase: Arabic letters and spaces only, up to 30 characters.</string>
+    <string name="serious_phrase_exists">This phrase is already on the list.</string>
+    <string name="serious_skip">Allowed skipping</string>
+    <string name="serious_end_section">When a video counts as ended by itself</string>
+    <string name="serious_skip_body">Skipping ahead up to this much still lets the video count as ended by itself</string>
+    <string name="serious_played">Or watching part of the video</string>
+    <string name="serious_played_body">The video also ends by itself once this much of what was left has been watched</string>
+    <string name="serious_played_all">The whole video</string>
+    <string name="serious_skip_none">No skipping</string>
+
+    <string name="hub_playback">Playback &amp; alerts</string>
+    <string name="hub_playback_summary">Time warning, speed, skipping and countdowns</string>
+    <string name="playback_section_time">Time and alerts</string>
+    <string name="playback_warning">Warning before time runs out</string>
+    <string name="playback_warning_body">A quiet notice before watching stops</string>
+    <string name="playback_warning_value">%1$s before</string>
+    <string name="playback_banner">Notice duration</string>
+    <string name="playback_banner_body">How long the notice stays on screen</string>
+    <string name="playback_extra">Extra time options</string>
+    <string name="playback_extra_body">What appears after the PIN on the “Time\'s up” screen, along with “Rest of today”</string>
+    <string name="playback_extra_title">Extra time options</string>
+    <string name="playback_extra_note">Choose one to four options.</string>
+    <string name="playback_section_player">Player</string>
+    <string name="playback_speed">Speed when a video starts</string>
+    <string name="playback_speed_body">The player\'s speed menu still goes up to 4×</string>
+    <string name="playback_seek">Skip step</string>
+    <string name="playback_seek_body">How far the video jumps ahead or back with one press of right or left</string>
+    <string name="playback_hide">Hide controls</string>
+    <string name="playback_hide_body">After how many seconds without a key press the controls hide during playback</string>
+    <string name="playback_up_next">Countdown to the next video</string>
+    <string name="playback_up_next_body">Inside a playlist. When off, the next video waits for “Play now”</string>
+    <string name="playback_kids_home">Child back to home</string>
+    <string name="playback_kids_home_body">After a child\'s video ends: how many seconds before the screen goes back to their home</string>
+    <string name="playback_section_sponsor">Skip notices (&#x2068;SponsorBlock&#x2069;)</string>
+    <string name="playback_undo">“Undo skip” time</string>
+    <string name="playback_undo_body">In the adult profile: how long you can undo after each skip</string>
+    <string name="playback_notice">Skip notice duration</string>
+    <string name="playback_notice_body">In a child\'s profile: how long the “Skipped” notice stays</string>
+    <string name="playback_section_kids">Kids</string>
+    <string name="playback_shorts">Short video limit (&#x2068;Shorts&#x2069;)</string>
+    <string name="playback_shorts_body">Anything this long or shorter counts as short, and is hidden wherever Shorts are hidden</string>
+    <string name="playback_shorts_value">Up to %1$s</string>
+    <string name="playback_section_search">Search</string>
+    <string name="playback_voice_language">Voice search language</string>
+    <string name="playback_voice_language_body">The language the microphone listens for on the search screen</string>
+    <string name="voice_language_ar">Arabic</string>
+    <string name="voice_language_en">English</string>
+
+    <string name="pin_settings_failures">Attempts before locking</string>
+    <string name="pin_settings_failures_body">How many wrong PINs in a row before the PIN stops being accepted</string>
+    <string name="pin_settings_lockout">First lockout</string>
+    <string name="pin_settings_lockout_body">It gets longer each time until the right PIN is entered: three times as long, then 12 times, then 48 times</string>
+    <string name="pin_settings_unlock">Keep settings open for</string>
+    <string name="pin_settings_unlock_body">After you enter the PIN in your profile, before it\'s asked for again</string>
+    <string name="pin_settings_relock">Ask again after leaving the app</string>
+    <string name="pin_settings_relock_body">If the app is off screen this long, it asks again who\'s watching</string>
+    <string name="pin_settings_adult_entry">Ask for the parent PIN to enter the adult profile</string>
+    <string name="pin_settings_adult_entry_body">When off, the adult profile opens without a PIN, from the TV and from the phone. Settings always stay locked behind the PIN, so a child can\'t turn off the protection, and leaving a child\'s profile still needs the PIN.</string>
+    <string name="pin_settings_adult_entry_warning">Note: while this is off, kids can enter the adult profile and watch what\'s in it.</string>
+    <string name="hub_pin_note_dynamic">The parent PIN opens your profile and these settings, lets kids out of their profiles and grants extra time. Wrong PINs, %1$s in a row, lock it for %2$s at first, up to %3$s.</string>
+    <string-array name="count_attempts">
+        <item>1 attempt</item>
+        <item>2 attempts</item>
+        <item>%1$s attempts</item>
+        <item>%1$s attempts</item>
+        <item>%1$s attempts</item>
+    </string-array>
+
+    <string name="remote_port">Server port</string>
+    <string name="remote_port_body">1024 to 65535. After a change the server restarts on it, so scan the pairing code again</string>
+    <string name="remote_port_hint">Port number</string>
+    <string name="remote_port_invalid">The port is a number from 1024 to 65535.</string>
+
+    <string name="profile_hide_comments">Hide comments</string>
+    <string name="profile_comments_child_note">Comments are always hidden in a child\'s profile.</string>
+
+    <string name="hub_reset">Reset</string>
+    <string name="hub_reset_summary">Put every setting back to its default</string>
+    <string name="reset_all">Restore all settings to their defaults</string>
+    <string name="reset_all_body">Serious Mode, alerts, playback, the parent PIN\'s limits, skip categories, quality, the server port, the language and the theme</string>
+    <string name="reset_keeps">Nothing is deleted: profiles, the parent PIN itself, subscriptions, history, allowlists and blocklists, quotas and schedules all stay.</string>
+    <string name="reset_confirm_title">Restore all settings?</string>
+    <string name="reset_confirm_body">Every setting goes back to how it was when installed. Profiles, the PIN, subscriptions, history and lists stay as they are.</string>
+    <string name="reset_confirm_action">Restore</string>
+    <string name="reset_done">All settings are back to their defaults.</string>
+</resources>

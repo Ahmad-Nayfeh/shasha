@@ -4,7 +4,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.Fixtures
-import com.ahmadnayfeh.shasha.TV_1080P
+import com.ahmadnayfeh.shasha.TV_DEVICE
 import com.ahmadnayfeh.shasha.ui.screens.diagnostics.DiagnosticsScreen
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerOsd
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
@@ -20,7 +20,7 @@ import org.robolectric.annotation.Config
  * (ARCHITECTURE: "Western digits (0-9) for numbers"), as elsewhere in the app ("4:22", "1080p").
  */
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [35], qualifiers = "ar-rSA-" + TV_1080P)
+@Config(sdk = [35], qualifiers = "ar-rSA-" + TV_DEVICE)
 class WesternDigitsTest {
     @get:Rule
     val compose = createComposeRule()

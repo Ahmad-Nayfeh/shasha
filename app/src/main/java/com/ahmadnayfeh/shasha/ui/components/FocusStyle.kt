@@ -36,7 +36,7 @@ import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 object ShashaFocus {
     const val CardScale = 1.05f
     const val ButtonScale = 1.08f
-    val GlowColor = ShashaColors.Primary.copy(alpha = 0.55f)
+    val GlowColor: Color get() = ShashaColors.Primary.copy(alpha = 0.55f)
     val CardGlow = Glow(elevationColor = GlowColor, elevation = 18.dp)
     val ButtonGlow = Glow(elevationColor = GlowColor, elevation = 12.dp)
     val BorderWidth = 3.dp

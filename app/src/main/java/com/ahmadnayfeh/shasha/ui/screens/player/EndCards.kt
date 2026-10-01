@@ -49,9 +49,10 @@ import com.ahmadnayfeh.shasha.ui.components.ThumbnailBadge
 import com.ahmadnayfeh.shasha.ui.format.Thumbnails
 import com.ahmadnayfeh.shasha.ui.format.rememberFormats
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import kotlinx.coroutines.delay
+import com.ahmadnayfeh.shasha.ui.theme.OsdColors
+import com.ahmadnayfeh.shasha.ui.theme.Accents
 
 /**
  * What the screen shows when a video ends: a calm card with «رجوع» (no related videos, nothing plays by
@@ -132,8 +133,8 @@ private fun KidsFinished(
         Spacer(Modifier.height(6.dp))
         Text(
             title,
-            style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.ContentOrRtl),
-            color = ShashaColors.Muted,
+            style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.Content),
+            color = OsdColors.Muted,
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -143,7 +144,7 @@ private fun KidsFinished(
         Text(
             formats.count(R.array.back_home_in_seconds, left.toLong()),
             style = MaterialTheme.typography.titleMedium,
-            color = LocalAccent.current.bright,
+            color = Accents.overDark(LocalAccent.current).bright,
             modifier = Modifier.testTag("kids_home_countdown"),
         )
         Spacer(Modifier.height(26.dp))
@@ -165,11 +166,11 @@ private fun EndBadge(icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Box(
         Modifier
             .size(84.dp)
-            .background(LocalAccent.current.tint(0.16f), CircleShape)
-            .border(1.dp, LocalAccent.current.tint(0.45f), CircleShape),
+            .background(Accents.overDark(LocalAccent.current).tint(0.16f), CircleShape)
+            .border(1.dp, Accents.overDark(LocalAccent.current).tint(0.45f), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = null, tint = LocalAccent.current.bright, modifier = Modifier.size(42.dp))
+        Icon(icon, contentDescription = null, tint = Accents.overDark(LocalAccent.current).bright, modifier = Modifier.size(42.dp))
     }
 }
 
@@ -182,8 +183,8 @@ private fun Finished(heading: String, title: String, onBack: () -> Unit, onRepla
         Spacer(Modifier.height(6.dp))
         Text(
             title,
-            style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.ContentOrRtl),
-            color = ShashaColors.Muted,
+            style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.Content),
+            color = OsdColors.Muted,
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -194,7 +195,7 @@ private fun Finished(heading: String, title: String, onBack: () -> Unit, onRepla
             Text(
                 stringResource(R.string.player_skipped_still_locked),
                 style = MaterialTheme.typography.titleSmall,
-                color = ShashaColors.Secondary,
+                color = OsdColors.Secondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().testTag("end_still_locked"),
             )
@@ -236,7 +237,7 @@ private fun UpNext(
         onPlayNext(next)
     }
     Column(Modifier.widthIn(max = 640.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(stringResource(R.string.player_up_next), style = MaterialTheme.typography.labelLarge, color = LocalAccent.current.bright)
+        Text(stringResource(R.string.player_up_next), style = MaterialTheme.typography.labelLarge, color = Accents.overDark(LocalAccent.current).bright)
         Spacer(Modifier.height(12.dp))
         Box(Modifier.width(384.dp).height(216.dp)) {
             val url = remember(next.videoId) { Thumbnails.video(next.videoId) }
@@ -248,20 +249,20 @@ private fun UpNext(
         Spacer(Modifier.height(16.dp))
         Text(
             next.title,
-            style = MaterialTheme.typography.titleLarge.copy(textDirection = TextDirection.ContentOrRtl),
+            style = MaterialTheme.typography.titleLarge.copy(textDirection = TextDirection.Content),
             color = Color.White,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth(),
         )
-        next.channelName?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Muted, maxLines = 1) }
+        next.channelName?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = OsdColors.Muted, maxLines = 1) }
         Spacer(Modifier.height(10.dp))
         if (countdownSeconds > 0) {
             Text(
                 formats.count(R.array.starts_in_seconds, left.toLong()),
                 style = MaterialTheme.typography.titleMedium,
-                color = ShashaColors.Secondary,
+                color = OsdColors.Secondary,
                 modifier = Modifier.testTag("up_next_countdown"),
             )
         }

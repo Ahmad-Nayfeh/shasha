@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.work.WorkManager
 import com.ahmadnayfeh.shasha.backup.BackupManager
 import com.ahmadnayfeh.shasha.data.ActiveProfile
+import com.ahmadnayfeh.shasha.data.AppLanguage
+import com.ahmadnayfeh.shasha.data.AppearanceState
 import com.ahmadnayfeh.shasha.data.BehaviorSettings
 import com.ahmadnayfeh.shasha.data.FeedRepository
 import com.ahmadnayfeh.shasha.data.NetworkStatus
@@ -56,6 +58,7 @@ import com.ahmadnayfeh.shasha.sponsorblock.SponsorBlockSettings
 import com.ahmadnayfeh.shasha.ui.navigation.NavigationRequests
 import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
 import com.ahmadnayfeh.shasha.ui.screens.kids.KidsFeed
+import com.ahmadnayfeh.shasha.ui.theme.AppLocale
 import com.ahmadnayfeh.shasha.update.ApkInspector
 import com.ahmadnayfeh.shasha.update.GitHubReleases
 import com.ahmadnayfeh.shasha.update.InstallEvents
@@ -158,6 +161,9 @@ class AppContainer(context: Context) {
      */
     val behavior: BehaviorSettings by lazy { BehaviorSettings(behaviorStore, appScope) }
 
+    /** «المظهر واللغة» on screen: the activity and the services read the language before they draw anything. */
+    val appearance: AppearanceState by lazy { AppearanceState(behavior, appScope) }
+
     val policyEngine: PolicyEngine by lazy { PolicyEngine(clock) { behavior.policyConfig() } }
 
     // ---- Search (v1.1): recent searches per profile, and the remote's SEARCH key. ----------------------------
@@ -179,7 +185,13 @@ class AppContainer(context: Context) {
      * ShashaApp does that off the main thread at start.
      */
     val currentProfile: ActiveProfile by lazy {
-        ActiveProfile.create(profiles, policyStore, appScope, ownerName = appContext.getString(R.string.profile_owner_default_name))
+        ActiveProfile.create(
+            profiles,
+            policyStore,
+            appScope,
+            // The owner's first name is written once, in the language the app shows then.
+            ownerName = AppLocale.localize(appContext, appearance.current().language).getString(R.string.profile_owner_default_name),
+        )
     }
 
     /** Lockouts count down on the TV's uptime: setting its clock forward does not end one. */
@@ -261,6 +273,12 @@ class AppContainer(context: Context) {
 
     // ---- The phone remote (SPEC §5) and the manual backup. ---------------------------------------------------
 
+    /**
+     * The phone's page is Arabic (remote/web): its answers (labels, refusals, errors) are read in Arabic whatever language
+     * the TV shows.
+     */
+    private val phoneResources by lazy { AppLocale.localize(appContext, AppLanguage.ARABIC).resources }
+
     /** The player on screen, as the phone remote sees and drives it. */
     val playerHub: PlayerHub = PlayerHub()
 
@@ -341,7 +359,7 @@ class AppContainer(context: Context) {
             player = playerHub,
             display = TvDisplay(appContext, appVisibility, profileScreensShown, navigationRequests),
             playQueues = playQueues,
-            texts = RemoteTexts(appContext.resources),
+            texts = RemoteTexts(phoneResources),
             seriousMode = { behavior.policyConfig().seriousMode },
             profileChoices = phoneProfileChoices,
             settings = PhoneSettings(
@@ -349,7 +367,7 @@ class AppContainer(context: Context) {
                 sponsorBlock = sponsorBlockSettings,
                 playback = playbackSettings,
                 remote = remoteSettings,
-                resources = appContext.resources,
+                resources = phoneResources,
                 scope = appScope,
                 restartRemote = { remote.restart() },
                 portAvailable = { port -> remote.portAvailable(port) },
@@ -361,8 +379,8 @@ class AppContainer(context: Context) {
                 engine = policyEngine,
                 zone = { clock.zone },
                 source = videoSource,
-                resources = appContext.resources,
-                errors = RemoteTexts(appContext.resources)::sourceError,
+                resources = phoneResources,
+                errors = RemoteTexts(phoneResources)::sourceError,
                 currentId = { currentProfile.awaitProfile().id },
             ),
             revision = { remoteRevision.value },

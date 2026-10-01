@@ -79,6 +79,7 @@ import java.time.LocalDate
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.roundToInt
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
 @Composable
 fun StatsRoute() {
@@ -187,7 +188,7 @@ private fun QuotaKey(text: String) {
 }
 
 /** The daily quota is a reference line, not data: neutral and dashed, drawn over the columns. */
-private val QuotaLineColor = ShashaColors.Text.copy(alpha = 0.7f)
+private val QuotaLineColor: Color get() = ShashaColors.Text.copy(alpha = 0.7f)
 
 private fun DrawScope.quotaDash() = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx()))
 
@@ -226,7 +227,7 @@ private fun WeekChart(summary: UsageSummary, today: Long, quotaMinutes: Int?, te
                 days.forEachIndexed { index, day ->
                     val isToday = day.epochDay == today
                     DayColumn(
-                        label = if (isToday) stringResource(R.string.stats_today) else texts.weekday(LocalDate.ofEpochDay(day.epochDay)),
+                        label = if (isToday) stringResource(R.string.stats_today) else texts.weekdayChart(LocalDate.ofEpochDay(day.epochDay)),
                         minutes = day.minutes,
                         fraction = day.minutes.toFloat() / top,
                         grow = { (grow.value * (1f + index * 0.08f) - index * 0.08f).coerceIn(0f, 1f) },
@@ -426,8 +427,8 @@ private fun TopChannels(channels: List<ChannelUsage>, texts: TimeTexts, modifier
                             Text(
                                 name,
                                 // A Latin name too starts on the right, clear of the minutes.
-                                style = MaterialTheme.typography.labelLarge.copy(textDirection = TextDirection.ContentOrRtl),
-                                textAlign = TextAlign.Right,
+                                style = MaterialTheme.typography.labelLarge.copy(textDirection = TextDirection.Content),
+                                textAlign = StartTextAlign,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f),

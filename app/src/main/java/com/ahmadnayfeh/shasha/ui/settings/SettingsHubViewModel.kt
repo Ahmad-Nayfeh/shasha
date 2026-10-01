@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.datastore.preferences.core.Preferences
+import com.ahmadnayfeh.shasha.data.AppLanguage
+import com.ahmadnayfeh.shasha.data.AppTheme
 import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.BehaviorSettings
 import com.ahmadnayfeh.shasha.data.FeedRepository
@@ -115,6 +117,10 @@ class SettingsHubViewModel(
     fun setAdultEntryPin(on: Boolean) = behave { it.setAdultEntryPin(on) }
 
     fun setVoiceLanguage(tag: String) = behave { it.setVoiceLanguage(tag) }
+
+    fun setAppLanguage(language: AppLanguage) = behave { it.setAppLanguage(language) }
+
+    fun setAppTheme(theme: AppTheme) = behave { it.setAppTheme(theme) }
 
     fun setNumber(key: Preferences.Key<Int>, value: Int) = behave { it.setNumber(key, value) }
 

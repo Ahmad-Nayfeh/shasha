@@ -43,6 +43,7 @@ import com.ahmadnayfeh.shasha.ui.screens.error.ErrorTexts
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.youtube.SourceException
+import com.ahmadnayfeh.shasha.ui.theme.AppTextDirection
 
 /** Grid geometry shared by every browsing screen (4 columns of ~181 dp in the area beside the rail). */
 object GridDefaults {
@@ -138,7 +139,7 @@ fun EmptyState(
         Spacer(Modifier.height(8.dp))
         Text(
             body,
-            style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.Rtl),
+            style = MaterialTheme.typography.bodyLarge.copy(textDirection = AppTextDirection),
             color = ShashaColors.Muted,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),

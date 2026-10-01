@@ -35,7 +35,7 @@ import com.ahmadnayfeh.shasha.ui.components.PinCheck
 import com.ahmadnayfeh.shasha.ui.components.PinPanel
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
-import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
+import com.ahmadnayfeh.shasha.ui.theme.OsdColors
 
 /**
  * A child pressed BACK in a locked video (SPEC §4): «الخروج يحتاج رمز الوالدين», over the paused video.
@@ -87,9 +87,9 @@ fun ChildExitPrompt(
             }
             Spacer(Modifier.height(14.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(ShashaIcons.Back, contentDescription = null, tint = ShashaColors.Muted, modifier = Modifier.size(18.dp))
+                Icon(ShashaIcons.Back, contentDescription = null, tint = OsdColors.Muted, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.lock_back_to_video), style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Muted)
+                Text(stringResource(R.string.lock_back_to_video), style = MaterialTheme.typography.bodyMedium, color = OsdColors.Muted)
             }
         }
     }

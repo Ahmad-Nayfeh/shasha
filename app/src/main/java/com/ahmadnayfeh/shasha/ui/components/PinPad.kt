@@ -67,6 +67,7 @@ import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.policy.PinHasher
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
+import com.ahmadnayfeh.shasha.ui.theme.appLayoutDirection
 
 /** The digits typed on a [PinPad] so far (never shown, only counted by the dots). */
 @Stable
@@ -370,8 +371,8 @@ private fun ConfirmKey(ready: Boolean, onClick: () -> Unit, modifier: Modifier =
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.06f),
         glow = ClickableSurfaceDefaults.glow(focusedGlow = accent.buttonGlow),
     ) {
-        // The label is Arabic: give it back its own direction inside the left-to-right keypad.
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+        // The label is the app's: give it back the app's direction inside the left-to-right keypad.
+        CompositionLocalProvider(LocalLayoutDirection provides appLayoutDirection) {
             Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.CenterVertically) {
                 Icon(ShashaIcons.Check, contentDescription = null, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(8.dp))

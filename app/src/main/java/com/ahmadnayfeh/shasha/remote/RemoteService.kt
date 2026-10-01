@@ -20,6 +20,7 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
+import com.ahmadnayfeh.shasha.ui.theme.AppLocale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -32,8 +33,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -61,6 +64,10 @@ class RemoteService : LifecycleService() {
         // First, even to stop at once: a service started with startForegroundService must call startForeground.
         startInForeground()
         val container = appContainer
+        // «اللغة» changed: the notification says it again in the new one.
+        lifecycleScope.launch {
+            container.appearance.state.map { it.language }.distinctUntilChanged().drop(1).collect { startInForeground() }
+        }
         lifecycleScope.launch {
             val remote = withContext(Dispatchers.IO) { container.remote }
             runtime = remote
@@ -163,16 +170,18 @@ class RemoteService : LifecycleService() {
     }
 
     private fun startInForeground() {
+        // The app's texts in «اللغة» of the moment (the service's own resources follow the TV's system language).
+        val texts = AppLocale.localize(this, appContainer.appearance.current().language)
         val notifications = getSystemService(NotificationManager::class.java)
         notifications.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, getString(R.string.remote_channel_name), NotificationManager.IMPORTANCE_MIN).apply {
+            NotificationChannel(CHANNEL_ID, texts.getString(R.string.remote_channel_name), NotificationManager.IMPORTANCE_MIN).apply {
                 setShowBadge(false)
             },
         )
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
-            .setContentTitle(getString(R.string.remote_notification_title))
-            .setContentText(getString(R.string.remote_notification_text))
+            .setContentTitle(texts.getString(R.string.remote_notification_title))
+            .setContentText(texts.getString(R.string.remote_notification_text))
             .setOngoing(true)
             .setShowWhen(false)
             .setSilent(true)

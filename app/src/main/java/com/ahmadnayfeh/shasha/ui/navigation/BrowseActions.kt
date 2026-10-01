@@ -40,4 +40,7 @@ class SettingsActions(
     val openBackup: () -> Unit = {},
     /** «فحص التحديثات» (SPEC §6): the GitHub Releases updater (a child sees who can update instead). */
     val openUpdates: () -> Unit = {},
+    /** «الدليل والفيديو»: «دليل شاشة»'s pages, and the explainer video. */
+    val openGuide: () -> Unit = {},
+    val openExplainer: () -> Unit = {},
 )

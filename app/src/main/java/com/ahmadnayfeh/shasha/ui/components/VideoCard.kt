@@ -18,7 +18,6 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -31,6 +30,7 @@ import com.ahmadnayfeh.shasha.ui.format.Thumbnails
 import com.ahmadnayfeh.shasha.ui.model.TimeKind
 import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
+import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
 val CardShape = RoundedCornerShape(14.dp)
 
@@ -81,8 +81,8 @@ fun VideoCard(
         Spacer(Modifier.height(10.dp))
         Text(
             video.title,
-            style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.ContentOrRtl),
-            textAlign = TextAlign.Right,
+            style = MaterialTheme.typography.titleSmall.copy(textDirection = TextDirection.Content),
+            textAlign = StartTextAlign,
             maxLines = 2,
             minLines = 2,
             overflow = TextOverflow.Ellipsis,
@@ -100,7 +100,7 @@ fun MetaLine(primary: String?, secondary: String?, modifier: Modifier = Modifier
         if (primary != null) {
             Text(
                 primary,
-                style = style.copy(textDirection = TextDirection.ContentOrRtl),
+                style = style.copy(textDirection = TextDirection.Content),
                 color = ShashaColors.Muted,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

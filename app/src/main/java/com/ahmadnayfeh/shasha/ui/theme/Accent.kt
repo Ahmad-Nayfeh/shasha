@@ -30,22 +30,52 @@ class Accent(
 }
 
 object Accents {
-    val Teal = Accent(
-        main = ShashaColors.Primary,
-        bright = ShashaColors.PrimaryBright,
-        onMain = ShashaColors.OnPrimary,
-        glowColor = ShashaColors.Primary.copy(alpha = 0.55f),
+    /** The dark theme's teal (also what code drawn outside [ShashaTheme] gets, e.g. previews). */
+    val TealDark = Accent(
+        main = Palettes.Dark.primary,
+        bright = Palettes.Dark.primaryBright,
+        onMain = Palettes.Dark.onPrimary,
+        glowColor = Palettes.Dark.primary.copy(alpha = 0.55f),
     )
 
-    val Kids = Accent(
-        main = ShashaColors.KidsAccent,
+    // The same teal fill (dark text on it); a deeper teal where it is text or an icon on the light surfaces.
+    private val TealLight = Accent(
+        main = Palettes.Dark.primary,
+        bright = Palettes.Light.primary,
+        onMain = Palettes.Dark.onPrimary,
+        glowColor = Palettes.Dark.primary.copy(alpha = 0.45f),
+    )
+
+    private val KidsDark = Accent(
+        main = Palettes.Dark.kidsAccent,
         bright = Color(0xFFFFE08F),
         onMain = Color(0xFF332300),
-        glowColor = ShashaColors.KidsAccent.copy(alpha = 0.5f),
+        glowColor = Palettes.Dark.kidsAccent.copy(alpha = 0.5f),
     )
+
+    private val KidsLight = Accent(
+        main = Color(0xFFFFC94A),
+        bright = Palettes.Light.kidsAccent,
+        onMain = Color(0xFF332300),
+        glowColor = Color(0xFFFFC94A).copy(alpha = 0.5f),
+    )
+
+    /** The brand's teal, for the theme on screen. */
+    val Teal: Accent get() = if (ShashaColors.isLight) TealLight else TealDark
+
+    /** A child profile's yellow, for the theme on screen. */
+    val Kids: Accent get() = if (ShashaColors.isLight) KidsLight else KidsDark
+
+    /** [accent] where the player stays dark in both themes (over its video, [OsdColors]): the dark theme's variant. */
+    fun overDark(accent: Accent): Accent = when (accent) {
+        TealLight -> TealDark
+        KidsLight -> KidsDark
+        else -> accent
+    }
 }
 
-val LocalAccent = staticCompositionLocalOf { Accents.Teal }
+/** [ShashaTheme] provides the theme's teal; this default only serves code drawn outside it (previews). */
+val LocalAccent = staticCompositionLocalOf { Accents.TealDark }
 
 /** The child profile's warm accent for everything inside [content]. */
 @Composable
