@@ -232,18 +232,28 @@ class PhoneSettings(
         override suspend fun apply(value: JsonElement, before: Snapshot): Outcome = write(value, before)
     }
 
-    private val serious = mapOf("serious_mode" to JsonPrimitive(true))
-    private val escape = serious + ("adult_escape" to JsonPrimitive(true))
+    /** The adult's way out only matters while the adult's «الوضع الجاد» is on (v1.2: the switches are separate). */
+    private val serious = mapOf(BehaviorKeys.SERIOUS_MODE_ADULT.name to JsonPrimitive(true))
+    private val escape = serious + (BehaviorKeys.ADULT_ESCAPE.name to JsonPrimitive(true))
 
     private val definitions: List<Def> = listOf(
-        // «الوضع الجاد».
+        // «الوضع الجاد»: v1.2, one switch for the children's profiles and one for the adult's.
         Switch(
-            BehaviorKeys.SERIOUS_MODE.name, GROUP_SERIOUS, R.string.serious_switch, R.string.serious_switch_body,
-            { it.behavior.seriousMode }, Behavior.DEFAULT.seriousMode, { behavior.setSeriousMode(it) }, warning = R.string.serious_off_note,
+            BehaviorKeys.SERIOUS_MODE_CHILDREN.name, GROUP_SERIOUS, R.string.serious_children, R.string.serious_children_body,
+            { it.behavior.seriousModeChildren }, Behavior.DEFAULT.seriousModeChildren, { behavior.setSeriousModeChildren(it) },
+            warning = R.string.serious_children_off_note,
         ),
+        Switch(
+            BehaviorKeys.SERIOUS_MODE_ADULT.name, GROUP_SERIOUS, R.string.serious_adult, R.string.serious_adult_body,
+            { it.behavior.seriousModeAdult }, Behavior.DEFAULT.seriousModeAdult, { behavior.setSeriousModeAdult(it) },
+            warning = R.string.serious_adult_off_note,
+        ),
+        // Turned off from a paired phone (it is one): every adult video then waits for its «تأكيد» (the TV refuses it
+        // without a paired phone).
         Switch(
             BehaviorKeys.ADULT_ESCAPE.name, GROUP_SERIOUS, R.string.serious_escape, R.string.serious_escape_body,
             { it.behavior.adultEscape }, Behavior.DEFAULT.adultEscape, { behavior.setAdultEscape(it) }, visibleWhen = serious,
+            warning = R.string.serious_escape_off_note,
         ),
         NumberDef(NumberSettings.EscapeHold, GROUP_SERIOUS, escape),
         Choice(
@@ -266,8 +276,9 @@ class PhoneSettings(
         ),
         PhraseList(),
         CustomPhrase(),
-        NumberDef(NumberSettings.SkipAllowance, GROUP_SERIOUS, serious),
-        NumberDef(NumberSettings.PlayedPercent, GROUP_SERIOUS, serious),
+        // Whichever kind's switch is on: shown always.
+        NumberDef(NumberSettings.SkipAllowance, GROUP_SERIOUS),
+        NumberDef(NumberSettings.PlayedPercent, GROUP_SERIOUS),
         // «التشغيل والتنبيهات».
         NumberDef(NumberSettings.Warning, GROUP_PLAYBACK),
         NumberDef(NumberSettings.Banner, GROUP_PLAYBACK),

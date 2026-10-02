@@ -8,6 +8,7 @@ import com.ahmadnayfeh.shasha.policy.PlaybackLock
 import com.ahmadnayfeh.shasha.policy.PlayedPart
 import com.ahmadnayfeh.shasha.policy.PolicyEngine
 import com.ahmadnayfeh.shasha.policy.Profile
+import com.ahmadnayfeh.shasha.policy.SeriousMode
 import com.ahmadnayfeh.shasha.policy.SurrenderEvent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -81,10 +81,11 @@ class LockController(
     private val surrenders: SurrenderLog,
     private val scope: CoroutineScope,
     /**
-     * «الوضع الجاد» on or off (Settings). Turned off, the lock that holds a video now ends at once (no surrender:
-     * the parent chose it), and no video is locked any more ([PolicyEngine.lockFor]).
+     * «الوضع الجاد», per kind of profile (Settings; v1.2: the children's and the adult's switches). Turned off for the
+     * kind of the lock that holds a video now, that lock ends at once (no surrender: the parent chose it), and no video
+     * of that kind is locked any more ([PolicyEngine.lockFor]). The other kind's lock is not touched.
      */
-    seriousMode: Flow<Boolean> = flowOf(true),
+    seriousMode: Flow<SeriousMode> = flowOf(SeriousMode.ON),
 ) {
     private val mutex = Mutex()
     private val _lock = MutableStateFlow<PlaybackLock?>(null)
@@ -100,9 +101,12 @@ class LockController(
             for ((what, report) in reports) runCatchingLogged(what) { report() }
         }
         scope.launch {
-            seriousMode.filter { !it }.collect {
+            seriousMode.collect { modes ->
                 runCatchingLogged("end the lock (Serious Mode off)") {
-                    mutex.withLock { if (store.current() != null) write(null) }
+                    mutex.withLock {
+                        val current = store.current()
+                        if (current != null && !modes.holds(current)) write(null)
+                    }
                 }
             }
         }

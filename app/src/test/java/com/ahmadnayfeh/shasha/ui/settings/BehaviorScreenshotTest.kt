@@ -91,20 +91,33 @@ class BehaviorScreenshotTest {
     @Test
     fun serious() = snap("behavior_serious", SettingsCategory.SERIOUS)
 
-    /** DOWN to the end: the phrase choice, the skipping allowance and the reset. */
+    /** DOWN to the end: the phrase choice, the skipping allowance and the reset (v1.2: two switches at the top). */
     @Test
-    fun seriousEnd() = snap("behavior_serious_end", SettingsCategory.SERIOUS, keys = List(8) { Key.DirectionDown })
+    fun seriousEnd() = snap("behavior_serious_end", SettingsCategory.SERIOUS, keys = List(9) { Key.DirectionDown })
 
     @Test
     fun seriousCustomPhrase() = snap(
         "behavior_serious_custom",
         SettingsCategory.SERIOUS,
         SettingsHubFixtures.state(behavior = Behavior(phraseMode = PhraseMode.CUSTOM, customPhrase = "وقتي لعملي", escapeHoldSeconds = 20)),
-        keys = List(4) { Key.DirectionDown },
+        keys = List(5) { Key.DirectionDown },
     )
 
+    /** v1.2: both switches off: only the reset is left. */
     @Test
-    fun seriousOff() = snap("behavior_serious_off", SettingsCategory.SERIOUS, SettingsHubFixtures.state(behavior = Behavior(seriousMode = false)))
+    fun seriousOff() = snap(
+        "behavior_serious_off",
+        SettingsCategory.SERIOUS,
+        SettingsHubFixtures.state(behavior = Behavior(seriousModeChildren = false, seriousModeAdult = false)),
+    )
+
+    /** v1.2: the children's switch on, the adult's off: the adult's way out is gone, the children's options stay. */
+    @Test
+    fun seriousChildrenOnly() = snap(
+        "behavior_serious_children_only",
+        SettingsCategory.SERIOUS,
+        SettingsHubFixtures.state(behavior = Behavior(seriousModeAdult = false)),
+    )
 
     @Test
     fun seriousNoEscape() = snap("behavior_serious_no_escape", SettingsCategory.SERIOUS, SettingsHubFixtures.state(behavior = Behavior(adultEscape = false)))

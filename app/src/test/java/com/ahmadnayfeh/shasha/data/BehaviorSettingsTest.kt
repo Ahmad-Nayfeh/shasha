@@ -2,7 +2,9 @@ package com.ahmadnayfeh.shasha.data
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -11,7 +13,10 @@ import com.ahmadnayfeh.shasha.player.PLAYBACK_SPEEDS
 import com.ahmadnayfeh.shasha.policy.AdultExitChallenge
 import com.ahmadnayfeh.shasha.policy.PinLockoutConfig
 import com.ahmadnayfeh.shasha.policy.PolicyConfig
+import com.ahmadnayfeh.shasha.policy.SeriousMode
 import com.ahmadnayfeh.shasha.policy.SkipAllowance
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -57,7 +62,9 @@ class BehaviorSettingsTest {
     fun defaults_areTodaysBehaviour() {
         val d = settings.values.value
         assertThat(d).isEqualTo(Behavior.DEFAULT)
-        assertThat(d.seriousMode).isTrue()
+        assertThat(d.seriousModeChildren).isTrue()
+        assertThat(d.seriousModeAdult).isTrue()
+        assertThat(d.seriousMode).isEqualTo(SeriousMode.ON)
         assertThat(d.adultEscape).isTrue()
         assertThat(d.escapeHoldSeconds).isEqualTo(10)
         assertThat(d.phraseMode).isEqualTo(PhraseMode.RANDOM)
@@ -113,7 +120,7 @@ class BehaviorSettingsTest {
 
     @Test
     fun changes_areStored_andReachThePolicyConfig() = runBlocking<Unit> {
-        settings.setSeriousMode(false)
+        settings.setSeriousModeChildren(false)
         settings.setNumber(BehaviorKeys.ESCAPE_HOLD_SECONDS, 20)
         settings.setNumber(BehaviorKeys.WARNING_MINUTES, 0)
         settings.setNumber(BehaviorKeys.SHORTS_MAX_SECONDS, 60)
@@ -123,9 +130,10 @@ class BehaviorSettingsTest {
         settings.setNumber(BehaviorKeys.PIN_FIRST_LOCKOUT_MINUTES, 10)
         settings.setDefaultSpeed(1.5f)
         val b = shows { it.defaultSpeed == 1.5f }
-        assertThat(b.seriousMode).isFalse()
+        assertThat(b.seriousModeChildren).isFalse()
+        assertThat(b.seriousModeAdult).isTrue()
         val config = settings.policyConfig()
-        assertThat(config.seriousMode).isFalse()
+        assertThat(config.seriousMode).isEqualTo(SeriousMode(children = false, adult = true))
         assertThat(config.escapeHoldMillis).isEqualTo(20_000)
         assertThat(config.warningSeconds).isEqualTo(0)
         assertThat(config.shortsMaxSeconds).isEqualTo(60)
@@ -217,19 +225,106 @@ class BehaviorSettingsTest {
 
     @Test
     fun resetAll_bringsEveryDefaultBack() = runBlocking<Unit> {
-        settings.setSeriousMode(false)
+        settings.setSeriousModeChildren(false)
+        settings.setSeriousModeAdult(false)
         settings.setAdultEscape(false)
         settings.setNumber(BehaviorKeys.RELOCK_SECONDS, 60)
         settings.setExtraMinutes(listOf(5))
         settings.addPhrase("كلمه جديده")
-        shows { !it.seriousMode && it.relockSeconds == 60 && it.extraMinutes == listOf(5) }
+        shows { it.seriousMode == SeriousMode.OFF && it.relockSeconds == 60 && it.extraMinutes == listOf(5) }
         settings.resetAll()
-        assertThat(shows { it.seriousMode && it.relockSeconds == 15 }).isEqualTo(Behavior.DEFAULT)
+        // Both «الوضع الجاد» switches back on.
+        assertThat(shows { it.seriousMode == SeriousMode.ON && it.relockSeconds == 15 }).isEqualTo(Behavior.DEFAULT)
+    }
+
+    /** v1.2 (owner decision): the children's and the adult's «الوضع الجاد» are two switches; one never moves the other. */
+    @Test
+    fun theTwoSeriousSwitches_areIndependent() = runBlocking<Unit> {
+        settings.setSeriousModeChildren(false)
+        assertThat(shows { !it.seriousModeChildren }.seriousModeAdult).isTrue()
+        settings.setSeriousModeAdult(false)
+        assertThat(shows { !it.seriousModeAdult }.seriousModeChildren).isFalse()
+        settings.setSeriousModeChildren(true)
+        assertThat(shows { it.seriousModeChildren }.seriousModeAdult).isFalse()
+        assertThat(settings.policyConfig().seriousMode).isEqualTo(SeriousMode(children = true, adult = false))
+        // The pane's own reset brings both back (and only its keys).
+        settings.setNumber(BehaviorKeys.SEEK_STEP_SECONDS, 30)
+        settings.reset(BehaviorKeys.SERIOUS_MODE_CHILDREN, BehaviorKeys.SERIOUS_MODE_ADULT)
+        val after = shows { it.seriousModeAdult }
+        assertThat(after.seriousMode).isEqualTo(SeriousMode.ON)
+        assertThat(after.seekStepSeconds).isEqualTo(30)
+    }
+
+    /** v1.2: the TV turns the adult's way out off only with a paired phone (it is then the only way out); on always. */
+    @Test
+    fun theEscape_turnsOffOnlyWithAPairedPhone() = runBlocking<Unit> {
+        var paired = false
+        assertThat(settings.setAdultEscape(false) { paired }).isFalse()
+        assertThat(settings.current().adultEscape).isTrue()
+        paired = true
+        assertThat(settings.setAdultEscape(false) { paired }).isTrue()
+        assertThat(shows { !it.adultEscape }.adultEscape).isFalse()
+        paired = false
+        assertThat(settings.setAdultEscape(true) { paired }).isTrue()
+        assertThat(shows { it.adultEscape }.adultEscape).isTrue()
+    }
+
+    /** v1.2: a file v1.1 wrote has one «الوضع الجاد»: its value becomes both switches, and the old key goes. */
+    @Test
+    fun aV11File_itsSingleSwitch_becomesBoth_andIsMigrated() = runBlocking<Unit> {
+        for (old in listOf(false, true)) {
+            val file = stores.open("v11_$old")
+            file.edit { it[BehaviorKeys.LEGACY_SERIOUS_MODE] = old; it[BehaviorKeys.SEEK_STEP_SECONDS] = 30 }
+            val migrated = BehaviorSettings(file, scope)
+            withTimeout(5_000) { migrated.awaitLoaded() }
+            val b = withTimeout(5_000) { migrated.values.first { it.seekStepSeconds == 30 } }
+            assertThat(b.seriousMode).isEqualTo(SeriousMode(children = old, adult = old))
+            withTimeout(5_000) { file.data.first { BehaviorKeys.LEGACY_SERIOUS_MODE !in it.asMap() } }
+            val stored = file.data.first()
+            assertThat(stored[BehaviorKeys.SERIOUS_MODE_CHILDREN]).isEqualTo(old)
+            assertThat(stored[BehaviorKeys.SERIOUS_MODE_ADULT]).isEqualTo(old)
+            assertThat(stored[BehaviorKeys.SEEK_STEP_SECONDS]).isEqualTo(30)
+        }
+    }
+
+    @Test
+    fun migrateSeriousMode_keepsASwitchAlreadySet_andIgnoresAV12File() {
+        val half = mutablePreferencesOf(BehaviorKeys.LEGACY_SERIOUS_MODE to false, BehaviorKeys.SERIOUS_MODE_ADULT to true)
+        BehaviorSettings.migrateSeriousMode(half)
+        assertThat(half[BehaviorKeys.SERIOUS_MODE_CHILDREN]).isFalse()
+        assertThat(half[BehaviorKeys.SERIOUS_MODE_ADULT]).isTrue()
+        assertThat(half.contains(BehaviorKeys.LEGACY_SERIOUS_MODE)).isFalse()
+
+        val v12 = mutablePreferencesOf(BehaviorKeys.SERIOUS_MODE_CHILDREN to false)
+        BehaviorSettings.migrateSeriousMode(v12)
+        assertThat(v12.asMap()).containsExactly(BehaviorKeys.SERIOUS_MODE_CHILDREN, false)
+
+        // Before it is migrated, reading gives the same answer; the new switches win once they exist.
+        assertThat(BehaviorSettings.decode(mutablePreferencesOf(BehaviorKeys.LEGACY_SERIOUS_MODE to false)).seriousMode).isEqualTo(SeriousMode.OFF)
+        assertThat(
+            BehaviorSettings.decode(mutablePreferencesOf(BehaviorKeys.LEGACY_SERIOUS_MODE to false, BehaviorKeys.SERIOUS_MODE_ADULT to true)).seriousMode,
+        ).isEqualTo(SeriousMode(children = false, adult = true))
+        // v1.1's key name is the old one; the new keys are new names (an old app never reads them).
+        assertThat(BehaviorKeys.LEGACY_SERIOUS_MODE).isEqualTo(booleanPreferencesKey("serious_mode"))
+        assertThat(BehaviorKeys.STORED.keys).doesNotContain("serious_mode")
+    }
+
+    /** v1.2: a v1.1 backup's single switch is restored into both switches; a v1.2 backup is restored as it is. */
+    @Test
+    fun upgradeBackup_givesTheOldSwitchToBoth() {
+        fun bool(v: Boolean) = JsonObject(mapOf("boolean" to JsonPrimitive(v)))
+        val old = mapOf("serious_mode" to bool(false), "seek_step_seconds" to JsonObject(mapOf("int" to JsonPrimitive(30))))
+        val up = BehaviorSettings.upgradeBackup(old)
+        assertThat(up.keys).containsExactly("serious_mode_children", "serious_mode_adult", "seek_step_seconds")
+        assertThat(up["serious_mode_children"]).isEqualTo(bool(false))
+        assertThat(up["serious_mode_adult"]).isEqualTo(bool(false))
+        val new = mapOf("serious_mode_children" to bool(true), "serious_mode_adult" to bool(false))
+        assertThat(BehaviorSettings.upgradeBackup(new)).isEqualTo(new)
     }
 
     @Test
     fun theBackupSection_keepsEveryKey() = runBlocking<Unit> {
-        settings.setSeriousMode(false)
+        settings.setSeriousModeAdult(false)
         settings.setNumber(BehaviorKeys.UP_NEXT_SECONDS, 0)
         settings.setDefaultSpeed(2.5f)
         settings.setCustomPhrase("وقتي لعملي")

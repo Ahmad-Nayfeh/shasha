@@ -57,6 +57,37 @@ class ShortsTest {
         assertThat(engine.canShow(adult(), video(isShortFormFlag = true))).isEqualTo(Decision.Allow)
     }
 
+    /**
+     * One rule for the badge and for hiding: what a profile that shows shorts badges «Shorts» (the static rule with the
+     * parent's limit) is exactly what a profile that hides them never sees, at any limit.
+     */
+    @Test
+    fun badgedWhereShown_isExactlyWhatIsHiddenWhereHidden() {
+        val mix = listOf(
+            video(videoId = "flag", isShortFormFlag = true, durationSeconds = 900),
+            video(videoId = "link", url = "https://www.youtube.com/shorts/link", durationSeconds = null),
+            video(videoId = "s45", durationSeconds = 45),
+            video(videoId = "s90", durationSeconds = 90),
+            video(videoId = "s180", durationSeconds = 180),
+            video(videoId = "s181", durationSeconds = 181),
+            video(videoId = "long", durationSeconds = 3600),
+            video(videoId = "rss", durationSeconds = null),
+            video(videoId = "live", isLive = true, durationSeconds = 60),
+            video(videoId = "liveShort", isLive = true, isShortFormFlag = true),
+        )
+        for (limit in listOf(60L, 180L, 600L)) {
+            val rules = PolicyEngine(clockAt("2026-09-28T12:00")) { PolicyConfig(shortsMaxSeconds = limit) }
+            val badged = mix.filter { PolicyEngine.isShort(it, limit) }.map { it.videoId }
+            val hidden = mix.filter { rules.canShow(adult().copy(hideShorts = true), it) == deny(DenyReason.SHORTS_HIDDEN) }.map { it.videoId }
+            assertThat(hidden).isEqualTo(badged)
+            assertThat(mix.filter(rules::isShort).map { it.videoId }).isEqualTo(badged)
+            // Where shorts show, every one of them is listed.
+            assertThat(mix.filter { rules.canShow(adult(), it).isAllowed }).isEqualTo(mix)
+        }
+        assertThat(mix.filter { PolicyEngine.isShort(it, 180) }.map { it.videoId })
+            .containsExactly("flag", "link", "s45", "s90", "s180", "liveShort").inOrder()
+    }
+
     @Test
     fun needsDuration_onlyWhenTheShortsRuleCannotDecideWithoutIt() {
         val rss = video(durationSeconds = null) // a regular upload as RSS gives it: no duration

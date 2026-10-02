@@ -119,10 +119,11 @@ internal object NumberSettings {
     val ParentUnlock = NumberSetting(BehaviorKeys.PARENT_UNLOCK_MINUTES, R.string.pin_settings_unlock, R.string.pin_settings_unlock_body, SettingsIcons.LockOpen, { it.parentUnlockMinutes }, { minutes(it) })
     val Relock = NumberSetting(BehaviorKeys.RELOCK_SECONDS, R.string.pin_settings_relock, R.string.pin_settings_relock_body, ShashaIcons.SwapProfiles, { it.relockSeconds }, { if (it >= 60 && it % 60 == 0) minutes(it / 60) else seconds(it) })
 
-    /** The Serious Mode pane's keys, for its «إرجاع الإعداد الأصلي». */
+    /** The Serious Mode pane's keys, for its «إرجاع الإعداد الأصلي» (v1.1's single switch too, should a file still have it). */
     val SeriousKeys: List<Preferences.Key<*>> = listOf(
-        BehaviorKeys.SERIOUS_MODE, BehaviorKeys.ADULT_ESCAPE, BehaviorKeys.ESCAPE_HOLD_SECONDS, BehaviorKeys.PHRASE_MODE,
-        BehaviorKeys.PHRASES, BehaviorKeys.CUSTOM_PHRASE, BehaviorKeys.SKIP_ALLOWANCE_SECONDS, BehaviorKeys.PLAYED_PERCENT,
+        BehaviorKeys.SERIOUS_MODE_CHILDREN, BehaviorKeys.SERIOUS_MODE_ADULT, BehaviorKeys.ADULT_ESCAPE, BehaviorKeys.ESCAPE_HOLD_SECONDS,
+        BehaviorKeys.PHRASE_MODE, BehaviorKeys.PHRASES, BehaviorKeys.CUSTOM_PHRASE, BehaviorKeys.SKIP_ALLOWANCE_SECONDS,
+        BehaviorKeys.PLAYED_PERCENT, BehaviorKeys.LEGACY_SERIOUS_MODE,
     )
 
     val PlaybackKeys: List<Preferences.Key<*>> = listOf(
@@ -174,8 +175,9 @@ private fun ResetRow(key: String, onClick: () -> Unit, modifier: Modifier = Modi
 }
 
 /**
- * «الوضع الجاد» (SPEC §4's lock, owner decision v1.1): on or off for every profile, the adult's way out (allowed or
- * not, how long to hold, which phrase), and how much skipping still lets a video end by itself.
+ * «الوضع الجاد» (SPEC §4's lock): v1.2, one switch for the children's profiles and one for the adult's (independent,
+ * owner decision), the adult's way out (allowed or not, how long to hold, which phrase; turning it off needs a paired
+ * phone, which then confirms every adult video), and how much skipping still lets a video end by itself.
  */
 @Composable
 internal fun SeriousPane(state: SettingsHubState, actions: SettingsHubActions, first: FocusRequester) {
@@ -189,16 +191,29 @@ internal fun SeriousPane(state: SettingsHubState, actions: SettingsHubActions, f
             behavior == null -> Loading()
             else -> {
                 SwitchRow(
-                    title = stringResource(R.string.serious_switch),
-                    body = stringResource(R.string.serious_switch_body),
-                    checked = behavior.seriousMode,
-                    onToggle = { act.setSeriousMode(!behavior.seriousMode) },
-                    modifier = Modifier.firstIf(true, first).paneItem("serious_switch"),
-                    icon = ShashaIcons.Lock,
+                    title = stringResource(R.string.serious_children),
+                    body = stringResource(R.string.serious_children_body),
+                    checked = behavior.seriousModeChildren,
+                    onToggle = { act.setSeriousModeChildren(!behavior.seriousModeChildren) },
+                    modifier = Modifier.firstIf(true, first).paneItem("serious_children"),
+                    icon = ShashaIcons.Group,
                 )
-                if (!behavior.seriousMode) {
-                    InfoLine(ShashaIcons.Info, stringResource(R.string.serious_off_note), tint = ShashaColors.Secondary, textColor = ShashaColors.Text)
-                } else {
+                SwitchRow(
+                    title = stringResource(R.string.serious_adult),
+                    body = stringResource(R.string.serious_adult_body),
+                    checked = behavior.seriousModeAdult,
+                    onToggle = { act.setSeriousModeAdult(!behavior.seriousModeAdult) },
+                    modifier = Modifier.paneItem("serious_adult"),
+                    icon = ShashaIcons.Person,
+                )
+                val off = when {
+                    !behavior.seriousModeChildren && !behavior.seriousModeAdult -> R.string.serious_off_note
+                    !behavior.seriousModeChildren -> R.string.serious_children_off_note
+                    !behavior.seriousModeAdult -> R.string.serious_adult_off_note
+                    else -> null
+                }
+                if (off != null) InfoLine(ShashaIcons.Info, stringResource(off), tint = ShashaColors.Secondary, textColor = ShashaColors.Text)
+                if (behavior.seriousModeAdult) {
                     SwitchRow(
                         title = stringResource(R.string.serious_escape),
                         body = stringResource(R.string.serious_escape_body),
@@ -207,6 +222,9 @@ internal fun SeriousPane(state: SettingsHubState, actions: SettingsHubActions, f
                         modifier = Modifier.paneItem("serious_escape"),
                         icon = ShashaIcons.Exit,
                     )
+                    if (!behavior.adultEscape) {
+                        InfoLine(ShashaIcons.Info, stringResource(R.string.serious_escape_off_note), tint = ShashaColors.Secondary, textColor = ShashaColors.Text)
+                    }
                     if (behavior.adultEscape) {
                         NumberRow(NumberSettings.EscapeHold, behavior, texts, { editing = it })
                         Spacer(Modifier.height(4.dp))
@@ -248,6 +266,8 @@ internal fun SeriousPane(state: SettingsHubState, actions: SettingsHubActions, f
                         }
                         Spacer(Modifier.height(4.dp))
                     }
+                }
+                if (behavior.seriousModeChildren || behavior.seriousModeAdult) {
                     SectionLabel(stringResource(R.string.serious_end_section), icon = ShashaIcons.CheckCircle)
                     NumberRow(NumberSettings.SkipAllowance, behavior, texts, { editing = it })
                     NumberRow(NumberSettings.PlayedPercent, behavior, texts, { editing = it })

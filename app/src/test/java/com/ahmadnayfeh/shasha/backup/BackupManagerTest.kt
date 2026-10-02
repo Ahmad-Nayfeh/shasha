@@ -36,6 +36,7 @@ import com.ahmadnayfeh.shasha.policy.PolicyJson
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.QuotaOverride
 import com.ahmadnayfeh.shasha.policy.ScheduleOverride
+import com.ahmadnayfeh.shasha.policy.SeriousMode
 import com.ahmadnayfeh.shasha.policy.SurrenderEvent
 import com.ahmadnayfeh.shasha.policy.clip
 import com.ahmadnayfeh.shasha.policy.instantAt
@@ -52,6 +53,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertThrows
@@ -149,7 +151,8 @@ class BackupManagerTest {
         usage.recordSurrender(SurrenderEvent("adult", clock.millis() - 60_000, "seen0000001"))
         remoteSettings.setEnabled(false)
         remoteSettings.rememberPort(8766)
-        behavior.setSeriousMode(false)
+        // v1.2: the children's «الوضع الجاد» off, the adult's left on (the two travel separately).
+        behavior.setSeriousModeChildren(false)
         behavior.setNumber(BehaviorKeys.WARNING_MINUTES, 10)
         behavior.setDefaultSpeed(1.25f)
         behavior.addPhrase("وقتي لعملي")
@@ -179,7 +182,7 @@ class BackupManagerTest {
 
         val file = exported.json()
         assertThat(file["app"].toString()).isEqualTo("\"shasha\"")
-        assertThat(file["format"].toString()).isEqualTo("2")
+        assertThat(file["format"].toString()).isEqualTo("3")
         assertThat(file["settings"]!!.jsonObject.keys).contains(BehaviorSettings.FILE_NAME)
         // The PIN's hash travels (a restore keeps the same PIN), never the PIN; the pairing token never.
         assertThat(exported.decodeToString()).contains("pbkdf2$")
@@ -208,7 +211,7 @@ class BackupManagerTest {
         // v1.1's settings (format 2) come back too.
         val restoredBehavior = second.behaviorNow()
         assertThat(restoredBehavior).isEqualTo(first.behaviorNow())
-        assertThat(restoredBehavior.seriousMode).isFalse()
+        assertThat(restoredBehavior.seriousMode).isEqualTo(SeriousMode(children = false, adult = true))
         assertThat(restoredBehavior.warningMinutes).isEqualTo(10)
         assertThat(restoredBehavior.defaultSpeed).isEqualTo(1.25f)
         assertThat(restoredBehavior.phrases).contains("وقتي لعملي")
@@ -217,6 +220,42 @@ class BackupManagerTest {
         assertThat(restoredBehavior.appearance).isEqualTo(Appearance(AppLanguage.ENGLISH, AppTheme.LIGHT))
         // The second TV keeps its own pairing: its phones are paired again from its QR code.
         assertThat(second.remoteSettings.token()).isNotEqualTo(token)
+    }
+
+    /** v1.1.1: each profile's «إظهار الفيديوهات المقترحة» and «إظهار مقاطع Shorts» go out with it and come back as they were. */
+    @Test
+    fun eachProfilesSuggestionsAndShortsChoices_comeBack() = runBlocking<Unit> {
+        val first = tv("first").apply { fill() }
+        first.profiles.update("adult") { it.copy(showSuggestions = false, hideShorts = true) }
+        first.profiles.update("kid") { it.copy(showSuggestions = true, hideShorts = false) }
+        val exported = first.backup.export()
+        assertThat(exported.decodeToString()).contains("\"showSuggestions\":false")
+        assertThat(exported.decodeToString()).contains("\"showSuggestions\":true")
+
+        val second = tv("second")
+        second.profiles.ensureOwner("أنا")
+        second.backup.import(exported)
+        val adult = second.profiles.get("adult")!!
+        val child = second.profiles.get("kid")!!
+        assertThat(adult.showSuggestions).isFalse()
+        assertThat(adult.hideShorts).isTrue()
+        assertThat(child.showSuggestions).isTrue()
+        assertThat(child.hideShorts).isFalse()
+    }
+
+    /** A backup from before the setting: each profile gets its kind's default (on for the adult, off for a child). */
+    @Test
+    fun aBackupFromBeforeSuggestions_givesEachProfileItsKindsDefault() = runBlocking<Unit> {
+        val first = tv("first").apply { fill() }
+        val file = first.backup.export().json()
+        val profiles = JsonArray(file.getValue("profiles").jsonArray.map { JsonObject(it.jsonObject - "showSuggestions") })
+        assertThat(profiles.toString()).doesNotContain("showSuggestions")
+
+        val second = tv("second")
+        second.profiles.ensureOwner("أنا")
+        second.backup.import(JsonObject(file + ("profiles" to profiles)).toString().toByteArray())
+        assertThat(second.profiles.get("adult")!!.showSuggestions).isTrue()
+        assertThat(second.profiles.get("kid")!!.showSuggestions).isFalse()
     }
 
     @Test
@@ -237,7 +276,7 @@ class BackupManagerTest {
         // Not in the file: this TV's own choices stay.
         val kept = second.behaviorNow()
         assertThat(kept.seekStepSeconds).isEqualTo(30)
-        assertThat(kept.seriousMode).isTrue()
+        assertThat(kept.seriousMode).isEqualTo(SeriousMode.ON)
     }
 
     @Test
@@ -252,6 +291,39 @@ class BackupManagerTest {
         assertThat(first.behaviorNow().adultEntryPin).isTrue()
         assertThat(first.behaviorNow().voiceLanguage).isEqualTo("ar-SA")
         assertThat(first.behaviorNow().appearance).isEqualTo(Appearance(AppLanguage.ARABIC, AppTheme.DARK))
+    }
+
+    /**
+     * v1.2: a v1.1 backup (format 2) has one «الوضع الجاد» for every profile: restored, its value sets both switches
+     * (off stays off for the children AND the adult), and the old key is not written back.
+     */
+    @Test
+    fun aFormatTwoFile_withTheSingleSeriousSwitch_setsBothSwitches() = runBlocking<Unit> {
+        val first = tv("first").apply { fill() }
+        val file = first.backup.export().json()
+        fun v11(seriousOn: Boolean): ByteArray {
+            val behavior = file["settings"]!!.jsonObject[BehaviorSettings.FILE_NAME]!!.jsonObject -
+                BehaviorKeys.SERIOUS_MODE_CHILDREN.name - BehaviorKeys.SERIOUS_MODE_ADULT.name +
+                (BehaviorKeys.LEGACY_SERIOUS_MODE.name to JsonObject(mapOf("boolean" to JsonPrimitive(seriousOn))))
+            val settings = JsonObject(file["settings"]!!.jsonObject + (BehaviorSettings.FILE_NAME to JsonObject(behavior)))
+            return JsonObject(file + ("format" to JsonPrimitive(2)) + ("settings" to settings)).toString().toByteArray()
+        }
+
+        val second = tv("second")
+        second.profiles.ensureOwner("أنا")
+        second.backup.import(v11(seriousOn = false))
+        assertThat(second.behaviorNow().seriousMode).isEqualTo(SeriousMode.OFF)
+        assertThat(second.behaviorStore.data.first().asMap().keys.map { it.name }).doesNotContain(BehaviorKeys.LEGACY_SERIOUS_MODE.name)
+        // The rest of the section came back as it was.
+        assertThat(second.behaviorNow().warningMinutes).isEqualTo(10)
+
+        second.backup.import(v11(seriousOn = true))
+        assertThat(second.behaviorNow().seriousMode).isEqualTo(SeriousMode.ON)
+        // Exported again, it is a format-3 file with the two switches.
+        val again = second.backup.export().json()
+        assertThat(again["format"].toString()).isEqualTo("3")
+        assertThat(again["settings"]!!.jsonObject[BehaviorSettings.FILE_NAME]!!.jsonObject.keys)
+            .containsAtLeast(BehaviorKeys.SERIOUS_MODE_CHILDREN.name, BehaviorKeys.SERIOUS_MODE_ADULT.name)
     }
 
     @Test
@@ -279,7 +351,7 @@ class BackupManagerTest {
 
         assertThat(problem("not json at all")).isEqualTo(BackupProblem.NOT_A_BACKUP)
         assertThat(problem("""{"app":"other","format":1}""")).isEqualTo(BackupProblem.NOT_A_BACKUP)
-        assertThat(problem("""{"app":"shasha","format":3,"profiles":[]}""")).isEqualTo(BackupProblem.NEWER_VERSION)
+        assertThat(problem("""{"app":"shasha","format":4,"profiles":[]}""")).isEqualTo(BackupProblem.NEWER_VERSION)
         val childOnly = """{"app":"shasha","format":1,"profiles":[${PolicyJsonFor.kid()}]}"""
         assertThat(problem(childOnly)).isEqualTo(BackupProblem.NO_ADULT)
         assertThat(tv.backup.export().content()).isEqualTo(before)

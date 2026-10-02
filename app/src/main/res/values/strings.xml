@@ -470,7 +470,6 @@
     <string name="profile_avatar">الصورة</string>
     <string name="profile_quota">الحصة اليومية</string>
     <string name="profile_schedule">أوقات المشاهدة</string>
-    <string name="profile_hide_shorts">إخفاء المقاطع القصيرة</string>
     <string name="profile_allowlist">قائمة السماح</string>
     <string name="profile_delete">حذف الملف</string>
     <string name="profile_delete_title">حذف ملف &#x2068;%1$s&#x2069;؟</string>
@@ -821,9 +820,9 @@
     <string name="hub_remote_summary">التحكم من الجوال: تشغيله، ورمز QR للاقتران، ورمز جديد</string>
     <string name="hub_data_summary">نسخة احتياطية لكل بيانات الشاشة، واشتراكاتك من Takeout</string>
     <string name="hub_updates_summary">الإصدار المثبّت، وآخر إصدار على GitHub Releases</string>
-    <string name="hub_diagnostics_summary">ما يعينك حين يتعطّل يوتيوب: فيديوهات تجريبية ومعلومات الشاشة</string>
+    <string name="hub_diagnostics_summary">ما يعينك حين يتعطّل يوتيوب: فيديوهات تجريبية، ومعلومات الشاشة، والإصدار والتراخيص</string>
     <string name="hub_about">حول</string>
-    <string name="hub_about_summary">المطوّر وتطبيقاته، والإصدار، ومصدر بيانات التخطي، والرخص</string>
+    <string name="hub_about_summary">من صنع «شاشة»، وتطبيقاته الأخرى</string>
     <string name="hub_loading">جارٍ التحميل…</string>
 
     <!-- A parental pane before the parent PIN. -->
@@ -834,7 +833,7 @@
 
     <!-- الملفات ورمز الوالدين -->
     <string name="hub_profiles_manage">إدارة الملفات</string>
-    <string name="hub_profiles_manage_body">إضافة ملف طفل، والأسماء والصور، وإخفاء المقاطع القصيرة، وحذف ملف</string>
+    <string name="hub_profiles_manage_body">إضافة ملف طفل، والأسماء والصور، ومقاطع &#x2068;Shorts&#x2069; والمقترحة، وحذف ملف</string>
 
     <!-- قوائم السماح والحظر -->
     <string name="hub_blocklist_section">الحظر · في كل الملفات</string>
@@ -900,10 +899,14 @@
     <!-- تشخيص -->
     <string name="hub_diag_videos_body">عادي، وبث مباشر، ومصنّف للأطفال، ومحذوف، وفيه إعلان يتخطاه SponsorBlock: تعرف في ثوانٍ ما الذي تعطّل</string>
     <string name="hub_diag_facts">معلومات للتشخيص</string>
-    <string name="hub_fact_app">التطبيق %1$s · رقم البناء %2$s</string>
-    <string name="hub_fact_extractor">مكتبة الاستخراج NewPipeExtractor %1$s</string>
     <!-- %1$s: maker and model, %2$s: the Android version, %3$s: the API level. -->
     <string name="hub_fact_device">&#x2068;%1$s&#x2069; · أندرويد %2$s (API %3$s)</string>
+    <!-- Which voice recognizer this TV offers: the system's voice screen (what the search key and the microphone button
+         open first) and the in-app recognition service (the fallback). %1$s, %2$s: the package that provides it. -->
+    <string name="hub_fact_voice_both">التعرّف على الصوت: شاشة النظام &#x2068;%1$s&#x2069;، وبديلها داخل التطبيق &#x2068;%2$s&#x2069;</string>
+    <string name="hub_fact_voice_system">التعرّف على الصوت: شاشة النظام &#x2068;%1$s&#x2069; (ولا بديل داخل التطبيق)</string>
+    <string name="hub_fact_voice_service">التعرّف على الصوت: داخل التطبيق فقط &#x2068;%1$s&#x2069; (ولا شاشة نظام)</string>
+    <string name="hub_fact_voice_none">التعرّف على الصوت: غير متاح في هذا التلفاز، فاكتب ما تبحث عنه</string>
     <string name="hub_fact_no_subscriptions">لا اشتراكات بعد</string>
     <!-- %1$s: count_channels, e.g. «20 قناة»; %2$s: ago_*, e.g. «منذ 5 دقائق». -->
     <string name="hub_fact_feed_never">الاشتراكات: %1$s · لم تُحدَّث بعد</string>
@@ -912,11 +915,12 @@
     <string name="hub_fact_feed_failed">قنوات تعذّر تحديثها في آخر محاولة: %1$s</string>
     <string name="hub_diag_hint">حين يتعطّل شيء: شغّل الفيديوهات التجريبية أولاً، ثم «فحص التحديثات». و«دليل شاشة» يشرح الباقي.</string>
 
-    <!-- حول -->
-    <string name="hub_about_data_title">بيانات تخطي المقاطع</string>
-    <string name="hub_about_licenses">المكتبات ورخصها</string>
-    <string name="hub_about_ideas">أفكار من مشاريع مفتوحة المصدر، بشيفرة كُتبت من جديد</string>
-    <string name="hub_about_footer">بلا حسابات، ولا إعلانات، ولا تتبّع: كل البيانات على هذه الشاشة.</string>
+    <!-- تشخيص ← معلومات تقنية والتراخيص (كانت في «حول») -->
+    <string name="hub_diag_technical">معلومات تقنية والتراخيص</string>
+    <string name="hub_tech_data_title">بيانات تخطي المقاطع</string>
+    <string name="hub_tech_licenses">المكتبات ورخصها</string>
+    <string name="hub_tech_ideas">أفكار من مشاريع مفتوحة المصدر، بشيفرة كُتبت من جديد</string>
+    <string name="hub_tech_footer">بلا حسابات، ولا إعلانات، ولا تتبّع: كل البيانات على هذه الشاشة.</string>
     <string name="license_role_newpipe">قراءة يوتيوب: البحث والقنوات وروابط التشغيل</string>
     <string name="license_role_androidx">الواجهة والمشغّل وقاعدة البيانات والإعدادات</string>
     <string name="license_role_okhttp">الاتصال بالشبكة</string>
@@ -937,6 +941,9 @@
     <!-- v1.1 voice search and suggestions (search screen). -->
     <string name="voice_mic">البحث بالصوت</string>
     <string name="voice_language_toggle">لغة البحث الصوتي: %1$s. اضغط للتبديل</string>
+    <!-- The text of the button beside the microphone: the language being listened for. -->
+    <string name="voice_language_short_ar">ع</string>
+    <string name="voice_language_short_en">EN</string>
     <string name="voice_alternatives">أو ربما:</string>
     <string name="search_recent">عمليات بحث سابقة:</string>
     <string name="search_recent_clear">مسح</string>

@@ -25,6 +25,7 @@ import com.ahmadnayfeh.shasha.policy.PlayOrigin
 import com.ahmadnayfeh.shasha.policy.PolicyGate
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.SessionController
+import com.ahmadnayfeh.shasha.policy.SeriousMode
 import com.ahmadnayfeh.shasha.policy.SessionState
 import com.ahmadnayfeh.shasha.policy.SwitchResult
 import com.ahmadnayfeh.shasha.policy.UnlockMethod
@@ -43,6 +44,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -68,6 +71,10 @@ import kotlinx.serialization.json.JsonElement
  * What a link opens is bound to the profile it was checked for ([RemoteDisplay.show]): someone switching
  * profile on the TV meanwhile gets nothing. Writes are never cut short ([whole]): a server that stops (the
  * TV's address changed) or a phone that goes away loses the answer, never half a restore.
+ *
+ * v1.2 (owner decisions): a link never opens by itself. Once the rules allowed it, the TV asks «قبول» / «رفض» over
+ * whatever plays ([playRequests]); only «قبول» opens it, checked again. And a video that only the phone could end early
+ * waits for the parent's «تأكيد» ([confirmations], answered here with [answerConfirmation]).
  */
 class TvRemoteController(
     private val gate: PolicyGate,
@@ -84,8 +91,8 @@ class TvRemoteController(
     private val playQueues: PlayQueues,
     private val texts: RemoteTexts,
     private val main: CoroutineDispatcher = Dispatchers.Main.immediate,
-    /** «الوضع الجاد» as the rules have it now (the page explains a video that cannot be stopped). */
-    private val seriousMode: () -> Boolean = { true },
+    /** «الوضع الجاد» as the rules have it now, per kind of profile (the page explains a video that cannot be stopped). */
+    private val seriousMode: () -> SeriousMode = { SeriousMode.ON },
     /** Where the TV's picker hears which profile the phone chose. */
     private val profileChoices: PhoneProfileChoices = PhoneProfileChoices(),
     /** v1.1: every setting of the TV's Settings (null: the page's settings are refused, e.g. in tests of the rest). */
@@ -98,6 +105,10 @@ class TvRemoteController(
     private val movingTo: () -> Int? = { null },
     /** v1.1: entering the adult profile asks for the parent PIN (on the TV too, after a switch from the phone). */
     private val adultEntryPin: () -> Boolean = { true },
+    /** v1.2: videos waiting for the parent's «تأكيد» on the phone (asked by the player). */
+    private val confirmations: PhoneConfirmations = PhoneConfirmations(),
+    /** v1.2: links waiting on the TV for «قبول». */
+    private val playRequests: PhonePlayRequests = PhonePlayRequests(CoroutineScope(SupervisorJob() + Dispatchers.Default), texts),
 ) : RemoteController {
 
     // ---- Everyone ---------------------------------------------------------------------------------------
@@ -115,10 +126,12 @@ class TvRemoteController(
             timeLeftMinutes = state.minutesLeft(),
             sessionState = state.remote(),
             videoLocked = lock.lock.value != null,
-            seriousMode = seriousMode(),
+            seriousMode = seriousMode().isOnFor(profile),
             rev = revision(),
             movingTo = movingTo(),
             profileId = profile.id,
+            confirmation = confirmations.pending.value?.let { RemoteConfirmation(it.id, it.title, confirmations.secondsLeft(it)) },
+            playRequest = playRequests.latest(),
         )
     }
 
@@ -148,28 +161,73 @@ class TvRemoteController(
         return rules().items(page.items).map { it.toRemoteItem() }
     }
 
-    override suspend fun playLink(url: String): RemoteResult {
-        val link = source.parseLink(url) ?: return error(R.string.remote_link_not_youtube)
+    /**
+     * v1.2: a link is checked by the TV's rules first (a refused one never reaches the screen), then the TV asks
+     * «طلب تشغيل من الجوال» over whatever plays ([PhonePlayRequests]): the answer is that waiting request, and only
+     * «قبول» on the TV opens it ([openAccepted], checked again). A video accepted there needs no «تأكيد» from the phone
+     * on top (the phone that sent it is there): its player is marked [Screen.Player.phoneApproved].
+     */
+    override suspend fun playLink(url: String): RemotePlayResult {
+        val link = source.parseLink(url) ?: return RemotePlayResult.refused(texts.get(R.string.remote_link_not_youtube))
         // SPEC §4: a locked video is the only thing on screen until it ends or the parent unlocks it.
-        if (lock.current() != null) return RemoteResult.error(texts.deny(DenyReason.LOCKED))
+        if (lock.current() != null) return RemotePlayResult.refused(texts.deny(DenyReason.LOCKED))
         // Read before any check: what the checks allow opens only in this profile's screens.
         val profileId = currentProfile().id
-        return withTimeoutOrNull(PLAY_TIMEOUT_MS) {
+        val checked = withTimeoutOrNull(PLAY_TIMEOUT_MS) {
             try {
                 when (link) {
-                    is YouTubeLink.Video -> playVideo(link, profileId)
-                    is YouTubeLink.Playlist -> playPlaylist(link.id, profileId)
-                    is YouTubeLink.Channel -> openChannel(link, profileId)
+                    is YouTubeLink.Video -> checkVideo(link)
+                    is YouTubeLink.Playlist -> checkPlaylist(link.id).let { it.refusal?.let(Checked::Refused) ?: Checked.Allowed(it.start!!.title) }
+                    is YouTubeLink.Channel -> checkChannel(link)
                 }
             } catch (e: SourceException) {
-                RemoteResult.error(texts.sourceError(e))
+                Checked.Refused(texts.sourceError(e))
             }
-        } ?: error(R.string.remote_timeout)
+        } ?: return RemotePlayResult.refused(texts.get(R.string.remote_timeout))
+        val title = when (checked) {
+            is Checked.Refused -> return RemotePlayResult.refused(checked.message)
+            is Checked.Allowed -> checked.title
+        }
+        // The TV must be able to ask: in front, this profile's screens up (nothing opens yet).
+        val ready = display.prepare(profileId)
+        if (ready != ShowResult.SHOWN) return RemotePlayResult.refused(texts.show(ready))
+        val request = playRequests.submit(profileId, title, texts.get(R.string.remote_play_waiting, title)) {
+            withTimeoutOrNull(PLAY_TIMEOUT_MS) { openAccepted(link, profileId) } ?: error(R.string.remote_timeout)
+        }
+        return RemotePlayResult(ok = true, message = request.message, request = request)
+    }
+
+    /** A link's check before the TV asks: refused (why), or allowed ([title]: what the TV's question names). */
+    private sealed interface Checked {
+        data class Refused(val message: String) : Checked
+
+        data class Allowed(val title: String) : Checked
+    }
+
+    /** «قبول» on the TV: the link is checked again (the TV may have changed meanwhile), then opened. */
+    private suspend fun openAccepted(link: YouTubeLink, profileId: String): RemoteResult {
+        // A video locked meanwhile (the TV started one) stays the only thing on screen.
+        if (lock.current() != null) return RemoteResult.error(texts.deny(DenyReason.LOCKED))
+        return try {
+            when (link) {
+                is YouTubeLink.Video -> playVideo(link, profileId)
+                is YouTubeLink.Playlist -> playPlaylist(link.id, profileId)
+                is YouTubeLink.Channel -> openChannel(link, profileId)
+            }
+        } catch (e: SourceException) {
+            RemoteResult.error(texts.sourceError(e))
+        }
+    }
+
+    /** SPEC acceptance: a child's link to a video outside the allowlist is refused here, and the TV shows nothing. */
+    private suspend fun checkVideo(link: YouTubeLink.Video): Checked = when (val check = gate.checkLink(link)) {
+        is PlayCheck.Denied -> Checked.Refused(texts.deny(check.reason))
+        is PlayCheck.Allowed -> Checked.Allowed(check.video?.title ?: check.stream?.video?.title ?: link.id)
     }
 
     /**
-     * SPEC acceptance: a child's link to a channel outside the allowlist is refused here, and the TV shows nothing.
-     * A shared link's start time (`t=`) is where the video starts.
+     * Accepted on the TV: checked again, then opened. A shared link's start time (`t=`) is where the video starts; the
+     * phone that sent it is there, so its player asks no «تأكيد» ([Screen.Player.phoneApproved]).
      */
     private suspend fun playVideo(link: YouTubeLink.Video, profileId: String): RemoteResult {
         val allowed = when (val check = gate.checkLink(link)) {
@@ -177,41 +235,76 @@ class TvRemoteController(
             is PlayCheck.Allowed -> check
         }
         // The player checks again with the link's rule (fromLink): the video's own channel, never its `list=`.
-        val destination = Screen.Player(link.id, playlistId = link.playlistId, fromLink = true, startSeconds = link.startSeconds?.takeIf { it > 0 })
+        val destination = Screen.Player(
+            link.id, playlistId = link.playlistId, fromLink = true, startSeconds = link.startSeconds?.takeIf { it > 0 }, phoneApproved = true,
+        )
         val shown = display.show(destination, profileId)
         if (shown != ShowResult.SHOWN) return RemoteResult.error(texts.show(shown))
-        val title = allowed.stream?.video?.title
+        val title = allowed.video?.title ?: allowed.stream?.video?.title
         return RemoteResult.ok(if (title != null) texts.get(R.string.remote_play_sent, title) else texts.get(R.string.remote_play_sent_plain))
     }
+
+    /** Where a playlist link starts: its first video the profile may watch, the queue and the playlist's title. */
+    private class PlaylistStart(val title: String, val queue: PlayQueue, val first: VideoItem, val index: Int)
+
+    /** [start], or why the playlist may not play ([refusal]). */
+    private class PlaylistCheck(val start: PlaylistStart? = null, val refusal: String? = null)
 
     /**
      * A playlist link plays the playlist from its first video the profile may watch, exactly as its page on the
      * TV would (a child: only an allowlisted playlist). The link's playlist is the page's, so its videos pass as
      * the playlist's own ([PlayOrigin.Playlist]).
      */
-    private suspend fun playPlaylist(playlistId: String, profileId: String): RemoteResult {
+    private suspend fun checkPlaylist(playlistId: String): PlaylistCheck {
+        fun refused(decision: Decision): PlaylistCheck? = (decision as? Decision.Deny)?.let { PlaylistCheck(refusal = texts.deny(it.reason)) }
         // Content first, then the time, as for a video link (PolicyEngine.canPlay): a playlist the profile may never
         // open says so, even at bedtime, instead of a "time up" that the parent's extra time would not change.
-        denied(rules().playlist(playlistId, ownerChannelId = null))?.let { return it }
+        refused(rules().playlist(playlistId, ownerChannelId = null))?.let { return it }
         val page = source.playlist(playlistId)
         val filter = rules()
-        denied(filter.playlist(playlistId, ownerChannelId = null, title = page.details.title))?.let { return it }
+        refused(filter.playlist(playlistId, ownerChannelId = null, title = page.details.title))?.let { return it }
         val videos = page.videos.distinctBy { it.videoId }
         val index = videos.indexOfFirst { filter.playlistVideos(playlistId, listOf(it)).isNotEmpty() }
-        if (index < 0) return error(R.string.remote_playlist_nothing_allowed)
-        blockedBySession()?.let { return it }
+        if (index < 0) return PlaylistCheck(refusal = texts.get(R.string.remote_playlist_nothing_allowed))
+        blockedBySession()?.let { return PlaylistCheck(refusal = it.message) }
         val first = videos[index]
         val check = gate.checkPlay(first.videoId, PlayOrigin.Playlist(playlistId), known = first)
-        if (check is PlayCheck.Denied) return RemoteResult.error(texts.deny(check.reason))
-        playQueues.put(PlayQueue(playlistId, videos, page.next))
-        val shown = display.show(Screen.Player(first.videoId, playlistId = playlistId, playlistIndex = index), profileId)
+        if (check is PlayCheck.Denied) return PlaylistCheck(refusal = texts.deny(check.reason))
+        return PlaylistCheck(PlaylistStart(page.details.title, PlayQueue(playlistId, videos, page.next), first, index))
+    }
+
+    /** Accepted on the TV: checked again, then its first allowed video plays, in the playlist (no «تأكيد» on top). */
+    private suspend fun playPlaylist(playlistId: String, profileId: String): RemoteResult {
+        val checked = checkPlaylist(playlistId)
+        val start = checked.start ?: return RemoteResult.error(checked.refusal!!)
+        playQueues.put(start.queue)
+        val shown = display.show(Screen.Player(start.first.videoId, playlistId = playlistId, playlistIndex = start.index, phoneApproved = true), profileId)
         if (shown != ShowResult.SHOWN) return RemoteResult.error(texts.show(shown))
-        return RemoteResult.ok(texts.get(R.string.remote_play_playlist, page.details.title))
+        return RemoteResult.ok(texts.get(R.string.remote_play_playlist, start.title))
+    }
+
+    /** A channel link: content first, then the time (see [checkPlaylist]); the TV's question names the channel. */
+    private suspend fun checkChannel(link: YouTubeLink.Channel): Checked {
+        val channelId = source.resolveChannelId(link)
+        denied(rules().channel(channelId))?.let { return Checked.Refused(it.message) }
+        blockedBySession()?.let { return Checked.Refused(it.message) }
+        return Checked.Allowed(channelName(channelId) ?: link.raw)
+    }
+
+    /** The channel's name: from the child's allowlist or the subscriptions when it is there, else YouTube's. */
+    private suspend fun channelName(channelId: String): String? {
+        currentProfile().allowlist.channels.firstOrNull { it.channelId == channelId }?.let { return it.name }
+        subscriptions.observe().first().firstOrNull { it.channelId == channelId }?.let { return it.name }
+        return try {
+            source.channel(channelId).channel.name.trim().ifEmpty { null }
+        } catch (e: SourceException) {
+            null
+        }
     }
 
     private suspend fun openChannel(link: YouTubeLink.Channel, profileId: String): RemoteResult {
         val channelId = source.resolveChannelId(link)
-        // Content first, then the time (see playPlaylist).
+        // Content first, then the time (see checkPlaylist).
         denied(rules().channel(channelId))?.let { return it }
         blockedBySession()?.let { return it }
         val shown = display.show(Screen.Channel(channelId), profileId)
@@ -370,6 +463,12 @@ class TvRemoteController(
         )
     }
 
+    /** v1.2: the parent's «تأكيد» (the video starts on the TV) or «رفض» for the video waiting there. */
+    override suspend fun answerConfirmation(id: String, approve: Boolean): RemoteResult {
+        val answered = confirmations.answer(id, approve) ?: return error(R.string.remote_confirm_gone)
+        return RemoteResult.ok(texts.get(if (approve) R.string.remote_confirm_done else R.string.remote_confirm_refused, answered.title))
+    }
+
     override suspend fun allowlist(profileId: String): RemoteAllowlist {
         val profile = profiles.get(profileId) ?: throw RemoteRejection(texts.get(R.string.remote_profile_not_found))
         if (!profile.isChild) throw RemoteRejection(texts.get(R.string.remote_allowlist_child_only))
@@ -491,8 +590,8 @@ class TvRemoteController(
 
     override suspend fun deleteProfile(profileId: String): RemoteResult = parentalOrRefuse().deleteProfile(profileId)
 
-    override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult =
-        parentalOrRefuse().setFlags(profileId, hideShorts, hideComments)
+    override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?, showSuggestions: Boolean?): RemoteResult =
+        parentalOrRefuse().setFlags(profileId, hideShorts, hideComments, showSuggestions)
 
     override suspend fun setSchedule(profileId: String, fromMinute: Int?, untilMinute: Int?): RemoteResult =
         parentalOrRefuse().setSchedule(profileId, fromMinute, untilMinute)

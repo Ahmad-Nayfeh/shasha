@@ -353,19 +353,42 @@ class SettingsHubNavigationTest {
         press(Key.DirectionDown) // الدليل والفيديو
         press(Key.DirectionDown) // حول
         press(Key.DirectionLeft)
-        // The developer first, then his other apps one card each, then the version and the rest as before.
+        // The developer first, then his other apps one card each: nothing else (the version, the extractor,
+        // SponsorBlock's attribution and the licences are under تشخيص).
         focused("about_developer")
         listOf("shadra", "silah", "masarif", "khatwa").forEach { app ->
             press(Key.DirectionDown)
             focused("about_app_$app")
         }
         press(Key.DirectionDown)
-        focused("about_version")
-        press(Key.DirectionDown)
-        focused("about_sponsorblock")
-        press(Key.DirectionDown)
-        focused("license_NewPipeExtractor")
+        focused("about_app_khatwa") // the last card of the pane
+        listOf("about_version", "about_sponsorblock", "license_NewPipeExtractor", "diag_version", "hub_diagnostics_facts").forEach {
+            assertThat(exists(it)).isFalse()
+        }
         assertThat(calls).containsExactly("updates", "diagnostics").inOrder()
+    }
+
+    @Test
+    fun theDiagnosticsPane_readsTheFacts_thenTheTechnicalInfoAndEveryLicence() {
+        show()
+        goTo(SettingsCategory.DIAGNOSTICS)
+        press(Key.DirectionLeft)
+        focused("hub_diagnostics_videos")
+        press(Key.DirectionDown)
+        focused("hub_diagnostics_facts")
+        // «معلومات تقنية والتراخيص»: the version and the extractor, SponsorBlock's attribution, then the libraries
+        // and the projects whose ideas the app follows, one row each, in the order of the list.
+        press(Key.DirectionDown)
+        focused("diag_version")
+        press(Key.DirectionDown)
+        focused("diag_sponsorblock")
+        (Licenses.libraries + Licenses.ideas).forEach { entry ->
+            press(Key.DirectionDown)
+            focused("license_${entry.name}")
+        }
+        press(Key.DirectionDown)
+        focused("license_tv-app-lock") // the last row of the pane
+        assertThat(exists("sponsorblock_attribution")).isTrue()
     }
 
     @Test

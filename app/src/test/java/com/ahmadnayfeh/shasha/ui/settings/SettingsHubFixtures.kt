@@ -13,6 +13,7 @@ import com.ahmadnayfeh.shasha.policy.ListedPlaylist
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.Schedule
 import com.ahmadnayfeh.shasha.policy.UsageSummary
+import com.ahmadnayfeh.shasha.search.VoiceAvailability
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.ui.settings.remote.PairingStatus
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
@@ -99,6 +100,7 @@ internal object SettingsHubFixtures {
         remote = remote,
         syncHealth = syncHealth,
         device = DeviceFacts("TCL", "Smart TV Pro", "12", 31),
+        voice = VoiceAvailability(systemScreen = "com.google.android.katniss", service = "com.google.android.googlequicksearchbox"),
         nowMs = NOW,
         behavior = behavior,
         remotePort = 8765,

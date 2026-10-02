@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -19,6 +20,7 @@ import com.ahmadnayfeh.shasha.player.PLAYBACK_SPEEDS
 import com.ahmadnayfeh.shasha.policy.AdultExitChallenge
 import com.ahmadnayfeh.shasha.policy.PinLockoutConfig
 import com.ahmadnayfeh.shasha.policy.PolicyConfig
+import com.ahmadnayfeh.shasha.policy.SeriousMode
 import com.ahmadnayfeh.shasha.policy.SkipAllowance
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonElement
 import java.io.IOException
 
 /** Which phrase the adult types to leave a video early. */
@@ -48,8 +51,11 @@ enum class PhraseMode {
  */
 @Immutable
 data class Behavior(
-    // «الوضع الجاد» (SPEC §4's lock).
-    val seriousMode: Boolean = true,
+    // «الوضع الجاد» (SPEC §4's lock), v1.2: one switch for the children's profiles, one for the adult's (owner decision:
+    // independent, both on by default; v1.1's single switch becomes both, see BehaviorSettings).
+    val seriousModeChildren: Boolean = true,
+    val seriousModeAdult: Boolean = true,
+    /** The adult's way out before the end (the exit challenge); off, only the phone ends an adult's video early. */
     val adultEscape: Boolean = true,
     val escapeHoldSeconds: Int = 10,
     val phraseMode: PhraseMode = PhraseMode.RANDOM,
@@ -90,6 +96,10 @@ data class Behavior(
     val appearance: Appearance
         get() = Appearance(appLanguage, appTheme)
 
+    /** Both «الوضع الجاد» switches, as the rules read them. */
+    val seriousMode: SeriousMode
+        get() = SeriousMode(children = seriousModeChildren, adult = seriousModeAdult)
+
     /** The phrases the exit challenge may ask for now. */
     val exitPhrases: List<String>
         get() = if (phraseMode == PhraseMode.CUSTOM && customPhrase.isNotBlank()) listOf(customPhrase) else phrases.ifEmpty { AdultExitChallenge.phrases }
@@ -119,7 +129,17 @@ data class Behavior(
  * (a hand-edited backup) reads as the default. Each entry is one DataStore key of "behavior.preferences_pb".
  */
 object BehaviorKeys {
-    val SERIOUS_MODE = booleanPreferencesKey("serious_mode")
+    /** «الوضع الجاد لملفات الأطفال». */
+    val SERIOUS_MODE_CHILDREN = booleanPreferencesKey("serious_mode_children")
+
+    /** «الوضع الجاد لملف الكبار». */
+    val SERIOUS_MODE_ADULT = booleanPreferencesKey("serious_mode_adult")
+
+    /**
+     * v1.1's single «الوضع الجاد» for every profile: never written any more. A file (or a format-2 backup) that has it
+     * gives its value to both switches ([BehaviorSettings.migrateSeriousMode], [BehaviorSettings.upgradeBackup]).
+     */
+    val LEGACY_SERIOUS_MODE = booleanPreferencesKey("serious_mode")
     val ADULT_ESCAPE = booleanPreferencesKey("adult_escape")
     val ESCAPE_HOLD_SECONDS = intPreferencesKey("escape_hold_seconds")
     val PHRASE_MODE = stringPreferencesKey("phrase_mode")
@@ -176,7 +196,8 @@ object BehaviorKeys {
 
     /** Every key, for the backup and «إرجاع كل الإعدادات». */
     val ALL: Map<String, SettingType> = mapOf(
-        SERIOUS_MODE.name to SettingType.BOOLEAN,
+        SERIOUS_MODE_CHILDREN.name to SettingType.BOOLEAN,
+        SERIOUS_MODE_ADULT.name to SettingType.BOOLEAN,
         ADULT_ESCAPE.name to SettingType.BOOLEAN,
         ESCAPE_HOLD_SECONDS.name to SettingType.INT,
         PHRASE_MODE.name to SettingType.STRING,
@@ -233,6 +254,13 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
 
     init {
         scope.launch {
+            // v1.2: a file written by v1.1 has one «الوضع الجاد»; its value becomes both switches, once. Reading it
+            // ([decode]) gives the same answer meanwhile, so a failing disk here changes nothing on screen.
+            try {
+                store.edit(::migrateSeriousMode)
+            } catch (e: IOException) {
+                // Read as it is (decode falls back to the old switch); tried again at the next start.
+            }
             store.data
                 .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
                 .map(::decode)
@@ -264,9 +292,24 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
         },
     )
 
-    suspend fun setSeriousMode(on: Boolean) = put(BehaviorKeys.SERIOUS_MODE, on)
+    /** «الوضع الجاد لملفات الأطفال»: off, a child's videos are no longer locked (the adult's switch is not touched). */
+    suspend fun setSeriousModeChildren(on: Boolean) = put(BehaviorKeys.SERIOUS_MODE_CHILDREN, on)
+
+    /** «الوضع الجاد لملف الكبار»: off, the adult's videos are no longer locked (the children's switch is not touched). */
+    suspend fun setSeriousModeAdult(on: Boolean) = put(BehaviorKeys.SERIOUS_MODE_ADULT, on)
 
     suspend fun setAdultEscape(on: Boolean) = put(BehaviorKeys.ADULT_ESCAPE, on)
+
+    /**
+     * The TV's «السماح للكبير بالخروج قبل النهاية» (v1.2): turning it OFF needs a paired phone ([phonePaired]), since the
+     * phone's parent section is then the only way to end an adult's video early (and every adult video waits for its
+     * «تأكيد»). False, nothing stored, when there is none. Turning it on always works.
+     */
+    suspend fun setAdultEscape(on: Boolean, phonePaired: suspend () -> Boolean): Boolean {
+        if (!on && !phonePaired()) return false
+        put(BehaviorKeys.ADULT_ESCAPE, on)
+        return true
+    }
 
     suspend fun setAdultEntryPin(on: Boolean) = put(BehaviorKeys.ADULT_ENTRY_PIN, on)
 
@@ -353,7 +396,9 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
 
     /** Every setting of this file back to its default. */
     suspend fun resetAll() {
-        store.edit { prefs -> prefs.asMap().keys.filter { it.name in BehaviorKeys.STORED }.forEach { prefs.remove(it) } }
+        store.edit { prefs ->
+            prefs.asMap().keys.filter { it.name in BehaviorKeys.STORED || it == BehaviorKeys.LEGACY_SERIOUS_MODE }.forEach { prefs.remove(it) }
+        }
     }
 
     private suspend fun <T> put(key: Preferences.Key<T>, value: T) {
@@ -389,8 +434,11 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
         fun decode(prefs: Preferences): Behavior {
             val d = Behavior.DEFAULT
             fun num(key: Preferences.Key<Int>, default: Int): Int = prefs[key]?.takeIf { it in NUMBER_CHOICES.getValue(key) } ?: default
+            // A v1.1 file not migrated yet: its one switch is both.
+            val legacy = prefs[BehaviorKeys.LEGACY_SERIOUS_MODE]
             return Behavior(
-                seriousMode = prefs[BehaviorKeys.SERIOUS_MODE] ?: d.seriousMode,
+                seriousModeChildren = prefs[BehaviorKeys.SERIOUS_MODE_CHILDREN] ?: legacy ?: d.seriousModeChildren,
+                seriousModeAdult = prefs[BehaviorKeys.SERIOUS_MODE_ADULT] ?: legacy ?: d.seriousModeAdult,
                 adultEscape = prefs[BehaviorKeys.ADULT_ESCAPE] ?: d.adultEscape,
                 escapeHoldSeconds = num(BehaviorKeys.ESCAPE_HOLD_SECONDS, d.escapeHoldSeconds),
                 phraseMode = PhraseMode.entries.firstOrNull { it.name == prefs[BehaviorKeys.PHRASE_MODE] } ?: d.phraseMode,
@@ -440,7 +488,32 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
                 produceFile = { context.applicationContext.preferencesDataStoreFile(FILE_NAME) },
             )
 
-        /** The manual backup keeps every choice (format 2 and later; older files leave them as they are). */
-        fun backupSection(store: DataStore<Preferences>) = SettingsSection(FILE_NAME, store, keys = BehaviorKeys.STORED, sinceFormat = 2)
+        /**
+         * v1.1 kept one «الوضع الجاد» for every profile ([BehaviorKeys.LEGACY_SERIOUS_MODE]): its value becomes both
+         * switches (a switch already set keeps its own value), and the old key goes. Nothing to do in a v1.2 file.
+         */
+        internal fun migrateSeriousMode(prefs: MutablePreferences) {
+            val legacy = prefs[BehaviorKeys.LEGACY_SERIOUS_MODE] ?: return
+            if (prefs[BehaviorKeys.SERIOUS_MODE_CHILDREN] == null) prefs[BehaviorKeys.SERIOUS_MODE_CHILDREN] = legacy
+            if (prefs[BehaviorKeys.SERIOUS_MODE_ADULT] == null) prefs[BehaviorKeys.SERIOUS_MODE_ADULT] = legacy
+            prefs.remove(BehaviorKeys.LEGACY_SERIOUS_MODE)
+        }
+
+        /**
+         * A backup of v1.1 (format 2) has one «الوضع الجاد» ([BehaviorKeys.LEGACY_SERIOUS_MODE]): restored, its value sets
+         * both switches. Everything else is restored as it is.
+         */
+        internal fun upgradeBackup(values: Map<String, JsonElement>): Map<String, JsonElement> {
+            val legacy = values[BehaviorKeys.LEGACY_SERIOUS_MODE.name] ?: return values
+            val both = listOf(BehaviorKeys.SERIOUS_MODE_CHILDREN.name, BehaviorKeys.SERIOUS_MODE_ADULT.name).filter { it !in values }
+            return values - BehaviorKeys.LEGACY_SERIOUS_MODE.name + both.associateWith { legacy }
+        }
+
+        /**
+         * The manual backup keeps every choice (format 2 and later; older files leave them as they are). A format-2 file's
+         * single «الوضع الجاد» is read into both switches ([upgradeBackup]).
+         */
+        fun backupSection(store: DataStore<Preferences>) =
+            SettingsSection(FILE_NAME, store, keys = BehaviorKeys.STORED, sinceFormat = 2, upgrade = ::upgradeBackup)
     }
 }

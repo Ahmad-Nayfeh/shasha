@@ -154,7 +154,7 @@ internal fun LanguageToggle(tag: String, onClick: () -> Unit, modifier: Modifier
         border = ClickableSurfaceDefaults.border(border = Border(BorderStroke(1.dp, ShashaColors.Outline), shape = shape), focusedBorder = Border.None),
     ) {
         Box(Modifier.padding(horizontal = 18.dp).heightIn(min = 56.dp), contentAlignment = Alignment.Center) {
-            Text(if (english) "EN" else "ع", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(if (english) R.string.voice_language_short_en else R.string.voice_language_short_ar), style = MaterialTheme.typography.titleMedium)
         }
     }
 }

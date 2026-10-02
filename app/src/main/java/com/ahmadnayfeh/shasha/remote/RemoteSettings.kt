@@ -47,11 +47,24 @@ class RemoteSettings(private val store: DataStore<Preferences>, private val rand
         return token
     }
 
-    /** A new token: every phone paired with the old one is refused from now on. */
+    /** A new token: every phone paired with the old one is refused from now on (none is paired with the new one yet). */
     suspend fun regenerateToken(): String {
         val token = newToken()
-        store.edit { it[TOKEN] = token }
+        store.edit {
+            it[TOKEN] = token
+            it.remove(PHONE_PAIRED)
+        }
         return token
+    }
+
+    /**
+     * v1.2: a phone has reached the server with the current token at least once (it scanned the QR code and opened the
+     * page). Kept across restarts, forgotten with a new token ([regenerateToken]). Not in the backup.
+     */
+    val phonePaired: Flow<Boolean> = store.data.map { it[PHONE_PAIRED] ?: false }.distinctUntilChanged()
+
+    suspend fun markPhonePaired() {
+        store.edit { if (it[PHONE_PAIRED] != true) it[PHONE_PAIRED] = true }
     }
 
     /** The port to try first: the last one bound, else [DEFAULT_PORT]. */
@@ -93,6 +106,7 @@ class RemoteSettings(private val store: DataStore<Preferences>, private val rand
         private val ENABLED = booleanPreferencesKey("enabled")
         private val TOKEN = stringPreferencesKey("pairing_token")
         private val PORT = intPreferencesKey("port")
+        private val PHONE_PAIRED = booleanPreferencesKey("phone_paired")
 
         private val TOKEN_CHARS = Regex("[A-Za-z0-9_-]{$TOKEN_LENGTH,}")
 

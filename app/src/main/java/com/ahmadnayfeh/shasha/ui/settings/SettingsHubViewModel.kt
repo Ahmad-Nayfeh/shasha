@@ -55,6 +55,8 @@ class SettingsHubViewModel(
     private val behaviorSettings: BehaviorSettings? = null,
     /** The phone remote listens again (a new port). */
     private val restartRemote: suspend () -> Unit = {},
+    /** v1.2: a phone is paired with the TV (the adult's escape may be turned off only then). */
+    private val phonePaired: suspend () -> Boolean = { true },
 ) : ViewModel() {
 
     val profiles: StateFlow<List<Profile>?> = profileRepository.observeAll().stateIn(viewModelScope, WHILE_SHOWN, null)
@@ -110,9 +112,18 @@ class SettingsHubViewModel(
         if (enabled) afterEnabling()
     }
 
-    fun setSeriousMode(on: Boolean) = behave { it.setSeriousMode(on) }
+    fun setSeriousModeChildren(on: Boolean) = behave { it.setSeriousModeChildren(on) }
 
-    fun setAdultEscape(on: Boolean) = behave { it.setAdultEscape(on) }
+    fun setSeriousModeAdult(on: Boolean) = behave { it.setSeriousModeAdult(on) }
+
+    /**
+     * The adult's way out before the end. Turning it OFF needs a paired phone (v1.2): the phone's parent section is then
+     * the only way to end an adult's video early, and every adult video waits for its «تأكيد». Without one nothing is
+     * stored and [refused] says why.
+     */
+    fun setAdultEscape(on: Boolean, refused: () -> Unit = {}) = behave { settings ->
+        if (!settings.setAdultEscape(on, phonePaired)) refused()
+    }
 
     fun setAdultEntryPin(on: Boolean) = behave { it.setAdultEntryPin(on) }
 

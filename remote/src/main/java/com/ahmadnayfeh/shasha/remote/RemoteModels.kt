@@ -24,7 +24,10 @@ data class RemoteStatus(
     val sessionState: RemoteSessionState,
     /** The current video is under the playback lock (SPEC §4) and can only be left with a PIN. */
     val videoLocked: Boolean,
-    /** «الوضع الجاد» is on: videos that start are locked until they end (off: nothing is ever locked). */
+    /**
+     * «الوضع الجاد» is on for the current profile's kind (v1.2: the children's and the adult's switches are separate):
+     * videos that start in it are locked until they end (off: nothing it starts is locked).
+     */
     val seriousMode: Boolean = true,
     /**
      * Changes whenever something the parent section shows changes on the TV (a setting, a profile's rules, a list, the
@@ -36,7 +39,64 @@ data class RemoteStatus(
     val movingTo: Int? = null,
     /** The current profile's id: a switch between two profiles of the same name and kind is still a switch. */
     val profileId: String = "",
+    /**
+     * v1.2: a video waiting on the TV for the parent's «تأكيد» (it would start in Serious Mode while only the phone could
+     * end it early); null when none. Answered with `POST /api/parent/confirm`.
+     */
+    val confirmation: RemoteConfirmation? = null,
+    /** v1.2: the latest link a phone sent and how the TV answered it (PENDING while «قبول» / «رفض» shows there). */
+    val playRequest: RemotePlayRequest? = null,
 )
+
+/** A video the TV will only start once the parent confirms it from the phone (v1.2). */
+@Serializable
+data class RemoteConfirmation(
+    val id: String,
+    val title: String,
+    /** Seconds before the TV gives up waiting (the video is then not played). */
+    val secondsLeft: Int,
+)
+
+/** Where a link sent from the phone stands on the TV (v1.2: nothing plays before «قبول» on the TV). */
+@Serializable
+enum class RemotePlayState {
+    /** «طلب تشغيل من الجوال» shows on the TV, waiting for «قبول» or «رفض». */
+    PENDING,
+
+    /** Accepted on the TV and opened. */
+    ACCEPTED,
+
+    /** «رفض» on the TV (or BACK there). */
+    REJECTED,
+
+    /** Nobody answered on the TV in time: rejected by itself. */
+    TIMED_OUT,
+
+    /** Accepted, but the TV could not open it any more ([RemotePlayRequest.message] says why). */
+    FAILED,
+}
+
+/** A link a phone sent: [message] is what the phone shows for [state] (Arabic, FSI…PDI around names). */
+@Serializable
+data class RemotePlayRequest(
+    val id: String,
+    val title: String,
+    val state: RemotePlayState,
+    val message: String,
+    /** While [state] is [RemotePlayState.PENDING]: seconds before it is rejected by itself. */
+    val secondsLeft: Int = 0,
+)
+
+/**
+ * Answer to `POST /api/play`: refused at once ([ok] false, the TV's reason; the TV shows nothing), or sent to the TV
+ * ([ok] true) where [request] waits for «قبول» (its later states come with [RemoteStatus.playRequest]).
+ */
+@Serializable
+data class RemotePlayResult(val ok: Boolean, val message: String, val request: RemotePlayRequest? = null) {
+    companion object {
+        fun refused(message: String) = RemotePlayResult(false, message)
+    }
+}
 
 @Serializable
 data class RemoteNowPlaying(
@@ -215,6 +275,8 @@ data class RemoteProfileDetails(
     val usedTodayMinutes: Int = 0,
     /** Why this profile cannot be deleted now (the last adult, the profile on the TV), shown beside «حذف»; null: it can. */
     val deleteBlockedReason: String? = null,
+    /** «إظهار الفيديوهات المقترحة»; a child's come only from its allowed channels. */
+    val showSuggestions: Boolean = false,
 )
 
 /** The parent's «الملفات»: every profile, and the TV's own choices for editing them (the phone offers nothing else). */

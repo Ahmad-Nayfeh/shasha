@@ -36,7 +36,7 @@ internal class DemoSettings(private val portTaken: (Int) -> Boolean = { false })
     )
 
     private val on = JsonPrimitive(true)
-    private val serious = mapOf("serious_mode" to on)
+    private val serious = mapOf("serious_mode_adult" to on)
     private val escape = serious + ("adult_escape" to on)
 
     private fun seconds(n: Int) = when {
@@ -62,11 +62,14 @@ internal class DemoSettings(private val portTaken: (Int) -> Boolean = { false })
     private val phraseNote = "حروف عربية ومسافات فقط، حتى 30 حرفاً: تُكتب بلوحة المفاتيح التي تظهر عند الخروج."
 
     private val defs = listOf(
-        Def("serious", "serious_mode", "الوضع الجاد", RemoteSettingKind.SWITCH, on,
-            help = "الطفل يخرج من الفيديو برمز الوالدين، والكبير بالضغط المطوّل ثم كتابة عبارة. عند الإيقاف يخرج الجميع بزر «رجوع».",
-            warning = "الوضع الجاد متوقف: زر «رجوع» يُخرج من أي فيديو في كل الملفات."),
+        Def("serious", "serious_mode_children", "الوضع الجاد لملفات الأطفال", RemoteSettingKind.SWITCH, on,
+            help = "فيديو الطفل يُشاهَد حتى نهايته، ويخرج منه برمز الوالدين على التلفاز أو من قسم الأب في الجوال. عند الإيقاف يخرج الطفل بزر «رجوع».",
+            warning = "متوقف لملفات الأطفال: زر «رجوع» يُخرج الطفل من أي فيديو."),
+        Def("serious", "serious_mode_adult", "الوضع الجاد لملف الكبار", RemoteSettingKind.SWITCH, on,
+            help = "فيديو الكبير يُشاهَد حتى نهايته، ويخرج منه بالضغط المطوّل ثم كتابة عبارة. عند الإيقاف يخرج بزر «رجوع».",
+            warning = "متوقف لملف الكبار: زر «رجوع» يُخرج الكبير من أي فيديو."),
         Def("serious", "adult_escape", "السماح للكبير بالخروج قبل النهاية", RemoteSettingKind.SWITCH, on, visibleWhen = serious,
-            help = "بالضغط المطوّل ثم كتابة عبارة، ويُسجَّل استسلاماً. عند الإيقاف لا يُنهى الفيديو قبل نهايته إلا من قسم الأب في الجوال."),
+            help = "بالضغط المطوّل ثم كتابة عبارة، ويُسجَّل استسلاماً. إيقافه يحتاج جوالاً مقترناً يُؤكَّد منه كل فيديو للكبار قبل أن يبدأ."),
         Def("serious", "escape_hold_seconds", "مدة الضغط المطوّل", RemoteSettingKind.CHOICE, JsonPrimitive(10),
             help = "كم ثانية يُضغط على «رجوع» أو «⁨OK⁩» قبل ظهور العبارة",
             choices = ints(listOf(3, 5, 10, 15, 20, 30), ::seconds), visibleWhen = escape),
@@ -79,10 +82,10 @@ internal class DemoSettings(private val portTaken: (Int) -> Boolean = { false })
             help = "حفظها يجعلها العبارة المطلوبة عند الخروج. $phraseNote", visibleWhen = escape),
         Def("serious", "skip_allowance_seconds", "التخطي المسموح", RemoteSettingKind.CHOICE, JsonPrimitive(30),
             help = "ما يُتخطى بالتقديم حتى هذا القدر لا يمنع اعتبار الفيديو منتهياً وحده",
-            choices = ints(listOf(0, 10, 30, 60, 120)) { if (it == 0) "بلا تخطٍّ" else seconds(it) }, visibleWhen = serious),
+            choices = ints(listOf(0, 10, 30, 60, 120)) { if (it == 0) "بلا تخطٍّ" else seconds(it) }),
         Def("serious", "played_percent", "أو مشاهدة جزء من الفيديو", RemoteSettingKind.CHOICE, JsonPrimitive(50),
             help = "وينتهي الفيديو وحده أيضاً إذا شوهد هذا القدر مما بقي منه",
-            choices = ints(listOf(30, 50, 75, 90, 100)) { if (it == 100) "الفيديو كله" else "⁦$it%⁩" }, visibleWhen = serious),
+            choices = ints(listOf(30, 50, 75, 90, 100)) { if (it == 100) "الفيديو كله" else "⁦$it%⁩" }),
         Def("playback", "warning_minutes", "التنبيه قبل انتهاء الوقت", RemoteSettingKind.CHOICE, JsonPrimitive(5),
             help = "تنبيه هادئ قبل أن تتوقف المشاهدة",
             choices = ints(listOf(0, 1, 2, 3, 5, 10, 15)) { if (it == 0) "متوقف" else "قبل ${if (it == 2) "دقيقتين" else minutes(it)}" }),
@@ -220,7 +223,8 @@ internal class DemoSettings(private val portTaken: (Int) -> Boolean = { false })
     var revision = 0L
         private set
 
-    val seriousMode: Boolean get() = (values["serious_mode"] as? JsonPrimitive)?.booleanOrNull ?: true
+    val seriousModeChildren: Boolean get() = (values["serious_mode_children"] as? JsonPrimitive)?.booleanOrNull ?: true
+    val seriousModeAdult: Boolean get() = (values["serious_mode_adult"] as? JsonPrimitive)?.booleanOrNull ?: true
     val adultEntryPin: Boolean get() = (values["adult_entry_pin"] as? JsonPrimitive)?.booleanOrNull ?: true
     val extraMinutes: List<Int> get() = ((values["extra_minutes"] ?: defs.first { it.key == "extra_minutes" }.default) as JsonArray).map { (it as JsonPrimitive).intOrNull!! }
 

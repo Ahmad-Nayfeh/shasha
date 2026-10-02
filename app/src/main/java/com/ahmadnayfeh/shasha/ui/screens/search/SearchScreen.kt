@@ -194,8 +194,10 @@ fun SearchScreen(
         }
         wasShown = voiceShown
     }
-    LaunchedEffect(focusResults, results.loadingFirst, results.items.isEmpty()) {
+    LaunchedEffect(focusResults, results.loadingFirst, results.loadingMore, results.items.isEmpty()) {
         if (focusResults && !results.loadingFirst) {
+            // A first page the profile's rules hid entirely: the next pages are on their way, the focus waits for them.
+            if (results.items.isEmpty() && results.loadingMore) return@LaunchedEffect
             focusResults = false
             if (results.items.isNotEmpty()) {
                 withFrameNanos { }
@@ -248,6 +250,8 @@ fun SearchScreen(
                         EmptyState(ShashaIcons.Search, stringResource(R.string.search_idle_title), stringResource(R.string.search_idle_body))
                     }
                     results.loadingFirst -> Centered { ShashaLoaderWithText(stringResource(R.string.search_loading)) }
+                    // Nothing of the pages so far is shown, but more are on their way: still searching, not "no results".
+                    results.items.isEmpty() && results.loadingMore -> Centered { ShashaLoaderWithText(stringResource(R.string.search_loading)) }
                     results.items.isEmpty() -> Centered {
                         EmptyState(
                             ShashaIcons.Search,

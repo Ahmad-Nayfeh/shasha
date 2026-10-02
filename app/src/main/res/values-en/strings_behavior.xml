@@ -34,11 +34,9 @@
 
     <string name="hub_serious">Serious Mode</string>
     <string name="hub_serious_summary">A video you start is watched to the end</string>
-    <string name="serious_switch">Serious Mode</string>
-    <string name="serious_switch_body">Kids leave a video with the parent PIN; adults hold a key, then type a phrase. When off, Back leaves any video.</string>
     <string name="serious_off_note">Serious Mode is off: Back leaves any video, in every profile.</string>
     <string name="serious_escape">Let adults leave before the end</string>
-    <string name="serious_escape_body">Hold a key, then type a phrase; it counts as giving up. When off, only the phone can end a video early.</string>
+    <string name="serious_escape_body">Hold a key, then type a phrase (counted as giving up). Off needs a paired phone to confirm each adult video.</string>
     <string name="serious_hold">Hold duration</string>
     <string name="serious_hold_body">How many seconds to hold Back or &#x2068;OK&#x2069; before the phrase appears</string>
     <string name="serious_phrase_section">Exit phrase</string>

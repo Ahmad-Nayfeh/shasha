@@ -1,6 +1,7 @@
 package com.ahmadnayfeh.shasha.policy
 
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Test
 
 /** The parent's adjustable rules (Settings): each one changes the engine's answer at once, defaults change nothing. */
@@ -14,7 +15,7 @@ class PolicyConfigTest {
     @Test
     fun defaults_areTheBehaviourBeforeSettings() {
         val d = PolicyConfig.DEFAULT
-        assertThat(d.seriousMode).isTrue()
+        assertThat(d.seriousMode).isEqualTo(SeriousMode(children = true, adult = true))
         assertThat(d.adultEscape).isTrue()
         assertThat(d.escapeHoldMillis).isEqualTo(10_000)
         assertThat(d.exitPhrases).isEqualTo(AdultExitChallenge.phrases)
@@ -29,11 +30,75 @@ class PolicyConfigTest {
     fun seriousModeOff_noVideoIsLocked_inAnyProfile() {
         assertThat(engine.lockFor(child(), "v1")).isNotNull()
         assertThat(engine.lockFor(adult(), "v1")).isNotNull()
-        config = config.copy(seriousMode = false)
+        config = config.copy(seriousMode = SeriousMode.OFF)
         assertThat(engine.lockFor(child(), "v1")).isNull()
         assertThat(engine.lockFor(adult(), "v1", playlistId = "PL")).isNull()
         assertThat(engine.features(adult()).adultExitChallenge).isFalse()
         assertThat(config.escape).isNull()
+    }
+
+    /** v1.2: «الوضع الجاد لملفات الأطفال» and «الوضع الجاد لملف الكبار» are two switches; neither touches the other. */
+    @Test
+    fun childrenAndAdultSwitches_areIndependent() {
+        config = config.copy(seriousMode = SeriousMode(children = false, adult = true))
+        assertThat(engine.lockFor(child(), "v1")).isNull()
+        assertThat(engine.lockFor(adult(), "v1")!!.unlock).isEqualTo(UnlockMethod.EXIT_CHALLENGE)
+        assertThat(config.escape).isNotNull()
+
+        config = config.copy(seriousMode = SeriousMode(children = true, adult = false))
+        assertThat(engine.lockFor(child(), "v1", playlistId = ALLOWED_PLAYLIST)!!.unlock).isEqualTo(UnlockMethod.PARENT_PIN)
+        assertThat(engine.lockFor(adult(), "v1")).isNull()
+        // Nothing to leave in the adult's videos: no escape either.
+        assertThat(config.escape).isNull()
+        assertThat(engine.features(adult()).adultExitChallenge).isFalse()
+    }
+
+    /** A lock already stored stays only while its own kind's switch is on (LockController ends it otherwise). */
+    @Test
+    fun seriousMode_holdsALockOnlyWhileItsKindIsOn() {
+        val childs = engine.lockPlayback(child(), "v1")
+        val adults = engine.lockPlayback(adult(), "v2")
+        assertThat(SeriousMode.ON.holds(childs)).isTrue()
+        assertThat(SeriousMode.ON.holds(adults)).isTrue()
+        assertThat(SeriousMode(children = false, adult = true).holds(childs)).isFalse()
+        assertThat(SeriousMode(children = false, adult = true).holds(adults)).isTrue()
+        assertThat(SeriousMode(children = true, adult = false).holds(childs)).isTrue()
+        assertThat(SeriousMode(children = true, adult = false).holds(adults)).isFalse()
+        assertThat(SeriousMode.OFF.holds(childs)).isFalse()
+        assertThat(SeriousMode.ON.isOnFor(child())).isTrue()
+        assertThat(SeriousMode(children = false).isOnFor(child())).isFalse()
+        assertThat(SeriousMode(children = false).isOnFor(adult())).isTrue()
+    }
+
+    /**
+     * The finding behind the phone confirmation (v1.2): the parent PIN typed on the TV ends a CHILD's locked video
+     * (the player's PIN pad, LockController.unlockWithPin), so a child always has a way out on the TV; the adult's
+     * lock does not open with the PIN, only with the exit challenge.
+     */
+    @Test
+    fun theParentPinOnTheTv_endsAChildsLock_notAnAdults() {
+        val childs = engine.lockPlayback(child(), "v1")
+        val adults = engine.lockPlayback(adult(), "v2")
+        assertThat(engine.unlockWithPin(childs)).isNull()
+        assertThat(engine.unlockWithPin(adults)).isEqualTo(adults)
+        assertThat(engine.tvWayOut(child())).isEqualTo(UnlockMethod.PARENT_PIN)
+        assertThat(engine.tvWayOut(adult())).isEqualTo(UnlockMethod.EXIT_CHALLENGE)
+        config = config.copy(adultEscape = false)
+        assertThat(engine.tvWayOut(adult())).isNull()
+        // Turning the escape off changes nothing for a child.
+        assertThat(engine.tvWayOut(child())).isEqualTo(UnlockMethod.PARENT_PIN)
+    }
+
+    /** A video must first be confirmed from the phone only when it would start locked with no way out on the TV. */
+    @Test
+    fun phoneConfirmation_onlyWhenNothingOnTheTvCouldEndTheVideo() {
+        // Every combination of the three switches, for both kinds of profile.
+        for (children in listOf(true, false)) for (adultOn in listOf(true, false)) for (escape in listOf(true, false)) {
+            config = PolicyConfig(seriousMode = SeriousMode(children, adultOn), adultEscape = escape)
+            val why = "children=$children adult=$adultOn escape=$escape"
+            assertWithMessage(why).that(engine.needsPhoneConfirmation(child())).isFalse()
+            assertWithMessage(why).that(engine.needsPhoneConfirmation(adult())).isEqualTo(adultOn && !escape)
+        }
     }
 
     @Test
@@ -120,7 +185,7 @@ class PolicyConfigTest {
 
     @Test
     fun seriousModeOff_doesNotTouchTheOtherRules() {
-        config = config.copy(seriousMode = false)
+        config = config.copy(seriousMode = SeriousMode.OFF)
         assertThat(engine.canPlay(child(), video(channelId = OTHER_CHANNEL), ok)).isEqualTo(deny(DenyReason.NOT_IN_ALLOWLIST))
         assertThat(engine.guardShouldEnforce(LockState.of(null, SessionState.TimeUp))).isTrue()
     }

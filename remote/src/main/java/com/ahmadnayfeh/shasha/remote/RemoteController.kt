@@ -20,8 +20,12 @@ interface RemoteController {
     /** Only called when [status] says canSearch; still reject (throw [RemoteRejection]) if not allowed. */
     suspend fun search(query: String): List<RemoteItem>
 
-    /** Any YouTube link (video, playlist, channel), already trimmed. Must pass the PolicyEngine. */
-    suspend fun playLink(url: String): RemoteResult
+    /**
+     * Any YouTube link (video, playlist, channel), already trimmed. Must pass the PolicyEngine first: a refused link
+     * never reaches the TV's screen. An allowed one never opens by itself (v1.2): the TV asks «قبول» / «رفض» and the
+     * answer carries the waiting [RemotePlayResult.request]; how it ends shows in [RemoteStatus.playRequest].
+     */
+    suspend fun playLink(url: String): RemotePlayResult
 
     /**
      * Refuse STOP ([RemoteResult.error]) while the playback lock of SPEC §4 is on: a locked video is left
@@ -53,6 +57,12 @@ interface RemoteController {
     suspend fun unlockTimeUp(extraMinutes: Int?): RemoteResult
 
     suspend fun unlockVideo(): RemoteResult
+
+    /**
+     * v1.2: the parent's «تأكيد» ([approve] true: the video starts) or «رفض» (it does not) for [RemoteStatus.confirmation]
+     * [id]; refused ([RemoteResult.error]) when that confirmation no longer waits.
+     */
+    suspend fun answerConfirmation(id: String, approve: Boolean): RemoteResult
 
     suspend fun allowlist(profileId: String): RemoteAllowlist
 
@@ -107,7 +117,7 @@ interface RemoteController {
     suspend fun deleteProfile(profileId: String): RemoteResult
 
     /** null leaves that switch as it is. */
-    suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult
+    suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?, showSuggestions: Boolean?): RemoteResult
 
     /** Minutes since midnight (0..1439); both null = all day. The same time twice also means all day. */
     suspend fun setSchedule(profileId: String, fromMinute: Int?, untilMinute: Int?): RemoteResult

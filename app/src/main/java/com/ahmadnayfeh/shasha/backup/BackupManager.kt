@@ -320,9 +320,11 @@ class BackupManager(
 
         /**
          * Bump with every change a previous app could not read; [import] refuses newer ones and reads every older
-         * one. 2: the settings gained the "behavior" section (Serious Mode, timings, the PIN's brake…).
+         * one. 2: the settings gained the "behavior" section (Serious Mode, timings, the PIN's brake…). 3 (v1.2):
+         * «الوضع الجاد» is two switches, the children's and the adult's; a format-2 file's single switch sets both
+         * (BehaviorSettings.backupSection).
          */
-        const val FORMAT = 2
+        const val FORMAT = 3
 
         /** What the phone may upload (:remote's limit) and more than years of history take. */
         const val MAX_BYTES = 10 * 1024 * 1024

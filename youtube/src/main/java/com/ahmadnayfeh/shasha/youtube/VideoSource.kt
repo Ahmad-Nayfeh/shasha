@@ -33,6 +33,19 @@ interface VideoSource {
      */
     suspend fun stream(videoId: String, allowLowQuality: Boolean = false): StreamDetails
 
+    /**
+     * The videos YouTube suggests beside [videoId] (the related items of its watch page), best first, at most
+     * [MAX_RELATED]: videos only (no mixes, channels or playlists), never [videoId] itself, no repeats.
+     *
+     * A video [stream] extracted lately is answered from that same extraction, without any request: playing a video and
+     * then showing its suggestions never fetches it twice. Otherwise its watch page is read once (no stream URLs) and
+     * the answer is kept a few hours. Unfiltered YouTube content: the app decides who may see it.
+     */
+    suspend fun related(videoId: String): List<VideoItem> = emptyList()
+
+    /** The first page of a channel's Shorts tab, newest first, every item marked short-form; empty when it has none. */
+    suspend fun channelShorts(channelId: String): List<VideoItem> = emptyList()
+
     /** Latest uploads for the home feed: RSS first, channel Videos tab as fallback. */
     suspend fun recentVideos(channelId: String): List<VideoItem>
 
@@ -45,6 +58,9 @@ interface VideoSource {
 
 /** At most this many from [VideoSource.suggestions]. */
 const val MAX_SUGGESTIONS = 8
+
+/** At most this many from [VideoSource.related]. */
+const val MAX_RELATED = 24
 
 enum class SearchFilter { ALL, VIDEOS, CHANNELS, PLAYLISTS }
 

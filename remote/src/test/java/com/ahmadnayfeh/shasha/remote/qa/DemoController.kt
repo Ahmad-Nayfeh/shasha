@@ -5,7 +5,11 @@ import com.ahmadnayfeh.shasha.remote.PlaybackAction
 import com.ahmadnayfeh.shasha.remote.PlaybackCommand
 import com.ahmadnayfeh.shasha.remote.RemoteAllowlist
 import com.ahmadnayfeh.shasha.remote.RemoteChannel
+import com.ahmadnayfeh.shasha.remote.RemoteConfirmation
 import com.ahmadnayfeh.shasha.remote.RemoteController
+import com.ahmadnayfeh.shasha.remote.RemotePlayRequest
+import com.ahmadnayfeh.shasha.remote.RemotePlayResult
+import com.ahmadnayfeh.shasha.remote.RemotePlayState
 import com.ahmadnayfeh.shasha.remote.RemoteItem
 import com.ahmadnayfeh.shasha.remote.RemoteItemType
 import com.ahmadnayfeh.shasha.remote.RemoteListEntry
@@ -46,6 +50,7 @@ internal class DemoController(
         val id: String, var name: String, val kind: RemoteProfileKind, var avatar: String,
         var quota: Int?, var usedMinutes: Int, var extraMinutes: Int = 0, var unlimitedToday: Boolean = false,
         var scheduleFrom: Int? = null, var scheduleUntil: Int? = null, var hideShorts: Boolean = false, var hideComments: Boolean = false,
+        var showSuggestions: Boolean = kind == RemoteProfileKind.ADULT,
     )
 
     private val catalog = listOf(
@@ -113,6 +118,38 @@ internal class DemoController(
 
     /** QA: the adult's video is locked too (Serious Mode applies to every profile). */
     @Volatile var lockAdult = false
+
+    /** QA: a video waiting on the TV for the parent's «تأكيد» (v1.2). */
+    @Volatile var confirmation: RemoteConfirmation? = null
+
+    /** QA: the TV's «قبول» comes this long after a link is sent (null: it never comes, the request times out). */
+    @Volatile var acceptAfterMs: Long? = 3_000
+
+    /** The last link sent, its video and when the demo TV accepts it. */
+    private var request: RemotePlayRequest? = null
+    private var requested: Video? = null
+    private var requestedAt = 0L
+
+    private fun serious(kind: RemoteProfileKind) = if (kind == RemoteProfileKind.CHILD) settings.seriousModeChildren else settings.seriousModeAdult
+
+    /** The demo TV answers the waiting link: «قبول» after [acceptAfterMs], or the 30 s pass. */
+    private fun settleRequest() {
+        val r = request?.takeIf { it.state == RemotePlayState.PENDING } ?: return
+        val waited = System.currentTimeMillis() - requestedAt
+        val accept = acceptAfterMs
+        request = when {
+            accept != null && waited >= accept -> {
+                val chosen = requested!!
+                playing = chosen
+                isPlaying = true
+                videoUnlocked = false
+                setPosition(0.0)
+                r.copy(state = RemotePlayState.ACCEPTED, message = "يُعرض الآن على الشاشة: «${chosen.title}»", secondsLeft = 0)
+            }
+            waited >= 30_000 -> r.copy(state = RemotePlayState.TIMED_OUT, message = "لم يُقبل الطلب على الشاشة خلال 30 ثانية، فأُلغي.", secondsLeft = 0)
+            else -> r.copy(secondsLeft = ((30_000 - waited + 999) / 1000).toInt())
+        }
+    }
     private val blockedKeywords = mutableListOf("رعب", "مقالب")
     private val blockedChannels = mutableListOf(RemoteListEntry("UCprank000000000000000000", "Prank Masters"))
 
@@ -128,6 +165,7 @@ internal class DemoController(
     private inline fun <T> changing(call: String, block: () -> T): T = locked(call) { block().also { changes++ } }
 
     override suspend fun status(): RemoteStatus = locked("status") {
+        settleRequest()
         val p = current
         val left = timeLeft(p)
         val video = playing
@@ -145,12 +183,14 @@ internal class DemoController(
                 left <= 5 -> RemoteSessionState.WARNING
                 else -> RemoteSessionState.OK
             },
-            videoLocked = settings.seriousMode && video != null && !video.live && !videoUnlocked &&
+            videoLocked = serious(p.kind) && video != null && !video.live && !videoUnlocked &&
                 (p.kind == RemoteProfileKind.CHILD || lockAdult),
-            seriousMode = settings.seriousMode,
+            seriousMode = serious(p.kind),
             rev = revStart + changes + settings.revision,
             movingTo = movingTo,
             profileId = p.id,
+            confirmation = confirmation,
+            playRequest = request,
         )
     }
 
@@ -182,9 +222,9 @@ internal class DemoController(
             videos.drop(4)
     }
 
-    override suspend fun playLink(url: String): RemoteResult = locked("playLink($url)") {
+    override suspend fun playLink(url: String): RemotePlayResult = locked("playLink($url)") {
         val p = current
-        if (timeLeft(p) == 0) return@locked RemoteResult.error("انتهى وقت المشاهدة اليوم في ملف «${p.name}». افتح الوقت من قسم الأب.")
+        if (timeLeft(p) == 0) return@locked RemotePlayResult.refused("انتهى وقت المشاهدة اليوم في ملف «${p.name}». افتح الوقت من قسم الأب.")
         val id = VIDEO_ID.find(url)?.groupValues?.get(1)
         val playlist = PLAYLIST.find(url)?.groupValues?.get(1)
         // A playlist link starts its first video (the demo knows two playlists).
@@ -197,18 +237,28 @@ internal class DemoController(
             val lists = allowlists[p.id]
             val allowedPlaylist = id == null && lists?.playlists.orEmpty().any { it.id == playlist }
             if (video == null || (video.channelId !in lists?.channels.orEmpty().map { it.id } && !allowedPlaylist)) {
-                return@locked RemoteResult.error("هذا الرابط ليس في قائمة السماح لملف «${p.name}»، فلن يظهر على الشاشة.")
+                return@locked RemotePlayResult.refused("هذا الرابط ليس في قائمة السماح لملف «${p.name}»، فلن يظهر على الشاشة.")
             }
         }
         val chosen = video ?: when {
             id != null -> Video(id, "فيديو من يوتيوب", "UCunknown000000000000000", "يوتيوب", 600, DemoArt.city)
-            else -> return@locked RemoteResult.error("هذا ليس رابط فيديو من يوتيوب.")
+            else -> return@locked RemotePlayResult.refused("هذا ليس رابط فيديو من يوتيوب.")
         }
-        playing = chosen
-        isPlaying = true
-        videoUnlocked = false
-        setPosition(0.0)
-        return@locked RemoteResult.ok("يُعرض الآن على الشاشة: «${chosen.title}»")
+        // v1.2: nothing opens before «قبول» on the TV.
+        requested = chosen
+        requestedAt = System.currentTimeMillis()
+        val waiting = RemotePlayRequest(
+            id = "req" + requestedAt, title = chosen.title, state = RemotePlayState.PENDING,
+            message = "بانتظار القبول على الشاشة: «${chosen.title}»", secondsLeft = 30,
+        )
+        request = waiting
+        return@locked RemotePlayResult(true, waiting.message, waiting)
+    }
+
+    override suspend fun answerConfirmation(id: String, approve: Boolean): RemoteResult = locked("answerConfirmation($id,$approve)") {
+        val waiting = confirmation?.takeIf { it.id == id } ?: return@locked RemoteResult.error("لم يعد هذا الطلب ينتظر على الشاشة.")
+        confirmation = null
+        return@locked RemoteResult.ok(if (approve) "أُكّد: يبدأ «${waiting.title}» على الشاشة الآن." else "رُفض: لن يُشغَّل «${waiting.title}».")
     }
 
     override suspend fun control(cmd: PlaybackCommand): RemoteResult = locked("control(${cmd.action},${cmd.seconds})") {
@@ -222,7 +272,7 @@ internal class DemoController(
                 setPosition((position() + cmd.seconds).coerceIn(0.0, (video.duration ?: 0).toDouble()))
             }
             PlaybackAction.STOP -> {
-                if (settings.seriousMode && !video.live && !videoUnlocked && (current.kind == RemoteProfileKind.CHILD || lockAdult)) {
+                if (serious(current.kind) && !video.live && !videoUnlocked && (current.kind == RemoteProfileKind.CHILD || lockAdult)) {
                     return@locked RemoteResult.error("الفيديو مقفول حتى ينتهي. افتحه من قسم الأب.")
                 }
                 playing = null
@@ -378,7 +428,8 @@ internal class DemoController(
                         it.id == currentId -> "هذا الملف على الشاشة الآن. بدّل الملف على التلفاز أولاً."
                         it.kind == RemoteProfileKind.ADULT && adults <= 1 -> "لا يُحذف آخر ملف للكبار."
                         else -> null
-                    })
+                    },
+                    showSuggestions = it.showSuggestions)
             },
             quotaChoices = listOf(null, 15, 30, 45, 60, 90, 120, 180, 240),
             avatars = AVATARS,
@@ -418,12 +469,13 @@ internal class DemoController(
         RemoteResult.ok("حُذف ملف «${p.name}» وسجلّه.")
     }
 
-    override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult =
-        changing("setProfileFlags($profileId,$hideShorts,$hideComments)") {
+    override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?, showSuggestions: Boolean?): RemoteResult =
+        changing("setProfileFlags($profileId,$hideShorts,$hideComments,$showSuggestions)") {
             val p = profiles.firstOrNull { it.id == profileId } ?: return@changing RemoteResult.error("هذا الملف غير موجود على الشاشة.")
             if (hideComments == false && p.kind == RemoteProfileKind.CHILD) return@changing RemoteResult.error("التعليقات مخفية دائماً في ملفات الأطفال.")
             hideShorts?.let { p.hideShorts = it }
             hideComments?.let { p.hideComments = it }
+            showSuggestions?.let { p.showSuggestions = it }
             RemoteResult.ok("حُفظ لـ«${p.name}».")
         }
 

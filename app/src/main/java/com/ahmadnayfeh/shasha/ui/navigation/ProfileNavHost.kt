@@ -27,12 +27,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import androidx.tv.material3.Icon
 import com.ahmadnayfeh.shasha.R
+import com.ahmadnayfeh.shasha.ShashaApp
 import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.lock.LockController
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.ui.components.CardMenuHost
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
 import com.ahmadnayfeh.shasha.ui.components.ParentalActions
+import com.ahmadnayfeh.shasha.ui.components.PhonePlayRequestOverlay
 import com.ahmadnayfeh.shasha.ui.components.ProfileAvatar
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.components.containerViewModel
@@ -147,6 +149,8 @@ fun ProfileNavHost(
         if (lock != null) KeepLockedVideoOnScreen(lock.lock, profile.id, nav)
         // SPEC §5: links from the phone, once the policy allowed them for this profile, open here.
         FollowNavigationRequests(nav, profile.id)
+        // v1.2: ...after «قبول» here: the TV asks over whatever is on screen.
+        AskAboutPhoneLinks(profile.id)
         // The remote's SEARCH key: the search tab, listening (profiles with search only; never over a locked video).
         if (!kids) FollowVoiceSearchKey(nav, lock)
     }
@@ -219,6 +223,16 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
             lock = lock.takeUnless { route.diagnostic },
             // A child's video or playlist that ended frees the child: back to the child home (SPEC §4).
             onKidsHome = if (adult) null else dropUnlessResumed { nav.showHome() },
+            // v1.2: a link the TV accepted needs no «تأكيد» from the phone (the phone that sent it is there).
+            phoneApproved = route.phoneApproved,
+            // v1.2: a replay that needs the phone's «تأكيد» is a fresh start of the same video.
+            onRestart = dropUnlessResumed {
+                nav.navigate(route.copy(phoneApproved = false, startSeconds = null)) { popUpTo<Screen.Player> { inclusive = true } }
+            },
+            // v1.2: «ربط الجوال» on the «أكّد من الجوال» prompt (the adult's: the pairing screen is in its graph only).
+            onPairPhone = if (adult) dropUnlessResumed { nav.navigate(Screen.RemoteControl) { popUpTo<Screen.Player> { inclusive = true } } } else null,
+            // «مقترحة»: the suggestion replaces this player (BACK returns to where the first video was chosen).
+            onPlaySuggestion = { video -> nav.navigate(Screen.Player(video.videoId)) { popUpTo<Screen.Player> { inclusive = true } } },
         )
     }
     composable<Screen.Updates> {
@@ -245,6 +259,13 @@ private fun FollowVoiceSearchKey(nav: NavHostController, lock: LockController?) 
             }
         }
     }
+}
+
+/** The question «طلب تشغيل من الجوال» for [profileId]'s links (v1.2); nothing outside the app (tests with a plain Application). */
+@Composable
+private fun AskAboutPhoneLinks(profileId: String) {
+    val requests = (LocalContext.current.applicationContext as? ShashaApp)?.container?.playRequests ?: return
+    PhonePlayRequestOverlay(requests, profileId)
 }
 
 /** Back to the rail's home tab, whatever was opened on the way (a channel, a playlist). */

@@ -160,7 +160,7 @@ class SearchAssistTest {
     }
 
     @Test
-    fun theRecognizer_errorsMapToCalmMessages_andTheClientErrorFallsBackToTheSystemScreen() {
+    fun theInAppRecognizer_errorsMapToCalmMessages() {
         assertThat(VoiceSearch.errorOf(SpeechRecognizer.ERROR_NO_MATCH)).isEqualTo(VoiceError.NO_MATCH)
         assertThat(VoiceSearch.errorOf(SpeechRecognizer.ERROR_SPEECH_TIMEOUT)).isEqualTo(VoiceError.TIMEOUT)
         assertThat(VoiceSearch.errorOf(SpeechRecognizer.ERROR_NETWORK)).isEqualTo(VoiceError.NETWORK)
@@ -168,8 +168,9 @@ class SearchAssistTest {
         assertThat(VoiceSearch.errorOf(SpeechRecognizer.ERROR_RECOGNIZER_BUSY)).isEqualTo(VoiceError.BUSY)
         assertThat(VoiceSearch.errorOf(SpeechRecognizer.ERROR_AUDIO)).isEqualTo(VoiceError.AUDIO)
         assertThat(VoiceSearch.errorOf(12)).isEqualTo(VoiceError.LANGUAGE)
-        assertThat(VoiceSearch.errorOf(SpeechRecognizer.ERROR_CLIENT)).isNull()
-        assertThat(VoiceSearch.errorOf(SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS)).isNull()
+        // The in-app recognizer is the fallback now (the system's voice screen was tried first): its refusals are shown.
+        assertThat(VoiceSearch.errorOf(SpeechRecognizer.ERROR_CLIENT)).isEqualTo(VoiceError.OTHER)
+        assertThat(VoiceSearch.errorOf(SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS)).isEqualTo(VoiceError.PERMISSION)
         assertThat(VoiceSearch.levelOf(-2f)).isEqualTo(0f)
         assertThat(VoiceSearch.levelOf(10f)).isEqualTo(1f)
         assertThat(VoiceSearch.cleanResults(listOf(" a ", "A", "", null, "b", "c", "d"))).containsExactly("a", "b", "c").inOrder()

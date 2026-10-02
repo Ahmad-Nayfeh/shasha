@@ -119,9 +119,10 @@ class PhoneLogicChecklistTest {
         assertThat(phone.profiles().map { it.str("name") }).contains("ليلى")
         // A change made on the TV itself moves it too: the page reads again what it shows.
         val before = phone.status().getValue("rev").jsonPrimitive.long
-        env.behavior.setSeriousMode(false)
+        env.behavior.setSeriousModeChildren(false)
         withTimeout(5_000) { while (phone.status().getValue("rev").jsonPrimitive.long == before) delay(20) }
-        assertThat(phone.get("/api/parent/settings").json.setting("serious_mode")).isEqualTo(JsonPrimitive(false))
+        assertThat(phone.get("/api/parent/settings").json.setting("serious_mode_children")).isEqualTo(JsonPrimitive(false))
+        assertThat(phone.get("/api/parent/settings").json.setting("serious_mode_adult")).isEqualTo(JsonPrimitive(true))
     }
 
     // ---- 2. Session expiry in the middle of an action -----------------------------------------------------------
@@ -136,16 +137,17 @@ class PhoneLogicChecklistTest {
         assertThat(refused.code).isEqualTo(403)
         assertThat(refused.json.str("code")).isEqualTo("parent_session")
         assertThat(env.profiles.get("kid")!!.dailyQuotaMinutes).isEqualTo(60) // nothing was done
-        val setting = phone.post("/api/parent/settings", """{"key":"serious_mode","value":false,"base":true}""")
+        val setting = phone.post("/api/parent/settings", """{"key":"serious_mode_adult","value":false,"base":true}""")
         assertThat(setting.code).isEqualTo(403)
-        assertThat(env.behavior.current().seriousMode).isTrue()
+        assertThat(env.behavior.current().seriousModeAdult).isTrue()
         // The page asks for the PIN right there and sends the same request again.
         phone.login()
         assertThat(phone.session).isNotEqualTo(old)
         assertThat(phone.post("/api/parent/quota", """{"profileId":"kid","minutes":15}""").json["ok"]!!.jsonPrimitive.boolean).isTrue()
-        assertThat(phone.post("/api/parent/settings", """{"key":"serious_mode","value":false,"base":true}""").json["ok"]!!.jsonPrimitive.boolean).isTrue()
+        assertThat(phone.post("/api/parent/settings", """{"key":"serious_mode_adult","value":false,"base":true}""").json["ok"]!!.jsonPrimitive.boolean).isTrue()
         assertThat(env.profiles.get("kid")!!.dailyQuotaMinutes).isEqualTo(15)
-        assertThat(env.behavior.current().seriousMode).isFalse()
+        assertThat(env.behavior.current().seriousModeAdult).isFalse()
+        assertThat(env.behavior.current().seriousModeChildren).isTrue()
         // Without any session header at all: 401, the same code, the same answer from the page.
         assertThat(Phone().post("/api/parent/unlock-video", null).json.str("code")).isEqualTo("parent_session")
     }
@@ -236,8 +238,13 @@ class PhoneLogicChecklistTest {
         // Pausing and seeking still work under the lock.
         assertThat(phone.post("/api/control", """{"action":"PAUSE"}""").json["ok"]!!.jsonPrimitive.boolean).isTrue()
 
-        // Off from the phone: the lock that holds the video ends at once, without a surrender.
-        assertThat(phone.post("/api/parent/settings", """{"key":"serious_mode","value":false,"base":true}""").json["ok"]!!.jsonPrimitive.boolean).isTrue()
+        // The adult's switch off from the phone: the child's lock is not touched.
+        assertThat(phone.post("/api/parent/settings", """{"key":"serious_mode_adult","value":false,"base":true}""").json["ok"]!!.jsonPrimitive.boolean).isTrue()
+        delay(200)
+        assertThat(phone.status().getValue("videoLocked").jsonPrimitive.boolean).isTrue()
+        assertThat(phone.status().getValue("seriousMode").jsonPrimitive.boolean).isTrue()
+        // The children's off: the lock that holds the child's video ends at once, without a surrender.
+        assertThat(phone.post("/api/parent/settings", """{"key":"serious_mode_children","value":false,"base":true}""").json["ok"]!!.jsonPrimitive.boolean).isTrue()
         withTimeout(5_000) { while (phone.status().getValue("videoLocked").jsonPrimitive.boolean) delay(20) }
         assertThat(phone.status().getValue("seriousMode").jsonPrimitive.boolean).isFalse()
         assertThat(phone.post("/api/control", """{"action":"STOP"}""").json["ok"]!!.jsonPrimitive.boolean).isTrue()
@@ -248,7 +255,7 @@ class PhoneLogicChecklistTest {
         assertThat(env.lock.current()).isNull()
 
         // On again during a video: that video plays on unlocked; the next one that starts is locked.
-        assertThat(phone.post("/api/parent/settings", """{"key":"serious_mode","value":true,"base":false}""").json["ok"]!!.jsonPrimitive.boolean).isTrue()
+        assertThat(phone.post("/api/parent/settings", """{"key":"serious_mode_children","value":true,"base":false}""").json["ok"]!!.jsonPrimitive.boolean).isTrue()
         withTimeout(5_000) { while (!phone.status().getValue("seriousMode").jsonPrimitive.boolean) delay(20) }
         assertThat(phone.status().getValue("videoLocked").jsonPrimitive.boolean).isFalse()
         env.source.videos["inside00002"] = com.ahmadnayfeh.shasha.policy.clip("inside00002", channelId = com.ahmadnayfeh.shasha.policy.ALLOWED_CHANNEL)

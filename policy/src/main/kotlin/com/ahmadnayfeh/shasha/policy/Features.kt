@@ -11,4 +11,9 @@ data class Features(
     val adultExitChallenge: Boolean,
     /** Channel pages exist for both kinds; their content still goes through the engine. */
     val channelBrowsing: Boolean,
+    /**
+     * «الفيديوهات المقترحة» (the player's «مقترحة» row, the end card's, the home's «مقترحة لك»): [Profile.showSuggestions].
+     * Each suggestion still goes through [PolicyEngine.canSuggest].
+     */
+    val suggestions: Boolean = false,
 )

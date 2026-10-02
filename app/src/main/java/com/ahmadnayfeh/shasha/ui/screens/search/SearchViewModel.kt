@@ -63,7 +63,9 @@ class SearchViewModel(
     private val _filter = MutableStateFlow(SearchFilter.ALL)
     val filter: StateFlow<SearchFilter> = _filter.asStateFlow()
 
-    private val loader = PagedLoader(viewModelScope, ItemUi::key) { page ->
+    // A page is not a screenful (see PagedLoader): what the profile's rules hide counts for nothing, so pages keep
+    // coming until the screen is full or the results end.
+    private val loader = PagedLoader(viewModelScope, ItemUi::key, shown = { contentRules.value.items(listOf(it.source())).isNotEmpty() }) { page ->
         val result = source.search(_query.value, _filter.value, page)
         Page(result.items.map { it.toUi() }, result.next)
     }

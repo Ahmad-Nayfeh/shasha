@@ -3,8 +3,11 @@ package com.ahmadnayfeh.shasha.remote
 import android.util.Log
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -75,9 +78,15 @@ class RemoteRuntime(
      * the brake never refuses the phone while [phonePin] still has attempts left.
      */
     pinFailures: () -> Int = { RemoteServer.DEFAULT_PIN_FAILURES },
+    /** Where the TV notes, off the server's threads, that a phone paired with the token ([RemoteSettings.markPhonePaired]). */
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + io),
 ) {
     @Volatile
     private var token: String = ""
+
+    /** A phone reached the server with the current token since this process started (then it is on disk already). */
+    @Volatile
+    private var pairedNoted = false
 
     private val _token = MutableStateFlow<String?>(null)
 
@@ -86,7 +95,26 @@ class RemoteRuntime(
 
     val server = RemoteServer(controller, pinFailures) { token }.apply {
         onError = { Log.w(TAG, "Remote request failed", it) }
+        // v1.2: a phone with the token is paired (once per token on disk: a restart remembers it).
+        presence.onSeen = {
+            if (!pairedNoted) {
+                pairedNoted = true
+                scope.launch {
+                    try {
+                        settings.markPhonePaired()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        pairedNoted = false
+                        Log.w(TAG, "Could not note the paired phone", e)
+                    }
+                }
+            }
+        }
     }
+
+    /** When a paired phone last reached the server: its page polls every 2 s while it is open (v1.2). */
+    val presence: PhonePresence get() = server.presence
 
     private val _state = MutableStateFlow<RemoteState>(RemoteState.Stopped)
     val state: StateFlow<RemoteState> = _state.asStateFlow()
@@ -202,6 +230,9 @@ class RemoteRuntime(
         val fresh = settings.regenerateToken()
         token = fresh
         _token.value = fresh
+        // No phone has the new token yet.
+        pairedNoted = false
+        server.presence.forget()
         server.revokeParentSessions()
         server.forgetPinFailures()
         try {

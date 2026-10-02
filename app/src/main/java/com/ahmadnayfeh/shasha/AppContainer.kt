@@ -11,6 +11,7 @@ import com.ahmadnayfeh.shasha.data.AppLanguage
 import com.ahmadnayfeh.shasha.data.AppearanceState
 import com.ahmadnayfeh.shasha.data.BehaviorSettings
 import com.ahmadnayfeh.shasha.data.FeedRepository
+import com.ahmadnayfeh.shasha.data.HomeSuggestions
 import com.ahmadnayfeh.shasha.data.NetworkStatus
 import com.ahmadnayfeh.shasha.data.OverridesRepository
 import com.ahmadnayfeh.shasha.data.ParentPinRepository
@@ -29,6 +30,7 @@ import com.ahmadnayfeh.shasha.lock.GuardReturnTimes
 import com.ahmadnayfeh.shasha.lock.LockController
 import com.ahmadnayfeh.shasha.player.PlayQueues
 import com.ahmadnayfeh.shasha.player.PlayerHub
+import com.ahmadnayfeh.shasha.policy.DenyReason
 import com.ahmadnayfeh.shasha.policy.DeviceClock
 import com.ahmadnayfeh.shasha.policy.DeviceUptime
 import com.ahmadnayfeh.shasha.policy.LookedUpVideo
@@ -40,8 +42,11 @@ import com.ahmadnayfeh.shasha.policy.VideoLookup
 import com.ahmadnayfeh.shasha.policy.spendingTime
 import com.ahmadnayfeh.shasha.remote.NsdAdvertiser
 import com.ahmadnayfeh.shasha.remote.NsdAnnouncer
+import com.ahmadnayfeh.shasha.remote.PhoneConfirmations
 import com.ahmadnayfeh.shasha.remote.PhoneParental
 import com.ahmadnayfeh.shasha.remote.PhonePin
+import com.ahmadnayfeh.shasha.remote.PhonePlayRequests
+import com.ahmadnayfeh.shasha.remote.PhoneReach
 import com.ahmadnayfeh.shasha.remote.PhoneSettings
 import com.ahmadnayfeh.shasha.remote.PhoneProfileChoices
 import com.ahmadnayfeh.shasha.remote.RemoteRevision
@@ -49,6 +54,7 @@ import com.ahmadnayfeh.shasha.remote.RemoteRuntime
 import com.ahmadnayfeh.shasha.remote.RemoteSettings
 import com.ahmadnayfeh.shasha.remote.RemoteTexts
 import com.ahmadnayfeh.shasha.remote.TvDisplay
+import com.ahmadnayfeh.shasha.remote.TvPhoneReach
 import com.ahmadnayfeh.shasha.remote.TvRemoteController
 import com.ahmadnayfeh.shasha.search.SearchHistory
 import com.ahmadnayfeh.shasha.search.VoiceSearchRequests
@@ -147,6 +153,12 @@ class AppContainer(context: Context) {
      * Kept in memory, fetched gently (3 at a time, never while a video plays).
      */
     val kidsFeed: KidsFeed by lazy { KidsFeed(videoSource) }
+
+    /**
+     * «مقترحة لك» on the home screens: suggestions beside the profile's last videos, each video's kept a few hours in the
+     * cache folder (a cache: not in the backup).
+     */
+    val homeSuggestions: HomeSuggestions by lazy { HomeSuggestions(videoSource, File(appContext.cacheDir, HomeSuggestions.FILE_NAME)) }
 
     // ---- Policy (SPEC §3): profiles, PIN, quota and schedule, usage. Every rule is the engine's. ----------
 
@@ -322,6 +334,27 @@ class AppContainer(context: Context) {
     val phoneProfileChoices: PhoneProfileChoices = PhoneProfileChoices()
 
     /**
+     * v1.2: videos that only the phone could end early wait here for the parent's «تأكيد» on the phone (the player
+     * asks; the phone answers through [remote]).
+     */
+    val phoneConfirmations: PhoneConfirmations = PhoneConfirmations()
+
+    /**
+     * v1.2: links from the phone wait here for «قبول» on the TV (the profile's screens show the question); one allowed
+     * for a profile the TV has left, or waiting when a video gets locked, is dropped (the phone reads why).
+     */
+    val playRequests: PhonePlayRequests by lazy {
+        val texts = RemoteTexts(phoneResources)
+        PhonePlayRequests(appScope, texts).also { requests ->
+            appScope.launch { currentProfile.id.collect { requests.onProfile(it) } }
+            appScope.launch { lock.lock.collect { if (it != null) requests.onLocked(texts.deny(DenyReason.LOCKED)) } }
+        }
+    }
+
+    /** v1.2: whether a phone is paired and whether one is there now (its page polled in the last minute). */
+    val phoneReach: PhoneReach by lazy { TvPhoneReach(remoteSettings, remote) }
+
+    /**
      * What makes the phone pages read their parent section again: every setting, the profiles (rules and lists) and the
      * subscriptions, changed from any phone or from the TV itself.
      */
@@ -386,6 +419,8 @@ class AppContainer(context: Context) {
             revision = { remoteRevision.value },
             movingTo = { remote.movingTo.value },
             adultEntryPin = { behavior.policyConfig().adultEntryNeedsPin },
+            confirmations = phoneConfirmations,
+            playRequests = playRequests,
         )
         RemoteRuntime(
             remoteSettings, controller, NsdAnnouncer(NsdAdvertiser(appContext)), phonePin = phonePin,

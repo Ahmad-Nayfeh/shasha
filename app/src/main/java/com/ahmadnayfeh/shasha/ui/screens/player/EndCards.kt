@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
@@ -53,16 +54,20 @@ import com.ahmadnayfeh.shasha.youtube.VideoItem
 import kotlinx.coroutines.delay
 import com.ahmadnayfeh.shasha.ui.theme.OsdColors
 import com.ahmadnayfeh.shasha.ui.theme.Accents
+import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 
 /**
- * What the screen shows when a video ends: a calm card with «رجوع» (no related videos, nothing plays by
- * itself), or inside a playlist the next video with a short countdown. BACK leaves ([onBack]).
+ * What the screen shows when a video ends: a calm card with «رجوع» (nothing plays by itself), or inside a playlist
+ * the next video with a short countdown. BACK leaves ([onBack]).
  *
  * [kidsHome]: a child's video or playlist that ended (its lock is released, SPEC §4) goes back to the
  * child home, by itself after [homeSeconds] or at once with «الرئيسية». [paused]: a lock screen is in front
  * (a child asked to leave during the countdown): nothing counts down, and the focus comes back after.
  * [stillLocked]: the video was skipped to its end, so its lock stays; the card says so («رجوع» then asks
  * for the PIN or the exit challenge).
+ *
+ * [suggestions] («مقترحة», where the profile shows them; never inside a playlist that goes on): a row under the card,
+ * DOWN from its buttons; OK plays one ([onPlaySuggestion]). A child who moves into it stops the countdown home.
  */
 @Composable
 fun EndCard(
@@ -78,6 +83,9 @@ fun EndCard(
     kidsHome: (() -> Unit)? = null,
     homeSeconds: Int = LocalBehavior.current.kidsHomeSeconds,
     stillLocked: Boolean = false,
+    suggestions: List<VideoItem> = emptyList(),
+    suggestionsWatched: Map<String, Float> = emptyMap(),
+    onPlaySuggestion: (VideoItem) -> Unit = {},
 ) {
     val home = kidsHome.takeIf { end !is PlaybackEnd.UpNext }
     BackHandler(enabled = !paused) { (home ?: onBack)() }
@@ -87,6 +95,9 @@ fun EndCard(
         withFrameNanos { }
         runCatching { first.requestFocus() }
     }
+    val shown = if (end is PlaybackEnd.UpNext) emptyList() else suggestions
+    // A suggestion had the focus: the child is choosing, the countdown home stops for good.
+    var browsing by remember { mutableStateOf(false) }
     Box(
         modifier
             .fillMaxSize()
@@ -95,15 +106,34 @@ fun EndCard(
         contentAlignment = Alignment.Center,
     ) {
         val heading = stringResource(if (end == PlaybackEnd.PlaylistFinished) R.string.player_playlist_ended_title else R.string.player_ended_title)
-        when {
-            end is PlaybackEnd.UpNext -> UpNext(end.next, countdownSeconds, tickMs, paused, onBack, onPlayNext, first)
-            home != null -> KidsFinished(heading, title, homeSeconds, tickMs, paused, home, onReplay, first)
-            else -> Finished(heading = heading, title = title, onBack = onBack, onReplay = onReplay, first = first, stillLocked = stillLocked)
+        val compact = shown.isNotEmpty()
+        val card: @Composable () -> Unit = {
+            when {
+                end is PlaybackEnd.UpNext -> UpNext(end.next, countdownSeconds, tickMs, paused, onBack, onPlayNext, first)
+                home != null -> KidsFinished(heading, title, homeSeconds, tickMs, paused, home, onReplay, first, compact, stopped = browsing)
+                else -> Finished(heading = heading, title = title, onBack = onBack, onReplay = onReplay, first = first, stillLocked = stillLocked, compact = compact)
+            }
+        }
+        if (!compact) {
+            card()
+        } else {
+            val rowFocus = remember { FocusRequester() }
+            Column(Modifier.fillMaxSize().padding(top = ShashaDimens.ScreenVertical, bottom = 40.dp)) {
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { card() }
+                SuggestionsTitle(unfolded = true)
+                SuggestionStrip(
+                    videos = shown,
+                    watched = suggestionsWatched,
+                    onPlay = onPlaySuggestion,
+                    rowFocus = rowFocus,
+                    onFocused = { if (it) browsing = true },
+                )
+            }
         }
     }
 }
 
-/** A child's video (or playlist) is over: a friendly word, then back to the child home by itself. */
+/** A child's video (or playlist) is over: a friendly word, then back to the child home by itself (unless [stopped]). */
 @Composable
 private fun KidsFinished(
     heading: String,
@@ -114,11 +144,13 @@ private fun KidsFinished(
     onHome: () -> Unit,
     onReplay: () -> Unit,
     first: FocusRequester,
+    compact: Boolean = false,
+    stopped: Boolean = false,
 ) {
     val formats = rememberFormats()
     var left by remember { mutableIntStateOf(seconds) }
-    LaunchedEffect(paused) {
-        if (paused) return@LaunchedEffect
+    LaunchedEffect(paused, stopped) {
+        if (paused || stopped) return@LaunchedEffect
         while (left > 1) {
             delay(tickMs)
             left--
@@ -127,9 +159,7 @@ private fun KidsFinished(
         onHome()
     }
     Column(Modifier.widthIn(max = 640.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        EndBadge(ShashaIcons.CheckCircle)
-        Spacer(Modifier.height(20.dp))
-        Text(heading, style = MaterialTheme.typography.headlineMedium, color = Color.White)
+        EndHeading(heading, ShashaIcons.CheckCircle, compact)
         Spacer(Modifier.height(6.dp))
         Text(
             title,
@@ -140,14 +170,16 @@ private fun KidsFinished(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth(),
         )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            formats.count(R.array.back_home_in_seconds, left.toLong()),
-            style = MaterialTheme.typography.titleMedium,
-            color = Accents.overDark(LocalAccent.current).bright,
-            modifier = Modifier.testTag("kids_home_countdown"),
-        )
-        Spacer(Modifier.height(26.dp))
+        if (!stopped) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                formats.count(R.array.back_home_in_seconds, left.toLong()),
+                style = MaterialTheme.typography.titleMedium,
+                color = Accents.overDark(LocalAccent.current).bright,
+                modifier = Modifier.testTag("kids_home_countdown"),
+            )
+        }
+        Spacer(Modifier.height(if (compact) 20.dp else 26.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             ShashaButton(
                 stringResource(R.string.player_kids_home),
@@ -157,6 +189,25 @@ private fun KidsFinished(
                 modifier = Modifier.focusRequester(first).testTag("end_kids_home"),
             )
             ShashaButton(stringResource(R.string.player_replay), onReplay, icon = ShashaIcons.Replay, modifier = Modifier.testTag("end_replay"))
+        }
+    }
+}
+
+/**
+ * The card's badge over its heading; [compact] (the suggestions row needs the room under the card), the same icon
+ * small beside the heading, so the card fits above the row with a countdown or a note as well.
+ */
+@Composable
+private fun EndHeading(heading: String, icon: androidx.compose.ui.graphics.vector.ImageVector, compact: Boolean) {
+    if (!compact) {
+        EndBadge(icon)
+        Spacer(Modifier.height(20.dp))
+        Text(heading, style = MaterialTheme.typography.headlineMedium, color = Color.White)
+    } else {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = Accents.overDark(LocalAccent.current).bright, modifier = Modifier.size(32.dp))
+            Spacer(Modifier.width(12.dp))
+            Text(heading, style = MaterialTheme.typography.headlineMedium, color = Color.White)
         }
     }
 }
@@ -175,11 +226,17 @@ private fun EndBadge(icon: androidx.compose.ui.graphics.vector.ImageVector) {
 }
 
 @Composable
-private fun Finished(heading: String, title: String, onBack: () -> Unit, onReplay: () -> Unit, first: FocusRequester, stillLocked: Boolean) {
+private fun Finished(
+    heading: String,
+    title: String,
+    onBack: () -> Unit,
+    onReplay: () -> Unit,
+    first: FocusRequester,
+    stillLocked: Boolean,
+    compact: Boolean = false,
+) {
     Column(Modifier.widthIn(max = 640.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        EndBadge(if (stillLocked) ShashaIcons.Lock else ShashaIcons.CheckCircle)
-        Spacer(Modifier.height(20.dp))
-        Text(heading, style = MaterialTheme.typography.headlineMedium, color = Color.White)
+        EndHeading(heading, if (stillLocked) ShashaIcons.Lock else ShashaIcons.CheckCircle, compact)
         Spacer(Modifier.height(6.dp))
         Text(
             title,
@@ -200,7 +257,7 @@ private fun Finished(heading: String, title: String, onBack: () -> Unit, onRepla
                 modifier = Modifier.fillMaxWidth().testTag("end_still_locked"),
             )
         }
-        Spacer(Modifier.height(30.dp))
+        Spacer(Modifier.height(if (compact) 22.dp else 30.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             ShashaButton(
                 stringResource(R.string.action_back),

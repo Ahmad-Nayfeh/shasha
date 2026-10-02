@@ -26,7 +26,6 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
-import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
 /** Dark pill over a thumbnail: a duration ("12:34") or a count, with an optional icon. */
@@ -62,16 +61,23 @@ fun LiveThumbnailBadge(modifier: Modifier = Modifier) {
 }
 
 /**
- * How much of a video was watched, as a thin bar along the bottom of its thumbnail. Like the player's
- * seek bar it runs left to right (media time is not mirrored in RTL). [fraction] is read at draw time,
- * so a changing value redraws the bar without recomposing the card.
+ * How much of a video was watched, as a thin red bar (#FF0000, the colour viewers know this bar by) over a darker track
+ * along the bottom of its thumbnail; a finished video shows the whole bar. The same bar on every tile that shows a
+ * video with saved progress (history, home, search, channels, playlists, suggestions). Like the player's seek bar it
+ * runs left to right (media time is not mirrored in RTL). [fraction] is read at draw time, so a changing value redraws
+ * the bar without recomposing the card.
  */
 @Composable
 fun WatchedBar(fraction: () -> Float, modifier: Modifier = Modifier, height: Dp = 4.dp) {
-    val color = LocalAccent.current.main
     // Canvas coordinates are never mirrored: x = 0 is the left edge in RTL too.
     Canvas(modifier.fillMaxWidth().height(height)) {
-        drawRect(Color.Black.copy(alpha = 0.45f))
-        drawRect(color, Offset.Zero, Size(size.width * fraction().coerceIn(0f, 1f), size.height))
+        drawRect(WatchedTrack)
+        drawRect(WatchedRed, Offset.Zero, Size(size.width * fraction().coerceIn(0f, 1f), size.height))
     }
 }
+
+/** The watched part of [WatchedBar]: pure red, in both themes (it sits on the picture, not on the theme). */
+val WatchedRed = Color(0xFFFF0000)
+
+/** What is not watched yet: a dark veil, so the red reads on bright and dark pictures alike. */
+private val WatchedTrack = Color(0xFF0B0F14).copy(alpha = 0.62f)

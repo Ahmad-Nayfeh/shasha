@@ -1,9 +1,13 @@
 package com.ahmadnayfeh.shasha.search
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionListener
+import android.speech.RecognitionService
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Log
@@ -41,13 +45,13 @@ enum class VoiceError {
     /** The remote's microphone did not give sound. */
     AUDIO,
 
-    /** The microphone permission was refused. */
+    /** The microphone permission was refused (only the in-app recognizer needs it). */
     PERMISSION,
 
     /** The chosen language is not available to the recognizer. */
     LANGUAGE,
 
-    /** No speech recognizer on this TV at all. */
+    /** No way to listen on this TV at all: no voice screen and no recognition service. */
     UNAVAILABLE,
 
     OTHER,
@@ -56,9 +60,40 @@ enum class VoiceError {
 /** Words heard, best first (at most [VoiceSearch.MAX_RESULTS]). */
 typealias VoiceResults = (List<String>) -> Unit
 
-/** The microphone behind the search screen; the UI never touches [SpeechRecognizer] itself (tests use fakes). */
+/**
+ * What one visit to the system's voice screen came to ([VoiceSearch.outcomeOf]): the screen is asked with
+ * [RecognizerIntent.ACTION_RECOGNIZE_SPEECH] and answers with a result code and [RecognizerIntent.EXTRA_RESULTS].
+ */
+sealed interface VoiceOutcome {
+    /** The words heard, best first (one to [VoiceSearch.MAX_RESULTS]). */
+    data class Heard(val words: List<String>) : VoiceOutcome
+
+    /** The screen answered without words, or with an error: shown as calmly as the in-app recognizer's failures. */
+    data class Failed(val error: VoiceError) : VoiceOutcome
+
+    /** The person left the voice screen (BACK, or the assistant took over): nothing to say about it. */
+    data object Cancelled : VoiceOutcome
+}
+
+/**
+ * The ways this TV can listen, found out without starting any of them ([VoiceSearch.availability]); «تشخيص» shows them.
+ * @property systemScreen the package that answers [RecognizerIntent.ACTION_RECOGNIZE_SPEECH]: the system's voice
+ *   screen, which on Google TV is the one place the remote's microphone reaches. It is used first.
+ * @property service the package that provides the recognition service apps may use ([SpeechRecognizer]): the fallback.
+ */
+data class VoiceAvailability(val systemScreen: String?, val service: String?) {
+    val any: Boolean get() = systemScreen != null || service != null
+}
+
+/**
+ * The in-app recognizer behind the search screen, kept only as the fallback for a TV that has no voice screen to
+ * open ([VoiceSearch.systemIntent]); the UI never touches [SpeechRecognizer] itself (tests use fakes).
+ */
 interface VoiceInput {
     val state: StateFlow<VoiceState>
+
+    /** False when this TV has no recognition service for apps at all: nothing to start. */
+    val available: Boolean
 
     /** Starts listening in [languageTag] (e.g. "ar-SA"). [onResults] gets the words, once. */
     fun start(languageTag: String, onResults: VoiceResults)
@@ -71,25 +106,20 @@ interface VoiceInput {
 
     /** The screen is gone: frees the recognizer. */
     fun release()
-
-    /**
-     * True when the in-app recognizer cannot be used and the system's own voice screen should be opened instead
-     * ([VoiceSearch.systemIntent]): no recognition service, or it refused us (ERROR_CLIENT, missing permission).
-     * The screen checks it after [start] and after each failure.
-     */
-    val needsSystemUi: StateFlow<Boolean>
 }
 
 /**
- * Android's speech recognition (on Google TV: Google's, listening through the remote's microphone). Main thread only.
- * A [SpeechRecognizer] is created per listening and destroyed after it: the recognizer service may die between
- * two searches, and a fresh one never carries an old session's callbacks.
+ * Android's speech recognition in the app's own hands: a [SpeechRecognizer] listening through the TV's
+ * recognition service (needs the microphone permission). On Google TV the remote's microphone is normally reserved for
+ * the system's voice screen, so this is the fallback, used only when no activity answers [VoiceSearch.systemIntent].
+ * Main thread only. A [SpeechRecognizer] is created per listening and destroyed after it: the recognizer service may die
+ * between two searches, and a fresh one never carries an old session's callbacks.
  */
 class VoiceSearch(private val context: Context) : VoiceInput {
     private val _state = MutableStateFlow<VoiceState>(VoiceState.Idle)
     override val state: StateFlow<VoiceState> = _state.asStateFlow()
-    private val _needsSystemUi = MutableStateFlow(false)
-    override val needsSystemUi: StateFlow<Boolean> = _needsSystemUi.asStateFlow()
+
+    override val available: Boolean get() = SpeechRecognizer.isRecognitionAvailable(context)
 
     private var recognizer: SpeechRecognizer? = null
 
@@ -98,9 +128,8 @@ class VoiceSearch(private val context: Context) : VoiceInput {
 
     override fun start(languageTag: String, onResults: VoiceResults) {
         cancel()
-        _needsSystemUi.value = false
-        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            _needsSystemUi.value = true
+        if (!available) {
+            _state.value = VoiceState.Failed(VoiceError.UNAVAILABLE)
             return
         }
         val id = ++session
@@ -111,7 +140,7 @@ class VoiceSearch(private val context: Context) : VoiceInput {
             null
         }
         if (created == null) {
-            _needsSystemUi.value = true
+            _state.value = VoiceState.Failed(VoiceError.UNAVAILABLE)
             return
         }
         recognizer = created
@@ -122,8 +151,7 @@ class VoiceSearch(private val context: Context) : VoiceInput {
         } catch (e: RuntimeException) {
             Log.w(TAG, "Could not start listening", e)
             finish()
-            _state.value = VoiceState.Idle
-            _needsSystemUi.value = true
+            _state.value = VoiceState.Failed(VoiceError.OTHER)
         }
     }
 
@@ -138,7 +166,6 @@ class VoiceSearch(private val context: Context) : VoiceInput {
 
     override fun dismiss() {
         if (_state.value is VoiceState.Failed) _state.value = VoiceState.Idle
-        _needsSystemUi.value = false
     }
 
     override fun release() {
@@ -180,14 +207,7 @@ class VoiceSearch(private val context: Context) : VoiceInput {
             if (!current) return
             session++
             finish()
-            when (val kind = errorOf(error)) {
-                null -> {
-                    // The recognizer refused this app (ERROR_CLIENT, a permission it lacks): the system's own screen.
-                    _state.value = VoiceState.Idle
-                    _needsSystemUi.value = true
-                }
-                else -> _state.value = VoiceState.Failed(kind)
-            }
+            _state.value = VoiceState.Failed(errorOf(error))
         }
 
         override fun onResults(results: Bundle?) {
@@ -221,7 +241,22 @@ class VoiceSearch(private val context: Context) : VoiceInput {
         private const val TAG = "VoiceSearch"
         const val MAX_RESULTS = 3
 
-        /** The request: web-search language model, [languageTag] preferred, partial results, three alternatives. */
+        /**
+         * The first way to listen: the system's own voice screen, started for a result (an ActivityResult launcher).
+         * On Google TV the remote's microphone is normally available only to it, and it listens itself, so the
+         * app needs no RECORD_AUDIO for it. Web-search language model, [languageTag] ("ar-SA" or "en-US") as the
+         * language and as the preferred one, [prompt] as the line it shows, and [MAX_RESULTS] readings.
+         */
+        fun systemIntent(languageTag: String, callingPackage: String, prompt: String): Intent =
+            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, languageTag)
+                .putExtra(RecognizerIntent.EXTRA_PROMPT, prompt)
+                .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, MAX_RESULTS)
+                .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, callingPackage)
+
+        /** The fallback's request: the same language and readings, and the partial results its panel shows. */
         fun recognizerIntent(languageTag: String, callingPackage: String): Intent =
             Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
@@ -231,9 +266,20 @@ class VoiceSearch(private val context: Context) : VoiceInput {
                 .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, MAX_RESULTS)
                 .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, callingPackage)
 
-        /** The system's own voice screen (the fallback), with the same request and a prompt. */
-        fun systemIntent(languageTag: String, callingPackage: String, prompt: String): Intent =
-            recognizerIntent(languageTag, callingPackage).putExtra(RecognizerIntent.EXTRA_PROMPT, prompt)
+        /**
+         * What the system's voice screen answered: RESULT_OK with [RecognizerIntent.EXTRA_RESULTS] gives the words (none
+         * at all is a calm "didn't catch that"); RESULT_CANCELED is the person closing it (nothing harsh to show); the
+         * screen's own result codes (RESULT_NO_MATCH, RESULT_NETWORK_ERROR, ...) become the same failures as the
+         * in-app recognizer's.
+         */
+        fun outcomeOf(resultCode: Int, data: Intent?): VoiceOutcome = when (resultCode) {
+            Activity.RESULT_OK -> resultsOf(data).let { if (it.isEmpty()) VoiceOutcome.Failed(VoiceError.NO_MATCH) else VoiceOutcome.Heard(it) }
+            Activity.RESULT_CANCELED -> VoiceOutcome.Cancelled
+            RecognizerIntent.RESULT_NO_MATCH -> VoiceOutcome.Failed(VoiceError.NO_MATCH)
+            RecognizerIntent.RESULT_NETWORK_ERROR, RecognizerIntent.RESULT_SERVER_ERROR -> VoiceOutcome.Failed(VoiceError.NETWORK)
+            RecognizerIntent.RESULT_AUDIO_ERROR -> VoiceOutcome.Failed(VoiceError.AUDIO)
+            else -> VoiceOutcome.Failed(VoiceError.OTHER)
+        }
 
         /** What the system screen answered ([RecognizerIntent.EXTRA_RESULTS]). */
         fun resultsOf(data: Intent?): List<String> = cleanResults(data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS))
@@ -247,8 +293,8 @@ class VoiceSearch(private val context: Context) : VoiceInput {
         /** The recognizer's loudness (about -2 dB for silence to 10 dB for speech) as 0..1. */
         fun levelOf(rmsdB: Float): Float = ((rmsdB + 2f) / 12f).coerceIn(0f, 1f)
 
-        /** null: the in-app recognizer cannot serve this app, use the system's screen instead. */
-        fun errorOf(code: Int): VoiceError? = when (code) {
+        /** The in-app recognizer's error code in the screen's words. */
+        fun errorOf(code: Int): VoiceError = when (code) {
             SpeechRecognizer.ERROR_NO_MATCH -> VoiceError.NO_MATCH
             SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> VoiceError.TIMEOUT
             SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT, SpeechRecognizer.ERROR_SERVER,
@@ -256,8 +302,36 @@ class VoiceSearch(private val context: Context) : VoiceInput {
             SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> VoiceError.BUSY
             SpeechRecognizer.ERROR_AUDIO -> VoiceError.AUDIO
             ERROR_LANGUAGE_NOT_SUPPORTED, ERROR_LANGUAGE_UNAVAILABLE -> VoiceError.LANGUAGE
-            SpeechRecognizer.ERROR_CLIENT, SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> null
+            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> VoiceError.PERMISSION
             else -> VoiceError.OTHER
+        }
+
+        /** Which ways of listening this TV offers, for «تشخيص»: asked of the package manager, nothing is started. */
+        fun availability(context: Context): VoiceAvailability {
+            val pm = context.packageManager
+            val screen = runCatching { activityPackage(pm, Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)) }.getOrNull()
+            val service = runCatching { servicePackage(pm, Intent(RecognitionService.SERVICE_INTERFACE)) }.getOrNull()
+            return VoiceAvailability(systemScreen = screen, service = service)
+        }
+
+        private fun activityPackage(pm: PackageManager, intent: Intent): String? {
+            val found = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pm.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong()))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            }
+            return found.firstOrNull()?.activityInfo?.packageName
+        }
+
+        private fun servicePackage(pm: PackageManager, intent: Intent): String? {
+            val found = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pm.queryIntentServices(intent, PackageManager.ResolveInfoFlags.of(0L))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.queryIntentServices(intent, 0)
+            }
+            return found.firstOrNull()?.serviceInfo?.packageName
         }
 
         // API 31+ codes, by value (minSdk 28 cannot name them).
@@ -270,7 +344,8 @@ class VoiceSearch(private val context: Context) : VoiceInput {
 
 /**
  * The remote's SEARCH key (KEYCODE_SEARCH, when the TV lets it reach the app): the adult profile opens the search tab
- * with the microphone on. A request waits at most [MAX_AGE_MS] for a search screen to take it.
+ * and starts listening (the system's voice screen first, [VoiceSearch.systemIntent]). A request waits at most
+ * [MAX_AGE_MS] for a search screen to take it.
  */
 class VoiceSearchRequests(private val now: () -> Long = System::currentTimeMillis) {
     private val _pending = MutableStateFlow<Long?>(null)

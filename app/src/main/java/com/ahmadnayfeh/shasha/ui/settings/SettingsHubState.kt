@@ -16,6 +16,7 @@ import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.Schedule
 import com.ahmadnayfeh.shasha.policy.UsageSummary
 import com.ahmadnayfeh.shasha.remote.RemoteState
+import com.ahmadnayfeh.shasha.search.VoiceAvailability
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.ui.settings.remote.PairingStatus
 
@@ -68,6 +69,8 @@ data class SettingsHubState(
     val remote: RemoteSummary? = null,
     val syncHealth: SyncHealth? = null,
     val device: DeviceFacts? = null,
+    /** Which voice recognizers this TV offers, for «تشخيص» (null = not read yet). */
+    val voice: VoiceAvailability? = null,
     /** "Now" for texts like «منذ 5 دقائق». */
     val nowMs: Long = 0,
     /** The parent's adjustable behaviour (Serious Mode, timings, the PIN's brake). */
@@ -115,7 +118,11 @@ class SettingsHubActions(
 /** Changes to [Behavior] (every one behind the parent PIN: the route guards them). */
 @Stable
 class BehaviorActions(
-    val setSeriousMode: (Boolean) -> Unit = {},
+    /** «الوضع الجاد لملفات الأطفال». */
+    val setSeriousModeChildren: (Boolean) -> Unit = {},
+    /** «الوضع الجاد لملف الكبار». */
+    val setSeriousModeAdult: (Boolean) -> Unit = {},
+    /** Off only with a paired phone (it is then the only way out): the route refuses it otherwise, and says why. */
     val setAdultEscape: (Boolean) -> Unit = {},
     val setAdultEntryPin: (Boolean) -> Unit = {},
     val setVoiceLanguage: (String) -> Unit = {},

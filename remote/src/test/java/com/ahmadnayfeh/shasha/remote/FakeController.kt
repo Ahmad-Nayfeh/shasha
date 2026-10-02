@@ -26,6 +26,10 @@ class FakeController : RemoteController {
         RemoteItem(RemoteItemType.CHANNEL, "UC1234567890123456789012", "قناة", null, null, null),
     )
     var result = RemoteResult.ok("تم")
+    var playResult = RemotePlayResult(
+        true, "بانتظار القبول على الشاشة",
+        RemotePlayRequest("req1", "فيديو تجريبي", RemotePlayState.PENDING, "بانتظار القبول على الشاشة", secondsLeft = 30),
+    )
     var loginResult: ParentLoginResult = ParentLoginResult.Success
     var backup = """{"app":"شاشة","version":1}""".toByteArray()
     var lastBytes: ByteArray? = null
@@ -39,7 +43,7 @@ class FakeController : RemoteController {
 
     override suspend fun status() = record("status", status)
     override suspend fun search(query: String) = record("search($query)", searchResults)
-    override suspend fun playLink(url: String) = record("playLink($url)", result)
+    override suspend fun playLink(url: String) = record("playLink($url)", playResult)
     override suspend fun control(cmd: PlaybackCommand) = record("control(${cmd.action},${cmd.seconds})", result)
     override suspend fun profiles() = record(
         "profiles",
@@ -53,6 +57,7 @@ class FakeController : RemoteController {
     override suspend fun setQuota(profileId: String, minutes: Int?) = record("setQuota($profileId,$minutes)", result)
     override suspend fun unlockTimeUp(extraMinutes: Int?) = record("unlockTimeUp($extraMinutes)", result)
     override suspend fun unlockVideo() = record("unlockVideo", result)
+    override suspend fun answerConfirmation(id: String, approve: Boolean) = record("answerConfirmation($id,$approve)", result)
     override suspend fun allowlist(profileId: String) = record(
         "allowlist($profileId)",
         RemoteAllowlist(listOf(RemoteListEntry("UCkids", "قناة الأطفال")), listOf(RemoteListEntry("PLx", "أناشيد"))),
@@ -77,7 +82,7 @@ class FakeController : RemoteController {
         listOf(
             RemoteSettingGroup(
                 "serious", "الوضع الجاد",
-                listOf(RemoteSetting("serious_mode", "الوضع الجاد", RemoteSettingKind.SWITCH, JsonPrimitive(true), JsonPrimitive(true))),
+                listOf(RemoteSetting("serious_mode_children", "الوضع الجاد لملفات الأطفال", RemoteSettingKind.SWITCH, JsonPrimitive(true), JsonPrimitive(true))),
             ),
         ),
     )
@@ -108,8 +113,8 @@ class FakeController : RemoteController {
     override suspend fun createChild(name: String, avatar: String) = record("createChild($name,$avatar)", result)
     override suspend fun editProfile(profileId: String, name: String?, avatar: String?) = record("editProfile($profileId,$name,$avatar)", result)
     override suspend fun deleteProfile(profileId: String) = record("deleteProfile($profileId)", result)
-    override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?) =
-        record("setProfileFlags($profileId,$hideShorts,$hideComments)", result)
+    override suspend fun setProfileFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?, showSuggestions: Boolean?) =
+        record("setProfileFlags($profileId,$hideShorts,$hideComments,$showSuggestions)", result)
     override suspend fun setSchedule(profileId: String, fromMinute: Int?, untilMinute: Int?) =
         record("setSchedule($profileId,$fromMinute,$untilMinute)", result)
     override suspend fun blocklist() = record("blocklist", RemoteBlocklist(listOf(RemoteListEntry("UCbad", "قناة")), listOf("رعب")))

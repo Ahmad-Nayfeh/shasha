@@ -3,6 +3,7 @@ package com.ahmadnayfeh.shasha.ui.screens.kids
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -58,8 +59,11 @@ import com.ahmadnayfeh.shasha.ui.components.ShashaLoaderWithText
 import com.ahmadnayfeh.shasha.ui.components.TakeFocusWhenReady
 import com.ahmadnayfeh.shasha.ui.components.Thumbnail
 import com.ahmadnayfeh.shasha.ui.components.ThumbnailBadge
+import com.ahmadnayfeh.shasha.ui.components.VideoShelf
 import com.ahmadnayfeh.shasha.ui.components.containerViewModel
 import com.ahmadnayfeh.shasha.ui.components.fullWidthItem
+import com.ahmadnayfeh.shasha.ui.components.gridCellWidth
+import com.ahmadnayfeh.shasha.ui.components.gridColumns
 import com.ahmadnayfeh.shasha.ui.components.rememberNow
 import com.ahmadnayfeh.shasha.ui.components.videoCards
 import com.ahmadnayfeh.shasha.ui.format.Formats
@@ -74,7 +78,7 @@ import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
 @Composable
 fun KidsHomeRoute(focus: ContentFocus, actions: BrowseActions) {
-    val vm = containerViewModel { KidsHomeViewModel(it.policy.filter, it.feed, it.kidsFeed, it.watch) }
+    val vm = containerViewModel { KidsHomeViewModel(it.policy.filter, it.feed, it.kidsFeed, it.watch, it.homeSuggestions) }
     val state by vm.state.collectAsStateWithLifecycle()
     // Every time the tab shows (e.g. back from the player): only what is older than half an hour is fetched.
     LaunchedEffect(Unit) { vm.refresh() }
@@ -93,6 +97,7 @@ fun KidsHomeRoute(focus: ContentFocus, actions: BrowseActions) {
 /**
  * A child's home (SPEC §3): «أهلاً يا …», the playlists the parent allowed, then the newest videos of the
  * allowed channels. Bigger cards than the adult's, the kids yellow for focus, no menus, nothing to manage.
+ * Where the parent turned suggestions on, «مقترحة لك» (from the allowed channels only) follows the videos' first line.
  */
 @Composable
 fun KidsHomeScreen(
@@ -133,21 +138,42 @@ fun KidsHomeScreen(
         else -> {
             val gridState = rememberLazyGridState()
             val firstCard = remember { FocusRequester() }
-            ShashaGrid(gridState, focus, firstCard, modifier.fillMaxSize().testTag("kids_home"), minCellWidth = GridDefaults.KidsCellWidth) {
-                fullWidthItem("header") { Greeting(state.name, state.avatar) }
-                if (state.playlists.isNotEmpty()) {
-                    // The title and its row are one item: the grid's row gap would push them apart.
-                    fullWidthItem("playlists") {
-                        Column {
-                            SectionTitle(stringResource(R.string.kids_playlists))
-                            Spacer(Modifier.height(6.dp))
-                            PlaylistStrip(state.playlists, formats, onOpenPlaylist, firstCard)
+            BoxWithConstraints(modifier.fillMaxSize()) {
+                val columns = gridColumns(maxWidth, minCellWidth = GridDefaults.KidsCellWidth)
+                ShashaGrid(gridState, focus, firstCard, Modifier.fillMaxSize().testTag("kids_home"), minCellWidth = GridDefaults.KidsCellWidth) {
+                    fullWidthItem("header") { Greeting(state.name, state.avatar) }
+                    if (state.playlists.isNotEmpty()) {
+                        // The title and its row are one item: the grid's row gap would push them apart.
+                        fullWidthItem("playlists") {
+                            Column {
+                                SectionTitle(stringResource(R.string.kids_playlists))
+                                Spacer(Modifier.height(6.dp))
+                                PlaylistStrip(state.playlists, formats, onOpenPlaylist, firstCard)
+                            }
                         }
                     }
-                }
-                if (state.videos.isNotEmpty()) {
-                    fullWidthItem("videos_title") { SectionTitle(stringResource(R.string.kids_latest)) }
-                    videoCards(state.videos, watched, formats, nowMs, firstCard.takeIf { state.playlists.isEmpty() }) { onPlay(it.video) }
+                    if (state.videos.isNotEmpty()) {
+                        fullWidthItem("videos_title") { SectionTitle(stringResource(R.string.kids_latest)) }
+                        val firstLine = state.videos.take(columns)
+                        videoCards(firstLine, watched, formats, nowMs, firstCard.takeIf { state.playlists.isEmpty() }) { onPlay(it.video) }
+                        if (state.suggested.isNotEmpty()) {
+                            fullWidthItem("suggested") {
+                                VideoShelf(
+                                    title = stringResource(R.string.home_suggested_title),
+                                    subtitle = stringResource(R.string.kids_suggested_subtitle),
+                                    items = state.suggested,
+                                    watched = watched,
+                                    formats = formats,
+                                    nowMs = nowMs,
+                                    cardWidth = gridCellWidth(maxWidth, columns),
+                                    onPlay = { onPlay(it.video) },
+                                    modifier = Modifier.testTag("kids_suggested"),
+                                )
+                            }
+                            if (state.videos.size > columns) fullWidthItem("more_title") { SectionTitle(stringResource(R.string.kids_more_title)) }
+                        }
+                        videoCards(state.videos.drop(columns), watched, formats, nowMs, firstItem = null) { onPlay(it.video) }
+                    }
                 }
             }
         }

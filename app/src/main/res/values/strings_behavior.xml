@@ -38,11 +38,9 @@
     <!-- «الوضع الجاد». -->
     <string name="hub_serious">الوضع الجاد</string>
     <string name="hub_serious_summary">الفيديو الذي يبدأ يُشاهَد حتى نهايته</string>
-    <string name="serious_switch">الوضع الجاد</string>
-    <string name="serious_switch_body">الطفل يخرج من الفيديو برمز الوالدين، والكبير بالضغط المطوّل ثم كتابة عبارة. عند الإيقاف يخرج الجميع بزر «رجوع».</string>
     <string name="serious_off_note">الوضع الجاد متوقف: زر «رجوع» يُخرج من أي فيديو في كل الملفات.</string>
     <string name="serious_escape">السماح للكبير بالخروج قبل النهاية</string>
-    <string name="serious_escape_body">بالضغط المطوّل ثم كتابة عبارة، ويُسجَّل استسلاماً. عند الإيقاف لا يُنهى الفيديو قبل نهايته إلا من قسم الأب في الجوال.</string>
+    <string name="serious_escape_body">بالضغط المطوّل ثم كتابة عبارة، ويُسجَّل استسلاماً. إيقافه يحتاج جوالاً مقترناً يُؤكَّد منه كل فيديو للكبار قبل أن يبدأ.</string>
     <string name="serious_hold">مدة الضغط المطوّل</string>
     <string name="serious_hold_body">كم ثانية يُضغط على «رجوع» أو «&#x2068;OK&#x2069;» قبل ظهور العبارة</string>
     <string name="serious_phrase_section">عبارة الخروج</string>

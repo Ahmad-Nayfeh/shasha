@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- v1.2: Serious Mode is two switches, one per kind of profile (both on by default). -->
+    <string name="serious_children">Serious Mode for kids\' profiles</string>
+    <string name="serious_children_body">A kid\'s video plays to the end, unless the parent PIN ends it (on the TV or the phone).</string>
+    <string name="serious_children_off_note">Off for kids\' profiles: Back leaves any video there.</string>
+    <string name="serious_adult">Serious Mode for the adult profile</string>
+    <string name="serious_adult_body">An adult\'s video plays to the end, unless the way out below or the phone ends it.</string>
+    <string name="serious_adult_off_note">Off for the adult profile: Back leaves any video there.</string>
+    <string name="serious_escape_needs_phone">No phone is paired, so the on-screen way out stays on: without it nothing could end an adult\'s video early. Pair a phone in Settings → Phone remote first.</string>
+    <string name="serious_escape_off_note">The on-screen way out is off: every adult video must first be confirmed from the phone.</string>
+
+    <!-- v1.2: a video that only the phone could end early waits for Confirm on the phone before it starts. -->
+    <string name="confirm_phone_title">To play this video in Serious Mode, confirm from the phone</string>
+    <string name="confirm_phone_body">Open Shasha\'s page on your phone and tap Confirm. The on-screen way out is off, so only the parent section on the phone can end this video early.</string>
+    <string name="confirm_phone_waiting">Waiting for the phone: cancelled in %1$s</string>
+    <string name="confirm_no_phone">No phone is connected; pair one in Settings → Phone remote, or turn on the on-screen way out</string>
+    <string name="confirm_no_phone_body">The request reaches the phone while Shasha\'s page is open on it.</string>
+    <string name="confirm_pair_phone">Pair a phone</string>
+    <string name="confirm_refused">The phone declined this video.</string>
+    <string name="confirm_timed_out">The phone did not confirm within 2 minutes, so the video did not play.</string>
+
+    <!-- v1.2: a link from the phone waits on the TV for Accept; what plays now goes on meanwhile. -->
+    <string name="cast_request_label">Play request from the phone:</string>
+    <string name="cast_request_body">What is on now keeps playing until you accept.</string>
+    <string name="cast_accept">Accept</string>
+    <string name="cast_reject">Reject</string>
+    <string name="cast_auto_reject">Rejected by itself in %1$s</string>
+
+    <!-- The phone's answers. -->
+    <string name="remote_play_waiting">Waiting for Accept on the TV: “&#x2068;%1$s&#x2069;”</string>
+    <string name="remote_play_rejected">Rejected on the TV.</string>
+    <string name="remote_play_timed_out">Nobody accepted it on the TV within 30 seconds, so it was cancelled.</string>
+    <string name="remote_play_replaced">A newer request replaced it on the TV.</string>
+    <string name="remote_confirm_done">Confirmed: “&#x2068;%1$s&#x2069;” starts on the TV now.</string>
+    <string name="remote_confirm_refused">Declined: “&#x2068;%1$s&#x2069;” will not play.</string>
+    <string name="remote_confirm_gone">This request is no longer waiting on the TV.</string>
+</resources>

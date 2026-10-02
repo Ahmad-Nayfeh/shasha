@@ -47,6 +47,12 @@ fun interface RemoteDisplay {
      * nothing but the TV's state, and that only [profileId]'s screens open it.
      */
     suspend fun show(destination: Screen, profileId: String): ShowResult
+
+    /**
+     * v1.2: the TV is ready to ask about a link allowed for [profileId] («طلب تشغيل من الجوال»): in front (brought there
+     * when it is not), [profileId]'s screens up. Nothing opens. [ShowResult.SHOWN] when it is.
+     */
+    suspend fun prepare(profileId: String): ShowResult = ShowResult.SHOWN
 }
 
 /**
@@ -72,6 +78,16 @@ class TvDisplay(
     private val power = context.getSystemService(PowerManager::class.java)
 
     override suspend fun show(destination: Screen, profileId: String): ShowResult {
+        val ready = prepare(profileId)
+        if (ready != ShowResult.SHOWN) return ready
+        return when (requests.open(destination, profileId)) {
+            OpenResult.OPENED -> ShowResult.SHOWN
+            OpenResult.OTHER_PROFILE -> ShowResult.PROFILE_CHANGED
+            OpenResult.FAILED -> ShowResult.FAILED
+        }
+    }
+
+    override suspend fun prepare(profileId: String): ShowResult {
         if (power?.isInteractive == false) return ShowResult.SCREEN_OFF
         if (!visibility.state.value.resumed) {
             if (!ProtectionChecks.canDrawOverlays(context)) return ShowResult.NOT_IN_FRONT
@@ -80,11 +96,7 @@ class TvDisplay(
             if (!profileScreensSettle()) return ShowResult.NO_PROFILE
         }
         if (!profileScreensShown.value) return ShowResult.NO_PROFILE
-        return when (requests.open(destination, profileId)) {
-            OpenResult.OPENED -> ShowResult.SHOWN
-            OpenResult.OTHER_PROFILE -> ShowResult.PROFILE_CHANGED
-            OpenResult.FAILED -> ShowResult.FAILED
-        }
+        return ShowResult.SHOWN
     }
 
     /**

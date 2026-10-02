@@ -453,7 +453,6 @@
     <string name="profile_avatar">Picture</string>
     <string name="profile_quota">Daily quota</string>
     <string name="profile_schedule">Viewing hours</string>
-    <string name="profile_hide_shorts">Hide Shorts</string>
     <string name="profile_allowlist">Allowlist</string>
     <string name="profile_delete">Delete profile</string>
     <string name="profile_delete_title">Delete &#x2068;%1$s&#x2069;\'s profile?</string>
@@ -789,9 +788,9 @@
     <string name="hub_remote_summary">The phone remote: turning it on, the pairing QR code and a new code</string>
     <string name="hub_data_summary">A backup of all the TV\'s data, and your subscriptions from Takeout</string>
     <string name="hub_updates_summary">The installed version, and the latest on GitHub Releases</string>
-    <string name="hub_diagnostics_summary">Help for when YouTube breaks: test videos and TV details</string>
+    <string name="hub_diagnostics_summary">Help for when YouTube breaks: test videos, TV details, version and licenses</string>
     <string name="hub_about">About</string>
-    <string name="hub_about_summary">Developer and apps, version, skip data, licenses</string>
+    <string name="hub_about_summary">Who made Shasha, and the developer\'s other apps</string>
     <string name="hub_loading">Loading…</string>
 
     <!-- A parental pane before the parent PIN. -->
@@ -802,7 +801,7 @@
 
     <!-- الملفات ورمز الوالدين -->
     <string name="hub_profiles_manage">Manage profiles</string>
-    <string name="hub_profiles_manage_body">Add a kid\'s profile, names and pictures, hide Shorts, delete a profile</string>
+    <string name="hub_profiles_manage_body">Add a kid\'s profile, names and pictures, Shorts and suggestions, delete a profile</string>
 
     <!-- قوائم السماح والحظر -->
     <string name="hub_blocklist_section">Blocked · in every profile</string>
@@ -866,20 +865,23 @@
     <!-- تشخيص -->
     <string name="hub_diag_videos_body">Regular, live, made for kids, deleted, and one with a sponsor SponsorBlock skips: find out in seconds what broke</string>
     <string name="hub_diag_facts">Diagnostic details</string>
-    <string name="hub_fact_app">App %1$s · build %2$s</string>
-    <string name="hub_fact_extractor">Extraction library NewPipeExtractor %1$s</string>
     <string name="hub_fact_device">&#x2068;%1$s&#x2069; · Android %2$s (API %3$s)</string>
+    <string name="hub_fact_voice_both">Voice recognition: the system voice screen &#x2068;%1$s&#x2069;, with an in-app fallback &#x2068;%2$s&#x2069;</string>
+    <string name="hub_fact_voice_system">Voice recognition: the system voice screen &#x2068;%1$s&#x2069; (no in-app fallback)</string>
+    <string name="hub_fact_voice_service">Voice recognition: in-app only &#x2068;%1$s&#x2069; (no system voice screen)</string>
+    <string name="hub_fact_voice_none">Voice recognition: not available on this TV, so type what you\'re looking for</string>
     <string name="hub_fact_no_subscriptions">No subscriptions yet</string>
     <string name="hub_fact_feed_never">Subscriptions: %1$s · not refreshed yet</string>
     <string name="hub_fact_feed">Subscriptions: %1$s · last refreshed %2$s</string>
     <string name="hub_fact_feed_failed">Channels that failed to refresh last time: %1$s</string>
     <string name="hub_diag_hint">When something breaks: play the test videos first, then “Check for updates”. The Shasha Guide explains the rest.</string>
 
-    <!-- حول -->
-    <string name="hub_about_data_title">Segment skip data</string>
-    <string name="hub_about_licenses">Libraries and their licenses</string>
-    <string name="hub_about_ideas">Ideas from open-source projects, with code written anew</string>
-    <string name="hub_about_footer">No accounts, no ads, no tracking: all the data stays on this TV.</string>
+    <!-- تشخيص ← معلومات تقنية والتراخيص (كانت في «حول») -->
+    <string name="hub_diag_technical">Technical information and licenses</string>
+    <string name="hub_tech_data_title">Segment skip data</string>
+    <string name="hub_tech_licenses">Libraries and their licenses</string>
+    <string name="hub_tech_ideas">Ideas from open-source projects, with code written anew</string>
+    <string name="hub_tech_footer">No accounts, no ads, no tracking: all the data stays on this TV.</string>
     <string name="license_role_newpipe">Reading YouTube: search, channels and playback links</string>
     <string name="license_role_androidx">The interface, the player, the database and the settings</string>
     <string name="license_role_okhttp">Networking</string>
@@ -900,6 +902,8 @@
     <!-- v1.1 voice search and suggestions (search screen). -->
     <string name="voice_mic">Voice search</string>
     <string name="voice_language_toggle">Voice search language: %1$s. Press to switch</string>
+    <string name="voice_language_short_ar">AR</string>
+    <string name="voice_language_short_en">EN</string>
     <string name="voice_alternatives">Or maybe:</string>
     <string name="search_recent">Recent searches:</string>
     <string name="search_recent_clear">Clear</string>
@@ -924,7 +928,7 @@
     <string name="voice_error_permission">Voice search needs microphone permission</string>
     <string name="voice_error_permission_body">Allow Shasha to use the microphone when the TV asks. If you refused before, turn it on in the TV\'s Settings → Apps → Shasha → Permissions.</string>
     <string name="voice_error_language">This language isn\'t available for voice recognition</string>
-    <string name="voice_error_language_body">Try the other language with the “ع / EN” button beside the microphone.</string>
+    <string name="voice_error_language_body">Try the other language with the “AR / EN” button beside the microphone.</string>
     <string name="voice_error_unavailable">This TV has no voice recognition</string>
     <string name="voice_error_unavailable_body">Type what you\'re looking for with the remote, or search from the phone.</string>
     <string name="voice_error_other">Voice search failed</string>

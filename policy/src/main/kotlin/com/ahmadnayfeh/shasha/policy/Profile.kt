@@ -11,6 +11,11 @@ enum class ProfileKind { ADULT, CHILD }
  *
  * [allowlist] is only consulted for CHILD profiles; [blocklist] applies to everyone.
  * Comments are always hidden for CHILD profiles regardless of [hideComments].
+ *
+ * [hideShorts] is «إظهار مقاطع Shorts» turned off: shorts disappear from every list (see [PolicyEngine.isShort]).
+ * [showSuggestions] is «إظهار الفيديوهات المقترحة»: the videos YouTube suggests beside a video, in the player, on its
+ * end card and in the home's «مقترحة لك» ([PolicyEngine.canSuggest]). On for the adult and off for a child unless set;
+ * a profile saved before the setting existed gets that default from its kind.
  */
 @Serializable
 data class Profile(
@@ -24,6 +29,7 @@ data class Profile(
     val hideComments: Boolean = false,
     val allowlist: Allowlist = Allowlist(),
     val blocklist: Blocklist = Blocklist(),
+    val showSuggestions: Boolean = kind == ProfileKind.ADULT,
 ) {
     init {
         require(dailyQuotaMinutes == null || dailyQuotaMinutes in 0..MINUTES_PER_DAY) {
@@ -55,6 +61,7 @@ data class Profile(
             schedule = null,
             hideShorts = false,
             hideComments = false,
+            showSuggestions = true,
         )
 
         fun newChild(
@@ -70,6 +77,7 @@ data class Profile(
             schedule = DEFAULT_CHILD_SCHEDULE,
             hideShorts = true,
             hideComments = true,
+            showSuggestions = false,
         )
     }
 }

@@ -73,6 +73,7 @@ class PhoneParental(
                 scheduleUntil = p.schedule?.takeUnless { it.isAlwaysAllowed }?.allowedUntilMinute?.rem(MINUTES_PER_DAY),
                 hideShorts = p.hideShorts,
                 hideComments = p.hideComments || p.isChild,
+                showSuggestions = p.showSuggestions,
                 usedTodayMinutes = (usage.foregroundSeconds(p.id, today) / 60).toInt(),
                 deleteBlockedReason = when {
                     p.id == current -> get(R.string.phone_profile_delete_current)
@@ -125,7 +126,7 @@ class PhoneParental(
     private fun cleanName(name: String): String? =
         name.replace(Regex("\\s+"), " ").trim().takeIf { it.isNotEmpty() && it.length <= PROFILE_NAME_MAX }
 
-    suspend fun setFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?): RemoteResult {
+    suspend fun setFlags(profileId: String, hideShorts: Boolean?, hideComments: Boolean?, showSuggestions: Boolean?): RemoteResult {
         val profile = profiles.get(profileId) ?: return error(R.string.phone_profile_not_found)
         if (hideComments != null && profile.isChild && !hideComments) return error(R.string.phone_comments_child)
         val updated = whole {
@@ -133,6 +134,7 @@ class PhoneParental(
                 it.copy(
                     hideShorts = hideShorts ?: it.hideShorts,
                     hideComments = if (it.isChild) it.hideComments else hideComments ?: it.hideComments,
+                    showSuggestions = showSuggestions ?: it.showSuggestions,
                 )
             }
         } ?: return error(R.string.phone_profile_not_found)

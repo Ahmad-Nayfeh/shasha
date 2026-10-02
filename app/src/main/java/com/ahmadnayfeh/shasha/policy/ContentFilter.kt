@@ -21,6 +21,12 @@ fun VideoItem.toCandidate(viaPlaylistId: String? = null) = Candidate(
 )
 
 /**
+ * Whether this video is a Short under the parent's limit («حدّ الفيديو القصير»): the «Shorts» badge on its tile. The
+ * engine's own rule ([PolicyEngine.isShort]), so what is badged where shorts show is what is hidden where they do not.
+ */
+fun VideoItem.isShort(shortsMaxSeconds: Long): Boolean = PolicyEngine.isShort(toCandidate(), shortsMaxSeconds)
+
+/**
  * The engine's list rules (SPEC §3: nothing is shown before the engine allowed it) for one profile, in
  * the shapes the screens have: search results, a channel's videos, a playlist's videos, saved lists.
  *
@@ -43,6 +49,30 @@ class ContentFilter private constructor(private val engine: PolicyEngine?, val p
     }
 
     fun videos(videos: List<VideoItem>): List<VideoItem> = videos.filter { allows(it) }
+
+    /** «إظهار مقاطع Shorts»: the profile shows shorts (false before a profile is loaded). */
+    val showsShorts: Boolean get() = profile?.hideShorts == false
+
+    /** «إظهار الفيديوهات المقترحة»: the profile shows suggestions at all (false before a profile is loaded). */
+    val showsSuggestions: Boolean get() = features?.suggestions == true
+
+    /** A Short under the parent's limit (the engine's rule: the same that hides it where shorts are hidden). */
+    fun isShort(video: VideoItem): Boolean = engine?.isShort(video.toCandidate()) == true
+
+    /**
+     * What a suggestion row may show of [videos] (VideoSource.related, in their order): nothing where suggestions are
+     * off; otherwise only what the engine allows as a suggestion ([PolicyEngine.canSuggest]: blocks, shorts, and for
+     * a child its allowlisted channels only), without repeats and without [exclude] (the videos the row is beside).
+     */
+    fun suggestions(videos: List<VideoItem>, exclude: Set<String> = emptySet()): List<VideoItem> {
+        val e = engine ?: return emptyList()
+        val p = profile!!
+        if (!p.showSuggestions) return emptyList()
+        return videos.asSequence()
+            .filter { it.videoId !in exclude && e.canSuggest(p, it.toCandidate()) }
+            .distinctBy { it.videoId }
+            .toList()
+    }
 
     /**
      * A text the screen would show as it is (a search suggestion, a recent search, words heard by the microphone):

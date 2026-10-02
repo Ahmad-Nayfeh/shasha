@@ -13,6 +13,7 @@ import com.ahmadnayfeh.shasha.player.StreamFreshness
 import com.ahmadnayfeh.shasha.player.WatchSession
 import com.ahmadnayfeh.shasha.policy.DenyReason
 import com.ahmadnayfeh.shasha.policy.PlayCheck
+import com.ahmadnayfeh.shasha.remote.ConfirmAnswer
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
@@ -60,6 +61,19 @@ fun interface PlayGate {
 }
 
 /**
+ * v1.2 (owner decision): a video that would start in Serious Mode while nothing on the TV could end it early (the adult
+ * profile with its way out turned off) first waits for the parent's «تأكيد» on the phone
+ * ([com.ahmadnayfeh.shasha.remote.PhoneConfirmations]).
+ */
+interface StartConfirmation {
+    /** Whether [videoId] must be confirmed from the phone before it starts now (not when the lock already holds it). */
+    fun needed(videoId: String): Boolean
+
+    /** Asks the phone; suspends until it answers or the wait ends (cancelled: the request is withdrawn). */
+    suspend fun ask(videoId: String, title: String): ConfirmAnswer
+}
+
+/**
  * Loads one video's stream, replaces it when its URLs go stale ([StreamFreshness]), and remembers where
  * playback was when the player was released. With a [session] it also resumes from the saved position,
  * records progress and history, and toggles watch later; [nextInPlaylist] (null outside a playlist)
@@ -81,6 +95,9 @@ fun interface PlayGate {
  * [allowLowQuality] (owner decision, a child profile): a video YouTube only offers as a muxed file of 360p or
  * less plays that file (the player shows a "360p" badge) instead of the error screen. Otherwise that is
  * [SourceErrorKind.LOW_QUALITY_ONLY], and the adult may still choose it for this visit ([playLowQuality]).
+ *
+ * [suggestionsFor] («الفيديوهات المقترحة», null: none) is asked once the video is extracted, so it answers from that
+ * same extraction (VideoSource.related): the player's «مقترحة» row and its end card. It applies the profile's rules.
  */
 class PlayerViewModel(
     private val videoId: String,
@@ -88,6 +105,8 @@ class PlayerViewModel(
     private val session: WatchSession? = null,
     private val nextInPlaylist: (suspend () -> NextVideo?)? = null,
     private val gate: PlayGate? = null,
+    /** v1.2: the phone's «تأكيد» before a start only the phone could end early (null: never asked, e.g. تشخيص's videos). */
+    private val startConfirmation: StartConfirmation? = null,
     private val elapsedClock: () -> Long = SystemClock::elapsedRealtime,
     private val wallClock: () -> Long = System::currentTimeMillis,
     private val lock: PlaybackLocking? = null,
@@ -96,6 +115,7 @@ class PlayerViewModel(
     allowLowQuality: Boolean = false,
     /** The speed a video starts at (Settings → التشغيل, 1× by default). */
     defaultSpeed: Float = 1f,
+    private val suggestionsFor: (suspend (videoId: String) -> List<VideoItem>)? = null,
 ) : ViewModel() {
 
     sealed interface Load {
@@ -110,6 +130,12 @@ class PlayerViewModel(
 
         /** The profile's rules say no ([reason]): nothing is played. */
         data class Denied(val reason: DenyReason) : Load
+
+        /** v1.2: allowed, but waiting for the parent's «تأكيد» on the phone before [title] starts ([StartConfirmation]). */
+        data class AwaitingPhone(val title: String) : Load
+
+        /** v1.2: the phone said «رفض» or did not answer in time ([answer]): the video does not play. */
+        data class NotConfirmed(val answer: ConfirmAnswer) : Load
     }
 
     private val _load = MutableStateFlow<Load>(Load.Loading)
@@ -137,6 +163,12 @@ class PlayerViewModel(
     private val _skippedToEnd = MutableStateFlow(false)
     val skippedToEnd: StateFlow<Boolean> = _skippedToEnd.asStateFlow()
 
+    private val _suggestions = MutableStateFlow<List<VideoItem>>(emptyList())
+
+    /** «مقترحة»: what may be suggested beside this video (empty until it is extracted, or when there are none). */
+    val suggestions: StateFlow<List<VideoItem>> = _suggestions.asStateFlow()
+    private var suggestionsAsked = false
+
     /** What the players of this visit really played (SPEC §4). */
     private val played = PlayedMeter()
 
@@ -148,6 +180,9 @@ class PlayerViewModel(
 
     /** A link's start, for the first extraction only (then playback goes on from where it is). */
     private var linkStartMs: Long? = startAtMs?.coerceAtLeast(0)
+
+    /** This visit's start needed no «تأكيد» from the phone, or got it: later extractions (stale URLs, a retry) do not ask again. */
+    private var startCleared = false
 
     /** Whether a low-quality (muxed ≤360p) stream may play: the profile's rule, or the adult's choice ([playLowQuality]). */
     var lowQualityAllowed: Boolean = allowLowQuality
@@ -272,6 +307,17 @@ class PlayerViewModel(
         }
     }
 
+    /**
+     * «إعادة التشغيل» is a new start: when it would need the phone's «تأكيد» ([StartConfirmation.needed]: the lock ended with
+     * the video) the screen opens the video afresh instead, and the new visit asks for it.
+     */
+    fun replayNeedsConfirmation(): Boolean = startConfirmation?.needed(videoId) == true
+
+    /** The TV's «إلغاء» while the phone's «تأكيد» is awaited: the request is withdrawn at once (the screen then leaves). */
+    fun cancelStart() {
+        if (_load.value is Load.AwaitingPhone) extraction?.cancel()
+    }
+
     /** «إعادة التشغيل» from the end card: the video starts again from the beginning, and so does its lock. */
     fun onReplay() {
         _end.value = null
@@ -342,6 +388,46 @@ class PlayerViewModel(
             else -> false
         }
         if (unavailable) lock?.onUnavailable(videoId)
+        if (next is Load.Ready) loadSuggestions()
+    }
+
+    /**
+     * Once per visit, after the first extraction (whose related items VideoSource.related then answers from). They are
+     * extra: a failure only leaves the row empty.
+     */
+    private fun loadSuggestions() {
+        val find = suggestionsFor ?: return
+        if (suggestionsAsked) return
+        suggestionsAsked = true
+        viewModelScope.launch {
+            _suggestions.value = try {
+                find(videoId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+    }
+
+    /**
+     * v1.2: true when this start may go on: no «تأكيد» is needed ([StartConfirmation.needed]; once per visit), or the
+     * phone gave it. Otherwise [Load.NotConfirmed] shows (the screen leaves) and nothing plays.
+     */
+    private suspend fun confirmStart(title: String): Boolean {
+        val confirmation = startConfirmation
+        if (startCleared || confirmation == null || !confirmation.needed(videoId)) {
+            startCleared = true
+            return true
+        }
+        _load.value = Load.AwaitingPhone(title)
+        val answer = confirmation.ask(videoId, title)
+        if (answer == ConfirmAnswer.CONFIRMED) {
+            startCleared = true
+            return true
+        }
+        show(Load.NotConfirmed(answer))
+        return false
     }
 
     private fun extract(fresh: Boolean) {
@@ -368,6 +454,8 @@ class PlayerViewModel(
                         ?: streams.stream(videoId, lowQualityAllowed)
                     null -> streams.stream(videoId, lowQualityAllowed)
                 }
+                // v1.2: nothing starts that only the phone could end early before the phone confirms it.
+                if (!confirmStart(stream.video.title)) return@launch
                 savedPosition?.await()?.let { position ->
                     resumeLookedUp = true
                     if (position > 0 && !stream.video.isLive && resume.positionMs == 0L) {

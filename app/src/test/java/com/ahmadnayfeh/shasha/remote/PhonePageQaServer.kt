@@ -120,7 +120,8 @@ class PhonePageQaServer {
     /**
      * What the script asks of the TV side (answers are one line each):
      * `status` · `player` (the commands the player got) · `used <profile> <seconds>` (watched time today) ·
-     * `serious on|off` · `adultEntry on|off` · `extra <m,m,…>` (the TV's own Settings) · `quota <profile> <minutes|none>`
+     * `serious on|off [kids|adult]` · `adultEntry on|off` · `extra <m,m,…>` (the TV's own Settings) · `waiting` (the link
+     * the phone sent that waits on the TV) · `accept` · `reject` (the TV's «قبول» / «رفض» for it) · `quota <profile> <minutes|none>`
      * (the TV's profile editor) · `switch <profile> [pin]` (the TV's picker; the PIN typed on the TV) · `revoke` (every phone's parent
      * session ends) · `tvpin <pin>` (a PIN typed on the TV) · `phonepin` (the phone's PIN count) · `serverdown <ms>` (the
      * TV's network drops for a moment) · `endvideo` (the video ends by itself) · `shows` (how many times the TV was asked
@@ -139,9 +140,19 @@ class PhonePageQaServer {
             "ok"
         }
         "serious" -> {
-            env.behavior.setSeriousMode(args[1] == "on")
+            // v1.2: one switch for the children's profiles, one for the adult's; without a kind, both.
+            val on = args[1] == "on"
+            if (args.getOrNull(2) != "adult") env.behavior.setSeriousModeChildren(on)
+            if (args.getOrNull(2) != "kids") env.behavior.setSeriousModeAdult(on)
             "ok"
         }
+        "accept", "reject" -> {
+            // v1.2: «قبول» / «رفض» on the TV for the link the phone sent.
+            val waiting = env.playRequests.pending.value ?: return "none"
+            val answered = if (args[0] == "accept") env.playRequests.accept(waiting.id) else env.playRequests.reject(waiting.id)
+            if (answered) "ok ${waiting.title}" else "none"
+        }
+        "waiting" -> env.playRequests.pending.value?.title ?: "none"
         "adultEntry" -> {
             env.behavior.setAdultEntryPin(args[1] == "on")
             "ok"
@@ -169,7 +180,7 @@ class PhonePageQaServer {
         }
         "shows" -> display.shows.toString()
         "behavior" -> env.behavior.current().let {
-            "serious=${it.seriousMode} adultEntry=${it.adultEntryPin} warning=${it.warningMinutes} extra=${it.extraMinutes.joinToString(",")} " +
+            "seriousKids=${it.seriousModeChildren} seriousAdult=${it.seriousModeAdult} escape=${it.adultEscape} adultEntry=${it.adultEntryPin} warning=${it.warningMinutes} extra=${it.extraMinutes.joinToString(",")} " +
                 "speed=${it.defaultSpeed} language=${it.voiceLanguage}"
         }
         "profile" -> env.profiles.get(args[1])?.let {

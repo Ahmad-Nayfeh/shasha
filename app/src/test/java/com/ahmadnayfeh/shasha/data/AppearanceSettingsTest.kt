@@ -122,10 +122,10 @@ class AppearanceSettingsTest {
             )
             settings.setAppLanguage(AppLanguage.ENGLISH)
             settings.setAppTheme(AppTheme.LIGHT)
-            settings.setSeriousMode(false)
-            shows { !it.seriousMode && it.appTheme == AppTheme.LIGHT && it.appLanguage == AppLanguage.ENGLISH }
+            settings.setSeriousModeAdult(false)
+            shows { !it.seriousModeAdult && it.appTheme == AppTheme.LIGHT && it.appLanguage == AppLanguage.ENGLISH }
             reset.resetAll()
-            assertThat(shows { it.seriousMode && it.appTheme == AppTheme.DARK }).isEqualTo(Behavior.DEFAULT)
+            assertThat(shows { it.seriousModeAdult && it.appTheme == AppTheme.DARK }).isEqualTo(Behavior.DEFAULT)
         } finally {
             playbackScope.cancelAndWait()
         }

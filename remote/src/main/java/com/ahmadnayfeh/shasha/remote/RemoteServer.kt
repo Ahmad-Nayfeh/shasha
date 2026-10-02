@@ -47,6 +47,9 @@ class RemoteServer internal constructor(
     var onError: (Throwable) -> Unit = {}
 
     private val sessions = ParentSessions(nowMillis)
+
+    /** When a paired phone last reached this server (v1.2); it outlives stop/start like the PIN brake. */
+    val presence = PhonePresence(nowMillis)
     // Unlike sessions it survives stop/start: restarting the server must not hand out fresh PIN guesses.
     private val pinGate = PinGate(freeFailures = pinFailuresBeforeBlock, nowMillis = nowMillis)
     private val pages by lazy { RemotePages.fromClasspath() }
@@ -78,7 +81,7 @@ class RemoteServer internal constructor(
             if (e is CancellationException) return@CoroutineExceptionHandler
             if (attempt.started) runCatching { onError(e) } else attempt.failure = e
         }
-        val module: Application.() -> Unit = { remoteModule(controller, tokenProvider, sessions, pinGate, pages) { onError(it) } }
+        val module: Application.() -> Unit = { remoteModule(controller, tokenProvider, sessions, pinGate, pages, presence) { onError(it) } }
         val config = serverConfig(applicationEnvironment()) {
             parentCoroutineContext = engineFailures
             module(module)

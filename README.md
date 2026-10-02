@@ -7,11 +7,11 @@
 
 ### يوتيوب هادئ لتلفاز البيت: بلا إعلانات، وبحماية كاملة للأطفال
 
-![Version](https://img.shields.io/badge/version-1.1.0-0d9488?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-1.1.1-0d9488?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Android_TV_·_Google_TV-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Languages](https://img.shields.io/badge/العربية_·_English-1f2937?style=for-the-badge)
 
-*A calm YouTube app for the family TV: no ads, no algorithm, kids' profiles with allowed channels, and your phone as a remote.*
+*A calm YouTube app for the family TV: no ads, no sign-in, kids' profiles with allowed channels, and your phone as a remote.*
 
 <a href="docs/video/shasha-explainer.mp4"><img src="docs/video/preview.webp" width="760" alt="فيديو شرح شاشة"></a>
 
@@ -23,7 +23,7 @@
 
 ## ✨ ما هو «شاشة»؟
 
-تطبيق يوتيوب خاص بتلفاز البيت (أندرويد تي في وجوجل تي في): **بلا إعلانات ولا اقتراحات ولا تسجيل دخول**. لكل طفل ملف لا يرى فيه إلا القنوات التي تسمح بها، بوقت يومي ومواعيد محددة. ويُدار كله بالريموت أو من جوالك.
+تطبيق يوتيوب خاص بتلفاز البيت (أندرويد تي في وجوجل تي في): **بلا إعلانات ولا تسجيل دخول**، والفيديوهات المقترحة والقصيرة تظهر أو تختفي بقرارك. لكل طفل ملف لا يرى فيه إلا القنوات التي تسمح بها، بوقت يومي ومواعيد محددة. ويُدار كله بالريموت أو من جوالك.
 
 ## 🚀 ابدأ من هنا
 
@@ -39,7 +39,7 @@
 
 | 👨‍👩‍👧 للعائلة | 🛡️ للوالدين |
 |---|---|
-| بلا إعلانات ولا خوارزمية ولا تسجيل دخول | ملف لكل طفل بقنواته المسموحة فقط |
+| بلا إعلانات ولا تسجيل دخول، والمقترحات اختيارية | ملف لكل طفل بقنواته المسموحة فقط |
 | 🎙️ بحث بالصوت بالعربية أو الإنجليزية، واقتراحات أثناء الكتابة | ⏱️ وقت يومي ومواعيد مشاهدة، وتنبيه قبل انتهاء الوقت |
 | ⏭️ تخطّي المقاطع الدعائية داخل الفيديو تلقائياً | 🔒 «الوضع الجاد»: الفيديو الذي يبدأ يُكمل حتى نهايته |
 | ⚡ سرعة تشغيل حتى ٤ أضعاف | 🔑 رمز للوالدين، وإعداد لكل سلوك مع زر «إرجاع الأصل» |

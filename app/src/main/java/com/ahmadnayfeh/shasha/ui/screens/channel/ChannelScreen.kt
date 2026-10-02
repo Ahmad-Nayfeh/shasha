@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -51,10 +52,14 @@ import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaGrid
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoaderWithText
+import com.ahmadnayfeh.shasha.ui.components.ShelfTitle
+import com.ahmadnayfeh.shasha.ui.components.ShortsShelf
 import com.ahmadnayfeh.shasha.ui.components.SubscribeButton
 import com.ahmadnayfeh.shasha.ui.components.TakeFocusWhenReady
 import com.ahmadnayfeh.shasha.ui.components.containerViewModel
 import com.ahmadnayfeh.shasha.ui.components.fullWidthItem
+import com.ahmadnayfeh.shasha.ui.components.gridColumns
+import com.ahmadnayfeh.shasha.ui.components.shortCardWidth
 import com.ahmadnayfeh.shasha.ui.components.rememberNow
 import com.ahmadnayfeh.shasha.ui.components.videoCards
 import com.ahmadnayfeh.shasha.ui.format.Formats
@@ -79,6 +84,7 @@ fun ChannelRoute(channelId: String, nameHint: String?, adult: Boolean, onPlay: (
     val access by vm.access.collectAsStateWithLifecycle()
     val header by vm.header.collectAsStateWithLifecycle()
     val videos by vm.videos.collectAsStateWithLifecycle()
+    val shorts by vm.shorts.collectAsStateWithLifecycle()
     val subscribed by vm.isSubscribed.collectAsStateWithLifecycle()
     val openMenu = LocalCollectionMenu.current
     ChannelScreen(
@@ -104,12 +110,14 @@ fun ChannelRoute(channelId: String, nameHint: String?, adult: Boolean, onPlay: (
         access = access,
         adult = adult,
         onParental = { (header as? ChannelHeader.Ready)?.let { openMenu(MenuTarget.Channel(it.details.channel)) } },
+        shorts = shorts,
     )
 }
 
 /**
  * A channel: banner, picture, name and (adult profile) the subscribe toggle and «الرقابة», then its videos
- * (newest first). A channel the profile may not open shows why instead ([access]).
+ * (newest first). A channel the profile may not open shows why instead ([access]). Its [shorts], where the profile
+ * shows them, are a row under the videos' first line.
  */
 @Composable
 fun ChannelScreen(
@@ -133,6 +141,7 @@ fun ChannelScreen(
     access: Decision? = Decision.Allow,
     adult: Boolean = true,
     onParental: () -> Unit = {},
+    shorts: List<VideoUi> = emptyList(),
 ) {
     when (access) {
         null -> return // the profile's rules are a moment away
@@ -172,33 +181,53 @@ fun ChannelScreen(
     val firstCard = remember { FocusRequester() }
     TakeFocusWhenReady(focus, ready = header is ChannelHeader.Ready && !videos.loadingFirst)
     LoadMoreWhenNearEnd(gridState, onLoadMore = onLoadMore)
-    ShashaGrid(
-        gridState,
-        focus,
-        firstCard,
-        modifier.fillMaxSize().testTag("channel_screen"),
-        contentPadding = PaddingValues(horizontal = ShashaDimens.ScreenHorizontal, vertical = 40.dp),
-    ) {
-        fullWidthItem("header") { Header(channelId, nameHint, header, subscribed, onToggleSubscription, formats, adult, onParental) }
-        when {
-            videos.loadingFirst -> fullWidthItem("loading") {
-                Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-                    ShashaLoaderWithText(stringResource(R.string.channel_loading))
+    val padding = PaddingValues(horizontal = ShashaDimens.ScreenHorizontal, vertical = 40.dp)
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        // The Shorts row comes after the first line of videos: the newest upload stays on top.
+        val columns = gridColumns(maxWidth, padding)
+        ShashaGrid(gridState, focus, firstCard, Modifier.fillMaxSize().testTag("channel_screen"), contentPadding = padding) {
+            fullWidthItem("header") { Header(channelId, nameHint, header, subscribed, onToggleSubscription, formats, adult, onParental) }
+            when {
+                // Also while the first pages are all hidden by the rules and more are on their way: not "no videos" yet.
+                videos.loadingFirst || (videos.items.isEmpty() && shorts.isEmpty() && videos.loadingMore) -> fullWidthItem("loading") {
+                    Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
+                        ShashaLoaderWithText(stringResource(R.string.channel_loading))
+                    }
+                }
+                videos.items.isEmpty() && shorts.isEmpty() -> fullWidthItem("empty") {
+                    Text(
+                        stringResource(R.string.channel_no_videos),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ShashaColors.Muted,
+                        modifier = Modifier.padding(top = 24.dp),
+                    )
+                }
+                else -> {
+                    // Every video here is the channel's own: the cards show only when each was published.
+                    val firstLine = videos.items.take(columns)
+                    videoCards(firstLine, watched, formats, nowMs, firstCard, showChannel = false) { onPlay(it.video) }
+                    if (shorts.isNotEmpty()) {
+                        fullWidthItem("shorts") {
+                            ShortsShelf(
+                                title = stringResource(R.string.channel_shorts_title),
+                                subtitle = null,
+                                items = shorts,
+                                watched = watched,
+                                cardWidth = shortCardWidth(maxWidth, padding),
+                                onPlay = { onPlay(it.video) },
+                                first = firstCard.takeIf { firstLine.isEmpty() },
+                                showChannel = false,
+                                modifier = Modifier.testTag("channel_shorts"),
+                            )
+                        }
+                        if (videos.items.size > columns) fullWidthItem("videos_title") { ShelfTitle(stringResource(R.string.channel_videos_title)) }
+                    }
+                    videoCards(videos.items.drop(columns), watched, formats, nowMs, firstItem = null, showChannel = false) { onPlay(it.video) }
                 }
             }
-            videos.items.isEmpty() -> fullWidthItem("empty") {
-                Text(
-                    stringResource(R.string.channel_no_videos),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = ShashaColors.Muted,
-                    modifier = Modifier.padding(top = 24.dp),
-                )
+            if (videos.loadingMore || videos.moreError != null) {
+                fullWidthItem("footer") { PagingFooter(videos.loadingMore, videos.moreError, onRetryMore, extractorVersion, onCheckUpdates) }
             }
-            // Every video here is the channel's own: the cards show only when each was published.
-            else -> videoCards(videos.items, watched, formats, nowMs, firstCard, showChannel = false) { onPlay(it.video) }
-        }
-        if (videos.loadingMore || videos.moreError != null) {
-            fullWidthItem("footer") { PagingFooter(videos.loadingMore, videos.moreError, onRetryMore, extractorVersion, onCheckUpdates) }
         }
     }
 }

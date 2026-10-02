@@ -268,7 +268,8 @@ class BrowseScreenshotTest {
     @Test
     fun history() = snap("history") {
         Shell(Tab.HISTORY) {
-            HistoryScreen(UiFixtures.history, stateOf(UiFixtures.watched), NOW, remember { ContentFocus() }, onPlay = {}, onClear = {})
+            // Every watched video shows its red bar (a full one when finished); the live stream has none.
+            HistoryScreen(UiFixtures.history, stateOf(UiFixtures.historyWatched), NOW, remember { ContentFocus() }, onPlay = {}, onClear = {})
         }
     }
 

@@ -28,6 +28,32 @@ class SerializationTest {
     }
 
     @Test
+    fun profile_savedBeforeSuggestionsExisted_getsTheDefaultOfItsKind() {
+        // What PolicyJson wrote before «إظهار الفيديوهات المقترحة»: every field but that one.
+        fun stored(kind: String, avatar: String) = """{"id":"p","name":"س","kind":"$kind","avatar":"$avatar","dailyQuotaMinutes":60,""" +
+            """"schedule":null,"hideShorts":true,"hideComments":true,"allowlist":{"channels":[],"playlists":[]},"blocklist":{"channels":[],"titleKeywords":[]}}"""
+        val adult = PolicyJson.json.decodeFromString(Profile.serializer(), stored("ADULT", "person"))
+        val child = PolicyJson.json.decodeFromString(Profile.serializer(), stored("CHILD", "star"))
+        assertThat(adult.showSuggestions).isTrue()
+        assertThat(child.showSuggestions).isFalse()
+        // The rest reads as it was written.
+        assertThat(child.hideShorts).isTrue()
+        assertThat(child.dailyQuotaMinutes).isEqualTo(60)
+        // A minimal child, as a hand-written backup could hold it.
+        val minimal = json.decodeFromString(Profile.serializer(), """{"id":"c","name":"x","kind":"CHILD","avatar":"star"}""")
+        assertThat(minimal.showSuggestions).isFalse()
+    }
+
+    @Test
+    fun profile_suggestionsChoice_roundTrips_inBothKinds() {
+        for (p in listOf(adult().copy(showSuggestions = false), child().copy(showSuggestions = true), adult(), child())) {
+            val text = PolicyJson.json.encodeToString(Profile.serializer(), p)
+            assertThat(text).contains("\"showSuggestions\":${p.showSuggestions}")
+            assertThat(PolicyJson.json.decodeFromString(Profile.serializer(), text)).isEqualTo(p)
+        }
+    }
+
+    @Test
     fun profile_invalidValues_rejectedOnDecode() {
         assertThrows(IllegalArgumentException::class.java) {
             json.decodeFromString(
@@ -87,7 +113,7 @@ class SerializationTest {
     @Test
     fun policyJson_writesEveryField_soChangingADefaultLaterCannotChangeSavedData() {
         val text = PolicyJson.json.encodeToString(Profile.serializer(), Profile.newAdult("أحمد", id = "a"))
-        for (field in listOf("dailyQuotaMinutes", "schedule", "hideShorts", "hideComments", "allowlist", "blocklist")) {
+        for (field in listOf("dailyQuotaMinutes", "schedule", "hideShorts", "hideComments", "allowlist", "blocklist", "showSuggestions")) {
             assertThat(text).contains("\"$field\"")
         }
         assertThat(PolicyJson.json.decodeFromString(Profile.serializer(), text)).isEqualTo(Profile.newAdult("أحمد", id = "a"))

@@ -25,6 +25,8 @@ sealed interface Screen {
      * videos (adult only): it is not locked (SPEC §4's lock is about watching, not about checking that
      * playback works; the live test never ends and would only leave through a surrender).
      * [startSeconds]: where a shared link asks the video to start (its `t=`), in place of the saved position.
+     * [phoneApproved] (v1.2): a request from the phone that was accepted on the TV; the phone that sent it is there,
+     * so this video needs no «تأكيد» from the phone before it starts.
      */
     @Serializable
     data class Player(
@@ -34,6 +36,7 @@ sealed interface Screen {
         val fromLink: Boolean = false,
         val diagnostic: Boolean = false,
         val startSeconds: Long? = null,
+        val phoneApproved: Boolean = false,
     ) : Screen
 
     /** Placeholder until the GitHub Releases updater arrives (SPEC phase 7). */

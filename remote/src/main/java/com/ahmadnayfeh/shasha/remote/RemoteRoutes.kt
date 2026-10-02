@@ -43,13 +43,20 @@ internal const val PARENT_SESSION_HEADER = "X-Parent-Session"
 @Serializable internal data class ChannelRequest(val channelId: String)
 @Serializable internal data class SettingRequest(val key: String, val value: JsonElement, val base: JsonElement? = null)
 @Serializable internal data class SettingsResetRequest(val group: String? = null)
-@Serializable internal data class ProfileFlagsRequest(val profileId: String, val hideShorts: Boolean? = null, val hideComments: Boolean? = null)
+@Serializable internal data class ProfileFlagsRequest(
+    val profileId: String,
+    val hideShorts: Boolean? = null,
+    val hideComments: Boolean? = null,
+    val showSuggestions: Boolean? = null,
+)
 // No defaults: a request that forgets the times must not mean "all day".
 @Serializable internal data class ScheduleRequest(val profileId: String, val fromMinute: Int?, val untilMinute: Int?)
 @Serializable internal data class BlockRequest(val kind: String, val value: String)
 @Serializable internal data class CreateChildRequest(val name: String, val avatar: String)
 @Serializable internal data class EditProfileRequest(val profileId: String, val name: String? = null, val avatar: String? = null)
 @Serializable internal data class ProfileIdRequest(val profileId: String)
+// No default for approve: a request that forgets it must not mean either answer.
+@Serializable internal data class ConfirmRequest(val id: String, val approve: Boolean)
 
 private const val MAX_TEXT = 2048
 private const val MAX_QUERY = 200
@@ -68,6 +75,7 @@ internal fun Application.remoteModule(
     sessions: ParentSessions,
     pinGate: PinGate,
     pages: RemotePages = RemotePages.fromClasspath(),
+    presence: PhonePresence? = null,
     onError: (Throwable) -> Unit = {},
 ) {
     intercept(ApplicationCallPipeline.Plugins) {
@@ -93,6 +101,8 @@ internal fun Application.remoteModule(
             finish()
             return@intercept
         }
+        // A paired phone is here (its page polls every 2 s while it is open): the TV may ask it to confirm (v1.2).
+        presence?.seen()
         try {
             proceed()
         } catch (e: CancellationException) {
@@ -200,6 +210,12 @@ internal fun Application.remoteModule(
                     call.requireParent(sessions)
                     call.respondJson(controller.unlockVideo())
                 }
+                post("/confirm") {
+                    call.requireParent(sessions)
+                    val req = call.receiveJson<ConfirmRequest>()
+                    requireText(req.id)
+                    call.respondJson(controller.answerConfirmation(req.id, req.approve))
+                }
                 get("/allowlist") {
                     call.requireParent(sessions)
                     val profileId = call.request.queryParameters["profileId"].orEmpty()
@@ -306,8 +322,8 @@ internal fun Application.remoteModule(
                     call.requireParent(sessions)
                     val req = call.receiveJson<ProfileFlagsRequest>()
                     requireText(req.profileId)
-                    if (req.hideShorts == null && req.hideComments == null) throw badRequest()
-                    call.respondJson(controller.setProfileFlags(req.profileId, req.hideShorts, req.hideComments))
+                    if (req.hideShorts == null && req.hideComments == null && req.showSuggestions == null) throw badRequest()
+                    call.respondJson(controller.setProfileFlags(req.profileId, req.hideShorts, req.hideComments, req.showSuggestions))
                 }
                 post("/schedule") {
                     call.requireParent(sessions)
