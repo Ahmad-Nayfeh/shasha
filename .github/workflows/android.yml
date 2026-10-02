@@ -125,9 +125,10 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+    # No file names here: GitHub drops a job output that contains a secret's value, and the key alias
+    # ("shasha") is a secret, so "shasha-<name>-<code>.apk" would arrive empty. The release job rebuilds it.
     outputs:
       signed: ${{ steps.apk.outputs.signed }}
-      apk_name: ${{ steps.apk.outputs.apk_name }}
       version_name: ${{ steps.apk.outputs.version_name }}
       version_code: ${{ steps.prep.outputs.version_code }}
       extractor_version: ${{ steps.prep.outputs.extractor_version }}
@@ -355,16 +356,17 @@ jobs:
     permissions:
       contents: write
     steps:
+      # The APK artifacts only (not the R8 mapping), straight into dist/.
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ needs.build.outputs.apk_name }}
+          pattern: shasha-*.apk
+          merge-multiple: true
           path: dist
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          APK_NAME: ${{ needs.build.outputs.apk_name }}
           VERSION_NAME: ${{ needs.build.outputs.version_name }}
           VERSION_CODE: ${{ needs.build.outputs.version_code }}
           EXTRACTOR_VERSION: ${{ needs.build.outputs.extractor_version }}
@@ -373,11 +375,13 @@ jobs:
           COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
         run: |
           tag="v$VERSION_NAME-$VERSION_CODE"
+          # Named here, the same way the build job named it (see the build job's outputs).
+          APK_NAME="shasha-$VERSION_NAME-$VERSION_CODE.apk"
           apk="dist/$APK_NAME"
           if [ ! -f "$apk" ]; then
-            # An unzipped artifact is saved under the name the server sends: fall back to the only file.
+            # An unzipped artifact is saved under the name the server sends: fall back to the only TV APK.
             files=()
-            while IFS= read -r -d '' f; do files+=("$f"); done < <(find dist -type f -print0)
+            while IFS= read -r -d '' f; do files+=("$f"); done < <(find dist -type f -name 'shasha-[0-9]*.apk' -print0)
             if [ "${#files[@]}" -ne 1 ]; then
               echo "::error::$APK_NAME was not downloaded"
               ls -laR dist
