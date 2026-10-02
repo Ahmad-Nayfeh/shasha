@@ -43,9 +43,10 @@ sealed interface PlayCheck {
     /**
      * [stream] is the extraction the check needed (null when the list item said enough): the player may use it.
      * It may be a low-quality one ([StreamDetails.lowQualityHeight]: the look-up allows it, the rules only need the
-     * video's facts): a player that does not allow low quality extracts for itself instead.
+     * video's facts): a player that does not allow low quality extracts for itself instead. [video]: the facts the
+     * rules were applied to (its title is what the TV's «طلب تشغيل من الجوال» names).
      */
-    data class Allowed(val stream: StreamDetails?) : PlayCheck
+    data class Allowed(val stream: StreamDetails?, val video: VideoItem? = null) : PlayCheck
 
     data class Denied(val reason: DenyReason) : PlayCheck {
         /** The Arabic sentence for the viewer or the phone. */
@@ -148,6 +149,9 @@ class PolicyGate(
 
     fun visiblePlaylistVideos(playlistId: String, videos: List<VideoItem>): List<VideoItem> = filter.value.playlistVideos(playlistId, videos)
 
+    /** Suggestions (VideoSource.related) the current profile may see: none where they are off ([ContentFilter.suggestions]). */
+    fun visibleSuggestions(videos: List<VideoItem>, exclude: Set<String> = emptySet()): List<VideoItem> = filter.value.suggestions(videos, exclude)
+
     fun canOpenChannel(channelId: String): Decision = filter.value.channel(channelId)
 
     fun canOpenPlaylist(playlistId: String, ownerChannelId: String?, title: String? = null): Decision =
@@ -195,7 +199,7 @@ class PolicyGate(
         val lockState = LockState.of(lock.takeUnless { held }, state)
         val decision = if (origin == PlayOrigin.Link) engine.canPlayLink(current, candidate, lockState) else engine.canPlay(current, candidate, lockState)
         return when (decision) {
-            Decision.Allow -> PlayCheck.Allowed(found?.stream)
+            Decision.Allow -> PlayCheck.Allowed(found?.stream, video)
             is Decision.Deny -> PlayCheck.Denied(decision.reason)
         }
     }

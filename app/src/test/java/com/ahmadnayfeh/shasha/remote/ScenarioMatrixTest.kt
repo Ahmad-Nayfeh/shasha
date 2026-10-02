@@ -51,6 +51,7 @@ import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.SessionController
 import com.ahmadnayfeh.shasha.policy.SessionState
 import com.ahmadnayfeh.shasha.policy.SwitchResult
+import com.ahmadnayfeh.shasha.policy.TextNormalizer
 import com.ahmadnayfeh.shasha.policy.UnlockMethod
 import com.ahmadnayfeh.shasha.policy.VideoLookup
 import com.ahmadnayfeh.shasha.policy.clip
@@ -262,6 +263,15 @@ class MxTv(dir: File) : Closeable {
     val screens = MxScreens(this)
     val resources = ApplicationProvider.getApplicationContext<Context>().resources
     val texts = RemoteTexts(resources)
+
+    /** v1.2: videos waiting for the parent's «تأكيد» on the phone (a player asks). */
+    val confirmations = PhoneConfirmations()
+
+    /** v1.2: links from the phone waiting for «قبول» on the TV: rejected by themselves after [PLAY_REQUEST_TIMEOUT_MS] here. */
+    val playRequests = PhonePlayRequests(scope, texts, timeoutMs = PLAY_REQUEST_TIMEOUT_MS)
+
+    /** How the TV's viewer answers a link from the phone ([MxPhone.play]). */
+    @Volatile var tvAnswer = MxTvAnswer.ACCEPT
     val revision: RemoteRevision
     val controller: TvRemoteController
 
@@ -364,7 +374,12 @@ class MxTv(dir: File) : Closeable {
             revision = { revision.value },
             movingTo = { runtime.movingTo.value },
             adultEntryPin = { behavior.policyConfig().adultEntryNeedsPin },
+            confirmations = confirmations,
+            playRequests = playRequests,
         )
+        // AppContainer: a link waiting for a profile the TV has left, or when a video gets locked, is dropped.
+        scope.launch { active.id.collect { playRequests.onProfile(it) } }
+        scope.launch { lock.lock.collect { if (it != null) playRequests.onLocked(texts.deny(DenyReason.LOCKED)) } }
         runtime = RemoteRuntime(
             remoteSettings, controller, MxSilent, findAddress = { address }, phonePin = phonePin,
             pinFailures = { behavior.pinLockout().maxFailures },
@@ -484,10 +499,15 @@ class MxTv(dir: File) : Closeable {
         return p
     }
 
-    suspend fun serious(on: Boolean) {
-        behavior.setSeriousMode(on)
-        withTimeout(5_000) { behavior.values.first { it.seriousMode == on } }
-        if (!on) withTimeout(5_000) { lock.lock.first { it == null } }
+    /** Both «الوضع الجاد» switches (v1.2: one for the children's profiles, one for the adult's). */
+    suspend fun serious(on: Boolean) = serious(children = on, adult = on)
+
+    /** Each «الوضع الجاد» switch on its own; one turned off ends the lock it held. */
+    suspend fun serious(children: Boolean, adult: Boolean) {
+        behavior.setSeriousModeChildren(children)
+        behavior.setSeriousModeAdult(adult)
+        withTimeout(5_000) { behavior.values.first { it.seriousModeChildren == children && it.seriousModeAdult == adult } }
+        withTimeout(5_000) { lock.lock.first { it == null || behavior.current().seriousMode.holds(it) } }
     }
 
     suspend fun adultEntryPin(on: Boolean) {
@@ -505,12 +525,20 @@ class MxTv(dir: File) : Closeable {
         withTimeout(5_000) { behavior.values.first { BehaviorSettings.decode(behaviorStore.data.first()) == it } }
     }
 
+    // The current profile's rules follow the profiles' table a moment later (Room tells its observers on its own
+    // thread): each helper below waits for them, so what comes next is checked against the new list.
+
     suspend fun blockKeyword(word: String = KEYWORD) {
         lists.addKeyword(word)
+        val normalized = TextNormalizer.normalize(word)
+        waitFor("the rules follow the blocked word") {
+            gate.filter.value.profile?.blocklist?.titleKeywords?.any { TextNormalizer.normalize(it) == normalized } == true
+        }
     }
 
     suspend fun blockChannel(id: String = BLOCKED_CHANNEL, name: String = "قناة محظورة") {
         lists.blockChannel(ListedChannel(id, name))
+        waitFor("the rules follow the blocked channel") { gate.filter.value.profile?.blocklist?.hasChannel(id) == true }
     }
 
     suspend fun quota(profileId: String, minutes: Int?) {
@@ -560,11 +588,29 @@ class MxTv(dir: File) : Closeable {
         }
     }
 
+    /** The link waiting on the TV for «قبول» (v1.2), once it shows there. */
+    suspend fun waitingOnTv(): PhonePlayRequest = withTimeout(5_000) { playRequests.pending.first { it != null } }!!
+
     companion object {
         const val MOVE_ANNOUNCE_MS = 400L
 
+        /** The TV's 30 s for «قبول», shorter here. */
+        const val PLAY_REQUEST_TIMEOUT_MS = 3_000L
+
         fun freePort(): Int = ServerSocket(0, 50, MX_LOOPBACK).use { it.localPort }
     }
+}
+
+/** How the TV's viewer answers «طلب تشغيل من الجوال» (v1.2). */
+enum class MxTvAnswer {
+    /** «قبول». */
+    ACCEPT,
+
+    /** «رفض». */
+    REJECT,
+
+    /** Nobody answers: rejected by itself after [MxTv.PLAY_REQUEST_TIMEOUT_MS]. */
+    NONE,
 }
 
 private object MxSilent : Announcer {
@@ -586,6 +632,10 @@ class MxScreens(private val tv: MxTv) : RemoteDisplay {
     @Volatile var answer = ShowResult.SHOWN
 
     @Volatile var beforeOpening: suspend () -> Unit = {}
+
+    /** v1.2: before the TV asks about a link, as TvDisplay: the TV's state only (standby, background, no profile's screens). */
+    override suspend fun prepare(profileId: String): ShowResult =
+        if (answer in listOf(ShowResult.SCREEN_OFF, ShowResult.NOT_IN_FRONT, ShowResult.NO_PROFILE)) answer else ShowResult.SHOWN
 
     override suspend fun show(destination: Screen, profileId: String): ShowResult {
         beforeOpening()
@@ -752,7 +802,53 @@ class MxPhone(private val tv: MxTv, val name: String, var token: String?) {
         return this
     }
 
-    suspend fun play(url: String) = post("/api/play", """{"url":${JsonPrimitive(url)}}""")
+    /** A link as the page sends it (v1.2: the answer is a refusal, or the request waiting on the TV). */
+    suspend fun send(url: String) = post("/api/play", """{"url":${JsonPrimitive(url)}}""")
+
+    /**
+     * A link as the page sends it, the TV's viewer answering as [MxTv.tvAnswer] says («قبول» by default), and what the
+     * page ends up showing, as one answer: ok with the TV's message when it opened, else refused with why (its
+     * "request" is the status's last word on it). A link refused at once comes back as it is: the TV never asked.
+     */
+    suspend fun play(url: String): MxAnswer {
+        val sent = send(url)
+        if (sent.code != 200 || !sent.ok) {
+            if (sent.code == 200) assertWithMessage("a refused link never waits on the TV: $sent").that(sent.obj["request"] ?: JsonNull).isEqualTo(JsonNull)
+            return sent
+        }
+        val request = sent.obj.getValue("request").jsonObject
+        assertWithMessage("$sent").that(request.str("state")).isEqualTo("PENDING")
+        val id = request.str("id")!!
+        val waiting = tv.waitingOnTv()
+        assertWithMessage("the TV asks about the link the phone sent").that(waiting.id).isEqualTo(id)
+        when (tv.tvAnswer) {
+            MxTvAnswer.ACCEPT -> assertThat(tv.playRequests.accept(id)).isTrue()
+            MxTvAnswer.REJECT -> assertThat(tv.playRequests.reject(id)).isTrue()
+            MxTvAnswer.NONE -> Unit
+        }
+        val ended = requestEnd(id)
+        val body = JsonObject(
+            mapOf(
+                "ok" to JsonPrimitive(ended.str("state") == "ACCEPTED"),
+                "message" to JsonPrimitive(ended.str("message").orEmpty()),
+                "request" to ended,
+            ),
+        )
+        return MxAnswer(200, body.toString(), emptyMap())
+    }
+
+    /** The request [id] as the status shows it once it no longer waits (the page polls it). */
+    suspend fun requestEnd(id: String, timeoutMs: Long = 10_000): JsonObject = withTimeout(timeoutMs) {
+        var ended: JsonObject? = null
+        while (ended == null) {
+            ended = playRequest()?.takeIf { it.str("id") == id && it.str("state") != "PENDING" }
+            if (ended == null) delay(20)
+        }
+        ended
+    }
+
+    /** The latest link a phone sent, as the status shows it (null: none). */
+    suspend fun playRequest(): JsonObject? = status()["playRequest"]?.takeUnless { it is JsonNull }?.jsonObject
 
     suspend fun control(action: String, seconds: Int = 0) = post("/api/control", """{"action":"$action","seconds":$seconds}""")
 
@@ -857,7 +953,8 @@ private val MX_PARENT_ROUTES = listOf(
     Triple("GET", "/api/parent/backup", null),
     Triple("POST", "/api/parent/backup", """{"app":"shasha"}"""),
     Triple("GET", "/api/parent/settings", null),
-    Triple("POST", "/api/parent/settings", """{"key":"serious_mode","value":false}"""),
+    Triple("POST", "/api/parent/settings", """{"key":"serious_mode_children","value":false}"""),
+    Triple("POST", "/api/parent/confirm", """{"id":"nothing-waits","approve":true}"""),
     Triple("POST", "/api/parent/settings/reset", """{"group":null}"""),
     Triple("GET", "/api/parent/profiles", null),
     Triple("POST", "/api/parent/profile/create", """{"name":"ليلى","avatar":"star"}"""),
@@ -923,7 +1020,8 @@ object MxRows {
     fun all(): List<MxRow> =
         tokenRows() + sessionRows() + validationRows() + statusRows() + searchRows() + linkRows() + controlRows() + profileRows() +
             loginRows() + quotaRows() + timeRows() + unlockRows() + allowlistRows() + subscriptionRows() + takeoutRows() + backupRows() +
-            settingsRows() + resetRows() + parentProfileRows() + blocklistRows() + tvEventRows() + twoPhoneRows() + networkRows()
+            settingsRows() + resetRows() + parentProfileRows() + blocklistRows() + tvEventRows() + twoPhoneRows() + networkRows() +
+            confirmRows()
 }
 
 // ---- T: the pairing token ----------------------------------------------------------------------------------------------
@@ -1304,6 +1402,20 @@ private fun statusRows() = listOf(
         used(56 * 60)
         assertThat(phone().status().str("sessionState")).isEqualTo("OK")
     },
+    row("ST-18", "v1.2: seriousMode is the switch of the current profile's kind; only that kind's videos lock") {
+        serious(children = true, adult = false)
+        val p = phone()
+        assertThat(p.status().bool("seriousMode")).isFalse()
+        startVideo(OUTSIDE)
+        assertThat(p.status().bool("videoLocked")).isFalse()
+        child()
+        assertThat(p.status().bool("seriousMode")).isTrue()
+        startVideo(INSIDE)
+        assertThat(p.status().bool("videoLocked")).isTrue()
+        // Nothing waits for the phone: confirmation and playRequest are null.
+        assertThat(p.status()["confirmation"]).isEqualTo(JsonNull)
+        assertThat(p.status()["playRequest"]).isEqualTo(JsonNull)
+    },
 )
 
 // ---- SE: search -----------------------------------------------------------------------------------------------------------
@@ -1319,6 +1431,9 @@ private fun searchRows() = listOf(
         blockChannel()
         blockKeyword()
         profiles.update("adult") { it.copy(hideShorts = true) }
+        // The rules follow the profiles' table a moment later (Room tells its observers on its own thread); the last
+        // write seen means the block list's writes before it are seen too.
+        waitFor("the adult's rules follow") { gate.filter.value.profile?.hideShorts == true }
         source.searchResults = listOf(
             source.video(OUTSIDE), source.video(BLOCKED_VIDEO), source.video(KEYWORD_INSIDE), source.video(SHORT_INSIDE),
             ChannelItem(OTHER_CHANNEL, "قناة أخرى", null, 2_000), PlaylistItem(OTHER_PLAYLIST, "قائمة أخرى", "Owner", null, 1),
@@ -1365,6 +1480,8 @@ private suspend fun MxTv.nothingShown() {
     assertThat(screens.opened).isEmpty()
     assertThat(hub.active.value).isNull()
     assertThat(lock.current()).isNull()
+    // v1.2: a refused link never shows «طلب تشغيل من الجوال».
+    assertThat(playRequests.pending.value).isNull()
 }
 
 private fun MxTv.deny(reason: DenyReason) = texts.deny(reason)
@@ -1372,8 +1489,9 @@ private fun MxTv.deny(reason: DenyReason) = texts.deny(reason)
 private fun linkRows() = listOf(
     row("PL-01", "child, an allowlisted video: it opens in the child's screens, as a link") {
         child()
-        phone().play(watch(INSIDE)).isOkWith()
-        assertThat(screens.opened).containsExactly(Screen.Player(INSIDE, fromLink = true) to "kid")
+        phone().play(watch(INSIDE)).isOkWith(texts.get(R.string.remote_play_sent, "Allowed cartoon"))
+        // v1.2: opened only once «قبول» was pressed on the TV; the phone was there, so no «تأكيد» on top.
+        assertThat(screens.opened).containsExactly(Screen.Player(INSIDE, fromLink = true, phoneApproved = true) to "kid")
     },
     row("PL-02", "child, a video outside the allowlist: refused, the TV shows nothing") {
         child()
@@ -1388,7 +1506,7 @@ private fun linkRows() = listOf(
     row("PL-04", "child, allowlisted video + &list=<other playlist>: plays, as a link") {
         child()
         phone().play(watch(INSIDE, list = OTHER_PLAYLIST)).isOkWith()
-        assertThat(screens.screens).containsExactly(Screen.Player(INSIDE, playlistId = OTHER_PLAYLIST, fromLink = true))
+        assertThat(screens.screens).containsExactly(Screen.Player(INSIDE, playlistId = OTHER_PLAYLIST, fromLink = true, phoneApproved = true))
     },
     row("PL-05", "child hiding shorts, a short of an allowlisted channel: refused") {
         child()
@@ -1404,7 +1522,7 @@ private fun linkRows() = listOf(
     row("PL-07", "child, the allowlisted playlist: its first video plays, as the playlist") {
         child()
         phone().play(playlistLink(ALLOWED_PLAYLIST)).isOkWith(texts.get(R.string.remote_play_playlist, "قائمة مسموحة"))
-        assertThat(screens.screens).containsExactly(Screen.Player(PL_VIDEO_1, playlistId = ALLOWED_PLAYLIST, playlistIndex = 0))
+        assertThat(screens.screens).containsExactly(Screen.Player(PL_VIDEO_1, playlistId = ALLOWED_PLAYLIST, playlistIndex = 0, phoneApproved = true))
     },
     row("PL-08", "child, a playlist not allowlisted: refused") {
         child()
@@ -1482,7 +1600,7 @@ private fun linkRows() = listOf(
     },
     row("PL-18", "adult, any video: it plays") {
         phone().play(watch(OUTSIDE)).isOkWith()
-        assertThat(screens.opened).containsExactly(Screen.Player(OUTSIDE, fromLink = true) to "adult")
+        assertThat(screens.opened).containsExactly(Screen.Player(OUTSIDE, fromLink = true, phoneApproved = true) to "adult")
     },
     row("PL-19", "adult, a blocked channel's video and its channel: refused") {
         blockChannel()
@@ -1495,7 +1613,10 @@ private fun linkRows() = listOf(
         p.play(playlistLink(OTHER_PLAYLIST)).isOkWith()
         serious(false)
         p.play(channelLink(OTHER_CHANNEL)).isOkWith()
-        assertThat(screens.screens).containsExactly(Screen.Player(INSIDE, playlistId = OTHER_PLAYLIST, playlistIndex = 0), Screen.Channel(OTHER_CHANNEL)).inOrder()
+        assertThat(screens.screens).containsExactly(
+            Screen.Player(INSIDE, playlistId = OTHER_PLAYLIST, playlistIndex = 0, phoneApproved = true),
+            Screen.Channel(OTHER_CHANNEL),
+        ).inOrder()
     },
     row("PL-21", "adult with a quota, time up: refused") {
         quota("adult", 30)
@@ -1508,8 +1629,8 @@ private fun linkRows() = listOf(
         phone().play(watch(OUTSIDE, t = 95)).isOkWith()
         phone().play(watch(OUTSIDE, t = 0)).isOkWith()
         assertThat(screens.screens).containsExactly(
-            Screen.Player(OUTSIDE, fromLink = true, startSeconds = 95),
-            Screen.Player(OUTSIDE, fromLink = true),
+            Screen.Player(OUTSIDE, fromLink = true, startSeconds = 95, phoneApproved = true),
+            Screen.Player(OUTSIDE, fromLink = true, phoneApproved = true),
         ).inOrder()
     },
     row("PL-23", "not a YouTube link: refused") {
@@ -1578,6 +1699,95 @@ private fun linkRows() = listOf(
         assertThat(lock.unlockByParent()).isTrue()
         p.play(watch(PL_VIDEO_2)).isOkWith()
         assertThat(hub.active.value!!.videoId).isEqualTo(PL_VIDEO_2)
+    },
+    row("PL-33", "v1.2: an allowed link waits for «قبول» on the TV; nothing opens and what plays goes on until then") {
+        serious(false)
+        val playing = startVideo(PL_VIDEO_1)
+        val p = phone()
+        val sent = p.send(watch(OUTSIDE)).isOkWith(texts.get(R.string.remote_play_waiting, "Somewhere else"))
+        val request = sent.obj.getValue("request").jsonObject
+        assertThat(request.str("state")).isEqualTo("PENDING")
+        assertThat(request.int("secondsLeft")).isIn(1..((MxTv.PLAY_REQUEST_TIMEOUT_MS + 999) / 1000).toInt())
+        // The TV asks, for this profile, naming the video; nothing opened, the video on screen untouched.
+        val waiting = waitingOnTv()
+        assertThat(waiting.id).isEqualTo(request.str("id"))
+        assertThat(waiting.profileId).isEqualTo("adult")
+        assertThat(waiting.title).isEqualTo("Somewhere else")
+        assertThat(screens.opened).isEmpty()
+        assertThat(hub.active.value).isSameInstanceAs(playing)
+        assertThat(playing.left).isEqualTo(0)
+        assertThat(playing.commands).isEmpty()
+        assertThat(p.playRequest()!!.str("state")).isEqualTo("PENDING")
+        // «قبول»: it opens now, and the phone reads it.
+        assertThat(playRequests.accept(waiting.id)).isTrue()
+        val ended = p.requestEnd(waiting.id)
+        assertThat(ended.str("state")).isEqualTo("ACCEPTED")
+        assertThat(ended.str("message")).isEqualTo(texts.get(R.string.remote_play_sent, "Somewhere else"))
+        assertThat(screens.screens).containsExactly(Screen.Player(OUTSIDE, fromLink = true, phoneApproved = true))
+        assertThat(hub.active.value!!.videoId).isEqualTo(OUTSIDE)
+    },
+    row("PL-34", "v1.2: «رفض» on the TV: nothing opens, what plays goes on, the phone reads the refusal") {
+        serious(false)
+        val playing = startVideo(PL_VIDEO_1)
+        tvAnswer = MxTvAnswer.REJECT
+        val a = phone().play(watch(OUTSIDE)).isRefusedWith(texts.get(R.string.remote_play_rejected))
+        assertThat(a.obj.getValue("request").jsonObject.str("state")).isEqualTo("REJECTED")
+        assertThat(screens.opened).isEmpty()
+        assertThat(hub.active.value).isSameInstanceAs(playing)
+        assertThat(playing.left).isEqualTo(0)
+        assertThat(playRequests.pending.value).isNull()
+    },
+    row("PL-35", "v1.2: nobody answers on the TV: rejected by itself after the time, nothing opens") {
+        tvAnswer = MxTvAnswer.NONE
+        val a = phone().play(watch(OUTSIDE)).isRefusedWith(texts.get(R.string.remote_play_timed_out))
+        assertThat(a.obj.getValue("request").jsonObject.str("state")).isEqualTo("TIMED_OUT")
+        nothingShown()
+    },
+    row("PL-36", "v1.2: a second link while one waits: the TV asks about the newer one only") {
+        val a = phone("A")
+        val first = a.send(watch(OUTSIDE)).isOkWith().obj.getValue("request").jsonObject.str("id")!!
+        assertThat(waitingOnTv().id).isEqualTo(first)
+        val second = phone("B").send(watch(PL_VIDEO_1)).isOkWith().obj.getValue("request").jsonObject.str("id")!!
+        assertThat(playRequests.pending.value!!.id).isEqualTo(second)
+        // The pages follow the latest request (phone A's page reads that a newer one replaced its own).
+        assertThat(a.playRequest()!!.str("id")).isEqualTo(second)
+        assertThat(playRequests.accept(first)).isFalse()
+        assertThat(playRequests.accept(second)).isTrue()
+        assertThat(a.requestEnd(second).str("state")).isEqualTo("ACCEPTED")
+        assertThat(screens.screens).containsExactly(Screen.Player(PL_VIDEO_1, fromLink = true, phoneApproved = true))
+    },
+    row("PL-37", "v1.2: the TV leaves the profile while a link waits: the question goes, nothing opens, the phone reads why") {
+        val p = phone()
+        val id = p.send(watch(INSIDE)).isOkWith().obj.getValue("request").jsonObject.str("id")!!
+        assertThat(waitingOnTv().profileId).isEqualTo("adult")
+        child()
+        val ended = p.requestEnd(id)
+        assertThat(ended.str("state")).isEqualTo("FAILED")
+        assertThat(ended.str("message")).isEqualTo(texts.get(R.string.remote_profile_changed))
+        assertThat(playRequests.accept(id)).isFalse()
+        nothingShown()
+    },
+    row("PL-38", "v1.2: a video gets locked on the TV while a link waits: the question goes at once, the locked video stays") {
+        val p = phone()
+        val id = p.send(watch(OUTSIDE)).isOkWith().obj.getValue("request").jsonObject.str("id")!!
+        waitingOnTv()
+        val locked = startVideo(PL_VIDEO_1) // started on the TV meanwhile: Serious Mode locks it
+        val ended = p.requestEnd(id)
+        assertThat(ended.str("state")).isEqualTo("FAILED")
+        assertThat(ended.str("message")).isEqualTo(deny(DenyReason.LOCKED))
+        assertThat(playRequests.pending.value).isNull()
+        assertThat(playRequests.accept(id)).isFalse()
+        assertThat(screens.opened).isEmpty()
+        assertThat(hub.active.value).isSameInstanceAs(locked)
+        assertThat(lock.current()!!.videoId).isEqualTo(PL_VIDEO_1)
+    },
+    row("PL-39", "v1.2: adult with the escape off: an accepted link starts locked, no «تأكيد» on top (the phone sent it)") {
+        adultEscape(false)
+        assertThat(engine.needsPhoneConfirmation(current())).isTrue()
+        phone().play(watch(OUTSIDE)).isOkWith()
+        assertThat(screens.screens).containsExactly(Screen.Player(OUTSIDE, fromLink = true, phoneApproved = true))
+        assertThat(lock.current()!!.unlock).isEqualTo(UnlockMethod.EXIT_CHALLENGE)
+        assertThat(confirmations.pending.value).isNull()
     },
 )
 
@@ -1868,6 +2078,18 @@ private fun profileRows() = listOf(
         waitFor("the picker") { root.screen.value == RootScreen.Picker(PickerMode.FROM_CHILD_EXIT) }
         phone().switchTo("kid2", MX_PIN).isOkWith(texts.get(R.string.remote_profile_switched, "ريم"))
         waitFor("the other child's screens open") { root.screen.value == RootScreen.Browse && current().id == "kid2" }
+    },
+    row("PR-21", "v1.2: the children's switch off: a child's video does not stop a switch; the adult's locked one does") {
+        serious(children = false, adult = true)
+        child()
+        startVideo(INSIDE)
+        assertThat(lock.current()).isNull()
+        phone().switchTo("adult", MX_PIN).isOkWith()
+        assertThat(current().id).isEqualTo("adult")
+        lockedVideo(OUTSIDE)
+        assertThat(phone().switchTo("kid").isNotAccepted().message).isEqualTo(texts.get(R.string.remote_switch_locked))
+        assertThat(current().id).isEqualTo("adult")
+        assertThat(lock.current()!!.videoId).isEqualTo(OUTSIDE)
     },
 )
 
@@ -2191,6 +2413,25 @@ private fun unlockRows() = listOf(
         assertThat(s.str("sessionState")).isEqualTo("TIME_UP")
         assertThat(s.bool("videoLocked")).isFalse()
     },
+    row("UV-07", "v1.2: the adult's switch off leaves a child's lock; the children's switch off ends it, no surrender") {
+        child()
+        lockedVideo(INSIDE)
+        serious(children = true, adult = false)
+        assertThat(lock.current()!!.videoId).isEqualTo(INSIDE)
+        assertThat(phone().status().bool("videoLocked")).isTrue()
+        serious(children = false, adult = false)
+        waitFor("the child's lock ends") { lock.current() == null }
+        assertThat(usage.surrenders("kid", 0)).isEmpty()
+        assertThat(phone().status().bool("videoLocked")).isFalse()
+    },
+    row("UV-08", "v1.2: the children's switch off leaves the adult's lock; the phone still ends it (a surrender)") {
+        lockedVideo(OUTSIDE)
+        serious(children = false, adult = true)
+        assertThat(lock.current()!!.videoId).isEqualTo(OUTSIDE)
+        phone().loggedIn().post("/api/parent/unlock-video").isOkWith(texts.get(R.string.remote_video_unlocked_adult))
+        assertThat(lock.current()).isNull()
+        assertThat(usage.surrenders("adult", 0)).hasSize(1)
+    },
 )
 
 // ---- AL: a child's allowlist ---------------------------------------------------------------------------------------------
@@ -2384,11 +2625,13 @@ private fun backupRows() = listOf(
         val p = phone().loggedIn()
         val exported = p.get("/api/parent/backup").body
         profiles.update("kid") { it.copy(name = "تغيّر") }
-        behavior.setSeriousMode(false)
+        behavior.setSeriousModeChildren(false)
+        behavior.setSeriousModeAdult(false)
         val before = p.status().long("rev")
         p.call("POST", "/api/parent/backup", exported.toByteArray()).isOkWith()
         assertThat(profiles.get("kid")!!.name).isEqualTo("سارة")
-        assertThat(behavior.current().seriousMode).isTrue()
+        assertThat(behavior.current().seriousModeChildren).isTrue()
+        assertThat(behavior.current().seriousModeAdult).isTrue()
         waitFor("rev moves") { p.status().long("rev") != before }
     },
     row("BK-03", "a restore under a locked video: refused, nothing replaced") {
@@ -2470,19 +2713,51 @@ private fun json(value: Any?): String = when (value) {
 }
 
 private val settingCases = listOf(
-    SettingCase("SET-10", "serious_mode", "true", "false", listOf("\"yes\"", "1"),
-        prepare = { lockedVideo(OUTSIDE) },
-        stored = { behavior.current().seriousMode.toString() },
+    SettingCase("SET-10", "serious_mode_children", "true", "false", listOf("\"yes\"", "1"),
+        prepare = {
+            child()
+            lockedVideo(INSIDE)
+        },
+        stored = { behavior.current().seriousModeChildren.toString() },
         after = { phone ->
-            // Off: the lock that held a video ends at once, no surrender; nothing locks any more.
+            // Off: the child's lock ends at once, no surrender; no child's video locks any more. The adult's still do.
+            waitFor("the lock ends") { lock.current() == null }
+            assertThat(usage.surrenders("kid", 0)).isEmpty()
+            assertThat(phone.status().bool("seriousMode")).isFalse()
+            startVideo(INSIDE2)
+            assertThat(lock.current()).isNull()
+            tvSwitch("adult")
+            assertThat(phone.status().bool("seriousMode")).isTrue()
+            startVideo(OUTSIDE)
+            assertThat(lock.current()!!.videoId).isEqualTo(OUTSIDE)
+        }),
+    SettingCase("SET-10b", "serious_mode_adult", "true", "false", listOf("\"no\"", "0"),
+        prepare = { lockedVideo(OUTSIDE) },
+        stored = { behavior.current().seriousModeAdult.toString() },
+        after = { phone ->
+            // Off: the adult's lock ends at once, no surrender; no adult video locks any more. A child's still do.
             waitFor("the lock ends") { lock.current() == null }
             assertThat(usage.surrenders("adult", 0)).isEmpty()
             assertThat(phone.status().bool("seriousMode")).isFalse()
+            assertThat(engine.needsPhoneConfirmation(current())).isFalse()
             startVideo(PL_VIDEO_1)
             assertThat(lock.current()).isNull()
+            child()
+            assertThat(phone.status().bool("seriousMode")).isTrue()
+            startVideo(INSIDE)
+            assertThat(lock.current()!!.unlock).isEqualTo(UnlockMethod.PARENT_PIN)
+            // The adult's way out is not offered while the adult's switch is off.
+            assertThat(phone.settingsPage().setting("adult_escape").getValue("visibleWhen").jsonObject.keys).containsExactly("serious_mode_adult")
         }),
     SettingCase("SET-11", "adult_escape", "true", "false", listOf("1", "\"no\""), stored = { behavior.current().adultEscape.toString() },
-        after = { assertThat(engine.config().escape).isNull() }),
+        after = { phone ->
+            // Off from the phone (a paired phone by definition): no hold escape; the phone is the adult's only way out,
+            // so every adult video now waits for its «تأكيد» (a child's never does: the PIN on the TV ends it).
+            assertThat(engine.config().escape).isNull()
+            assertThat(engine.needsPhoneConfirmation(current())).isTrue()
+            assertThat(engine.needsPhoneConfirmation(profiles.get("kid")!!)).isFalse()
+            assertThat(phone.settingsPage().setting("adult_escape").str("warning")).isEqualTo(texts.get(R.string.serious_escape_off_note))
+        }),
     SettingCase("SET-12", "escape_hold_seconds", "10", "20", listOf("7", "\"20\"", "20.5"), stored = { behavior.current().escapeHoldSeconds.toString() },
         after = { assertThat(engine.config().escape!!.holdMillis).isEqualTo(20_000L) }),
     SettingCase("SET-13", "phrase_mode", "\"RANDOM\"", "\"CUSTOM\"", listOf("\"OTHER\"", "1"),
@@ -2620,7 +2895,7 @@ private fun settingsRows(): List<MxRow> = listOf(
     row("SET-05", "a wrong JSON type: refused, never a server error") {
         val p = phone().loggedIn()
         p.setting("seek_step_seconds", "\"30\"").isRefusedWith()
-        p.setting("serious_mode", "1").isRefusedWith()
+        p.setting("serious_mode_children", "1").isRefusedWith()
         p.setting("extra_minutes", "15").isRefusedWith()
         assertThat(behavior.current()).isEqualTo(com.ahmadnayfeh.shasha.data.Behavior.DEFAULT)
     },
@@ -2713,7 +2988,8 @@ private fun resetRows() = listOf(
     },
     row("RS-05", "the global reset: every setting back, nothing else touched") {
         val p = phone().loggedIn()
-        behavior.setSeriousMode(false)
+        behavior.setSeriousModeChildren(false)
+        behavior.setSeriousModeAdult(false)
         behavior.setAdultEntryPin(false)
         behavior.setNumber(BehaviorKeys.SEEK_STEP_SECONDS, 30)
         behavior.setExtraMinutes(listOf(10, 20))
@@ -2736,7 +3012,7 @@ private fun resetRows() = listOf(
         serious(false)
         startVideo(OUTSIDE)
         phone().loggedIn().post("/api/parent/settings/reset", """{"group":null}""").isOkWith()
-        waitFor("Serious Mode back on") { behavior.values.value.seriousMode }
+        waitFor("Serious Mode back on") { behavior.values.value.let { it.seriousModeChildren && it.seriousModeAdult } }
         assertThat(lock.current()).isNull()
         startVideo(PL_VIDEO_1)
         assertThat(lock.current()!!.videoId).isEqualTo(PL_VIDEO_1)
@@ -3055,6 +3331,30 @@ private fun tvEventRows() = listOf(
         p.switchTo("adult", MX_PIN).isOkWith()
         assertThat(current().id).isEqualTo("adult")
     },
+    row("TV-17", "v1.2 finding: the parent PIN on the TV ends a child's lock, never the adult's; only the adult can need the phone") {
+        child()
+        lockedVideo(INSIDE)
+        // BACK's PIN pad on the child's locked video.
+        assertThat(lock.unlockWithPin(MX_PIN)).isEqualTo(com.ahmadnayfeh.shasha.lock.PinUnlock.Unlocked)
+        assertThat(lock.current()).isNull()
+        assertThat(engine.tvWayOut(current())).isEqualTo(UnlockMethod.PARENT_PIN)
+        assertThat(engine.needsPhoneConfirmation(current())).isFalse()
+        // The TV's picker with the PIN ends it too.
+        lockedVideo(INSIDE2)
+        tvSwitch("adult")
+        assertThat(lock.current()).isNull()
+        // The adult's lock does not open with the PIN: the escape (while on) or the phone.
+        lockedVideo(OUTSIDE)
+        assertThat(lock.unlockWithPin(MX_PIN)).isEqualTo(com.ahmadnayfeh.shasha.lock.PinUnlock.NotWithPin)
+        assertThat(lock.current()!!.videoId).isEqualTo(OUTSIDE)
+        assertThat(engine.tvWayOut(current())).isEqualTo(UnlockMethod.EXIT_CHALLENGE)
+        adultEscape(false)
+        assertThat(engine.tvWayOut(current())).isNull()
+        assertThat(engine.needsPhoneConfirmation(current())).isTrue()
+        // The adult's switch off: nothing locks, nothing to confirm.
+        serious(children = true, adult = false)
+        assertThat(engine.needsPhoneConfirmation(current())).isFalse()
+    },
 )
 
 // ---- P2: two phones ------------------------------------------------------------------------------------------------------------
@@ -3263,6 +3563,67 @@ private fun networkRows() = listOf(
     },
 )
 
+// ---- CF: «تأكيد» from the phone (v1.2) ----------------------------------------------------------------------------------------
+
+/** As the player asks when only the phone could end the video early ([PhoneConfirmations.ask]): its answer, later. */
+private fun MxTv.playerAsks(videoId: String = OUTSIDE, title: String = "Somewhere else") =
+    scope.async { confirmations.ask("adult", videoId, title) }
+
+/** The id of the «تأكيد» the status shows, once it does. */
+private suspend fun MxTv.confirmationOn(phone: MxPhone): String {
+    var id: String? = null
+    waitFor("the status shows the «تأكيد»") {
+        id = phone.status()["confirmation"]?.takeUnless { it is JsonNull }?.jsonObject?.str("id")
+        id != null
+    }
+    return id!!
+}
+
+/** The parent's «تأكيد» ([approve]) or «رفض» from this phone. */
+private suspend fun MxPhone.confirm(id: String, approve: Boolean) = post("/api/parent/confirm", """{"id":"$id","approve":$approve}""")
+
+private fun confirmRows() = listOf(
+    row("CF-01", "a video waits for «تأكيد»: every page sees it; the answer needs the parent section; «تأكيد» starts it") {
+        adultEscape(false)
+        val asked = playerAsks()
+        val p = phone()
+        val id = confirmationOn(p)
+        val c = p.status().getValue("confirmation").jsonObject
+        assertThat(c.str("title")).isEqualTo("Somewhere else")
+        assertThat(c.int("secondsLeft")).isIn(110..120)
+        // Without the parent section: refused, nothing answered.
+        p.confirm(id, true).isError(401, "parent_session")
+        assertThat(asked.isActive).isTrue()
+        p.loggedIn().confirm(id, true).isOkWith(texts.get(R.string.remote_confirm_done, "Somewhere else"))
+        assertThat(asked.await()).isEqualTo(ConfirmAnswer.CONFIRMED)
+        assertThat(p.status()["confirmation"]).isEqualTo(JsonNull)
+    },
+    row("CF-02", "«رفض» on the phone: the video does not start") {
+        val asked = playerAsks()
+        val p = phone().loggedIn()
+        val id = confirmationOn(p)
+        p.confirm(id, false).isOkWith(texts.get(R.string.remote_confirm_refused, "Somewhere else"))
+        assertThat(asked.await()).isEqualTo(ConfirmAnswer.REFUSED)
+        assertThat(p.status()["confirmation"]).isEqualTo(JsonNull)
+    },
+    row("CF-03", "an answer for what no longer waits: answered by another phone, cancelled on the TV, unknown") {
+        val asked = playerAsks()
+        val a = phone("A").loggedIn()
+        val b = phone("B").loggedIn()
+        val id = confirmationOn(a)
+        a.confirm(id, true).isOkWith()
+        b.confirm(id, false).isRefusedWith(texts.get(R.string.remote_confirm_gone))
+        assertThat(asked.await()).isEqualTo(ConfirmAnswer.CONFIRMED)
+        // «إلغاء» on the TV (or the player closed): withdrawn at once.
+        val again = playerAsks()
+        val second = confirmationOn(a)
+        again.cancel()
+        waitFor("withdrawn") { a.status()["confirmation"] is JsonNull }
+        a.confirm(second, true).isRefusedWith(texts.get(R.string.remote_confirm_gone))
+        a.confirm("made-up-id", true).isRefusedWith(texts.get(R.string.remote_confirm_gone))
+    },
+)
+
 // ======================================================================================================================
 // The phone page against the same TV, for the browser checks of the matrix (UI rows): not a test by itself.
 // ======================================================================================================================
@@ -3294,6 +3655,10 @@ class ScenarioMatrixPageServer {
         }
     }
 
+    /** The «تأكيد» a player asked of the phone (`ask`), if any. */
+    private var asked: kotlinx.coroutines.Deferred<ConfirmAnswer>? = null
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun serve(tv: MxTv, dir: File) {
         listOf("stop", "ready", "cmd", "cmd.run", "cmd.out").forEach { File(dir, it).delete() }
         tv.source.searchResults = listOf(tv.source.video(OUTSIDE), tv.source.video(PL_VIDEO_1), tv.source.video(LIVE))
@@ -3333,7 +3698,28 @@ class ScenarioMatrixPageServer {
                             }
                             "play" -> { tv.startVideo(args[1], live = args.getOrNull(2) == "live"); "ok" }
                             "release" -> { tv.releasePlayer(); "ok" }
-                            "serious" -> { tv.serious(args[1] == "on"); "ok" }
+                            // `serious on|off [kids|adult]` (v1.2: one switch per kind; without a kind, both).
+                            "serious" -> {
+                                val on = args[1] == "on"
+                                val now = tv.behavior.current()
+                                tv.serious(
+                                    children = if (args.getOrNull(2) == "adult") now.seriousModeChildren else on,
+                                    adult = if (args.getOrNull(2) == "kids") now.seriousModeAdult else on,
+                                )
+                                "ok"
+                            }
+                            "escape" -> { tv.adultEscape(args[1] == "on"); "ok" }
+                            // v1.2: the link the phone sent, waiting on the TV; «قبول» / «رفض» there.
+                            "waiting" -> tv.playRequests.pending.value?.title ?: "none"
+                            "accept" -> tv.playRequests.pending.value?.let { tv.playRequests.accept(it.id).toString() } ?: "none"
+                            "reject" -> tv.playRequests.pending.value?.let { tv.playRequests.reject(it.id).toString() } ?: "none"
+                            // v1.2: a player asks the phone's «تأكيد» for a video (`ask <videoId>`); `asked`: its answer so far.
+                            "ask" -> {
+                                val video = tv.source.video(args[1])
+                                asked = tv.scope.async { tv.confirmations.ask(tv.current().id, video.videoId, video.title) }
+                                "ok"
+                            }
+                            "asked" -> asked?.let { if (it.isCompleted) it.getCompleted().name else "waiting" } ?: "none"
                             "aep" -> { tv.adultEntryPin(args[1] == "on"); "ok" }
                             "extra" -> {
                                 val minutes = args[1].split(',').map { it.toInt() }

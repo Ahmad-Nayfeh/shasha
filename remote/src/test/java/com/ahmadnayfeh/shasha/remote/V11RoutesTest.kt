@@ -24,7 +24,7 @@ class V11RoutesTest {
         assertThat(page.status).isEqualTo(HttpStatusCode.OK)
         assertThat(page.json().getValue("groups").jsonArray.single().jsonObject.str("id")).isEqualTo("serious")
 
-        val change = client.call("POST", "/api/parent/settings", """{"key":"serious_mode","value":false}""", parent = s)
+        val change = client.call("POST", "/api/parent/settings", """{"key":"serious_mode_children","value":false}""", parent = s)
         assertThat(change.status).isEqualTo(HttpStatusCode.OK)
         assertThat(change.json().str("ok")).isEqualTo("true")
         assertThat(client.call("POST", "/api/parent/settings", """{"key":"extra_minutes","value":[15,30]}""", parent = s).status).isEqualTo(HttpStatusCode.OK)
@@ -32,7 +32,7 @@ class V11RoutesTest {
         assertThat(client.call("POST", "/api/parent/settings/reset", """{"group":null}""", parent = s).status).isEqualTo(HttpStatusCode.OK)
         assertThat(client.call("POST", "/api/parent/settings/reset", "{}", parent = s).status).isEqualTo(HttpStatusCode.OK)
         assertThat(h.controller.calls.filter { it != "parentLogin(1234)" }).containsExactly(
-            "settings", "changeSetting(serious_mode,false)", "changeSetting(extra_minutes,[15,30])",
+            "settings", "changeSetting(serious_mode_children,false)", "changeSetting(extra_minutes,[15,30])",
             "resetSettings(pin)", "resetSettings(null)", "resetSettings(null)",
         ).inOrder()
     }
@@ -41,9 +41,9 @@ class V11RoutesTest {
     fun settings_theBaseValueReachesTheController_nullMeansNone() = remoteTest { h ->
         val s = session()
         client.call("POST", "/api/parent/settings", """{"key":"extra_minutes","value":[15,30],"base":[15,30,60]}""", parent = s)
-        client.call("POST", "/api/parent/settings", """{"key":"serious_mode","value":false,"base":null}""", parent = s)
+        client.call("POST", "/api/parent/settings", """{"key":"serious_mode_children","value":false,"base":null}""", parent = s)
         assertThat(h.controller.calls.filter { it.startsWith("changeSetting") }).containsExactly(
-            "changeSetting(extra_minutes,[15,30],base=[15,30,60])", "changeSetting(serious_mode,false)",
+            "changeSetting(extra_minutes,[15,30],base=[15,30,60])", "changeSetting(serious_mode_children,false)",
         ).inOrder()
     }
 
@@ -61,7 +61,7 @@ class V11RoutesTest {
             """{"key":"","value":true}""",
             """{"key":"${"k".repeat(65)}","value":true}""",
             """{"value":true}""",
-            """{"key":"serious_mode"}""",
+            """{"key":"serious_mode_children"}""",
             "not json",
         )
         for (body in bad) assertThat(client.call("POST", "/api/parent/settings", body, parent = s).status).isEqualTo(HttpStatusCode.BadRequest)
@@ -74,6 +74,7 @@ class V11RoutesTest {
         val s = session()
         assertThat(client.call("GET", "/api/parent/profiles", parent = s).status).isEqualTo(HttpStatusCode.OK)
         assertThat(client.call("POST", "/api/parent/profile/flags", """{"profileId":"c1","hideShorts":false}""", parent = s).status).isEqualTo(HttpStatusCode.OK)
+        assertThat(client.call("POST", "/api/parent/profile/flags", """{"profileId":"c1","showSuggestions":true}""", parent = s).status).isEqualTo(HttpStatusCode.OK)
         assertThat(client.call("POST", "/api/parent/profile/flags", """{"profileId":"c1"}""", parent = s).status).isEqualTo(HttpStatusCode.BadRequest)
         assertThat(client.call("POST", "/api/parent/schedule", """{"profileId":"c1","fromMinute":420,"untilMinute":0}""", parent = s).status).isEqualTo(HttpStatusCode.OK)
         assertThat(client.call("POST", "/api/parent/schedule", """{"profileId":"c1","fromMinute":null,"untilMinute":null}""", parent = s).status).isEqualTo(HttpStatusCode.OK)
@@ -86,7 +87,7 @@ class V11RoutesTest {
             """{"profileId":"","fromMinute":60,"untilMinute":120}""",
         )) assertThat(client.call("POST", "/api/parent/schedule", body, parent = s).status).isEqualTo(HttpStatusCode.BadRequest)
         assertThat(h.controller.calls.filter { it.startsWith("set") }).containsExactly(
-            "setProfileFlags(c1,false,null)", "setSchedule(c1,420,0)", "setSchedule(c1,null,null)",
+            "setProfileFlags(c1,false,null,null)", "setProfileFlags(c1,null,null,true)", "setSchedule(c1,420,0)", "setSchedule(c1,null,null)",
         ).inOrder()
     }
 

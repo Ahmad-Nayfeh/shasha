@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- v1.2: «الوضع الجاد» is two switches, one per kind of profile (both on by default). -->
+    <string name="serious_children">الوضع الجاد لملفات الأطفال</string>
+    <string name="serious_children_body">فيديو الطفل يُشاهَد حتى نهايته، ويخرج منه برمز الوالدين على التلفاز أو من قسم الأب في الجوال. عند الإيقاف يخرج الطفل بزر «رجوع».</string>
+    <string name="serious_children_off_note">متوقف لملفات الأطفال: زر «رجوع» يُخرج الطفل من أي فيديو.</string>
+    <string name="serious_adult">الوضع الجاد لملف الكبار</string>
+    <string name="serious_adult_body">فيديو الكبير يُشاهَد حتى نهايته، ويخرج منه بالطريقة المسموحة أدناه أو من قسم الأب في الجوال. عند الإيقاف يخرج بزر «رجوع».</string>
+    <string name="serious_adult_off_note">متوقف لملف الكبار: زر «رجوع» يُخرج الكبير من أي فيديو.</string>
+    <!-- Turning the adult's escape off needs a paired phone: it is then the only way out. -->
+    <string name="serious_escape_needs_phone">لا يوجد جوال مقترن، فبقي الخروج من الشاشة مفعّلاً: بدونه لا يبقى ما يُنهي فيديو الكبير قبل نهايته. اربط الجوال من الإعدادات ← التحكم من الجوال أولاً.</string>
+    <string name="serious_escape_off_note">الخروج من الشاشة متوقف: يُطلب تأكيد كل فيديو للكبار من الجوال قبل أن يبدأ.</string>
+
+    <!-- v1.2: a video that only the phone could end early waits for «تأكيد» on the phone before it starts. -->
+    <string name="confirm_phone_title">لتشغيل هذا الفيديو في الوضع الجاد، أكّد من الجوال</string>
+    <string name="confirm_phone_body">افتح صفحة «شاشة» في الجوال واضغط «تأكيد». الخروج من الشاشة متوقف، فلا يُنهى هذا الفيديو قبل نهايته إلا من قسم الأب في الجوال.</string>
+    <!-- %1$s: the time left, e.g. 1:45. -->
+    <string name="confirm_phone_waiting">بانتظار التأكيد من الجوال: يُلغى بعد &#x2066;%1$s&#x2069;</string>
+    <string name="confirm_no_phone">لا يوجد جوال متصل؛ اربط الجوال من الإعدادات ← التحكم من الجوال، أو فعّل طريقة الخروج من الشاشة</string>
+    <string name="confirm_no_phone_body">يصل الطلب إلى الجوال حين تكون صفحة «شاشة» مفتوحة فيه.</string>
+    <string name="confirm_pair_phone">ربط الجوال</string>
+    <string name="confirm_refused">رُفض تشغيل الفيديو من الجوال.</string>
+    <string name="confirm_timed_out">لم يُؤكَّد الفيديو من الجوال خلال دقيقتين، فلم يُشغَّل.</string>
+
+    <!-- v1.2: a link from the phone waits on the TV for «قبول»; what plays now goes on meanwhile. -->
+    <string name="cast_request_label">طلب تشغيل من الجوال:</string>
+    <string name="cast_request_body">يستمر ما يُعرض الآن حتى تقبل.</string>
+    <string name="cast_accept">قبول</string>
+    <string name="cast_reject">رفض</string>
+    <!-- %1$s: counted seconds after «بعد», e.g. «30 ثانية». -->
+    <string name="cast_auto_reject">يُرفض وحده بعد %1$s</string>
+
+    <!-- The phone's answers (its page is Arabic). -->
+    <string name="remote_play_waiting">بانتظار القبول على الشاشة: «&#x2068;%1$s&#x2069;»</string>
+    <string name="remote_play_rejected">رُفض الطلب على الشاشة.</string>
+    <string name="remote_play_timed_out">لم يُقبل الطلب على الشاشة خلال 30 ثانية، فأُلغي.</string>
+    <string name="remote_play_replaced">حلّ محلّه طلب أحدث على الشاشة.</string>
+    <string name="remote_confirm_done">أُكّد: يبدأ «&#x2068;%1$s&#x2069;» على الشاشة الآن.</string>
+    <string name="remote_confirm_refused">رُفض: لن يُشغَّل «&#x2068;%1$s&#x2069;».</string>
+    <string name="remote_confirm_gone">لم يعد هذا الطلب ينتظر على الشاشة.</string>
+</resources>

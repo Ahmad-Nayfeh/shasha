@@ -72,6 +72,41 @@ object UiFixtures {
     val history: List<VideoUi> = listOf(videos[0], videos[4], videos[5], videos[7], videos[2], videos[10])
         .mapIndexed { i, v -> VideoUi(v.copy(publishedAtEpochMs = null), NOW - (i * i + 1) * 3 * HOUR, TimeKind.WATCHED) }
 
+    /** السجل's red bars: every watched video has its progress (one finished, one barely started); the live stream none. */
+    val historyWatched: Map<String, Float> = mapOf(
+        videos[0].videoId to 0.35f,
+        videos[4].videoId to 1f,
+        videos[5].videoId to 0.62f,
+        videos[7].videoId to 0.04f,
+        videos[10].videoId to 0.88f,
+    )
+
+    /** A Short as the sources give it: flagged, behind a "/shorts/" link. */
+    fun short(n: Int, title: String, channel: String, seconds: Long, agoMs: Long) =
+        video(n, title, channel, seconds, agoMs).let { it.copy(isShortForm = true, url = "https://www.youtube.com/shorts/${it.videoId}") }
+
+    /** The home's «Shorts» row: the subscribed channels' newest Shorts. */
+    val shorts: List<VideoUi> = listOf(
+        short(60, "حرف الضاد بخط الثلث في 30 ثانية", "فنون الخط", 31, 3 * HOUR),
+        short(61, "Rocket launch in slow motion", "Space Lab", 58, 7 * HOUR),
+        short(62, "سرّ القطايف المقرمشة", "مطبخ سلمى", 44, 20 * HOUR),
+        short(63, "One equation, three proofs", "Math Corner", 59, DAY + 2 * HOUR),
+        short(64, "هدف الأسبوع من زاوية أخرى", "رياضة اليوم", 22, 2 * DAY),
+        short(65, "Why the sky is blue (in 50 seconds)", "Curious Minds", 50, 3 * DAY),
+        short(66, "باب الحارة: أقدم دكان في دمشق", "رحّالة", 37, 4 * DAY),
+    ).map { VideoUi(it, it.publishedAtEpochMs) }
+
+    /** «مقترحة لك»: suggested beside the last videos watched (other channels too), one of them a Short. */
+    val suggested: List<VideoUi> = listOf(
+        video(70, "أعماق المحيط الهادئ: رحلة الغواصة إلى خندق ماريانا", "عالم البحار", 1340, 6 * DAY),
+        video(71, "The Hidden Beauty of Euler's Identity", "Numberphile Talks", 912, 12 * DAY),
+        short(72, "قنديل البحر الذي لا يموت", "عالم البحار", 46, 2 * DAY),
+        video(73, "تعلّم خط الديواني: الحروف المنفردة", "مدرسة الخط", 1530, 20 * DAY),
+        video(74, "Building a Log Cabin with Hand Tools Only", "Woodland Craft", 3125, 30 * DAY),
+        video(75, "كنافة بالقشطة: الوصفة الأصلية", "مطبخ سلمى", 680, 9 * DAY),
+        video(76, "How Do Whales Sleep?", "Curious Minds", 455, 45 * DAY),
+    ).map { VideoUi(it, it.publishedAtEpochMs) }
+
     val calligraphyChannel = ChannelItem("UCfixturecalligraphy0001", "فنون الخط", avatarUrl = "fake://avatar/khat", subscriberCount = 1_250_000)
     private val lessonsChannel = ChannelItem("UCfixturelessons00000002", "Arabic Calligraphy Lessons", avatarUrl = null, subscriberCount = 38_400)
 

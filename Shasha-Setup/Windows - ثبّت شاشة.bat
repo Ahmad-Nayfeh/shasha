@@ -139,6 +139,10 @@ if errorlevel 1 goto install_failed
 rem Old adb versions exit 0 even when the install fails: require the "Success" line too.
 findstr /l /b /c:"Success" "%TMPOUT%" >nul || goto install_failed
 echo(    Success
+rem Uninstalling from the TV's Settings can leave the app removed for the current user only: after an update it
+rem then stays invisible, with the error Activity class does not exist. install-existing brings it back; on a
+rem normal install it changes nothing. Its output and errors are ignored.
+"%ADB%" -s %SERIAL% shell cmd package install-existing %PKG% <nul >nul 2>&1
 goto grant
 
 :install_failed

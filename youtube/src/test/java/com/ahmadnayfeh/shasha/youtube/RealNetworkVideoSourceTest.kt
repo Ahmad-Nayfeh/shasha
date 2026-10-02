@@ -57,6 +57,32 @@ class RealNetworkVideoSourceTest {
     }
 
     @Test
+    fun relatedVideos_fromTheExtraction_andFromAWatchPage() = runBlocking {
+        // Extracted first (the player): its related items come with it.
+        source.stream("dQw4w9WgXcQ")
+        val afterExtraction = source.related("dQw4w9WgXcQ")
+        // Never extracted in this run (the home's «مقترحة لك» for an older video): its watch page only.
+        val fromPage = source.related("9bZkp7q19f0")
+        report(
+            "related",
+            "after extraction ${afterExtraction.size} (${afterExtraction.count { it.channelId != null }} with a channel), " +
+                "watch page ${fromPage.size}: ${fromPage.take(2).map { it.title }}",
+        )
+        assertThat(afterExtraction).isNotEmpty()
+        assertThat(fromPage).isNotEmpty()
+        assertThat(afterExtraction.map { it.videoId }).doesNotContain("dQw4w9WgXcQ")
+        assertThat(afterExtraction.count { it.channelId != null }).isAtLeast(afterExtraction.size / 2)
+    }
+
+    @Test
+    fun channelShortsTab() = runBlocking {
+        val shorts = source.channelShorts("UCX6OQ3DkcsbYNE6H8uQQuVA") // MrBeast: posts shorts all the time
+        report("channel shorts", "${shorts.size} shorts: ${shorts.take(2).map { it.videoId }}")
+        assertThat(shorts).isNotEmpty()
+        assertThat(shorts.all { it.isShortForm }).isTrue()
+    }
+
+    @Test
     fun suggestionsInArabicAndEnglish() = runBlocking {
         val arabic = source.suggestions("قرآن", "ar")
         val english = source.suggestions("minecraft", "en")

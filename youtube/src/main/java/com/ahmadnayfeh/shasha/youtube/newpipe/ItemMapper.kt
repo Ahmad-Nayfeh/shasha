@@ -1,6 +1,7 @@
 package com.ahmadnayfeh.shasha.youtube.newpipe
 
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.youtube.MAX_RELATED
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.SourceItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
@@ -57,6 +58,19 @@ internal object ItemMapper {
             publishedAtIsApproximate = !exactDates,
         )
     }
+
+    /**
+     * A watch page's related items as the app shows them: videos only (mixes, playlists and channels are dropped), never
+     * [selfId] itself, no repeats, YouTube's order, at most [MAX_RELATED].
+     */
+    fun relatedVideos(items: List<InfoItem>?, selfId: String): List<VideoItem> =
+        items.orEmpty().asSequence()
+            .filterIsInstance<StreamInfoItem>()
+            .mapNotNull { toVideo(it) }
+            .filter { it.videoId != selfId }
+            .distinctBy { it.videoId }
+            .take(MAX_RELATED)
+            .toList()
 
     fun toChannel(item: ChannelInfoItem): ChannelItem? {
         val channelId = YouTubeLinkParser.channelIdFromUrl(item.url) ?: return null

@@ -1,4 +1,6 @@
 > **Status (v1.1):** this is the full expected-behaviour matrix written by the independent review. Part of it is automated in `app/src/test/java/com/ahmadnayfeh/shasha/remote/ScenarioMatrixTest.kt` and `remote/src/test/java/com/ahmadnayfeh/shasha/remote/ScenarioMatrixRemoteTest.kt`, plus `PhoneLogicChecklistTest`. The review was paused before every row was automated; finishing it is on the v1.2 list.
+>
+> **v1.2 (owner decisions D1, D11, D12):** Serious Mode is two switches; a video only the phone could end early waits for the phone's «تأكيد»; a link from the phone waits for «قبول» on the TV. Rows changed: D1, ST-01/11/12, the PL note, PR-11, UV-05, SET-10/11, RS-05/06, TV-09/10, UI-13; rows added: ST-18, PL-33…PL-39, PR-21, UV-07/08, BK-09, TV-17, CF-01…CF-11, UI-22…UI-24. Automated: the server rows in `ScenarioMatrixTest` (ST-18, PL-33…39, PR-21, UV-07/08, SET-10/10b/11, TV-17, CF-01…03); CF-04…11 in `PlayerPhoneConfirmTest`, `BehaviorSettingsTest`, `SettingsBehaviorPanesTest`, `TvRemoteControllerV12Test`; BK-09 in `BackupManagerTest`. UI-22…24 are for the browser checklist.
 
 # Shasha: phone ↔ TV scenario matrix (EXPECTED behaviour)
 
@@ -12,7 +14,7 @@ are taken from the code.
 
 | # | Decision |
 |---|---|
-| D1 | «الوضع الجاد» (Serious Mode, formerly the video lock) is ON by default and can be switched off in Settings (TV and phone). While on, a video that starts cannot be left before it ends: a child leaves with the parent PIN on the TV or the parent's unlock from the phone; the adult leaves with a long press on BACK (10 s by default) plus a typed phrase on the TV (the "escape", which can be switched off) or the parent's unlock from the phone (recorded as a surrender). Off: no video is ever locked, and switching it off ends the current lock at once (no surrender). Switching it on does not lock the video already playing; the next video locks. |
+| D1 | «الوضع الجاد» (Serious Mode, formerly the video lock) is two independent switches since v1.2, «الوضع الجاد لملفات الأطفال» and «الوضع الجاد لملف الكبار», both ON by default (v1.1's single switch becomes both, in the TV's file and in an old backup); each can be switched off in Settings (TV and phone). A video locks only when the switch of the current profile's kind is on. While locked, a video cannot be left before it ends: a child leaves with the parent PIN on the TV (the PIN pad on BACK, or the TV's picker with the PIN) or the parent's unlock from the phone; the adult leaves with a long press on BACK (10 s by default) plus a typed phrase on the TV (the "escape", which can be switched off) or the parent's unlock from the phone (recorded as a surrender); the PIN never ends the adult's lock. Switching a kind's switch off ends the current lock of that kind at once (no surrender), never the other kind's. Switching it on does not lock the video already playing; the next video locks. |
 | D2 | `adultEntryPin` (default ON): entering the adult profile asks for the parent PIN, on the TV and from the phone. OFF: no PIN to enter the adult profile, but leaving a CHILD profile still needs the PIN, and Settings (TV) / the parent section (phone) always need the PIN. Nothing may tell the user a PIN will be asked when it will not. |
 | D3 | Every TV setting is also editable from the phone's parent section, with the TV's own choices, validation and defaults: a value the TV would not offer is refused (nothing stored, Arabic reason). Per-section reset and a global reset; the global reset touches settings only (never profiles, the PIN, the lists, the subscriptions, the history). |
 | D4 | Two separate PIN counts: the TV's limiter (every TV PIN pad) and the phone's (PhonePin, persisted, behind the server's in-memory PinGate). Wrong PINs on the TV never lock the phone out and vice versa. Both follow the PIN brake settings («المحاولات قبل الإيقاف», «مدة الإيقاف الأولى»). |
@@ -22,6 +24,8 @@ are taken from the code.
 | D8 | (phase 4) A natural end releases the lock (a child's playlist moves the lock to the next video); a video skipped to its end stays locked. |
 | D9 | (final phase) The guard keeps «شاشة» in front while a video is locked, time is up, outside the schedule, or a child profile is current (until the parent lets it out with «خروج» + PIN). |
 | D10 | Content rules come before time rules (a forbidden item never shows "time up"), for every link kind; a locked TV refuses every new link before anything is looked up. |
+| D11 | (v1.2) A video that would start locked while nothing on the TV can end it early (the adult profile with its switch on and the escape off; a child always has the PIN on the TV) must first be confirmed from the phone. The TV shows «لتشغيل هذا الفيديو في الوضع الجاد، أكّد من الجوال» with the title, a waiting indicator and «إلغاء»; every page shows «تأكيد تشغيل: <title>» with «تأكيد» / «رفض» (parent session; the PIN is asked when there is none). «تأكيد» starts it; «رفض», 2 minutes or «إلغاء» on the TV: nothing plays. With no phone paired, or none polled in ~60 s, the TV says «لا يوجد جوال متصل؛ اربط الجوال من الإعدادات ← التحكم من الجوال، أو فعّل طريقة الخروج من الشاشة» with «إلغاء» and «ربط الجوال». Turning the escape off on the TV needs a paired phone (otherwise refused with the reason; the setting's text warns of it). A video the phone sent and the TV accepted (D12) asks nothing more. |
+| D12 | (v1.2) A link sent from the phone never plays by itself. The TV's rules come first (a refused link never shows a question). Then the TV shows «طلب تشغيل من الجوال: <title>» over whatever is on screen (nothing paused or left), focus on «قبول», «رفض» (BACK too), rejected by itself after 30 s; one at a time (a newer link replaces it). Only «قبول» opens it, after the rules are asked again (a lock: the existing reason). The phone follows it live through the status (PENDING, ACCEPTED, REJECTED, TIMED_OUT, FAILED). A waiting link is dropped when the TV leaves its profile or a video gets locked. |
 
 ## 1. Dimensions and their values
 
@@ -30,15 +34,17 @@ are taken from the code.
 | Profile on the TV | adult `A` (owner «الكبار», id `adult`, no limits unless stated), child `C` («سارة», id `kid`: 60 min/day, 07:00–22:00, hides shorts, allowlist = one channel + one playlist), second child `C2` when needed |
 | Session state | `OK` (time left or no limit), `WARN` (≤ warning minutes left), `UP` (time up), `OUT` (outside schedule) |
 | Playback | `idle`, `playing`, `paused`, `live`, `ended` (end card), `covered` (a PIN pad over the video), `locked` (Serious Mode lock: child = PIN, adult = escape) |
-| Settings | `SM` on/off (Serious Mode), `ESC` on/off (adult escape), `AEP` on/off (adultEntryPin) |
+| Settings | `SM` on/off (Serious Mode; v1.2: `SMk` the children's switch, `SMa` the adult's, `SM` alone = both), `ESC` on/off (adult escape), `AEP` on/off (adultEntryPin) |
+| TV's answer to a phone link (v1.2) | `accept` («قبول»), `reject` («رفض»), `none` (30 s pass) |
 | Pairing token | `ok`, `missing`, `wrong`, `rotated` (regenerated on the TV) |
 | Parent session | `none`, `valid`, `unknown`, `expired` (idle 30 min, or expired mid-action), `revoked` (PIN change, restore, token change) |
 | PIN counts | phone `fresh` / `k wrong` / `locked`; PinGate `open` / `blocked`; TV `fresh` / `locked` |
 | Phones | `1P`, `2P` |
 | Network / server | `up`, phone `offline`, TV `offline`, server `restart` (process), server `stop/start` (network change), port `move` |
 
-Defaults for every row unless the row says otherwise: token ok, network up, 1P, SM on, ESC on, AEP on, parent session
-valid on parent routes, all PIN counts fresh, playback idle, session OK, clock 12:00 local (Asia/Riyadh).
+Defaults for every row unless the row says otherwise: token ok, network up, 1P, both SM switches on, ESC on, AEP on, parent
+session valid on parent routes, all PIN counts fresh, playback idle, session OK, clock 12:00 local (Asia/Riyadh), the TV
+accepts a phone link («قبول»).
 
 Notation: `200 ok` = HTTP 200 `{ok:true, message}`; `200 ¬ok` = HTTP 200 `{ok:false, message}` (a refusal by the TV's
 rules, shown as is); `403 rejected` / `401 pairing` / `401|403 parent_session` / `401 wrong_pin` / `429 locked_out` /
@@ -53,14 +59,14 @@ rules, shown as is); `403 rejected` / `401 pairing` / `401|403 parent_session` /
 | R3 | The parent session is checked before the body is read and before the controller runs. | Session rows (PS) once, run over every parent route; business rows assume a valid session. |
 | R4 | Body validation (400/413/415) happens before the controller and does not read TV state. | Validation rows (V) once per route. |
 | R5 | `AEP` only affects switching INTO an adult profile (phone and TV picker) and the texts about it. | AEP crossed only with PR rows and the TV picker. |
-| R6 | `ESC` is a TV-only way out; no phone route reads it. | ESC crossed only with UV/SET rows. |
+| R6 | `ESC` is a TV-only way out; the phone meets it only through D11 (the «تأكيد» it then asks for). | ESC crossed only with UV/SET/CF rows. |
 | R7 | The server cannot tell phones apart (one token). A second phone only matters for: separate parent sessions, the shared PIN count, concurrent writes (base check, grants), concurrent controls, change propagation (`rev`), following a port move. | Two-phone table (P2); every 1P row holds for each phone. |
-| R8 | `SM off` ⇒ no video is ever `locked`. | Locked rows exist only with SM on; SM off is crossed with "a video starts" and "STOP". |
+| R8 | A kind's `SM` off ⇒ no video of that kind is ever `locked`. | Locked rows exist only with that kind's SM on; SM off is crossed with "a video starts", "STOP" and the other kind's lock (UV-07/08). |
 | R9 | `WARN` changes only the status and the banner; every action allowed in `OK` is allowed in `WARN`. | WARN rows only for status, UI and time grants. |
 | R10 | `UP` and `OUT` refuse the same things; they differ in the reason text and in the grant (quota vs schedule). | Both listed for status, links (one kind each), grants and UI; merged elsewhere. |
 | R11 | `playing` ≡ `paused` for every action but PLAY/PAUSE/TOGGLE and `isPlaying`. | Separate only in CT and ST. |
 | R12 | Profile kind does not change controls, lists, subscriptions, Takeout, backup or settings (household data); it changes status, search, links, switches and time. | Kind crossed only where it matters; one child row proves control parity. |
-| R13 | The TV display (screen off, background, picker, profile changed, no answer) is consulted only after the rules allowed the link. | Display rows only with an allowed link. |
+| R13 | The TV display (screen off, background, picker, profile changed, no answer) is consulted only after the rules allowed the link; the TV asks «قبول» only then (D12). | Display rows only with an allowed link. |
 | R14 | PIN-count states are read only by the PIN-taking routes (`/api/parent/login`, `/api/profile` with a PIN). | Crossed only with LG and PR rows. |
 | R15 | A locked TV refuses every link before the content or the time is looked at (D10). | Lock × kind × verdict collapses to one row per profile kind. |
 
@@ -124,7 +130,7 @@ Enumeration: profile {A, C} × session {OK unlimited, OK limited, WARN, UP, OUT}
 
 | ID | Preconditions | TV (expected) | `GET /api/status` (expected fields) | Phone UI |
 |---|---|---|---|---|
-| ST-01 | A, no limits, idle | adult home | profileId `adult`, profileKind ADULT, canSearch true, nowPlaying null, timeLeftMinutes null, sessionState OK, videoLocked false, seriousMode true | who-chip «الكبار»; «لا شيء يُعرض الآن على الشاشة.»; today card «بلا حد يومي» |
+| ST-01 | A, no limits, idle | adult home | profileId `adult`, profileKind ADULT, canSearch true, nowPlaying null, timeLeftMinutes null, sessionState OK, videoLocked false, seriousMode true (the current kind's switch), confirmation null, playRequest null | who-chip «الكبار»; «لا شيء يُعرض الآن على الشاشة.»; today card «بلا حد يومي» |
 | ST-02 | C, 0 used, 12:00 | child home | CHILD, canSearch false, timeLeftMinutes 60, OK | search tab shows a lock; «متبقٍ اليوم: 60 دقيقة» |
 | ST-03 | C, 56 min used | quiet warning banner shown once | WARNING, timeLeftMinutes 4 | banner «الوقت يوشك على الانتهاء» + «بقي 4 دقائق…» |
 | ST-04 | C, 30 s left | — | timeLeftMinutes 1 (rounded up; never 0 while time is left), WARNING | — |
@@ -134,13 +140,14 @@ Enumeration: profile {A, C} × session {OK unlimited, OK limited, WARN, UP, OUT}
 | ST-08 | A playing | player | nowPlaying {videoId, title, channelName, positionSeconds, durationSeconds, isPlaying true, isLive false} | now-playing card, pause icon |
 | ST-09 | A paused | player paused | isPlaying false | play icon |
 | ST-10 | A live | live player | durationSeconds null, isLive true | «مباشر»; ±10 disabled |
-| ST-11 | SM on, a video started (A or C) | video locked | videoLocked true | lock line under the controls; STOP shown disabled |
-| ST-12 | SM off, a video started | not locked | seriousMode false, videoLocked false | STOP enabled |
+| ST-11 | the current kind's SM on, a video started (A or C) | video locked | videoLocked true | lock line under the controls; STOP shown disabled |
+| ST-12 | the current kind's SM off, a video started | not locked | seriousMode false, videoLocked false | STOP enabled |
 | ST-13 | C, locked video, then UP | time-up screen over the released player; the lock kept | TIME_UP, nowPlaying null, videoLocked true | time-up banner; no player controls |
 | ST-14 | nothing changes | — | `rev` equal on consecutive polls | parent pages are not reloaded |
 | ST-15 | a setting / a profile / a list / a subscription / the current profile changes (phone, other phone or TV) | — | `rev` differs on the next poll | parent pages read again |
 | ST-16 | a port move announced | server moves in a moment | movingTo = new port (null otherwise) | "moving" overlay, page follows |
 | ST-17 | warning_minutes = 0, C with 4 min left | no warning banner | OK (never WARNING) | no warning banner |
+| ST-18 | (v1.2) SMk on, SMa off; A then C, a video started in each | A's not locked, C's locked | A: seriousMode false, videoLocked false; C: seriousMode true, videoLocked true | — |
 
 ### SE: search (`POST /api/search`)
 Enumeration: profile {A, C} × session/lock {OK, UP, OUT, locked} × YouTube {results, none, failure, slow}. Pruned: a child is refused before anything else (one row); for the adult the session and the lock do not change the server's answer because a search opens nothing on the TV (UP ≡ OUT ≡ locked → one row, the page dims the results).
@@ -155,7 +162,9 @@ Enumeration: profile {A, C} × session/lock {OK, UP, OUT, locked} × YouTube {re
 | SE-06 | A, the TV switches to C while the search runs | search | — | the answer is filtered by the CHILD's rules (outside-allowlist items gone) | — |
 
 ### PL: play a link (`POST /api/play`)
-Enumeration: profile {A, C} × session {OK≡WARN, UP, OUT} × lock {none, locked} × link {video, video+`list=`, video+`t=`, playlist, channel, not YouTube} × verdict {allowed, not in allowlist, blocked channel, blocked keyword, shorts hidden, YouTube failure} × TV display {shown, screen off, background, picker, profile changed, no answer} × SM {on, off}. Pruned by R10, R13, R15: locked → 1 row per kind of profile; display failures only for an allowed link (one row each, the path does not depend on the link kind); SM only decides whether the started video locks.
+Enumeration: profile {A, C} × session {OK≡WARN, UP, OUT} × lock {none, locked} × link {video, video+`list=`, video+`t=`, playlist, channel, not YouTube} × verdict {allowed, not in allowlist, blocked channel, blocked keyword, shorts hidden, YouTube failure} × TV display {shown, screen off, background, picker, profile changed, no answer} × SM {on, off} × the TV's answer {accept, reject, none}. Pruned by R10, R13, R15: locked → 1 row per kind of profile; display failures only for an allowed link (one row each, the path does not depend on the link kind); SM only decides whether the started video locks; the TV's answer only matters for an allowed link (PL-33…PL-39).
+
+v1.2 (D12): for every row below whose expected answer is `200 ok`, the immediate answer is `200 {ok:true, message «بانتظار القبول على الشاشة: «title»», request {id, state PENDING, secondsLeft}}`; nothing opens yet and the TV shows «طلب تشغيل من الجوال». The row's TV effect and `ok` text are what follows «قبول» (the request's ACCEPTED state and message in the status). PL-28 and PL-29 happen after «قبول» (the request ends FAILED with that text). Every `200 ¬ok` row is answered at once (no `request`) and the TV never asks. A video opened this way asks no «تأكيد» (D11).
 
 | ID | Preconditions | Link | TV (expected) | HTTP / JSON | Phone UI |
 |---|---|---|---|---|---|
@@ -191,6 +200,13 @@ Enumeration: profile {A, C} × session {OK≡WARN, UP, OUT} × lock {none, locke
 | PL-30 | SM on | allowed video (A, then C) | it starts locked (A: escape; C: PIN) | 200 ok; next status videoLocked true | STOP shown disabled, lock line |
 | PL-31 | SM off | allowed video | not locked | 200 ok; videoLocked false | STOP enabled |
 | PL-32 | an UNLOCKED video plays (SM off, or after the parent's unlock) | another allowed video | it replaces the first | 200 ok | — |
+| PL-33 | (v1.2) an unlocked video plays | an allowed video | «طلب تشغيل من الجوال: «title»» over the video; nothing opens, the video goes on untouched; «قبول» (focused) opens the link | 200 ok + request PENDING (secondsLeft ≤ 30); status playRequest PENDING, then ACCEPTED «يُعرض الآن على الشاشة: «title»» | sheet «بانتظار القبول على الشاشة» with the seconds left, then «قُبل على الشاشة» |
+| PL-34 | (v1.2) an unlocked video plays | an allowed video, the TV answers «رفض» | nothing opens; the video goes on | status playRequest REJECTED «رُفض الطلب على الشاشة.» | «رُفض على الشاشة» |
+| PL-35 | (v1.2) — | an allowed video, nobody answers for 30 s | the question goes by itself; nothing opens | status playRequest TIMED_OUT «لم يُقبل الطلب على الشاشة خلال 30 ثانية، فأُلغي.» | «انتهت المهلة دون رد» |
+| PL-36 | (v1.2) a link waits on the TV | a second link (this phone or another) | the TV asks about the newer one only; the first can no longer be accepted | status playRequest = the newer one | the first page's sheet: «حلّ محلّه طلب أحدث على الشاشة.» |
+| PL-37 | (v1.2) a link checked for A waits | the TV switches to C | the question goes; nothing opens | status playRequest FAILED «تغيّر الملف على الشاشة…» | «لم يُفتح على الشاشة» |
+| PL-38 | (v1.2) a link waits | a video starts on the TV and locks | the question goes at once; the locked video stays | status playRequest FAILED with the Serious Mode reason | «لم يُفتح على الشاشة» |
+| PL-39 | (v1.2) A, SMa on, ESC off | an allowed video, accepted | it starts locked (only the phone ends it), with no «تأكيد» on top (the phone sent it) | 200 ok; status confirmation null | — |
 
 ### CT: playback controls (`POST /api/control`)
 Enumeration: playback {idle, playing, paused, live, ended, covered, locked, locked+skipped-to-end, locked+UP} × action {PLAY, PAUSE, TOGGLE, SEEK_BY ±, STOP} × SM. Pruned: profile kind (R12; CT-10 runs for both), WARN ≡ OK (R9), SM off has no locked states (R8).
@@ -235,6 +251,7 @@ Enumeration: from {A, C} × to {same, A, C, C2, unknown} × PIN {none, wrong, ri
 | PR-16 | C in UP or OUT | switch to A, right PIN | A current, no time-up screen (A has no limits) | 200 ok | — |
 | PR-17 | A, C's time is up | switch to C | C current with its «انتهى الوقت» screen | 200 ok; status TIME_UP | time-up banner |
 | PR-18 | the TV shows «من يشاهد الآن؟» (start or relock), C current | phone switches to C (current) / to C2 with the PIN | the TV opens that child's screens / C2's | 200 ok | — |
+| PR-21 | (v1.2) SMk off, SMa on; C's video plays (not locked), then A's video locked | switch to A with the PIN; then switch to C | C → A switches; A → C refused, the profile and the lock unchanged | 200 ok; then 200 ¬ok «فيديو في الوضع الجاد قيد المشاهدة…» | — |
 
 ### LG: parent login and logout
 | ID | Preconditions | Action | TV (expected) | HTTP / JSON | Phone UI |
@@ -292,8 +309,10 @@ Pruned: playback (a quota edit never touches the lock), SM/ESC/AEP, kind of the 
 | UV-02 | C's video locked | lock gone, NO surrender; BACK now leaves the video; guard's lock reason gone | 200 ok «أُنهي الوضع الجاد لهذا الفيديو. يمكن الخروج منه الآن.»; status videoLocked false | lock panel «إنهاء قفل هذا الفيديو» → gone; STOP enabled |
 | UV-03 | A's video locked | surrender stored FIRST, then the lock ends | 200 ok «…وسُجّل الخروج قبل نهايته استسلاماً في الإحصائيات.»; stats surrenders +1 | — |
 | UV-04 | A's video locked, the surrender cannot be stored | lock stays | 200 ¬ok «تعذّر حفظ إنهاء الوضع الجاد…» | — |
-| UV-05 | A's video locked, ESC off | lock ends (the phone is the only early way out) | 200 ok | — |
+| UV-05 | A's video locked, ESC off | lock ends (the phone is the only early way out; that is why D11 asks it first) | 200 ok | — |
 | UV-06 | C's video locked + UP | lock ends; time-up screen stays | 200 ok; status TIME_UP, videoLocked false | — |
+| UV-07 | (v1.2) C's video locked; SMa switched off, then SMk | SMa off: C's lock stays; SMk off: it ends, no surrender | videoLocked true, then false | — |
+| UV-08 | (v1.2) A's video locked; SMk switched off | A's lock stays; the phone's unlock ends it (a surrender) | 200 ok «…وسُجّل الخروج قبل نهايته استسلاماً…» | — |
 
 ### AL: a child's allowlist (`/api/parent/allowlist*`)
 | ID | Preconditions | Action | TV (expected) | HTTP / JSON | Phone UI |
@@ -341,6 +360,7 @@ Pruned: playback (a quota edit never touches the lock), SM/ESC/AEP, kind of the 
 | BK-06 | a backup whose PIN hash differs | `POST` it | PIN replaced; every parent session revoked | 200 ok; the next parent call → 403 parent_session |
 | BK-07 | the server stops in the middle of a restore | `POST` | the restore still finishes completely | the answer may be lost |
 | BK-08 | a backup without the current child | `POST` it | the TV falls back to the owner profile | 200 ok; status ADULT |
+| BK-09 | (v1.2) a v1.1 backup (format 2) whose single `serious_mode` is off | `POST` it | both switches off (the old switch sets both); a backup written now is format 3 | 200 ok |
 
 ### SET: every TV setting from the phone (`GET/POST /api/parent/settings`)
 Common rows:
@@ -357,8 +377,9 @@ Per setting (each: valid → saved and the TV behaves accordingly; invalid → S
 
 | ID | Key | TV choices / validation | Default | Valid change → TV effect | Invalid (refused) |
 |---|---|---|---|---|---|
-| SET-10 | serious_mode | switch | on | off → the current lock ends at once (no surrender), no later video locks; status seriousMode false | `"yes"` |
-| SET-11 | adult_escape | switch (shown while SM on) | on | off → no hold escape for the adult; the phone's unlock still works | `1` |
+| SET-10 | serious_mode_children | switch | on | off → a child's current lock ends at once (no surrender), no later child's video locks; the adult's still lock; status seriousMode false in C | `"yes"`, `1` |
+| SET-10b | serious_mode_adult | switch | on | off → the adult's current lock ends at once (no surrender), no later adult video locks (nothing asks the phone's «تأكيد»); a child's still lock; the escape settings are hidden | `"no"`, `0` |
+| SET-11 | adult_escape | switch (shown while SMa on); a warning: every adult video then needs the phone's «تأكيد» | on | off → no hold escape for the adult; the phone's unlock still works; every adult video asks the phone's «تأكيد» (D11). From the phone it is always allowed (a paired phone asks); on the TV it needs a paired phone (CF-10) | `1` |
 | SET-12 | escape_hold_seconds | 3, 5, 10, 15, 20, 30 (shown while SM and ESC on) | 10 | 20 → the TV hold is 20 s | 7 |
 | SET-13 | phrase_mode | RANDOM, CUSTOM (CUSTOM only once a custom phrase exists) | RANDOM | CUSTOM after a custom phrase → that phrase is asked | CUSTOM with no custom phrase → 200 ¬ok «اكتب عبارتك الخاصة أدناه…»; the choice shown disabled with that reason |
 | SET-14 | phrases | 1–30 phrases of keyboard letters, ≤ 30 chars each | the 10 built-in | 2 new phrases → asked at random | `[]`, a Latin phrase → ¬ok «لم تُحفظ القائمة…» |
@@ -393,8 +414,8 @@ Per setting (each: valid → saved and the TV behaves accordingly; invalid → S
 | RS-02 | — | `playback` / `pin` / `sponsorblock` / `quality` | only that group back | 200 ok |
 | RS-03 | port 8800 | `remote` | port 8765; the server moves; pages follow | 200 ok + reconnectPort 8765 |
 | RS-04 | — | `nope` | nothing | 200 ¬ok «هذا الإعداد غير موجود…» |
-| RS-05 | many settings changed, a quota, an allowlist entry, a subscription, a keyword block | null (global) | EVERY setting back to its default (behavior, SponsorBlock, quality, port), Serious Mode on, adultEntryPin on; profiles, PIN, lists, subscriptions, history untouched | 200 ok «…» + page |
-| RS-06 | SM off, an unlocked video playing | global | Serious Mode on; the playing video is NOT retro-locked; the next one locks | 200 ok |
+| RS-05 | many settings changed (both SM switches off), a quota, an allowlist entry, a subscription, a keyword block | null (global) | EVERY setting back to its default (behavior, SponsorBlock, quality, port), both Serious Mode switches on, adultEntryPin on; profiles, PIN, lists, subscriptions, history untouched | 200 ok «…» + page |
+| RS-06 | both SM switches off, an unlocked video playing | global | both switches on; the playing video is NOT retro-locked; the next one locks | 200 ok |
 
 ### PF: profiles from the phone (`/api/parent/profiles`, `/profile/*`, `/schedule`)
 | ID | Preconditions | Action | TV (expected) | HTTP / JSON |
@@ -437,14 +458,31 @@ Per setting (each: valid → saved and the TV behaves accordingly; invalid → S
 | TV-06 | C's single video locked | it ends by itself | lock released | status videoLocked false; STOP allowed | — |
 | TV-07 | C's playlist video locked | it ends, the next follows | the lock moves to the next video | videoLocked stays true | — |
 | TV-08 | A's video locked | the adult holds BACK 10 s and types the phrase | lock ends; surrender recorded | videoLocked false; stats +1 | — |
-| TV-09 | A's video locked, ESC off | the adult holds BACK | nothing (no escape) | videoLocked true | — |
-| TV-10 | a video locked | Serious Mode switched off on the TV | lock ends, no surrender | status seriousMode false, videoLocked false; `rev` changes | — |
+| TV-09 | A's video locked, ESC off | the adult holds BACK | nothing (no escape; the video had asked the phone's «تأكيد» before it started, D11) | videoLocked true | — |
+| TV-10 | a video locked | that kind's Serious Mode switched off on the TV (the other kind's switch leaves it: UV-07/08) | lock ends, no surrender | status seriousMode false, videoLocked false; `rev` changes | — |
 | TV-11 | — | the guard (D9) after phone actions: A→C switch / C→A switch with PIN / +15 on C's time-up / unlock of A's lock | enforce: on (child) / off (adult, no lock, no time limit) / still on (child) / off | — | — |
 | TV-12 | the TV changes a setting | — | stored | `rev` changes; a phone change with the old base → refused (SET-04) | settings page re-read |
 | TV-13 | — | the TV regenerates the pairing token | old QR dead | every phone 401 pairing at once; sessions revoked; PIN counts forgotten | fatal overlay |
 | TV-14 | phone parent logged in | the parent PIN changed on the TV | — | parent route → 403 parent_session; login with the new PIN → 200 | PIN sheet |
 | TV-15 | A current, children exist | the TV is out of sight ≥ relock time, then back | «من يشاهد الآن؟» (the adult asks the PIN) | a phone link → 200 ¬ok «اختر الملف على الشاشة أولاً…»; a phone switch to a child opens it (PR-18) | — |
 | TV-16 | a child guessed 5 wrong PINs on the TV | — | the TV's PIN pads locked | phone login and phone switch with the right PIN work (LG-06, PR-14) | — |
+| TV-17 | (v1.2 finding) C's video locked; then A's | the parent PIN on the TV: BACK's PIN pad, or the picker with the PIN | C's lock ends either way; A's never opens with the PIN (only the escape or the phone) | videoLocked false for C, true for A | — |
+
+## 6b. «تأكيد» from the phone (v1.2, D11)
+
+| ID | Preconditions | Event / action | TV (expected) | Phone sees (HTTP) | Phone UI |
+|---|---|---|---|---|---|
+| CF-01 | a video waits for «تأكيد» | `POST /api/parent/confirm {id, approve:true}` without, then with, a parent session | nothing, then the video starts | 401 parent_session; then 200 ok «أُكّد: يبدأ «title» على الشاشة الآن.»; status confirmation {id, title, secondsLeft ≤ 120} until then, null after | UI-22 |
+| CF-02 | a video waits for «تأكيد» | approve false | nothing plays; the player leaves with «رُفض تشغيل الفيديو من الجوال.» | 200 ok «رُفض: لن يُشغَّل «title».» | — |
+| CF-03 | answered by another phone / withdrawn on the TV / an unknown id | an answer | nothing changes | 200 ¬ok «لم يعد هذا الطلب ينتظر على الشاشة.» | — |
+| CF-04 | A, SMa on, ESC off | a video starts on the TV | nothing plays: «لتشغيل هذا الفيديو في الوضع الجاد، أكّد من الجوال» with the title, a waiting indicator with the time left, «إلغاء» focused | status confirmation set | card + sheet |
+| CF-05 | as CF-04, no phone paired or none polled in 60 s | — | «لا يوجد جوال متصل؛ اربط الجوال من الإعدادات ← التحكم من الجوال، أو فعّل طريقة الخروج من الشاشة», «إلغاء» and «ربط الجوال» (the PIN, then the pairing screen); it keeps waiting and turns into CF-04 when a page opens | — | — |
+| CF-06 | CF-04 waiting | «إلغاء» on the TV | the player leaves; the question is withdrawn at once | confirmation null; an answer → CF-03 | card gone |
+| CF-07 | CF-04 waiting | 2 minutes without an answer | nothing plays; «لم يُؤكَّد الفيديو من الجوال خلال دقيقتين، فلم يُشغَّل.» | confirmation null | card gone |
+| CF-08 | C (any), or A with ESC on, or A with SMa off | a video starts | it starts at once, nothing asked (a child's lock ends with the PIN on the TV, TV-17) | confirmation null | — |
+| CF-09 | the lock already holds the video (back from Home, a restart, a locked playlist's next video), or the phone sent it (PL-39) | the player opens | no «تأكيد» | — | — |
+| CF-10 | no paired phone | the TV's Settings turn ESC off | refused: ESC stays on, «لا يوجد جوال مقترن، فبقي الخروج من الشاشة مفعّلاً…»; with a paired phone it turns off and its note says every adult video will ask the phone | — | — |
+| CF-11 | ESC off, a video ended (its lock with it) | «إعادة التشغيل» on the end card | a new start: the player opens afresh and asks again (CF-04) | — | — |
 
 ## 7. Two phones (R7)
 
@@ -493,7 +531,7 @@ Per setting (each: valid → saved and the TV behaves accordingly; invalid → S
 | UI-10 | phone count locked | login button disabled with a countdown «محاولات خاطئة كثيرة. حاول بعد …» |
 | UI-11 | logged in, a video locked | hub card shows «فيديو مقفول بالوضع الجاد» + «إنهاء قفل هذا الفيديو»; tapping it ends the lock (the panel goes away) |
 | UI-12 | logged in, C with limits | hub +N buttons = the extra-minutes setting (+15, +30, +60) + «بقية اليوم»; with extra_minutes [10, 20] → +10, +20; an unlimited profile → explanation, no buttons |
-| UI-13 | logged in, SM off | the escape settings are hidden; the serious summary warns «متوقف…» |
+| UI-13 | logged in, a SM switch off | the adult's off: the escape settings are hidden; the serious summary says which switch is off |
 | UI-14 | logged in, no custom phrase | «عبارتي الخاصة» choice shown disabled with «اكتب عبارتك الخاصة…» |
 | UI-15 | logged in, extra_minutes has 4 values | other chips aria-disabled with «اخترت 4 خيارات، وهو الحد…» |
 | UI-16 | logged in, a section at defaults | its reset button disabled «كلها على وضعها الأصلي» |
@@ -502,6 +540,9 @@ Per setting (each: valid → saved and the TV behaves accordingly; invalid → S
 | UI-19 | server unreachable | offline banner |
 | UI-20 | logged in, AEP off | the PIN section summary warns «ملف الكبار يُفتح دون رمز» |
 | UI-21 | every view above | no horizontal overflow at 390 px |
+| UI-22 | (v1.2) a video waits for «تأكيد» (CF-01) | card «تأكيد تشغيل: <title>» on the screen tab with «تأكيد» / «رفض» and the time left; once as a sheet; without a parent session the PIN sheet comes first; gone once answered or withdrawn |
+| UI-23 | (v1.2) a link sent | the sheet follows it live: «بانتظار القبول على الشاشة» with the seconds, then «قُبل» / «رُفض» / «انتهت المهلة دون رد» / «لم يُفتح على الشاشة»; a refused link «لم يُرسَل إلى الشاشة» at once; a closed sheet's outcome comes as a toast |
+| UI-24 | (v1.2) a link waiting, a newer one sent from another phone | the first page's sheet: «حلّ محلّه طلب أحدث على الشاشة.» |
 
 ## 10. TV settings not mirrored on the phone (pruned on purpose; owner to confirm)
 

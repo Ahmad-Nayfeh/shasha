@@ -16,6 +16,8 @@ import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import com.ahmadnayfeh.shasha.TV_1080P
+import com.ahmadnayfeh.shasha.TV_1080P_EN
+import com.ahmadnayfeh.shasha.data.AppLanguage
 import com.ahmadnayfeh.shasha.search.VoiceError
 import com.ahmadnayfeh.shasha.search.VoiceState
 import com.ahmadnayfeh.shasha.ui.UiFixtures.NOW
@@ -49,11 +51,11 @@ class SearchVoiceScreenshotTest {
      * keeps arrow keys from anything that is not a D-pad device (on the TV the remote's LEFT/DOWN leave it).
      */
     @OptIn(ExperimentalCoilApi::class)
-    private fun snap(name: String, focus: String? = null, content: @Composable () -> Unit) {
+    private fun snap(name: String, focus: String? = null, language: AppLanguage = AppLanguage.ARABIC, content: @Composable () -> Unit) {
         val pictures = AsyncImagePreviewHandler { request -> UiFixtures.fakeThumbnail(request.data.toString()).asImage() }
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true, LocalAsyncImagePreviewHandler provides pictures) {
-                ShashaTheme { MainShell(Tab.SEARCH, {}, remember { Tab.entries.associateWith { androidx.compose.ui.focus.FocusRequester() } }) { content() } }
+                ShashaTheme(language = language) { MainShell(Tab.SEARCH, {}, remember { Tab.entries.associateWith { androidx.compose.ui.focus.FocusRequester() } }) { content() } }
             }
         }
         compose.waitForIdle()
@@ -84,6 +86,13 @@ class SearchVoiceScreenshotTest {
     @Test
     fun idle() = snap("search_idle") {
         Search("", "", SearchAssist(recent = recent))
+    }
+
+    /** English interface (left to right): the microphone's language button reads «AR» / «EN», not «ع». */
+    @Test
+    @Config(sdk = [35], qualifiers = TV_1080P_EN)
+    fun idleEnglish() = snap("search_idle_en", language = AppLanguage.ENGLISH) {
+        Search("", "", SearchAssist(recent = listOf("ocean documentary", "learn programming", "Minecraft", "kapsa")))
     }
 
     @Test

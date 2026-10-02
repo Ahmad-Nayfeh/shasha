@@ -19,6 +19,7 @@ class ProfilesAndFeaturesTest {
         assertThat(p.schedule).isNull()
         assertThat(p.hideShorts).isFalse()
         assertThat(p.hideComments).isFalse()
+        assertThat(p.showSuggestions).isTrue()
         assertThat(p.allowlist).isEqualTo(Allowlist())
         assertThat(p.blocklist).isEqualTo(Blocklist())
         assertThat(p.isAdult).isTrue()
@@ -34,6 +35,7 @@ class ProfilesAndFeaturesTest {
         assertThat(p.schedule).isEqualTo(Schedule(7 * 60, 22 * 60))
         assertThat(p.hideShorts).isTrue()
         assertThat(p.hideComments).isTrue()
+        assertThat(p.showSuggestions).isFalse()
         assertThat(p.allowlist.channels).isEmpty()
         assertThat(p.allowlist.playlists).isEmpty()
         assertThat(p.isChild).isTrue()
@@ -72,8 +74,16 @@ class ProfilesAndFeaturesTest {
                 exitNeedsPin = false,
                 adultExitChallenge = true,
                 channelBrowsing = true,
+                suggestions = true,
             ),
         )
+    }
+
+    @Test
+    fun features_suggestions_followTheProfileSetting() {
+        assertThat(engine.features(adult().copy(showSuggestions = false)).suggestions).isFalse()
+        assertThat(engine.features(child()).suggestions).isFalse()
+        assertThat(engine.features(child().copy(showSuggestions = true)).suggestions).isTrue()
     }
 
     @Test
@@ -106,6 +116,7 @@ class ProfilesAndFeaturesTest {
                 exitNeedsPin = true,
                 adultExitChallenge = false,
                 channelBrowsing = true,
+                suggestions = false,
             ),
         )
     }

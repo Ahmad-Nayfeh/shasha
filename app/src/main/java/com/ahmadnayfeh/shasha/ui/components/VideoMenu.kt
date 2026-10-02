@@ -1,5 +1,10 @@
 package com.ahmadnayfeh.shasha.ui.components
 
+import android.view.KeyEvent.ACTION_DOWN
+import android.view.KeyEvent.ACTION_UP
+import android.view.KeyEvent.KEYCODE_DPAD_CENTER
+import android.view.KeyEvent.KEYCODE_ENTER
+import android.view.KeyEvent.KEYCODE_NUMPAD_ENTER
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -298,13 +304,49 @@ fun CardMenuDialog(title: String, subtitle: String?, items: List<MenuItem>, onDi
 }
 
 /**
+ * The press that opened a menu by being held (OK's long press) is still down when the menu appears: its repeats and its
+ * release reach the menu's focused first row, and a release there is a click (tv-material's surfaces click on the key's
+ * release), so the menu acted on its first row and closed as soon as OK was let go. This swallows that press's leftovers
+ * (OK's repeats and its release) until a fresh press starts (a key down that is no repeat: the menu's own click); any
+ * other key passes. A menu opened by MENU never sees such leftovers: OK's next press is a fresh one.
+ */
+internal class HeldSelectGuard {
+    private var armed = true
+
+    /** True when the key event belongs to the press that opened the menu: it must not reach the menu. */
+    fun swallow(keyCode: Int, action: Int, repeatCount: Int): Boolean {
+        if (!armed || keyCode !in SELECT_KEYS) return false
+        return when (action) {
+            ACTION_DOWN -> if (repeatCount == 0) {
+                armed = false // a fresh press: the menu's own
+                false
+            } else {
+                true // the opening press, still held
+            }
+            ACTION_UP -> {
+                armed = false // its release: the menu stays
+                true
+            }
+            else -> false
+        }
+    }
+
+    private companion object {
+        /** What tv-material's surfaces click with. */
+        val SELECT_KEYS = setOf(KEYCODE_DPAD_CENTER, KEYCODE_ENTER, KEYCODE_NUMPAD_ENTER)
+    }
+}
+
+/**
  * The menus' card: the item's title, a line under it, then the actions. Focus starts on the first. The
  * card stays inside the screen's safe margins: when the actions do not fit (a household with many
- * children), they scroll, following the focus.
+ * children), they scroll, following the focus. The long press that opened it ends without a click
+ * ([HeldSelectGuard]): the menu stays until a row is chosen or BACK closes it.
  */
 @Composable
 fun CardMenuPanel(title: String, subtitle: String?, items: List<MenuItem>, modifier: Modifier = Modifier, emptyHint: String? = null) {
     val first = remember { FocusRequester() }
+    val guard = remember { HeldSelectGuard() }
     LaunchedEffect(Unit) {
         withFrameNanos { }
         runCatching { first.requestFocus() }
@@ -312,6 +354,10 @@ fun CardMenuPanel(title: String, subtitle: String?, items: List<MenuItem>, modif
     val shape = RoundedCornerShape(24.dp)
     Column(
         modifier
+            .onPreviewKeyEvent { event ->
+                val native = event.nativeKeyEvent
+                guard.swallow(native.keyCode, native.action, native.repeatCount)
+            }
             .width(440.dp)
             .heightIn(max = MENU_MAX_HEIGHT)
             .background(ShashaColors.Surface, shape)

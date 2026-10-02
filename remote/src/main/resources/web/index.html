@@ -360,6 +360,9 @@ a.btn{text-decoration:none}
 .banner .t{flex:1;min-width:0}
 .banner .t b{display:block;font-size:15px}
 .banner .t span{display:block;font-size:13px;color:var(--muted);line-height:1.6}
+.confirm{border-color:rgba(255,181,71,.4);background:linear-gradient(180deg,rgba(255,181,71,.12),var(--surface) 70%);animation:pop .3s var(--ease)}
+.confirm h2 b{color:var(--amber)}
+.confirm .left{margin-top:10px;font-size:12.5px;color:var(--muted);text-align:center}
 .lock-card{text-align:center;padding:30px 18px}
 .lock-card .big{width:66px;height:66px;border-radius:21px;display:grid;place-items:center;margin:0 auto 14px;background:var(--amber-soft);color:var(--amber)}
 .lock-card .big svg{width:30px;height:30px}
@@ -500,6 +503,7 @@ details.card[open] .chev{transform:rotate(180deg)}
 
 <main>
   <section class="view" id="view-screen" aria-label="الشاشة">
+    <div id="confirm-box" data-key=""></div>
     <article class="np" id="np">
       <div class="np-bg" aria-hidden="true"><img id="np-bg" alt=""></div>
       <div class="np-in">
@@ -744,6 +748,10 @@ details.card[open] .chev{transform:rotate(180deg)}
     parent: store.get('sessionStorage', 'shasha.parent'),
     P: { settings: null, details: null, block: null, subs: null, stats: null, allow: {}, allowSel: null, at: {} },
     lockUntil: Number(store.get('sessionStorage', 'shasha.lockUntil') || 0),
+    // v1.2: the link this page sent last, while the TV asks «قبول» or «رفض» ({id, state, set, open}).
+    watching: null,
+    // v1.2: the confirmation the sheet already opened for (it opens once by itself).
+    confirmShown: null,
   };
 
   // ---------- toasts & sheets ----------
@@ -970,17 +978,17 @@ details.card[open] .chev{transform:rotate(180deg)}
     clearTimeout(pollTimer);
     if (S.fatal || S.moving || document.hidden) return Promise.resolve();
     if (polling) { pollAgain = true; return polling; }
-    const epoch = S.epoch;
+    const epoch = S.epoch, asked = now();
     polling = (async () => {
       try {
         const st = await api('/api/status', { timeout: 8000 });
-        if (epoch === S.epoch) applyStatus(st); else pollAgain = true;
+        if (epoch === S.epoch) applyStatus(st, asked); else pollAgain = true;
       } catch (e) { statusFailed(e); }
     })().finally(() => {
       polling = null;
       if (S.fatal || S.moving || document.hidden) return;
       if (pollAgain) { pollAgain = false; pollTimer = setTimeout(poll, 0); return; }
-      pollTimer = setTimeout(poll, S.online === false ? Math.min(10000, 2000 * S.failures) : 2000);
+      pollTimer = setTimeout(poll, S.online === false ? Math.min(10000, 2000 * S.failures) : S.watching ? 1000 : 2000);
     });
     return polling;
   }
@@ -999,7 +1007,7 @@ details.card[open] .chev{transform:rotate(180deg)}
   });
   window.addEventListener('pageshow', e => { if (e.persisted) { poll(); loadProfiles(); } });
 
-  function applyStatus(st) {
+  function applyStatus(st, asked) {
     const prev = S.status;
     S.status = st; S.statusAt = now(); S.statusError = null;
     renderConn();
@@ -1014,6 +1022,8 @@ details.card[open] .chev{transform:rotate(180deg)}
     $('#search-lock').hidden = st.canSearch;
     renderNowPlaying();
     renderScreen();
+    renderConfirm();
+    followRequest(st.playRequest, asked);
     renderSearchState();
     renderProfiles();
     renderHubNow();
@@ -1275,12 +1285,79 @@ details.card[open] .chev{transform:rotate(180deg)}
       : st.timeLeftMinutes != null ? 'متبقٍ اليوم: ' + mins(st.timeLeftMinutes) : 'بلا حد يومي';
     $('#today-ico').className = 'ico' + (blocked ? ' red' : st.sessionState === 'WARNING' ? ' amber' : st.profileKind === 'CHILD' ? ' kid' : '');
   }
-  async function play(url, btn) {
+  // A link never opens by itself on the TV (v1.2): the TV's rules first (a refusal shows here and the TV shows nothing),
+  // then «طلب تشغيل من الجوال» waits there for «قبول» or «رفض» (30 s). The sheet follows it live through the status.
+  const REQ_STATE = {
+    SENDING: ['state sending', 'tv', 'جارٍ الإرسال إلى الشاشة…'],
+    PENDING: ['state ask sending', 'tv', 'بانتظار القبول على الشاشة'],
+    ACCEPTED: ['state', 'check', 'قُبل على الشاشة'],
+    REJECTED: ['state bad', 'x', 'رُفض على الشاشة'],
+    TIMED_OUT: ['state bad', 'clock', 'انتهت المهلة دون رد'],
+    FAILED: ['state bad', 'alert', 'لم يُفتح على الشاشة'],
+    REFUSED: ['state bad', 'x', 'لم يُرسَل إلى الشاشة'],
+  };
+  function play(url, btn) {
+    if (btn && btn.classList.contains('busy')) return Promise.resolve(null);
     const why = blockedNow();
-    if (why) { toast(why, 'err'); return null; }
-    const r = await act(() => busy(btn, () => api('/api/play', { json: { url }, timeout: 60000 })));
-    if (r) { showResult(r); if (r.ok) vibrate(15); }
-    return r;
+    if (why) { toast(why, 'err'); return Promise.resolve(null); }
+    let set = null, isOpen = true;
+    openSheet((sheet, close) => {
+      const circle = h('div', { class: REQ_STATE.SENDING[0] }, ic(REQ_STATE.SENDING[1]));
+      const title = h('h3', { text: REQ_STATE.SENDING[2] });
+      const sub = h('p', { class: 's', text: 'لحظة واحدة.' });
+      const ok = h('button', { class: 'btn primary block', type: 'button', onclick: () => close(true), text: 'حسناً' });
+      sheet.append(circle, title, sub, h('div', { class: 'sent-url', text: url }), h('div', { class: 'acts one' }, ok));
+      set = (state, message, secondsLeft) => {
+        const [cls, icon, head] = REQ_STATE[state];
+        circle.className = cls;
+        circle.replaceChildren(ic(icon));
+        title.textContent = head;
+        sub.textContent = isoQuotes(message || '') + (state === 'PENDING' && secondsLeft ? ' (' + secondsLeft + ' ث)' : '');
+      };
+    }).then(() => { isOpen = false; });
+    if (btn) { btn.classList.add('busy'); btn.setAttribute('aria-busy', 'true'); }
+    return act(() => api('/api/play', { json: { url }, timeout: 60000 }))
+      .then(r => {
+        if (!r.ok || !r.request) { set('REFUSED', r.message); vibrate(40); return r; }
+        vibrate(15);
+        S.watching = { id: r.request.id, state: null, set, open: () => isOpen, since: now() };
+        showRequest(r.request);
+        poll();
+        return r;
+      })
+      .catch(e => {
+        if (e.code === 'pairing' || e.code === 'stopped') { closeSheet(true); return null; }
+        set('REFUSED', e.message || OFFLINE);
+        return null;
+      })
+      .finally(() => { if (btn) { btn.classList.remove('busy'); btn.removeAttribute('aria-busy'); } });
+  }
+  // The status's last link (asked for at [asked]) for the one this page follows: its own state; or, when the TV shows
+  // another (a newer link from here or another phone took its place) or none (the TV restarted), how it ended.
+  function followRequest(req, asked) {
+    const w = S.watching;
+    if (!w) return;
+    if (req && req.id === w.id) { showRequest(req); return; }
+    // A status asked for before this page heard back from its send may not know the link yet.
+    if (asked == null || asked < w.since) return;
+    showRequest(req
+      ? { id: w.id, state: 'REJECTED', message: 'حلّ محلّه طلب أحدث على الشاشة.' }
+      : { id: w.id, state: 'FAILED', message: 'لم يعد هذا الطلب ينتظر على الشاشة.' });
+  }
+  // [req]: a state of the link this page sent (the answer to the send, then each status): shown in its sheet, or, once the
+  // sheet was closed, as a toast when the TV answers.
+  function showRequest(req) {
+    const w = S.watching;
+    if (!w || !req || req.id !== w.id) return;
+    const changed = w.state !== req.state;
+    w.state = req.state;
+    w.set(req.state, req.message, req.secondsLeft);
+    if (req.state === 'PENDING') return;
+    S.watching = null;
+    if (changed) {
+      vibrate(req.state === 'ACCEPTED' ? [12, 60, 12] : 40);
+      if (!w.open()) toast(req.message, req.state === 'ACCEPTED' ? 'ok' : 'err');
+    }
   }
   $('#send-form').addEventListener('submit', e => { e.preventDefault(); sendTyped(); });
   async function sendTyped() {
@@ -1311,27 +1388,7 @@ details.card[open] .chev{transform:rotate(180deg)}
 
   // ---------- share → screen ----------
   function autoSend(raw) {
-    const url = normalizeLink(raw);
-    let setState;
-    openSheet((sheet, close) => {
-      const circle = h('div', { class: 'state sending' }, ic('tv'));
-      const title = h('h3', { text: 'جارٍ الإرسال إلى الشاشة…' });
-      const sub = h('p', { class: 's', text: 'لحظة واحدة.' });
-      const btn = h('button', { class: 'btn primary block', type: 'button', onclick: () => close(true), text: 'حسناً' });
-      btn.disabled = true;
-      sheet.append(circle, title, sub, h('div', { class: 'sent-url', text: url }), h('div', { class: 'acts one' }, btn));
-      setState = (ok, message) => {
-        circle.className = 'state ' + (ok ? '' : 'bad');
-        circle.replaceChildren(ic(ok ? 'check' : 'x'));
-        title.textContent = ok ? 'أُرسل إلى الشاشة' : 'لم يُفتح على الشاشة';
-        sub.textContent = isoQuotes(message);
-        btn.disabled = false;
-        vibrate(ok ? [12, 60, 12] : 40);
-      };
-    });
-    act(() => api('/api/play', { json: { url }, timeout: 60000 }))
-      .then(r => setState(r.ok, r.message))
-      .catch(e => { if (e.code !== 'pairing' && e.code !== 'stopped') setState(false, e.message); });
+    play(normalizeLink(raw), null);
   }
   async function confirmShared(raw) {
     const yes = await openSheet((sheet, close) => {
@@ -1342,6 +1399,51 @@ details.card[open] .chev{transform:rotate(180deg)}
           h('button', { class: 'btn primary', type: 'button', onclick: () => close(true), text: 'أرسل' })));
     });
     if (yes === true) autoSend(raw);
+  }
+
+  // ---------- a video the TV starts only once the parent confirms it here (v1.2) ----------
+  // In Serious Mode, when nothing on the TV can end the video early (the adult's escape is off), only this section can:
+  // the TV waits for «تأكيد» before the video starts. A card on the screen tab, and once by itself as a sheet.
+  const leftText = n => n >= 60 ? Math.floor(n / 60) + ':' + pad(n % 60) : n + ' ث';
+  function renderConfirm() {
+    const c = S.status && S.status.confirmation;
+    const box = $('#confirm-box');
+    const key = c ? c.id : '';
+    if (box.dataset.key !== key) {
+      box.dataset.key = key;
+      box.replaceChildren(...(c ? [confirmCard(c, null)] : []));
+    }
+    $$('.confirm-left').forEach(el => { el.textContent = c ? 'يُلغى على الشاشة بعد ' + leftText(c.secondsLeft) + ' إن لم يُؤكَّد.' : ''; });
+    if (c && S.confirmShown !== c.id && !sheetClose && !document.hidden) {
+      S.confirmShown = c.id;
+      vibrate([20, 80, 20]);
+      openSheet((sheet, close) => sheet.append(confirmCard(c, close)));
+    }
+    if (!c && sheetClose && $('.sheet .confirm')) closeSheet();
+  }
+  function confirmCard(c, close) {
+    const yes = h('button', { class: 'btn primary', type: 'button' }, ic('check'), 'تأكيد');
+    const no = h('button', { class: 'btn danger', type: 'button' }, ic('x'), 'رفض');
+    yes.addEventListener('click', () => answerConfirm(c, true, yes, close));
+    no.addEventListener('click', () => answerConfirm(c, false, no, close));
+    return h('article', { class: 'card confirm', role: 'alert' },
+      h('div', { class: 'card-h' }, h('span', { class: 'ico amber' }, ic('lock')),
+        h('div', { class: 'grow' }, h('h2', null, 'تأكيد تشغيل: ', h('b', { dir: 'auto', text: c.title })),
+          h('div', { class: 's', text: 'الوضع الجاد: لا يُنهى هذا الفيديو قبل نهايته إلا من قسم الأب هنا، فيبدأ على الشاشة بعد تأكيدك.' }))),
+      h('div', { class: 'grid2' }, yes, no),
+      h('div', { class: 'left confirm-left num', text: 'يُلغى على الشاشة بعد ' + leftText(c.secondsLeft) + ' إن لم يُؤكَّد.' }));
+  }
+  async function answerConfirm(c, approve, btn, close) {
+    if (!S.parent) {
+      const pin = await pinSheet('رمز الوالدين', (approve ? 'لتأكيد تشغيل ' : 'لرفض تشغيل ') + quote(c.title) + ' على الشاشة.', loginWith);
+      if (!pin) return;
+      if (S.view === 'parent') renderParent();
+    }
+    const r = await act(() => busy(btn, () => parentApi('/api/parent/confirm', { json: { id: c.id, approve } })));
+    if (!r) return;
+    showResult(r);
+    if (r.ok) vibrate(15);
+    if (close) close(true);
   }
 
   // ---------- search ----------
@@ -1597,7 +1699,13 @@ details.card[open] .chev{transform:rotate(180deg)}
     }
     const g = groupOf(PAGES[id].group);
     if (!g) return { text: 'جارٍ التحميل…' };
-    if (id === 'serious') { const s = settingOf('serious_mode'); return valueOf(s) === false ? { text: 'متوقف: «رجوع» يُخرج من أي فيديو', warn: true } : { text: 'مفعّل: الفيديو يُشاهَد حتى نهايته' }; }
+    if (id === 'serious') {
+      const kids = valueOf(settingOf('serious_mode_children')) !== false, adult = valueOf(settingOf('serious_mode_adult')) !== false;
+      if (!kids && !adult) return { text: 'متوقف للجميع: «رجوع» يُخرج من أي فيديو', warn: true };
+      if (!kids) return { text: 'للكبار فقط: الأطفال يخرجون بزر «رجوع»', warn: true };
+      if (!adult) return { text: 'للأطفال فقط: الكبير يخرج بزر «رجوع»', warn: true };
+      return { text: 'مفعّل للأطفال والكبار: الفيديو يُشاهَد حتى نهايته' };
+    }
     if (id === 'quality') { const s = g.items[0]; const c = s && s.choices.find(x => same(x.value, valueOf(s))); return { text: c ? c.label : '' }; }
     if (id === 'remote') { const s = settingOf('remote_port'); return { text: 'المنفذ ' + (s ? valueOf(s) : '') }; }
     if (id === 'sponsorblock') { const s = g.items[0]; const n = s ? (valueOf(s) || []).length : 0; return n ? { text: 'تتخطى ' + count(n, W.categories) } : { text: 'متوقف: لا تخطٍّ', warn: true }; }
@@ -2177,6 +2285,7 @@ details.card[open] .chev{transform:rotate(180deg)}
       h('div', { class: 'row' }, h('div', { class: 't' }, h('b', { text: 'أوقات محددة' }), h('span', { text: hasSchedule ? 'المشاهدة مسموحة بين الوقتين فقط' : 'المشاهدة مسموحة طوال اليوم' })), schedSw),
       times,
       flag('hideShorts', 'إخفاء الفيديوهات القصيرة', 'Shorts وكل فيديو قصير المدة', p.hideShorts),
+      flag('showSuggestions', 'إظهار الفيديوهات المقترحة', kid ? 'من قنواته المسموحة فقط: في المشغّل وعند انتهاء الفيديو وفي الرئيسية' : 'في المشغّل وعند انتهاء الفيديو و«مقترحة لك» في الرئيسية', p.showSuggestions),
       flag('hideComments', 'إخفاء التعليقات', kid ? 'مخفية دائماً في ملفات الأطفال' : null, p.hideComments || kid, kid ? 'التعليقات مخفية دائماً في ملفات الأطفال.' : null),
       h('div', { class: 'pe-foot' }, del, blocked ? h('span', { class: 'why', text: blocked }) : null));
   }

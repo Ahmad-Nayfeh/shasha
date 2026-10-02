@@ -80,7 +80,10 @@ import com.ahmadnayfeh.shasha.ui.format.TimeTexts
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
-/** A settings row: icon and label on the right, the current value on the left, OK changes it. */
+/**
+ * A settings row: icon and label on the right, the current value on the left, OK changes it. [description], when
+ * given, says under the label what the setting does (the row grows to hold it).
+ */
 @Composable
 fun SettingRow(
     icon: ImageVector,
@@ -88,21 +91,33 @@ fun SettingRow(
     value: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    description: String? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     FocusSurface(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().height(64.dp),
+        modifier = modifier.fillMaxWidth().then(if (description == null) Modifier.height(64.dp) else Modifier.heightIn(min = 64.dp)),
         shape = RoundedCornerShape(18.dp),
         containerColor = ShashaColors.Surface,
         focusedContainerColor = ShashaColors.SurfaceHigh,
         scale = 1.02f,
     ) {
-        Row(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(horizontal = 20.dp, vertical = if (description == null) 0.dp else 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Icon(icon, contentDescription = null, tint = LocalAccent.current.bright, modifier = Modifier.size(24.dp))
             Spacer(Modifier.width(16.dp))
-            Text(label, style = MaterialTheme.typography.titleMedium, maxLines = 1)
-            Spacer(Modifier.weight(1f))
+            if (description == null) {
+                Text(label, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                Spacer(Modifier.weight(1f))
+            } else {
+                Column(Modifier.weight(1f)) {
+                    Text(label, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                    Spacer(Modifier.height(2.dp))
+                    Text(description, style = MaterialTheme.typography.bodySmall, color = ShashaColors.Muted, maxLines = 3)
+                }
+            }
             if (value != null) {
                 Text(
                     value,
@@ -124,15 +139,16 @@ fun SettingRow(
     }
 }
 
-/** An on/off row; OK flips it. */
+/** An on/off row; OK flips it. [description]: what it does, under the label. */
 @Composable
-fun ToggleRow(icon: ImageVector, label: String, checked: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
+fun ToggleRow(icon: ImageVector, label: String, checked: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier, description: String? = null) {
     SettingRow(
         icon = icon,
         label = label,
         value = stringResource(if (checked) R.string.toggle_on else R.string.toggle_off),
         onClick = onToggle,
         modifier = modifier.semantics { stateDescription = if (checked) "on" else "off" },
+        description = description,
     ) { Switch(checked) }
 }
 

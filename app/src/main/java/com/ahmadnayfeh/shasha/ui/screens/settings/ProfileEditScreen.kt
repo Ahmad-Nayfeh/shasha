@@ -41,10 +41,13 @@ import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.ui.components.Avatars
 import com.ahmadnayfeh.shasha.ui.components.ConfirmDialog
 import com.ahmadnayfeh.shasha.ui.components.LocalAppMessages
+import com.ahmadnayfeh.shasha.ui.components.LocalBehavior
 import com.ahmadnayfeh.shasha.ui.components.ProfileAvatar
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
+import com.ahmadnayfeh.shasha.ui.components.ShortsGlyph
 import com.ahmadnayfeh.shasha.ui.components.containerViewModel
 import com.ahmadnayfeh.shasha.ui.format.TimeTexts
+import com.ahmadnayfeh.shasha.ui.format.rememberFormats
 import com.ahmadnayfeh.shasha.ui.format.rememberTimeTexts
 import com.ahmadnayfeh.shasha.ui.theme.Accents
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
@@ -84,8 +87,9 @@ fun ProfileEditRoute(profileId: String, onOpenAllowlist: (String) -> Unit, onBac
 }
 
 /**
- * One profile's rules (SPEC §3): name and picture, the daily quota, the allowed hours, shorts, and for a
- * child the allowlist. Each change is stored at once. The last adult profile cannot be deleted.
+ * One profile's rules (SPEC §3): name and picture, the daily quota, the allowed hours, «إظهار مقاطع Shorts» and
+ * «إظهار الفيديوهات المقترحة» (each saying what it does), and for a child the allowlist. Each change is stored at once.
+ * The last adult profile cannot be deleted.
  */
 @Composable
 fun ProfileEditScreen(
@@ -137,11 +141,22 @@ fun ProfileEditScreen(
                 SettingRow(ShashaIcons.Timer, stringResource(R.string.profile_quota), quotaText(profile.dailyQuotaMinutes, texts), { dialog = EditDialog.QUOTA }, Modifier.testTag("edit_quota"))
                 SettingRow(ShashaIcons.Calendar, stringResource(R.string.profile_schedule), scheduleText(profile, texts), { dialog = EditDialog.SCHEDULE }, Modifier.testTag("edit_schedule"))
                 ToggleRow(
-                    ShashaIcons.VisibilityOff,
-                    stringResource(R.string.profile_hide_shorts),
-                    profile.hideShorts,
+                    ShortsGlyph,
+                    stringResource(R.string.profile_show_shorts),
+                    !profile.hideShorts,
                     { onUpdate { it.copy(hideShorts = !it.hideShorts) } },
                     Modifier.testTag("edit_shorts"),
+                    description = stringResource(R.string.profile_show_shorts_body, shortsLimitText(LocalBehavior.current.shortsMaxSeconds, texts)),
+                )
+                ToggleRow(
+                    ShashaIcons.PlaylistPlay,
+                    stringResource(R.string.profile_show_suggestions),
+                    profile.showSuggestions,
+                    { onUpdate { it.copy(showSuggestions = !it.showSuggestions) } },
+                    Modifier.testTag("edit_suggestions"),
+                    description = stringResource(
+                        if (profile.isChild) R.string.profile_show_suggestions_body_child else R.string.profile_show_suggestions_body,
+                    ),
                 )
                 if (profile.isAdult) {
                     ToggleRow(
@@ -171,6 +186,11 @@ fun ProfileEditScreen(
         EditDialogs(dialog, profile, texts, onUpdate, onDelete, onClose = { dialog = null })
     }
 }
+
+/** «3 دقائق», «90 ثانية»: the parent's short-video limit («حدّ الفيديو القصير»), as the Shorts switch explains it. */
+@Composable
+private fun shortsLimitText(seconds: Int, texts: TimeTexts): String =
+    if (seconds % 60 == 0) texts.duration(seconds / 60L) else rememberFormats().count(R.array.count_seconds, seconds.toLong())
 
 @Composable
 private fun EditDialogs(

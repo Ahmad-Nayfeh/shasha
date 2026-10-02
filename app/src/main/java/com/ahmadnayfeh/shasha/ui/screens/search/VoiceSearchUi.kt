@@ -1,7 +1,6 @@
 package com.ahmadnayfeh.shasha.ui.screens.search
 
 import android.Manifest
-import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.pm.PackageManager
@@ -21,6 +20,7 @@ import androidx.core.content.ContextCompat
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.search.VoiceError
 import com.ahmadnayfeh.shasha.search.VoiceInput
+import com.ahmadnayfeh.shasha.search.VoiceOutcome
 import com.ahmadnayfeh.shasha.search.VoiceSearch
 import com.ahmadnayfeh.shasha.search.VoiceSearchRequests
 import com.ahmadnayfeh.shasha.search.VoiceState
@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
-/** The search screen's microphone: [listen] asks for the permission first, and falls back to the system's voice screen. */
+/** The search screen's microphone: [listen] opens the system's voice screen, and falls back to the in-app recognizer. */
 @Stable
 class VoiceSearchHandle internal constructor(
     val state: StateFlow<VoiceState>,
@@ -46,12 +46,18 @@ class VoiceSearchHandle internal constructor(
 }
 
 /**
- * Voice search, in-app first: [VoiceSearch] (SpeechRecognizer: a listening panel with the voice's level and the words so
- * far). When this TV has no recognition service for apps, or it refuses this app, the system's own voice screen
- * (RecognizerIntent) is opened instead, with the same language and three readings. The microphone permission is asked
- * for on the first use (Android TV shows its own dialog); a refusal is explained, never silent.
+ * Voice search, the system's voice screen first: RecognizerIntent.ACTION_RECOGNIZE_SPEECH ([VoiceSearch.systemIntent])
+ * launched through an ActivityResult launcher (the web-search language model, the language chosen in the settings,
+ * three readings). On Google TV the remote's microphone is normally available only to that screen, so it hears where an
+ * app's own recognizer does not, and it needs no microphone permission from this app. Its answer is read from
+ * EXTRA_RESULTS ([VoiceSearch.outcomeOf]): the best reading is searched and the others are offered; a screen closed with
+ * BACK says nothing; an error is shown calmly, with «أعد المحاولة».
  *
- * [requests]: the remote's SEARCH key opened this screen to listen at once.
+ * Only when no activity answers the intent does the in-app recognizer ([VoiceSearch], SpeechRecognizer) take over: it
+ * asks for the microphone permission on its first use (Android TV shows its own dialog) and shows its listening panel;
+ * a refusal is explained, never silent. With neither, the failure says so.
+ *
+ * [requests]: the remote's SEARCH key opened this screen to listen at once, through the same [VoiceSearchHandle.listen].
  */
 @Composable
 fun rememberVoiceSearch(
@@ -61,70 +67,82 @@ fun rememberVoiceSearch(
     input: VoiceInput? = null,
 ): VoiceSearchHandle {
     val context = LocalContext.current
-    val voice = input ?: remember { VoiceSearch(context.applicationContext) }
+    val fallback = input ?: remember { VoiceSearch(context.applicationContext) }
     val language by rememberUpdatedState(languageTag)
     val heard by rememberUpdatedState(onHeard)
-    // Failures the screen finds itself (permission refused, no voice screen at all) are shown like the recognizer's.
+    // Failures the screen finds itself (the voice screen's errors, permission refused, no way to listen) are shown
+    // like the in-app recognizer's own.
     val local = remember { MutableStateFlow<VoiceError?>(null) }
     val scope = rememberCoroutineScope()
-    val state = remember(voice) {
-        combine(voice.state, local) { s, error -> if (error != null) VoiceState.Failed(error) else s }
+    val state = remember(fallback) {
+        combine(fallback.state, local) { s, error -> if (error != null) VoiceState.Failed(error) else s }
             .stateIn(scope, SharingStarted.Eagerly, VoiceState.Idle)
     }
     val prompt = stringResource(R.string.voice_prompt)
 
-    val system = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val words = VoiceSearch.resultsOf(result.data)
-            if (words.isEmpty()) local.value = VoiceError.NO_MATCH else heard(words)
-        }
-    }
-
-    fun openSystemScreen() {
-        voice.dismiss()
-        try {
-            system.launch(VoiceSearch.systemIntent(language, context.packageName, prompt))
-        } catch (e: ActivityNotFoundException) {
-            local.value = VoiceError.UNAVAILABLE
-        }
-    }
-
-    fun start() {
+    // ---- The fallback: the in-app recognizer (microphone permission first) ----
+    fun startInApp() {
         local.value = null
-        voice.start(language) { words -> heard(words) }
+        fallback.start(language) { words -> heard(words) }
     }
 
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) start() else local.value = VoiceError.PERMISSION
+        if (granted) startInApp() else local.value = VoiceError.PERMISSION
+    }
+
+    fun listenInApp() {
+        when {
+            !fallback.available -> local.value = VoiceError.UNAVAILABLE
+            context.hasMicPermission() -> startInApp()
+            else -> try {
+                permission.launch(Manifest.permission.RECORD_AUDIO)
+            } catch (e: ActivityNotFoundException) {
+                local.value = VoiceError.PERMISSION
+            }
+        }
+    }
+
+    // ---- The first way: the system's voice screen, answered through EXTRA_RESULTS ----
+    val screen = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        when (val outcome = VoiceSearch.outcomeOf(result.resultCode, result.data)) {
+            is VoiceOutcome.Heard -> heard(outcome.words)
+            is VoiceOutcome.Failed -> local.value = outcome.error
+            VoiceOutcome.Cancelled -> Unit
+        }
     }
 
     fun listen() {
         local.value = null
-        if (context.hasMicPermission()) start() else permission.launch(Manifest.permission.RECORD_AUDIO)
+        fallback.cancel()
+        fallback.dismiss()
+        try {
+            screen.launch(VoiceSearch.systemIntent(language, context.packageName, prompt))
+        } catch (e: ActivityNotFoundException) {
+            listenInApp() // this TV has no voice screen
+        } catch (e: SecurityException) {
+            listenInApp() // one that is not ours to start
+        }
     }
 
-    LaunchedEffect(voice) {
-        voice.needsSystemUi.collect { needed -> if (needed) openSystemScreen() }
-    }
     if (requests != null) {
         LaunchedEffect(requests) {
             requests.pending.collect { if (it != null && requests.consume()) listen() }
         }
     }
-    DisposableEffect(voice) {
-        onDispose { voice.release() }
+    DisposableEffect(fallback) {
+        onDispose { fallback.release() }
     }
-    return remember(voice) {
+    return remember(fallback) {
         VoiceSearchHandle(
             state = state,
             onListen = { listen() },
             onCancel = {
                 local.value = null
-                voice.cancel()
+                fallback.cancel()
             },
             onDismiss = {
                 local.value = null
-                voice.dismiss()
+                fallback.dismiss()
             },
         )
     }

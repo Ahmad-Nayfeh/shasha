@@ -76,6 +76,7 @@ fun VideoCard(
                 video.isLive -> LiveThumbnailBadge(badgeModifier)
                 duration != null -> ThumbnailBadge(duration, badgeModifier)
             }
+            ShortsBadgeFor(video, Modifier.align(Alignment.TopStart).padding(8.dp))
             if (watched != null) WatchedBar({ watched }, Modifier.align(Alignment.BottomCenter))
         }
         Spacer(Modifier.height(10.dp))

@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -15,6 +16,8 @@ import com.ahmadnayfeh.shasha.BuildConfig
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.remote.RemoteService
+import com.ahmadnayfeh.shasha.search.VoiceAvailability
+import com.ahmadnayfeh.shasha.search.VoiceSearch
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
 import com.ahmadnayfeh.shasha.ui.components.LocalAppMessages
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
@@ -27,7 +30,9 @@ import com.ahmadnayfeh.shasha.ui.parental.ParentUnlock
 import com.ahmadnayfeh.shasha.ui.screens.guide.ExplainerVideo
 import com.ahmadnayfeh.shasha.ui.screens.settings.rememberProtectionStatus
 import com.ahmadnayfeh.shasha.ui.theme.LocalAppLanguage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 /**
  * The settings tab of the adult profile ([SettingsHubScreen]). The parental parts ask for the parent PIN first
@@ -54,6 +59,7 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
             appScope = c.appScope,
             behaviorSettings = c.behavior,
             restartRemote = { c.remote.restart() },
+            phonePaired = { c.phoneReach.isPaired() },
         )
     }
     var selected by rememberSaveable { mutableStateOf(SettingsCategory.PROFILES) }
@@ -80,11 +86,14 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
     val remotePort by vm.remotePort.collectAsStateWithLifecycle()
     val messages = LocalAppMessages.current
     val resetDone = stringResource(R.string.reset_done)
+    val escapeNeedsPhone = stringResource(R.string.serious_escape_needs_phone)
     // Read every 2 s while shown (the list's dot, the pane); starts the guard when it can run, as «حالة الحماية» does.
     val protection by rememberProtectionStatus()
     val returns by container.guardReturnTimes.times.collectAsStateWithLifecycle(initialValue = emptyList())
     val versions = remember { AppVersions(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE, container.videoSource.extractorVersion) }
     val device = remember { DeviceFacts.current() }
+    // Which voice recognizers the TV offers (package queries: asked off the main thread, shown once known).
+    val voice by produceState<VoiceAvailability?>(null, context) { value = withContext(Dispatchers.IO) { VoiceSearch.availability(context) } }
     val now = remember(syncHealth) { container.clock.millis() }
 
     val actions = remember(settings, gate, vm) {
@@ -109,8 +118,9 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
             setMaxQuality = vm::setMaxQuality,
             setRemoteEnabled = { on -> gate.guarded { vm.setRemoteEnabled(on) { RemoteService.startIfWanted(context) } } },
             behavior = BehaviorActions(
-                setSeriousMode = { on -> gate.guarded { vm.setSeriousMode(on) } },
-                setAdultEscape = { on -> gate.guarded { vm.setAdultEscape(on) } },
+                setSeriousModeChildren = { on -> gate.guarded { vm.setSeriousModeChildren(on) } },
+                setSeriousModeAdult = { on -> gate.guarded { vm.setSeriousModeAdult(on) } },
+                setAdultEscape = { on -> gate.guarded { vm.setAdultEscape(on) { messages?.show(escapeNeedsPhone, ShashaIcons.Info) } } },
                 setAdultEntryPin = { on -> gate.guarded { vm.setAdultEntryPin(on) } },
                 setVoiceLanguage = { tag -> gate.guarded { vm.setVoiceLanguage(tag) } },
                 setNumber = { key, value -> gate.guarded { vm.setNumber(key, value) } },
@@ -148,6 +158,7 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
             remote = remote,
             syncHealth = syncHealth,
             device = device,
+            voice = voice,
             nowMs = now,
             behavior = behavior,
             remotePort = remotePort,

@@ -45,11 +45,18 @@ class SettingsBehaviorPanesTest {
     private val actions = SettingsHubActions(
         unlock = { calls += "unlock" },
         behavior = BehaviorActions(
-            setSeriousMode = { on ->
-                calls += "serious=$on"
-                state = state.copy(behavior = state.behavior!!.copy(seriousMode = on))
+            setSeriousModeChildren = { on ->
+                calls += "children=$on"
+                state = state.copy(behavior = state.behavior!!.copy(seriousModeChildren = on))
             },
-            setAdultEscape = { calls += "escape=$it" },
+            setSeriousModeAdult = { on ->
+                calls += "adult=$on"
+                state = state.copy(behavior = state.behavior!!.copy(seriousModeAdult = on))
+            },
+            setAdultEscape = { on ->
+                calls += "escape=$on"
+                state = state.copy(behavior = state.behavior!!.copy(adultEscape = on))
+            },
             setAdultEntryPin = { on ->
                 calls += "adultEntry=$on"
                 state = state.copy(behavior = state.behavior!!.copy(adultEntryPin = on))
@@ -102,30 +109,70 @@ class SettingsBehaviorPanesTest {
         }
         show(SettingsCategory.SERIOUS)
         compose.onNodeWithTag("settings_unlock").assertIsFocused()
-        assertThat(exists("serious_switch")).isFalse()
+        assertThat(exists("serious_children")).isFalse()
+        assertThat(exists("serious_adult")).isFalse()
         press(Key.Enter)
         assertThat(calls).containsExactly("unlock")
     }
 
+    /** v1.2: «الوضع الجاد لملفات الأطفال» and «الوضع الجاد لملف الكبار» are two switches, each with what belongs to it. */
     @Test
-    fun seriousMode_switchesOff_andItsOptionsGo() {
+    fun seriousMode_twoSwitches_eachOffOnItsOwn_andTheirOptionsFollow() {
         show(SettingsCategory.SERIOUS)
-        compose.onNodeWithTag("serious_switch").assertIsFocused()
+        compose.onNodeWithTag("serious_children").assertIsFocused()
+        assertThat(exists("serious_adult")).isTrue()
         assertThat(exists("serious_escape")).isTrue()
+        // The children's off: the adult's way out is still there, and what ends a video by itself.
         press(Key.Enter)
-        assertThat(calls).containsExactly("serious=false")
+        assertThat(calls).containsExactly("children=false")
+        assertThat(exists("serious_escape")).isTrue()
+        assertThat(exists("behavior_skip_allowance_seconds")).isTrue()
+        // The adult's off too: its way out goes, and with both off what ends a video by itself goes as well.
+        press(Key.DirectionDown)
+        compose.onNodeWithTag("serious_adult").assertIsFocused()
+        press(Key.Enter)
+        assertThat(calls).containsExactly("children=false", "adult=false").inOrder()
         assertThat(exists("serious_escape")).isFalse()
         assertThat(exists("behavior_escape_hold_seconds")).isFalse()
-        // Only its reset is left under the switch.
+        assertThat(exists("behavior_skip_allowance_seconds")).isFalse()
+        // The children's on again: the adult's stays off (no escape), the end rules are back.
+        press(Key.DirectionUp)
+        press(Key.Enter)
+        assertThat(calls.last()).isEqualTo("children=true")
+        assertThat(state.behavior!!.seriousModeAdult).isFalse()
+        assertThat(exists("serious_escape")).isFalse()
+        assertThat(exists("behavior_skip_allowance_seconds")).isTrue()
+    }
+
+    @Test
+    fun seriousMode_bothOff_onlyTheResetIsLeft_andItResetsBothSwitches() {
+        state = SettingsHubFixtures.state(behavior = com.ahmadnayfeh.shasha.data.Behavior(seriousModeChildren = false, seriousModeAdult = false))
+        show(SettingsCategory.SERIOUS)
+        compose.onNodeWithTag("serious_children").assertIsFocused()
+        press(Key.DirectionDown)
         press(Key.DirectionDown)
         compose.onNodeWithTag("serious_reset").assertIsFocused()
         press(Key.Enter)
-        assertThat(calls.last()).startsWith("reset=serious_mode,adult_escape,escape_hold_seconds")
+        assertThat(calls.last()).startsWith("reset=serious_mode_children,serious_mode_adult,adult_escape,escape_hold_seconds")
+    }
+
+    /** v1.2: turning the escape off is the route's to allow (a paired phone); the pane sends the change and shows its note. */
+    @Test
+    fun theEscapeOff_showsThatThePhoneConfirmsEveryAdultVideo() {
+        show(SettingsCategory.SERIOUS)
+        press(Key.DirectionDown) // the adult's switch
+        press(Key.DirectionDown) // the escape
+        compose.onNodeWithTag("serious_escape").assertIsFocused()
+        press(Key.Enter)
+        assertThat(calls).containsExactly("escape=false")
+        compose.onNodeWithText(com.ahmadnayfeh.shasha.R.string.serious_escape_off_note.let { androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>().getString(it) })
+            .assertExists()
     }
 
     @Test
     fun theHold_isPickedFromItsChoices() {
         show(SettingsCategory.SERIOUS)
+        press(Key.DirectionDown) // the adult's switch
         press(Key.DirectionDown) // the escape
         press(Key.DirectionDown) // the hold
         compose.onNodeWithTag("behavior_escape_hold_seconds").assertIsFocused()

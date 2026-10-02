@@ -120,10 +120,10 @@ class PolicyGateTest {
         assertThat(lookups).containsExactly("outside0001", "outside0001")
 
         // A link to a video of an allowlisted channel plays.
-        assertThat(gate.checkLink(YouTubeLink.Video("inside00001", null, playlistId = OTHER_PLAYLIST))).isEqualTo(PlayCheck.Allowed(null))
+        assertThat(gate.checkLink(YouTubeLink.Video("inside00001", null, playlistId = OTHER_PLAYLIST))).isInstanceOf(PlayCheck.Allowed::class.java)
         // The same outside video, taken from the allowlisted playlist's own page, plays: the app itself vouches for it.
         assertThat(gate.checkPlay("outside0001", PlayOrigin.Playlist(ALLOWED_PLAYLIST), known = extracted["outside0001"]))
-            .isEqualTo(PlayCheck.Allowed(null))
+            .isInstanceOf(PlayCheck.Allowed::class.java)
         assertThat(gate.checkPlay("outside0001", PlayOrigin.Playlist(OTHER_PLAYLIST), known = extracted["outside0001"]))
             .isEqualTo(PlayCheck.Denied(DenyReason.NOT_IN_ALLOWLIST))
     }
@@ -132,7 +132,7 @@ class PolicyGateTest {
     fun checkPlay_extractsOnlyWhenTheItemDoesNotSayEnough() = runBlocking<Unit> {
         enterChild()
         val known = clip("known000001")
-        assertThat(gate.checkPlay(known.videoId, PlayOrigin.Navigation, known)).isEqualTo(PlayCheck.Allowed(null))
+        assertThat(gate.checkPlay(known.videoId, PlayOrigin.Navigation, known)).isInstanceOf(PlayCheck.Allowed::class.java)
         assertThat(lookups).isEmpty()
 
         // No channel on the item (or only an id, e.g. after the app was restarted in the player): extracted.
@@ -233,7 +233,7 @@ class PolicyGateTest {
         assertThat(gate.checkPlay(outside.videoId, PlayOrigin.Navigation, outside)).isEqualTo(PlayCheck.Denied(DenyReason.NOT_IN_ALLOWLIST))
 
         session.grantUnlock(15)
-        assertThat(gate.checkPlay(allowed.videoId, PlayOrigin.Navigation, allowed)).isEqualTo(PlayCheck.Allowed(null))
+        assertThat(gate.checkPlay(allowed.videoId, PlayOrigin.Navigation, allowed)).isInstanceOf(PlayCheck.Allowed::class.java)
 
         clock.set("2026-09-28T22:30")
         assertThat(gate.checkPlay(allowed.videoId, PlayOrigin.Navigation, allowed)).isEqualTo(PlayCheck.Denied(DenyReason.OUTSIDE_SCHEDULE))
@@ -267,12 +267,12 @@ class PolicyGateTest {
         locks.set(engine.lockPlayback(child, locked.videoId))
 
         assertThat(gate.checkPlay(other.videoId, PlayOrigin.Navigation, other)).isEqualTo(PlayCheck.Denied(DenyReason.LOCKED))
-        assertThat(gate.checkPlay(locked.videoId, PlayOrigin.Navigation, locked)).isEqualTo(PlayCheck.Allowed(null))
+        assertThat(gate.checkPlay(locked.videoId, PlayOrigin.Navigation, locked)).isInstanceOf(PlayCheck.Allowed::class.java)
         // A link from the phone never replaces a locked video (nor starts it again: it is on screen)...
         assertThat(gate.checkLink(YouTubeLink.Video(locked.videoId, null, null))).isEqualTo(PlayCheck.Denied(DenyReason.LOCKED))
         // ...but a player that came from a link asks again for its own locked video (after Home, standby): it
         // continues, and is not taken for "unavailable" (that would release its lock).
-        assertThat(gate.checkPlay(locked.videoId, PlayOrigin.Link)).isEqualTo(PlayCheck.Allowed(null))
+        assertThat(gate.checkPlay(locked.videoId, PlayOrigin.Link)).isInstanceOf(PlayCheck.Allowed::class.java)
         extracted[other.videoId] = other
         assertThat(gate.checkPlay(other.videoId, PlayOrigin.Link)).isEqualTo(PlayCheck.Denied(DenyReason.LOCKED))
         assertThat(withTimeout(5_000) { gate.lockState.first { it.playbackLocked } }.playbackLocked).isTrue()
@@ -288,8 +288,8 @@ class PolicyGateTest {
         locks.set(engine.onVideoEnded(engine.lockPlayback(child, first.videoId, ALLOWED_PLAYLIST), nextVideoId = second.videoId))
 
         // Home (or "time up") in the countdown: the first video's player asks again; it is the lock's own playlist.
-        assertThat(gate.checkPlay(first.videoId, PlayOrigin.Playlist(ALLOWED_PLAYLIST), first)).isEqualTo(PlayCheck.Allowed(null))
-        assertThat(gate.checkPlay(second.videoId, PlayOrigin.Playlist(ALLOWED_PLAYLIST), second)).isEqualTo(PlayCheck.Allowed(null))
+        assertThat(gate.checkPlay(first.videoId, PlayOrigin.Playlist(ALLOWED_PLAYLIST), first)).isInstanceOf(PlayCheck.Allowed::class.java)
+        assertThat(gate.checkPlay(second.videoId, PlayOrigin.Playlist(ALLOWED_PLAYLIST), second)).isInstanceOf(PlayCheck.Allowed::class.java)
         // Nothing else: another playlist, the same video outside its playlist, a card of the home.
         assertThat(gate.checkPlay(first.videoId, PlayOrigin.Playlist(OTHER_PLAYLIST), first)).isEqualTo(PlayCheck.Denied(DenyReason.NOT_IN_ALLOWLIST))
         val allowed = clip("allowed0001")

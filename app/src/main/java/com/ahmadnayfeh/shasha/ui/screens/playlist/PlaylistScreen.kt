@@ -153,7 +153,8 @@ fun PlaylistScreen(
         Spacer(Modifier.width(36.dp))
         Box(Modifier.weight(1f).fillMaxHeight()) {
             when {
-                videos.loadingFirst -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                // Also while the first pages are all hidden by the rules and more are on their way: not "empty" yet.
+                videos.loadingFirst || (videos.items.isEmpty() && videos.loadingMore) -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     ShashaLoaderWithText(stringResource(R.string.playlist_loading))
                 }
                 videos.items.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

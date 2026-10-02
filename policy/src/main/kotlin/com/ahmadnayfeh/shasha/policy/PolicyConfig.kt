@@ -7,10 +7,13 @@ import kotlin.random.Random
  * through the provider it was built with, so a change applies at once. Every default is the behaviour the app
  * had before these were adjustable.
  *
- * @property seriousMode «الوضع الجاد» (SPEC §4's in-app lock): a video that starts cannot be left before it ends
- *   (the parent PIN for a child, the exit challenge for the adult). Off: no video is ever locked, BACK leaves.
- * @property adultEscape the adult may leave a video early with [escapeHoldMillis] of long press and a phrase.
- *   Off: the adult's video is only ended early from the phone's parent section.
+ * @property seriousMode «الوضع الجاد» (SPEC §4's in-app lock), one switch per kind of profile (v1.2): a video that
+ *   starts cannot be left before it ends (the parent PIN for a child, the exit challenge for the adult). Off for a
+ *   kind: no video of that kind of profile is ever locked, BACK leaves.
+ * @property adultEscape the adult may leave a video early with [escapeHoldMillis] of long press and a phrase (only
+ *   meaningful while [SeriousMode.adult] is on).
+ *   Off: the adult's video is only ended early from the phone's parent section, so every adult video must first be
+ *   confirmed from the phone ([PolicyEngine.needsPhoneConfirmation]).
  * @property exitPhrases the phrases the adult may be asked to type (one of them at random).
  * @property skipAllowance how much skipping still lets a video count as ended by itself ([PlayedPart]).
  * @property warningSeconds the quiet notice before time runs out; 0 = none.
@@ -19,7 +22,7 @@ import kotlin.random.Random
  *   child profile still needs it, and the parent's settings stay behind the PIN in the app).
  */
 data class PolicyConfig(
-    val seriousMode: Boolean = true,
+    val seriousMode: SeriousMode = SeriousMode.ON,
     val adultEscape: Boolean = true,
     val escapeHoldMillis: Long = AdultExitChallenge.HOLD_MILLIS,
     val exitPhrases: List<String> = AdultExitChallenge.phrases,
@@ -28,12 +31,36 @@ data class PolicyConfig(
     val shortsMaxSeconds: Long = PolicyEngine.SHORTS_MAX_SECONDS,
     val adultEntryNeedsPin: Boolean = true,
 ) {
-    /** The adult's way out of a video, or null when there is none (Serious Mode off, or the escape turned off). */
+    /**
+     * The adult's way out of a video, or null when there is none (the adult's Serious Mode off: nothing to leave; or
+     * the escape turned off: only the phone ends it).
+     */
     val escape: AdultEscape?
-        get() = if (seriousMode && adultEscape) AdultEscape(escapeHoldMillis, exitPhrases.ifEmpty { AdultExitChallenge.phrases }) else null
+        get() = if (seriousMode.adult && adultEscape) AdultEscape(escapeHoldMillis, exitPhrases.ifEmpty { AdultExitChallenge.phrases }) else null
 
     companion object {
         val DEFAULT = PolicyConfig()
+    }
+}
+
+/**
+ * «الوضع الجاد», one switch per kind of profile (v1.2, owner decision: the children's and the adult's are independent,
+ * both on by default): [children] for every child profile («الوضع الجاد لملفات الأطفال»), [adult] for the adult
+ * profiles («الوضع الجاد لملف الكبار»).
+ */
+data class SeriousMode(val children: Boolean = true, val adult: Boolean = true) {
+    /** Whether a video that starts in [profile] is locked. */
+    fun isOnFor(profile: Profile): Boolean = if (profile.isChild) children else adult
+
+    /**
+     * Whether [lock] may stay: the switch of the kind of profile it was made in is still on. Its kind is how it
+     * opens ([PolicyEngine.lockPlayback]: a child's with the parent PIN, an adult's with the exit challenge).
+     */
+    fun holds(lock: PlaybackLock): Boolean = if (lock.unlock == UnlockMethod.PARENT_PIN) children else adult
+
+    companion object {
+        val ON = SeriousMode()
+        val OFF = SeriousMode(children = false, adult = false)
     }
 }
 

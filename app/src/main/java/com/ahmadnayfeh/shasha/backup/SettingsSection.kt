@@ -46,6 +46,8 @@ class SettingsSection(
     val keys: Map<String, SettingType>,
     /** The backup format that introduced this section: an older file without it leaves these settings alone. */
     val sinceFormat: Int = 1,
+    /** What a file written by an older version has, in today's keys (e.g. a setting split in two); run before [restore]. */
+    private val upgrade: (Map<String, JsonElement>) -> Map<String, JsonElement> = { it },
 ) {
 
     suspend fun export(): Map<String, JsonElement> {
@@ -58,9 +60,10 @@ class SettingsSection(
 
     /** Replaces this section's keys with [values]: a key the backup does not have goes back to its default. */
     suspend fun restore(values: Map<String, JsonElement>) {
+        val current = upgrade(values)
         store.edit { prefs ->
             prefs.asMap().keys.filter { it.name in keys }.forEach { prefs.remove(it) }
-            for ((name, element) in values) {
+            for ((name, element) in current) {
                 val type = keys[name] ?: continue
                 val raw = (element as? JsonObject)?.get(type.tag) ?: continue
                 prefs.set(name, type, raw)

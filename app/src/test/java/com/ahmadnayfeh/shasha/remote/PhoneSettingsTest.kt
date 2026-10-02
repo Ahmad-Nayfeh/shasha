@@ -12,6 +12,7 @@ import com.ahmadnayfeh.shasha.policy.Schedule
 import com.ahmadnayfeh.shasha.policy.SwitchResult
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.policy.SeriousMode
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -71,19 +72,41 @@ class PhoneSettingsTest {
         val hold = page.item(BehaviorKeys.ESCAPE_HOLD_SECONDS.name)
         assertThat(hold.choices.map { it.value.jsonPrimitive.int }).isEqualTo(BehaviorKeys.ESCAPE_HOLD_CHOICES)
         assertThat(hold.label).isEqualTo(text(R.string.serious_hold))
-        assertThat(hold.visibleWhen.keys).containsExactly("serious_mode", "adult_escape")
+        assertThat(hold.visibleWhen.keys).containsExactly("serious_mode_adult", "adult_escape")
         assertThat(page.item(BehaviorKeys.ADULT_ENTRY_PIN.name).warning).isEqualTo(text(R.string.pin_settings_adult_entry_warning))
+        // v1.2: two «الوضع الجاد» switches, the children's first, each with its own warning; v1.1's single key is gone.
+        val serious = page.groups.first { it.id == PhoneSettings.GROUP_SERIOUS }.items.map { it.key }
+        assertThat(serious.take(3)).containsExactly("serious_mode_children", "serious_mode_adult", "adult_escape").inOrder()
+        assertThat(keys).doesNotContain("serious_mode")
+        assertThat(page.item("serious_mode_children").label).isEqualTo(text(R.string.serious_children))
+        assertThat(page.item("serious_mode_adult").label).isEqualTo(text(R.string.serious_adult))
+        assertThat(page.item("serious_mode_children").warning).isEqualTo(text(R.string.serious_children_off_note))
+        assertThat(page.item("serious_mode_adult").warning).isEqualTo(text(R.string.serious_adult_off_note))
+        // The escape only shows while the adult's switch is on; turning it off says that the phone then confirms.
+        assertThat(page.item(BehaviorKeys.ADULT_ESCAPE.name).visibleWhen.keys).containsExactly("serious_mode_adult")
+        assertThat(page.item(BehaviorKeys.ADULT_ESCAPE.name).warning).isEqualTo(text(R.string.serious_escape_off_note))
+        assertThat(page.item(BehaviorKeys.ADULT_ESCAPE.name).help).isEqualTo(text(R.string.serious_escape_body))
+        // What ends a video by itself applies to whichever switch is on: always shown.
+        assertThat(page.item(BehaviorKeys.SKIP_ALLOWANCE_SECONDS.name).visibleWhen).isEmpty()
     }
 
     @Test
     fun aChange_isStoredWithTheTvsSetter_andTheAnswerCarriesIt() = runBlocking<Unit> {
-        val r = controller.changeSetting(BehaviorKeys.SERIOUS_MODE.name, JsonPrimitive(false))
+        val r = controller.changeSetting(BehaviorKeys.SERIOUS_MODE_ADULT.name, JsonPrimitive(false))
         assertThat(r.ok).isTrue()
-        assertThat(r.settings!!.value(BehaviorKeys.SERIOUS_MODE.name)).isEqualTo(JsonPrimitive(false))
-        assertThat(env.behavior.current().seriousMode).isFalse()
-        // The rules follow (the engine reads the store), and the status tells the page.
-        withTimeout(5_000) { env.behavior.values.first { !it.seriousMode } }
-        assertThat(env.engine.config().seriousMode).isFalse()
+        assertThat(r.settings!!.value(BehaviorKeys.SERIOUS_MODE_ADULT.name)).isEqualTo(JsonPrimitive(false))
+        assertThat(r.settings!!.value(BehaviorKeys.SERIOUS_MODE_CHILDREN.name)).isEqualTo(JsonPrimitive(true))
+        assertThat(env.behavior.current().seriousModeAdult).isFalse()
+        assertThat(env.behavior.current().seriousModeChildren).isTrue()
+        // The rules follow (the engine reads the store), and the status tells the page: off for the adult on the TV now...
+        withTimeout(5_000) { env.behavior.values.first { !it.seriousModeAdult } }
+        assertThat(env.engine.config().seriousMode).isEqualTo(SeriousMode(children = true, adult = false))
+        assertThat(controller.status().seriousMode).isFalse()
+        // ...and still on for a child.
+        env.enterChild()
+        assertThat(controller.status().seriousMode).isTrue()
+        assertThat(controller.changeSetting(BehaviorKeys.SERIOUS_MODE_CHILDREN.name, JsonPrimitive(false)).ok).isTrue()
+        withTimeout(5_000) { env.behavior.values.first { !it.seriousModeChildren } }
         assertThat(controller.status().seriousMode).isFalse()
 
         assertThat(controller.changeSetting(BehaviorKeys.WARNING_MINUTES.name, JsonPrimitive(10)).ok).isTrue()
@@ -110,7 +133,10 @@ class PhoneSettingsTest {
         }
         refused(BehaviorKeys.WARNING_MINUTES.name, JsonPrimitive(7)) // not a choice
         refused(BehaviorKeys.WARNING_MINUTES.name, JsonPrimitive("5")) // a text, not a number
-        refused(BehaviorKeys.SERIOUS_MODE.name, JsonPrimitive("false"))
+        refused(BehaviorKeys.SERIOUS_MODE_CHILDREN.name, JsonPrimitive("false"))
+        refused(BehaviorKeys.SERIOUS_MODE_ADULT.name, JsonPrimitive(0))
+        // v1.1's single switch is no setting any more.
+        assertThat(controller.changeSetting("serious_mode", JsonPrimitive(false)).message).isEqualTo(text(R.string.phone_setting_unknown))
         refused(BehaviorKeys.DEFAULT_SPEED.name, JsonPrimitive(1.1f))
         refused(BehaviorKeys.EXTRA_MINUTES.name, JsonArray(listOf(5, 10, 15, 20, 30).map(::JsonPrimitive))) // five
         refused(BehaviorKeys.EXTRA_MINUTES.name, JsonArray(listOf(15, 7).map(::JsonPrimitive))) // 7 not offered
@@ -147,20 +173,24 @@ class PhoneSettingsTest {
 
     @Test
     fun resets_oneGroupOrEverything_likeTheTv() = runBlocking<Unit> {
-        controller.changeSetting(BehaviorKeys.SERIOUS_MODE.name, JsonPrimitive(false))
+        controller.changeSetting(BehaviorKeys.SERIOUS_MODE_CHILDREN.name, JsonPrimitive(false))
+        controller.changeSetting(BehaviorKeys.SERIOUS_MODE_ADULT.name, JsonPrimitive(false))
         controller.changeSetting(BehaviorKeys.WARNING_MINUTES.name, JsonPrimitive(10))
         controller.changeSetting(BehaviorKeys.ADULT_ENTRY_PIN.name, JsonPrimitive(false))
         controller.changeSetting(PhoneSettings.KEY_MAX_QUALITY, JsonPrimitive(480))
 
         val serious = controller.resetSettings(PhoneSettings.GROUP_SERIOUS)
         assertThat(serious.ok).isTrue()
-        assertThat(env.behavior.current().seriousMode).isTrue()
+        assertThat(env.behavior.current().seriousMode).isEqualTo(SeriousMode.ON)
         assertThat(env.behavior.current().warningMinutes).isEqualTo(10) // another group: kept
         assertThat(controller.resetSettings("nope").ok).isFalse()
 
+        // The global reset brings both «الوضع الجاد» switches back on too.
+        controller.changeSetting(BehaviorKeys.SERIOUS_MODE_ADULT.name, JsonPrimitive(false))
         val all = controller.resetSettings(null)
         assertThat(all.message).isEqualTo(text(R.string.reset_done))
         assertThat(env.behavior.current()).isEqualTo(Behavior.DEFAULT)
+        assertThat(env.behavior.current().seriousMode).isEqualTo(SeriousMode.ON)
         assertThat(env.playbackSettings.current()).isEqualTo(PlaybackSettings.DEFAULT_MAX_QUALITY)
         assertThat(all.reconnectPort).isNull() // the port did not move
         assertThat(env.restarts).isEqualTo(0)
@@ -200,7 +230,7 @@ class PhoneSettingsTest {
         assertThat(controller.changeSetting(BehaviorKeys.DEFAULT_SPEED.name, JsonPrimitive(2), base = JsonPrimitive(1)).ok).isTrue()
         assertThat(env.behavior.current().defaultSpeed).isEqualTo(2f)
         // Without a base a change applies as it is (the TV's own screens, older pages).
-        assertThat(controller.changeSetting(BehaviorKeys.SERIOUS_MODE.name, JsonPrimitive(false)).ok).isTrue()
+        assertThat(controller.changeSetting(BehaviorKeys.SERIOUS_MODE_CHILDREN.name, JsonPrimitive(false)).ok).isTrue()
     }
 
     @Test
@@ -219,7 +249,7 @@ class PhoneSettingsTest {
         delay(300)
         assertThat(rev()).isEqualTo(quiet) // polling alone changes nothing
         movesAfter("a setting from the phone") { controller.changeSetting(BehaviorKeys.WARNING_MINUTES.name, JsonPrimitive(10)) }
-        movesAfter("a setting on the TV") { env.behavior.setSeriousMode(false) }
+        movesAfter("a setting on the TV") { env.behavior.setSeriousModeChildren(false) }
         movesAfter("a quota from the phone") { controller.setQuota("kid", 30) }
         movesAfter("a profile edited on the TV") { env.profiles.update("kid") { it.copy(hideShorts = !it.hideShorts) } }
         movesAfter("a blocked word") { controller.blockKeyword("رعب") }
@@ -237,7 +267,7 @@ class PhoneSettingsTest {
     fun theCustomPhrase_isWrittenFromThePhone_andOnlyThenChosen() = runBlocking<Unit> {
         val page = controller.settings()
         // «عبارتي الخاصة» shows while the random list is used: it is where the phrase is written first.
-        assertThat(page.item(BehaviorKeys.CUSTOM_PHRASE.name).visibleWhen.keys).containsExactly("serious_mode", "adult_escape")
+        assertThat(page.item(BehaviorKeys.CUSTOM_PHRASE.name).visibleWhen.keys).containsExactly("serious_mode_adult", "adult_escape")
         val custom = page.item(BehaviorKeys.PHRASE_MODE.name).choices.single { it.value == JsonPrimitive(PhraseMode.CUSTOM.name) }
         assertThat(custom.disabledReason).isEqualTo(text(R.string.phone_setting_custom_first))
         assertThat(page.item(BehaviorKeys.PHRASE_MODE.name).choices.single { it.value == JsonPrimitive(PhraseMode.RANDOM.name) }.disabledReason).isNull()
@@ -311,14 +341,20 @@ class PhoneSettingsTest {
         assertThat(kid.hideComments).isTrue() // a child never gets comments
         assertThat(kid.usedTodayMinutes).isEqualTo(20)
 
-        assertThat(controller.setProfileFlags("kid", hideShorts = false, hideComments = null).ok).isTrue()
+        assertThat(controller.setProfileFlags("kid", hideShorts = false, hideComments = null, showSuggestions = null).ok).isTrue()
         assertThat(env.profiles.get("kid")!!.hideShorts).isFalse()
-        val comments = controller.setProfileFlags("kid", hideShorts = null, hideComments = false)
+        val comments = controller.setProfileFlags("kid", hideShorts = null, hideComments = false, showSuggestions = null)
         assertThat(comments.ok).isFalse()
         assertThat(comments.message).isEqualTo(text(R.string.phone_comments_child))
-        assertThat(controller.setProfileFlags("adult", hideShorts = null, hideComments = true).ok).isTrue()
+        assertThat(controller.setProfileFlags("adult", hideShorts = null, hideComments = true, showSuggestions = null).ok).isTrue()
         assertThat(env.profiles.get("adult")!!.hideComments).isTrue()
-        assertThat(controller.setProfileFlags("gone", true, null).ok).isFalse()
+        assertThat(controller.setProfileFlags("gone", true, null, null).ok).isFalse()
+        // «إظهار الفيديوهات المقترحة» from the phone: off by default for a child, on for an adult; each one changes alone.
+        assertThat(kid.showSuggestions).isFalse()
+        assertThat(controller.setProfileFlags("kid", hideShorts = null, hideComments = null, showSuggestions = true).ok).isTrue()
+        assertThat(env.profiles.get("kid")!!.showSuggestions).isTrue()
+        assertThat(env.profiles.get("kid")!!.hideShorts).isFalse()
+        assertThat(controller.profilesPage().profiles.first { it.id == "kid" }.showSuggestions).isTrue()
 
         // The TV picker's rule: until 0:00 is the end of the day, the same time twice is all day.
         assertThat(controller.setSchedule("kid", 8 * 60, 0).ok).isTrue()

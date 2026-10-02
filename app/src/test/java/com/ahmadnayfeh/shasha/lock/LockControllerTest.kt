@@ -19,6 +19,7 @@ import com.ahmadnayfeh.shasha.policy.PlaybackLock
 import com.ahmadnayfeh.shasha.policy.PlayedPart
 import com.ahmadnayfeh.shasha.policy.PolicyConfig
 import com.ahmadnayfeh.shasha.policy.PolicyEngine
+import com.ahmadnayfeh.shasha.policy.SeriousMode
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.SurrenderEvent
 import com.ahmadnayfeh.shasha.policy.UnlockMethod
@@ -27,6 +28,7 @@ import com.ahmadnayfeh.shasha.policy.instantAt
 import com.ahmadnayfeh.shasha.policy.kid
 import com.ahmadnayfeh.shasha.policy.owner
 import com.google.common.truth.Truth.assertThat
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -57,8 +59,8 @@ class LockControllerTest {
     private lateinit var usage: UsageRepository
     private val scope = testScope()
     private val clock = MutableClock(instantAt("2026-09-28T12:00"))
-    /** «الوضع الجاد» (Settings): on unless a test turns it off. */
-    private val serious = MutableStateFlow(true)
+    /** «الوضع الجاد» (Settings), per kind of profile: on unless a test turns one off. */
+    private val serious = MutableStateFlow(SeriousMode.ON)
     private val engine = PolicyEngine(clock) { PolicyConfig(seriousMode = serious.value) }
     private val adult = owner()
     private val child = kid()
@@ -110,7 +112,7 @@ class LockControllerTest {
 
     @Test
     fun seriousModeOff_nothingIsLocked_inEitherProfile() = runBlocking<Unit> {
-        serious.value = false
+        serious.value = SeriousMode.OFF
         val lock = controller()
         lock.onVideoStarted(child.id, "v1", null)
         assertThat(lock.current()).isNull()
@@ -126,14 +128,44 @@ class LockControllerTest {
         val lock = controller()
         lock.onVideoStarted(adult.id, "v1", null)
         assertThat(lock.current()).isNotNull()
-        serious.value = false
+        serious.value = SeriousMode(children = true, adult = false)
         lock.shows(null)
         assertThat(lock.current()).isNull()
         assertThat(usage.surrenders(adult.id, 0)).isEmpty()
         // On again: the next video locks as before.
-        serious.value = true
+        serious.value = SeriousMode.ON
         lock.onVideoStarted(adult.id, "v2", null)
         assertThat(lock.current()?.videoId).isEqualTo("v2")
+    }
+
+    /** v1.2: each kind's switch locks its own videos only; turning one off ends that kind's lock, never the other's. */
+    @Test
+    fun theChildrensAndTheAdultsSwitches_areIndependent() = runBlocking<Unit> {
+        serious.value = SeriousMode(children = false, adult = true)
+        val lock = controller()
+        lock.onVideoStarted(child.id, "k1", null)
+        assertThat(lock.current()).isNull()
+        current.value = adult
+        lock.onVideoStarted(adult.id, "a1", null)
+        assertThat(lock.current()!!.unlock).isEqualTo(UnlockMethod.EXIT_CHALLENGE)
+        // The children's switch moving again does not touch the adult's lock.
+        serious.value = SeriousMode(children = true, adult = true)
+        serious.value = SeriousMode(children = false, adult = true)
+        delay(100)
+        assertThat(lock.current()?.videoId).isEqualTo("a1")
+
+        // A child's lock: the adult's switch going off leaves it; the children's ends it (no surrender).
+        assertThat(lock.unlockByParent()).isTrue()
+        current.value = child
+        serious.value = SeriousMode(children = true, adult = true)
+        lock.onVideoStarted(child.id, "k2", null)
+        assertThat(lock.current()!!.unlock).isEqualTo(UnlockMethod.PARENT_PIN)
+        serious.value = SeriousMode(children = true, adult = false)
+        delay(100)
+        assertThat(lock.current()?.videoId).isEqualTo("k2")
+        serious.value = SeriousMode(children = false, adult = false)
+        lock.shows(null)
+        assertThat(usage.surrenders(child.id, 0)).isEmpty()
     }
 
     // ---- Child ------------------------------------------------------------------------------------

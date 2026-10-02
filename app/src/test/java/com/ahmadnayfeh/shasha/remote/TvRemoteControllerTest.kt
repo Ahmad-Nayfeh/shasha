@@ -68,7 +68,7 @@ class TvRemoteControllerTest {
     fun child_aLinkOutsideTheAllowlist_isRefused_andTheTvShowsNothing() = runBlocking<Unit> {
         env.enterChild()
         // The link names the allowlisted playlist: the video's own channel decides all the same.
-        val result = controller.playLink(watchLink(OUTSIDE_VIDEO, list = ALLOWED_PLAYLIST))
+        val result = env.playAccepted(watchLink(OUTSIDE_VIDEO, list = ALLOWED_PLAYLIST))
         assertThat(result.ok).isFalse()
         assertThat(result.message).isEqualTo(deny(DenyReason.NOT_IN_ALLOWLIST))
         assertThat(env.display.shown).isEmpty()
@@ -77,20 +77,20 @@ class TvRemoteControllerTest {
     @Test
     fun child_aLinkInsideTheAllowlist_opensThePlayer_asALink_inTheChildsScreensOnly() = runBlocking<Unit> {
         env.enterChild()
-        val result = controller.playLink(watchLink(INSIDE_VIDEO))
+        val result = env.playAccepted(watchLink(INSIDE_VIDEO))
         assertThat(result.ok).isTrue()
-        assertThat(env.display.shown).containsExactly(Screen.Player(INSIDE_VIDEO, fromLink = true))
+        assertThat(env.display.shown).containsExactly(Screen.Player(INSIDE_VIDEO, fromLink = true, phoneApproved = true))
         // Bound to the profile it was checked for: another profile's screens never open it.
         assertThat(env.display.shownFor).containsExactly("kid")
     }
 
     @Test
     fun aSharedLinksStartTime_isWhereTheVideoStarts() = runBlocking<Unit> {
-        assertThat(controller.playLink("https://youtu.be/$ADULT_VIDEO?t=754").ok).isTrue()
-        assertThat(controller.playLink(watchLink(ADULT_VIDEO)).ok).isTrue()
+        assertThat(env.playAccepted("https://youtu.be/$ADULT_VIDEO?t=754").ok).isTrue()
+        assertThat(env.playAccepted(watchLink(ADULT_VIDEO)).ok).isTrue()
         assertThat(env.display.shown).containsExactly(
-            Screen.Player(ADULT_VIDEO, fromLink = true, startSeconds = 754),
-            Screen.Player(ADULT_VIDEO, fromLink = true),
+            Screen.Player(ADULT_VIDEO, fromLink = true, startSeconds = 754, phoneApproved = true),
+            Screen.Player(ADULT_VIDEO, fromLink = true, phoneApproved = true),
         ).inOrder()
         assertThat(env.display.shownFor).containsExactly("adult", "adult")
     }
@@ -98,16 +98,16 @@ class TvRemoteControllerTest {
     @Test
     fun theTvShowingAnotherProfile_meanwhile_isSaid() = runBlocking<Unit> {
         env.display.result = ShowResult.PROFILE_CHANGED
-        val result = controller.playLink(watchLink(ADULT_VIDEO))
+        val result = env.playAccepted(watchLink(ADULT_VIDEO))
         assertThat(result.ok).isFalse()
         assertThat(result.message).isEqualTo(text(R.string.remote_profile_changed))
     }
 
     @Test
     fun aVideoLinkWithAList_keepsThePlaylist_forWhatFollows_butStaysALink() = runBlocking<Unit> {
-        val result = controller.playLink(watchLink(ADULT_VIDEO, list = OTHER_PLAYLIST))
+        val result = env.playAccepted(watchLink(ADULT_VIDEO, list = OTHER_PLAYLIST))
         assertThat(result.ok).isTrue()
-        assertThat(env.display.shown).containsExactly(Screen.Player(ADULT_VIDEO, playlistId = OTHER_PLAYLIST, fromLink = true))
+        assertThat(env.display.shown).containsExactly(Screen.Player(ADULT_VIDEO, playlistId = OTHER_PLAYLIST, fromLink = true, phoneApproved = true))
     }
 
     @Test
@@ -117,29 +117,29 @@ class TvRemoteControllerTest {
         env.source.addPlaylist(OTHER_PLAYLIST, "Other list", listOf(clip("pl000000003", channelId = ALLOWED_CHANNEL)))
 
         // An allowlisted playlist plays from its first video, as its own page would (whatever the videos' channel).
-        assertThat(controller.playLink(ALLOWED_PLAYLIST_LINK).ok).isTrue()
-        assertThat(env.display.shown.last()).isEqualTo(Screen.Player("pl000000001", playlistId = ALLOWED_PLAYLIST, playlistIndex = 0))
+        assertThat(env.playAccepted(ALLOWED_PLAYLIST_LINK).ok).isTrue()
+        assertThat(env.display.shown.last()).isEqualTo(Screen.Player("pl000000001", playlistId = ALLOWED_PLAYLIST, playlistIndex = 0, phoneApproved = true))
         // Another playlist is refused, even full of allowed videos: a child opens only allowlisted playlists.
-        val refused = controller.playLink("https://www.youtube.com/playlist?list=$OTHER_PLAYLIST")
+        val refused = env.playAccepted("https://www.youtube.com/playlist?list=$OTHER_PLAYLIST")
         assertThat(refused.ok).isFalse()
         assertThat(refused.message).isEqualTo(deny(DenyReason.NOT_IN_ALLOWLIST))
 
-        assertThat(controller.playLink("https://www.youtube.com/channel/$ALLOWED_CHANNEL").ok).isTrue()
+        assertThat(env.playAccepted("https://www.youtube.com/channel/$ALLOWED_CHANNEL").ok).isTrue()
         assertThat(env.display.shown.last()).isEqualTo(Screen.Channel(ALLOWED_CHANNEL))
-        assertThat(controller.playLink("https://www.youtube.com/channel/$OTHER_CHANNEL").ok).isFalse()
+        assertThat(env.playAccepted("https://www.youtube.com/channel/$OTHER_CHANNEL").ok).isFalse()
         assertThat(env.display.shown).hasSize(2)
     }
 
     @Test
     fun aLink_isRefused_whenTheTvCannotShowIt_orItIsNotYouTube() = runBlocking<Unit> {
-        assertThat(controller.playLink("https://example.com/watch?v=x").message).isEqualTo(text(R.string.remote_link_not_youtube))
+        assertThat(env.playAccepted("https://example.com/watch?v=x").message).isEqualTo(text(R.string.remote_link_not_youtube))
         env.display.result = ShowResult.NO_PROFILE
-        val result = controller.playLink(watchLink(ADULT_VIDEO))
+        val result = env.playAccepted(watchLink(ADULT_VIDEO))
         assertThat(result.ok).isFalse()
         assertThat(result.message).isEqualTo(text(R.string.remote_no_profile))
         // A deleted video: YouTube's own reason, in Arabic.
         env.display.result = ShowResult.SHOWN
-        val gone = controller.playLink(watchLink("deleted0001"))
+        val gone = env.playAccepted(watchLink("deleted0001"))
         assertThat(gone.ok).isFalse()
         assertThat(gone.message).isEqualTo(text(R.string.error_explain_content_unavailable))
     }
@@ -148,10 +148,10 @@ class TvRemoteControllerTest {
     fun timeUp_refusesLinks_andTheTvShowsNothing() = runBlocking<Unit> {
         env.enterChild()
         env.used("kid", 60 * 60)
-        val result = controller.playLink(watchLink(INSIDE_VIDEO))
+        val result = env.playAccepted(watchLink(INSIDE_VIDEO))
         assertThat(result.ok).isFalse()
         assertThat(result.message).isEqualTo(deny(DenyReason.TIME_UP))
-        assertThat(controller.playLink("https://www.youtube.com/channel/$ALLOWED_CHANNEL").message).isEqualTo(deny(DenyReason.TIME_UP))
+        assertThat(env.playAccepted("https://www.youtube.com/channel/$ALLOWED_CHANNEL").message).isEqualTo(deny(DenyReason.TIME_UP))
         assertThat(env.display.shown).isEmpty()
     }
 
@@ -203,7 +203,7 @@ class TvRemoteControllerTest {
 
         assertThat(controller.control(PlaybackCommand(PlaybackAction.STOP)).message).isEqualTo(text(R.string.remote_video_locked))
         assertThat(player.left).isEqualTo(0)
-        assertThat(controller.playLink(watchLink(INSIDE_VIDEO)).message).isEqualTo(deny(DenyReason.LOCKED))
+        assertThat(env.playAccepted(watchLink(INSIDE_VIDEO)).message).isEqualTo(deny(DenyReason.LOCKED))
         assertThat(controller.switchProfile("adult", PIN).message).isEqualTo(text(R.string.remote_switch_locked))
         assertThat(env.current().id).isEqualTo("kid")
         assertThat(controller.importBackup(controller.exportBackup()).message).isEqualTo(text(R.string.remote_backup_locked))

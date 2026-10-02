@@ -30,6 +30,7 @@ import com.ahmadnayfeh.shasha.player.PlayerHub
 import com.ahmadnayfeh.shasha.player.PlayerRefusal
 import com.ahmadnayfeh.shasha.policy.ALLOWED_CHANNEL
 import com.ahmadnayfeh.shasha.policy.ALLOWED_PLAYLIST
+import com.ahmadnayfeh.shasha.policy.DenyReason
 import com.ahmadnayfeh.shasha.policy.LookedUpVideo
 import com.ahmadnayfeh.shasha.policy.MutableClock
 import com.ahmadnayfeh.shasha.policy.OTHER_CHANNEL
@@ -61,9 +62,11 @@ import com.ahmadnayfeh.shasha.youtube.VideoSource
 import com.ahmadnayfeh.shasha.youtube.YouTubeLink
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.io.File
@@ -125,6 +128,12 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
     val hub = PlayerHub()
     val display = FakeDisplay()
     val texts = RemoteTexts(ApplicationProvider.getApplicationContext<Context>().resources)
+
+    /** v1.2: videos waiting for the parent's «تأكيد» on the phone (a player asks), as AppContainer has them. */
+    val confirmations = PhoneConfirmations()
+
+    /** v1.2: links waiting on the TV for «قبول». */
+    val playRequests = PhonePlayRequests(scope, texts)
     val revision: RemoteRevision
     val controller: TvRemoteController
 
@@ -172,6 +181,9 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
             ),
         )
         controller = newController(phonePin)
+        // As AppContainer: a link waiting for a profile the TV has left, or when a video gets locked, is dropped.
+        scope.launch { active.id.collect { playRequests.onProfile(it) } }
+        scope.launch { lock.lock.collect { if (it != null) playRequests.onLocked(texts.deny(DenyReason.LOCKED)) } }
         source.videos[INSIDE_VIDEO] = clip(INSIDE_VIDEO, channelId = ALLOWED_CHANNEL, title = "Allowed cartoon")
         source.videos[OUTSIDE_VIDEO] = clip(OUTSIDE_VIDEO, channelId = OTHER_CHANNEL, title = "Somewhere else")
         source.videos[ADULT_VIDEO] = clip(ADULT_VIDEO, channelId = OTHER_CHANNEL, title = "Documentary")
@@ -231,6 +243,8 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
         revision = { revision.value },
         movingTo = movingTo,
         adultEntryPin = { behavior.policyConfig().adultEntryNeedsPin },
+        confirmations = confirmations,
+        playRequests = playRequests,
     )
 
     fun close() {
@@ -256,6 +270,38 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
     /** The player on screen playing [videoId] (as PlayerScreen would attach it). */
     fun playOnScreen(videoId: String, live: Boolean = false): FakeActivePlayer = FakeActivePlayer(videoId, live).also { hub.attach(it) }
 
+    /** «قبول» on the TV for the link waiting there; then how it ended, as the phone's status says it. */
+    suspend fun acceptOnTv(): RemotePlayRequest {
+        val waiting = withTimeout(5_000) { playRequests.pending.first { it != null } }!!
+        assertThat(playRequests.accept(waiting.id)).isTrue()
+        return endOf(waiting.id)
+    }
+
+    /** How the request [id] ended (it no longer waits), as the phone's status says it. */
+    suspend fun endOf(id: String): RemotePlayRequest = withTimeout(5_000) {
+        var latest = playRequests.latest()
+        while (latest == null || latest.id != id || latest.state == RemotePlayState.PENDING) {
+            delay(10)
+            latest = playRequests.latest()
+        }
+        latest
+    }
+
+    /**
+     * A link as the phone sends it (v1.2: nothing opens by itself) and the TV's viewer then presses «قبول»: what the phone
+     * ends up showing. A refusal comes at once, the TV never asks.
+     */
+    suspend fun playAccepted(url: String, controller: TvRemoteController = this.controller): RemoteResult {
+        val sent = controller.playLink(url)
+        if (!sent.ok) {
+            assertThat(sent.request).isNull()
+            return RemoteResult.error(sent.message)
+        }
+        assertThat(sent.request!!.state).isEqualTo(RemotePlayState.PENDING)
+        val ended = acceptOnTv()
+        return RemoteResult(ended.state == RemotePlayState.ACCEPTED, ended.message)
+    }
+
     /** Today's usage of [profileId], FOREGROUND, as the tracker would have recorded it. */
     suspend fun used(profileId: String, seconds: Long) {
         usage.addForeground(profileId, engine.today(), seconds)
@@ -271,6 +317,14 @@ class FakeDisplay : RemoteDisplay {
     val shownFor = CopyOnWriteArrayList<String>()
 
     @Volatile var result = ShowResult.SHOWN
+
+    /** v1.2: asked before the TV asks about a link: the TV's state only (standby, background, no profile's screens). */
+    @Volatile var prepared = 0
+
+    override suspend fun prepare(profileId: String): ShowResult {
+        prepared++
+        return if (result in listOf(ShowResult.SCREEN_OFF, ShowResult.NOT_IN_FRONT, ShowResult.NO_PROFILE)) result else ShowResult.SHOWN
+    }
 
     override suspend fun show(destination: Screen, profileId: String): ShowResult {
         if (result == ShowResult.SHOWN) {

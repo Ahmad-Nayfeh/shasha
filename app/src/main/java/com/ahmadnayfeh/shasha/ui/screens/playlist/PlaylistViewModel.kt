@@ -48,7 +48,8 @@ class PlaylistViewModel(
         rules.profile?.let { rules.playlist(playlistId, ownerChannelId = null, title = details?.title) }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    private val loader = PagedLoader(viewModelScope, VideoUi::key) { page ->
+    // Pages keep coming until the screen is full of videos the profile's rules show (a child's rules may hide most of a page).
+    private val loader = PagedLoader(viewModelScope, VideoUi::key, shown = { filter.value.playlistVideos(playlistId, listOf(it.video)).isNotEmpty() }) { page ->
         val result = source.playlist(playlistId, page)
         if (page == null) _details.value = result.details
         Page(result.videos.map { it.toUi() }, result.next)

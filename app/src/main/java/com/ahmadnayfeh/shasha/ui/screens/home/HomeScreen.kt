@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,9 +45,15 @@ import com.ahmadnayfeh.shasha.ui.components.ScreenHeader
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaGrid
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
+import com.ahmadnayfeh.shasha.ui.components.ShelfTitle
+import com.ahmadnayfeh.shasha.ui.components.ShortsShelf
 import com.ahmadnayfeh.shasha.ui.components.TakeFocusWhenReady
+import com.ahmadnayfeh.shasha.ui.components.VideoShelf
 import com.ahmadnayfeh.shasha.ui.components.containerViewModel
 import com.ahmadnayfeh.shasha.ui.components.fullWidthItem
+import com.ahmadnayfeh.shasha.ui.components.gridCellWidth
+import com.ahmadnayfeh.shasha.ui.components.gridColumns
+import com.ahmadnayfeh.shasha.ui.components.shortCardWidth
 import com.ahmadnayfeh.shasha.ui.components.rememberNow
 import com.ahmadnayfeh.shasha.ui.components.videoCards
 import com.ahmadnayfeh.shasha.ui.format.rememberFormats
@@ -55,7 +62,9 @@ import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 @Composable
 fun HomeRoute(focus: ContentFocus, onPlay: (VideoItem) -> Unit, onImport: () -> Unit, onSearch: () -> Unit, onCheckUpdates: () -> Unit) {
-    val vm = containerViewModel { HomeViewModel(it.feed, it.subscriptions, it.watch, it.network.online, it.feedSyncScheduler::syncNow, it.policy.filter) }
+    val vm = containerViewModel {
+        HomeViewModel(it.feed, it.subscriptions, it.watch, it.network.online, it.feedSyncScheduler::syncNow, it.policy.filter, it.homeSuggestions)
+    }
     val state by vm.state.collectAsStateWithLifecycle()
     val watched = vm.watched.collectAsStateWithLifecycle()
     val sync by vm.sync.collectAsStateWithLifecycle()
@@ -75,8 +84,12 @@ fun HomeRoute(focus: ContentFocus, onPlay: (VideoItem) -> Unit, onImport: () -> 
 }
 
 /**
- * الرئيسية (SPEC §2): the subscribed channels' latest videos, newest first. Nothing recommended. When the
- * sync fails for most channels, the unified error says so (SPEC §1): above the feed, or in its place.
+ * الرئيسية (SPEC §2): the subscribed channels' latest videos, newest first. When the sync fails for most channels, the
+ * unified error says so (SPEC §1): above the feed, or in its place.
+ *
+ * Under the feed's first line come two shelves when the profile has them: «مقترحة لك» (suggestions beside the last videos
+ * watched) and «Shorts» (the channels' newest Shorts, which then stay out of the grid); the rest of the feed follows
+ * under «المزيد من قنواتك». Without them the screen is the plain grid.
  */
 @Composable
 fun HomeScreen(
@@ -98,7 +111,7 @@ fun HomeScreen(
     val failure = sync.failure
     val form = when {
         !state.loaded -> HomeForm.LOADING
-        state.videos.isNotEmpty() -> HomeForm.FEED
+        state.hasFeed -> HomeForm.FEED
         state.subscriptionCount == 0 -> HomeForm.WELCOME
         sync.busy -> HomeForm.FETCHING
         failure != null -> HomeForm.FAILED
@@ -110,15 +123,56 @@ fun HomeScreen(
         HomeForm.FEED -> {
             val gridState = rememberLazyGridState()
             val firstCard = remember { FocusRequester() }
-            ShashaGrid(gridState, focus, firstCard, content.fillMaxSize().testTag("home_grid")) {
-                fullWidthItem("header") {
-                    ScreenHeader(stringResource(R.string.home_title), stringResource(R.string.home_subtitle)) {
-                        SyncStatus(sync, nowMs, formats)
-                        ShashaButton(stringResource(R.string.home_refresh), onRefresh, icon = ShashaIcons.Refresh, modifier = Modifier.testTag("home_refresh"))
+            BoxWithConstraints(content.fillMaxSize()) {
+                // The shelves come after the grid's first line: the newest videos stay on top.
+                val columns = gridColumns(maxWidth)
+                val firstLine = state.videos.take(columns)
+                val rest = state.videos.drop(columns)
+                val shelves = state.suggested.isNotEmpty() || state.shorts.isNotEmpty()
+                ShashaGrid(gridState, focus, firstCard, Modifier.fillMaxSize().testTag("home_grid")) {
+                    fullWidthItem("header") {
+                        ScreenHeader(stringResource(R.string.home_title), stringResource(R.string.home_subtitle)) {
+                            SyncStatus(sync, nowMs, formats)
+                            ShashaButton(stringResource(R.string.home_refresh), onRefresh, icon = ShashaIcons.Refresh, modifier = Modifier.testTag("home_refresh"))
+                        }
+                    }
+                    if (failure != null) fullWidthItem("sync_error") { SyncErrorBanner(failure, extractorVersion, onCheckUpdates) }
+                    videoCards(firstLine, watched, formats, nowMs, firstCard) { onPlay(it.video) }
+                    if (state.suggested.isNotEmpty()) {
+                        fullWidthItem("suggested") {
+                            VideoShelf(
+                                title = stringResource(R.string.home_suggested_title),
+                                subtitle = stringResource(R.string.home_suggested_subtitle),
+                                items = state.suggested,
+                                watched = watched,
+                                formats = formats,
+                                nowMs = nowMs,
+                                cardWidth = gridCellWidth(maxWidth, columns),
+                                onPlay = { onPlay(it.video) },
+                                first = firstCard.takeIf { firstLine.isEmpty() },
+                                modifier = Modifier.testTag("home_suggested"),
+                            )
+                        }
+                    }
+                    if (state.shorts.isNotEmpty()) {
+                        fullWidthItem("shorts") {
+                            ShortsShelf(
+                                title = stringResource(R.string.home_shorts_title),
+                                subtitle = stringResource(R.string.home_shorts_subtitle),
+                                items = state.shorts,
+                                watched = watched,
+                                cardWidth = shortCardWidth(maxWidth),
+                                onPlay = { onPlay(it.video) },
+                                first = firstCard.takeIf { firstLine.isEmpty() && state.suggested.isEmpty() },
+                                modifier = Modifier.testTag("home_shorts"),
+                            )
+                        }
+                    }
+                    if (rest.isNotEmpty()) {
+                        if (shelves) fullWidthItem("more") { ShelfTitle(stringResource(R.string.home_more_title)) }
+                        videoCards(rest, watched, formats, nowMs, firstItem = null) { onPlay(it.video) }
                     }
                 }
-                if (failure != null) fullWidthItem("sync_error") { SyncErrorBanner(failure, extractorVersion, onCheckUpdates) }
-                videoCards(state.videos, watched, formats, nowMs, firstCard) { onPlay(it.video) }
             }
         }
         HomeForm.WELCOME -> Welcome(focus, onImport, onSearch, content)

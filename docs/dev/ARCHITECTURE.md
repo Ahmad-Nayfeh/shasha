@@ -33,12 +33,14 @@ The three libraries do not depend on each other: `:app` maps its models to their
 - Only `:youtube` sees NewPipeExtractor, as `implementation`, never `api`. No `org.schabi.*` import exists elsewhere (the one mention in `:app` is a class-name string in the test helper `app/src/test/java/com/ahmadnayfeh/shasha/TestStreams.kt`). Replacing the extractor means editing `:youtube` only.
 - `:policy` is pure Kotlin/JVM (`policy/build.gradle.kts` applies `kotlin.jvm`): no Android imports, an injected clock, plain JUnit tests.
 - `:remote` defines the HTTP API, the wire format and the `RemoteController` interface; `:app` implements the interface.
-- Scope limits from SPEC: no analytics, no Google sign-in, no downloads, no background play, no recommendations or related videos.
+- Scope limits from SPEC: no analytics, no Google sign-in, no downloads, no background play.
+- Suggested videos («الفيديوهات المقترحة», YouTube's related videos) exist since v1.1.1 by the owner's decision. They are a per-profile setting (`Profile.showSuggestions`: on for adults, off for children) and pass the same rules as any list (`PolicyEngine.canSuggest`).
 
 ### `:youtube` (`youtube/src/main/java/com/ahmadnayfeh/shasha/youtube/`)
 
-- Contract: `VideoSource.kt` (search, suggestions, channel, channelVideos, playlist, stream, recentVideos, parseLink, resolveChannelId), `Models.kt`, `PlaybackHandle.kt`, `YouTubeLinkParser.kt`. `YouTube.create()` in `YouTube.kt` builds the implementation.
-- Every suspend call runs on `Dispatchers.IO` and throws only `SourceException` (kinds such as `BLOCKED_403`, `BOT_CHECK`, `LOW_QUALITY_ONLY`, `NETWORK`, `EXTRACTION_BROKEN`). Its `technicalName` is the failing exception's class name and appears on the error screen, so R8 must not rename exceptions: `youtube/consumer-rules.pro` keeps them, and `android.yml` fails if that stops working.
+- Contract: `VideoSource.kt` (search, suggestions, channel, channelVideos, channelShorts, playlist, stream, related, recentVideos, parseLink, resolveChannelId), `Models.kt`, `PlaybackHandle.kt`, `YouTubeLinkParser.kt`. `YouTube.create()` in `YouTube.kt` builds the implementation.
+- `related(videoId)` answers from the related items of the `stream()` extraction that playback already made (`newpipe/RelatedCache`, 6 hours); only a video that was not played in that time costs a request of its own.
+- Every suspend call runs on `Dispatchers.IO` and throws only `SourceException` (kinds such as `BLOCKED_403`, `BOT_CHECK`, `LOW_QUALITY_ONLY`, `NETWORK`, `EXTRACTION_BROKEN`). Its `technicalName` is the failing exception's class name and appears on the error screen, so R8 must not rename exceptions: `youtube/consumer-rules.pro` keeps them (and `app/proguard-rules.pro` keeps the app's own `*Error` and `*Exception` names), and `android.yml` fails if that stops working.
 - `newpipe/` is the only code that imports the extractor: `NewPipeVideoSource`, `NewPipeDownloader` (over OkHttp), `ErrorMapper`, `ItemMapper`, `StreamMapper`, `PageStore` (the opaque `PageKey`).
 - `playback/`: `YouTubeMediaSourceFactory` turns `StreamDetails` into a Media3 `MediaSource`.
   - An adaptive DASH manifest generated in memory (`PlaybackPlanner`, `DashManifestWriter`), HLS for live.
@@ -48,7 +50,7 @@ The three libraries do not depend on each other: `:app` maps its models to their
 
 ### `:policy` (`policy/src/main/kotlin/com/ahmadnayfeh/shasha/policy/`)
 
-- `PolicyEngine.kt` makes every decision: `canShow`, `canPlay`, `canPlayLink` (phone and external links; a `list=` parameter is ignored), `canShowChannel`, `canShowPlaylist`, `isShort`, `features(profile)`, `session(...)`, `guardShouldEnforce(...)`, the playback-lock functions and the parent's time grants.
+- `PolicyEngine.kt` makes every decision: `canShow`, `canPlay`, `canPlayLink` (phone and external links; a `list=` parameter is ignored), `canShowChannel`, `canShowPlaylist`, `canSuggest`, `isShort`, `features(profile)`, `session(...)`, `guardShouldEnforce(...)`, the playback-lock functions and the parent's time grants.
 - Data: `Profile.kt` (`Profile`, `Schedule`, `Allowlist`, `Blocklist`), `Candidate`, `Decision` / `DenyReason`, `Features`, `SessionState` / `LockState`, `PlaybackLock`, `Overrides` (the parent's grants), `PolicyConfig` (the adjustable rules, section 4), usage records and summaries (`UsageStats.kt`).
 - Security helpers: `PinHasher` (PBKDF2WithHmacSHA256), `PinAttemptLimiter` (lockouts of 5 min, 15 min, 1 h, 4 h by default), `AdultExitChallenge` (long press plus a typed phrase). Also `TextNormalizer` (keyword matching), `UsageStatsCalculator`, `PolicyJson`.
 
@@ -69,7 +71,7 @@ Source root: `app/src/main/java/com/ahmadnayfeh/shasha/`. `ShashaApp` creates `A
 | `feed/` | WorkManager home-feed sync: every 2 hours, stands down while a video plays, catches up 15 minutes later |
 | `remote/` | host of the phone remote: `RemoteService`, `RemoteRuntime`, `TvRemoteController`, `PhonePin`, `PhoneSettings`, `PhoneParental`, `RemoteSettings`, `RemoteDisplay`; section 6 |
 | `sponsorblock/` | SponsorBlock client, cache, settings, `SkipController` |
-| `search/` | voice search (`VoiceSearch`, Arabic or English) and the per-profile search history |
+| `search/` | voice search (Arabic or English) and the per-profile search history. The system's voice screen (`RecognizerIntent.ACTION_RECOGNIZE_SPEECH`, launched for a result; on Google TV the remote's microphone reaches only it) is tried first; the in-app `SpeechRecognizer` (`VoiceSearch`, with `RECORD_AUDIO`) is the fallback when no activity answers. «تشخيص» says which of the two the TV offers |
 | `update/` | the self-updater; section 7 |
 | `backup/` | manual JSON backup and restore |
 | `ui/` | Compose for TV: `app/` (root, `SessionGate`), `navigation/` (`Screen`, `ProfileNavHost`: one graph for adults, a smaller one for children), `main/` (rail and tabs), `screens/<feature>/`, `settings/` (the two-pane Settings hub), `components/`, `lock/`, `parental/`, `theme/`, `format/` |
@@ -78,6 +80,7 @@ Conventions:
 
 - UI text is Arabic, right to left, in `app/src/main/res/values/strings*.xml`. Numbers inside strings use `%1$s` with `n.toString()`, never `%d` (an Arabic system locale would print Arabic-Indic digits). Titles and names inserted into Arabic sentences are wrapped in FSI/PDI (`\u2068` and `\u2069`) so English text keeps its place.
 - Everything is reachable with the D-pad and shows a focus state. Each screen owns a `ContentFocus` (`ui/components/ContentFocus.kt`); focusable elements of a Settings pane use `Modifier.paneItem` (`ui/settings/PaneParts.kt`). The child profile has no text input (`Features.textInput`), and PINs and exit phrases use the app's own pad and keyboard, never the system one.
+- Lists that load page by page (search, a channel's videos, a playlist) use `ui/paging/PagedLoader`. A page is not a screenful (YouTube's «all» search comes through the extractor in pages of 2 to 11 items, and the profile's rules hide more), so it asks for pages until the first screen holds 24 shown items and each scroll brings 12 more, bounded per run, and stops where the source ends.
 - Any `SourceException` that reaches the viewer is shown by the one unified error screen (`ui/screens/error/ErrorScreen.kt`): what happened, the extractor version, the technical name, and "check for updates".
 - UI code never re-implements a rule: lists, plays and profile switches go through `PolicyGate`.
 
@@ -96,22 +99,22 @@ Conventions:
 | `behavior` | `data/BehaviorSettings.kt` | every adjustable behaviour (`Behavior`, keys in `BehaviorKeys`) |
 | `playback` | `data/PlaybackSettings.kt` | highest quality (default 1080p) |
 | `sponsorblock` | `sponsorblock/SponsorBlockSettings.kt` | skipped categories |
-| `remote` | `remote/RemoteSettings.kt` | on/off, pairing token, port |
+| `remote` | `remote/RemoteSettings.kt` | on/off, pairing token, port, whether a phone reached the server with the current token (`phone_paired`, v1.2; forgotten with a new token, never backed up) |
 | `search` | `search/SearchHistory.kt` | recent searches per profile |
 | `guard` | `lock/GuardReturnTimes.kt` | the last 10 guard return times |
 
 `BehaviorSettings` is the single source for what the parent can adjust. The TV's Settings and the phone page both edit it, and `data/SettingsReset.kt` resets it. It holds:
 
-- Serious Mode («الوضع الجاد»): on/off, the adult's exit hold and phrases, the skip allowance.
+- Serious Mode («الوضع الجاد»): since v1.2 two independent switches, one for the children's profiles (`serious_mode_children`) and one for the adult's (`serious_mode_adult`), both on by default; v1.1's single `serious_mode` key is moved into both once (`migrateSeriousMode`). Also the adult's exit (on/off: turning it off on the TV needs a paired phone, `setAdultEscape(on, phonePaired)`), its hold and phrases, and the skip allowance.
 - Time and the parent PIN: warning time, extra-time choices, PIN lockout, relock delay, and whether entering the adult profile asks for the PIN.
 - Playback and children: default speed, seek step, auto-play countdowns, SponsorBlock timings, the Shorts limit; and the voice-search language.
 
 `values` is a `StateFlow<Behavior>`; `policyConfig()` feeds `PolicyEngine` and `pinLockout()` feeds the PIN limiters.
 
-**Backup**: `backup/BackupManager.kt` writes and reads one JSON file (`FORMAT` 2), from Settings («الاستيراد والتصدير») or from the phone.
+**Backup**: `backup/BackupManager.kt` writes and reads one JSON file (`FORMAT` 3), from Settings («الاستيراد والتصدير») or from the phone. Older files are still read: a format-2 file's single Serious Mode switch sets both switches (`SettingsSection.upgrade`, `BehaviorSettings.upgradeBackup`).
 
 - Kept: profiles, the PIN hash (never the PIN), grants, subscriptions, watch later, history, progress, usage, surrenders, and the `behavior`, `playback`, `sponsorblock` and `remote` settings (on/off and port, never the token).
-- Not kept: the feed and SponsorBlock caches, the playback lock, PIN lockouts, search history, the pairing token.
+- Not kept: the feed and SponsorBlock caches, the home's suggestions cache (`data/HomeSuggestions.kt`, `home_suggestions.json` in the cache directory), the playback lock, PIN lockouts, search history, the pairing token. Each profile's Shorts and suggestions choices are part of the profile and are kept.
 - Import validates everything first and replaces the tables in one Room transaction. A setting that should survive a restore must be listed in its store's `backupSection`.
 
 ## 5. Protection: rules, time, lock and guard
@@ -120,13 +123,16 @@ Conventions:
   - Lists are filtered through `PolicyGate.filter` and its `visible*` functions.
   - Every play goes through `checkPlay(videoId, origin)` (origin `Navigation`, `Playlist` or `Link`) before anything is extracted, and again before a released player restarts. Phone links go through `checkLink`; profile switches through `switchProfile`, which asks for the PIN where needed.
   - A child sees only allowlisted channels and playlists, has no search tab, and may have Shorts hidden.
+  - Shorts (`PolicyEngine.isShort`: flagged, a `/shorts/` link, or at most the Shorts limit long) are hidden everywhere or shown everywhere with the «Shorts» badge, which uses the same test. Suggestions (`PolicyGate.visibleSuggestions`) go through the same rules; a child's are off unless the parent turns them on, and then come only from its allowed channels.
 - **Time.** `SessionController` recomputes the `SessionState` (Ok, Warning, TimeUp, OutsideSchedule) every 15 seconds and on every change.
   - `UsageTracker` adds up foreground time, which is what the daily quota counts (only while the app is visible, a profile's screens are shown and the session counts toward the quota), and playback time per channel for the stats.
   - `ui/app/SessionGate.kt` replaces every screen with `TimeBlockScreen` when watching is not allowed. Only the parent PIN (on the TV or the phone) gives time back, as `Overrides` in `PolicyStore`.
 - **In-app lock (Serious Mode).** When a video starts, `lock/LockController.kt` stores a `PlaybackLock` in `PlaybackLockStore`, so killing the app or rebooting keeps it.
   - While it exists BACK does nothing, nothing else can start, and `KeepLockedVideoOnScreen` (`ui/lock/LockedNavigation.kt`) forces the player destination.
   - A video that really plays to its end releases it (`PlayedPart.endedByItself`: seeking to the end does not count).
-  - A child leaves with the parent PIN. The adult holds BACK or OK (10 seconds by default, `lock/ExitHold.kt`) and types a phrase (`AdultExitChallenge`); that is recorded as a "surrender" in the stats. The parent can release a lock from the phone, and Settings can turn the lock off.
+  - A child leaves with the parent PIN on the TV (the PIN pad on BACK, `LockController.unlockWithPin`, or the picker with the PIN, `PolicyGate.switchProfile`). The adult holds BACK or OK (10 seconds by default, `lock/ExitHold.kt`) and types a phrase (`AdultExitChallenge`); that is recorded as a "surrender" in the stats. The PIN never ends the adult's lock. The parent can release any lock from the phone.
+  - v1.2: each kind of profile has its own switch (`SeriousMode` in `PolicyConfig`; `PolicyEngine.lockFor` reads the current profile's kind). Turning a switch off ends the lock of that kind only (`LockController`'s `seriousMode` flow, `SeriousMode.holds`).
+  - v1.2: a video that would start locked while nothing on the TV could end it early (the adult's exit turned off: `PolicyEngine.tvWayOut` is null, `needsPhoneConfirmation`) first waits for the parent's «تأكيد» on the phone. The player asks (`StartConfirmation` → `PhoneStartConfirmation`, `PlayerViewModel.Load.AwaitingPhone`, `ui/screens/player/PhoneConfirmPrompt.kt`); `remote/PhoneConfirmations.kt` holds the question two minutes; the phone answers with `POST /api/parent/confirm`. «رفض», the time or «إلغاء» on the TV: nothing plays. With no phone there (`remote/PhoneReach.kt`: none paired, or none polled in the last minute) the prompt says how to pair one. A video the phone itself sent (`Screen.Player.phoneApproved`) and a video the lock already holds ask nothing.
 - **Guard outside the app** (`lock/GuardService.kt`), best effort.
   - A foreground service (`specialUse`, `START_STICKY`) started by `ShashaApp`, `MainActivity` and `lock/BootReceiver` (after boot and after an update). It runs only while both permissions that the installers in `Shasha-Setup/` grant over ADB are present (`ProtectionChecks.guardCanRun`: `SYSTEM_ALERT_WINDOW` and usage access).
   - `guardDemand(...)` (`lock/GuardDemand.kt`) feeds `PolicyEngine.guardShouldEnforce`: true while a video is locked, time is up, it is outside the schedule, or a child profile is current and the parent PIN has not let it out (`AppContainer.childLetOut`).
@@ -145,6 +151,8 @@ Conventions:
 - **Parent session**: `POST /api/parent/login` with the PIN returns a session id that the page sends as `X-Parent-Session`; every `/api/parent/*` route needs it. Sessions live in memory only (30 minutes sliding, at most 8) and are revoked when the PIN or the token changes.
 - **PIN brakes**: `PinGate` in `:remote` (memory only; after a few wrong PINs in a row, five by default, every PIN check answers 429 for 30 seconds, doubling up to 1 hour) sits in front of `PhonePin` in `:app` (its own `PinAttemptLimiter`, saved as `phone_pin_attempts`, so a reboot grants no new guesses). The phone's count is separate from the TV's: a child's wrong guesses on the TV never lock the parent's phone. All paired phones share one count.
 - **Rules apply on the phone too**: links go through `PolicyGate.checkLink` (only the video's own channel counts); while a video is locked the phone is refused STOP, new links, profile switches and restores until the parent unlocks the video; a child profile has no search.
+- **A link never plays by itself (v1.2)**: `POST /api/play` checks the rules (a refusal answers at once and the TV shows nothing), then `remote/PhonePlayRequests.kt` holds the link and `ui/components/PlayRequestOverlay.kt` asks «طلب تشغيل من الجوال» over whatever is on screen (focus on «قبول», BACK is «رفض», rejected by itself after 30 s; one at a time, a newer link replaces it). Only «قبول» opens it, after the rules are asked again; the page follows the request through `status.playRequest` (PENDING, ACCEPTED, REJECTED, TIMED_OUT, FAILED). A request is dropped when the TV leaves its profile or a video gets locked (`AppContainer.playRequests`).
+- **Presence (v1.2)**: `PhonePresence` in `:remote` notes when a request with the token last came; `RemoteRuntime` marks the phone paired (`RemoteSettings.markPhonePaired`) and `TvPhoneReach` answers "paired" and "there now" (a poll in the last 60 s).
 
 ## 7. The updater
 

@@ -99,6 +99,7 @@ import kotlinx.coroutines.delay
 import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 import com.ahmadnayfeh.shasha.ui.theme.OsdColors
 import com.ahmadnayfeh.shasha.ui.theme.Accents
+import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 /** The controls' default wait before hiding (Settings may change it: [LocalBehavior]). */
 const val OSD_AUTO_HIDE_MS = 3_000L
@@ -125,6 +126,10 @@ private val OK_KEYS = setOf(KEYCODE_DPAD_CENTER, KEYCODE_ENTER, KEYCODE_NUMPAD_E
  *
  * [suspended]: the lock (SPEC §4) has something in front, its exit ring or a lock screen. The controls step
  * back (nothing stays half-pressed under the ring) and, when it is over, the focus comes back here.
+ *
+ * [suggestions] («مقترحة», none by default): a row under the controls, folded away with only its title showing; DOWN
+ * from the controls opens it ([SuggestionsDock]), OK plays a card ([onPlaySuggestion]), UP or BACK goes back to the
+ * controls. The controls do not hide while a suggestion has the focus. [suggestionsWatched]: their red bars.
  */
 @Composable
 fun PlayerOsd(
@@ -142,6 +147,9 @@ fun PlayerOsd(
     resumeHintMs: Long = RESUME_HINT_MS,
     suspended: Boolean = false,
     seekStepMs: Long = LocalBehavior.current.seekStepSeconds * 1000L,
+    suggestions: List<VideoItem> = emptyList(),
+    suggestionsWatched: Map<String, Float> = emptyMap(),
+    onPlaySuggestion: (VideoItem) -> Unit = {},
 ) {
     var visible by remember { mutableStateOf(initiallyVisible || initialMenu != null) }
     var menu by remember { mutableStateOf(initialMenu) }
@@ -163,6 +171,9 @@ fun PlayerOsd(
     val playFocus = remember { FocusRequester() }
     val chipFocus = remember { OsdMenu.entries.associateWith { FocusRequester() } }
     val seekInteraction = remember { MutableInteractionSource() }
+    val suggestionsFocus = remember { FocusRequester() }
+    // A suggestion has the focus: the row is open, and the controls stay.
+    var suggestionsFocused by remember { mutableStateOf(false) }
 
     fun refresh() {
         shown = progress()
@@ -223,6 +234,7 @@ fun PlayerOsd(
     fun back() {
         when {
             menu != null -> closeMenu()
+            suggestionsFocused -> runCatching { playFocus.requestFocus() }
             visible -> hide()
             else -> onExit()
         }
@@ -303,7 +315,7 @@ fun PlayerOsd(
             runCatching { rootFocus.requestFocus() }
         }
     }
-    val autoHide = visible && menu == null && scrubMs == null && state.playWhenReady && !state.isEnded
+    val autoHide = visible && menu == null && scrubMs == null && state.playWhenReady && !state.isEnded && !suggestionsFocused
     LaunchedEffect(autoHide, interactions) {
         if (autoHide) {
             delay(autoHideMs)
@@ -383,9 +395,66 @@ fun PlayerOsd(
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             val position = scrubMs ?: shown.positionMs
-            // Media controls are never mirrored: the bar runs left to right, like the tape.
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                Column(
+            val hasSuggestions = suggestions.isNotEmpty()
+            val controls: @Composable (Modifier) -> Unit = { controlsModifier ->
+                // Media controls are never mirrored: the bar runs left to right, like the tape.
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Column(controlsModifier) {
+                        SeekBar(
+                            positionMs = position,
+                            bufferedMs = shown.bufferedMs,
+                            durationMs = shown.durationMs,
+                            scrubbing = scrubMs != null,
+                            interactionSource = seekInteraction,
+                            isLive = state.isLive,
+                            modifier = Modifier
+                                .focusRequester(seekFocus)
+                                .focusProperties { down = playFocus }
+                                .onKeyEvent { event ->
+                                    val code = event.nativeKeyEvent.keyCode
+                                    when (code) {
+                                        KEYCODE_DPAD_LEFT, KEYCODE_DPAD_RIGHT -> {
+                                            if (event.type == KeyEventType.KeyDown) {
+                                                scrub(forward = code == KEYCODE_DPAD_RIGHT, event = event.nativeKeyEvent)
+                                            } else if (event.type == KeyEventType.KeyUp) {
+                                                commitScrub()
+                                            }
+                                            true
+                                        }
+                                        in OK_KEYS -> {
+                                            if (event.type == KeyEventType.KeyUp) onAction(PlayerAction.TogglePlayPause)
+                                            true
+                                        }
+                                        else -> false
+                                    }
+                                }
+                                .focusable(interactionSource = seekInteraction)
+                                .testTag("osd_seekbar"),
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        ControlsRow(
+                            state = state,
+                            positionMs = position,
+                            durationMs = shown.durationMs,
+                            playFocus = playFocus,
+                            seekFocus = seekFocus,
+                            chipFocus = chipFocus,
+                            onAction = onAction,
+                            onSeekBy = ::seekBy,
+                            seekStepMs = seekStepMs,
+                            onOpenMenu = ::openMenu,
+                            savedForLater = savedForLater,
+                            onToggleWatchLater = {
+                                interactions++
+                                onToggleWatchLater()
+                            },
+                            down = suggestionsFocus.takeIf { hasSuggestions },
+                        )
+                    }
+                }
+            }
+            if (!hasSuggestions) {
+                controls(
                     Modifier
                         .fillMaxWidth()
                         .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.88f))))
@@ -396,57 +465,33 @@ fun PlayerOsd(
                             bottom = ShashaDimens.ScreenVertical,
                         )
                         .testTag("osd_controls"),
-                ) {
-                    SeekBar(
-                        positionMs = position,
-                        bufferedMs = shown.bufferedMs,
-                        durationMs = shown.durationMs,
-                        scrubbing = scrubMs != null,
-                        interactionSource = seekInteraction,
-                        isLive = state.isLive,
-                        modifier = Modifier
-                            .focusRequester(seekFocus)
-                            .focusProperties { down = playFocus }
-                            .onKeyEvent { event ->
-                                val code = event.nativeKeyEvent.keyCode
-                                when (code) {
-                                    KEYCODE_DPAD_LEFT, KEYCODE_DPAD_RIGHT -> {
-                                        if (event.type == KeyEventType.KeyDown) {
-                                            scrub(forward = code == KEYCODE_DPAD_RIGHT, event = event.nativeKeyEvent)
-                                        } else if (event.type == KeyEventType.KeyUp) {
-                                            commitScrub()
-                                        }
-                                        true
-                                    }
-                                    in OK_KEYS -> {
-                                        if (event.type == KeyEventType.KeyUp) onAction(PlayerAction.TogglePlayPause)
-                                        true
-                                    }
-                                    else -> false
-                                }
-                            }
-                            .focusable(interactionSource = seekInteraction)
-                            .testTag("osd_seekbar"),
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    ControlsRow(
-                        state = state,
-                        positionMs = position,
-                        durationMs = shown.durationMs,
-                        playFocus = playFocus,
-                        seekFocus = seekFocus,
-                        chipFocus = chipFocus,
-                        onAction = onAction,
-                        onSeekBy = ::seekBy,
-                        seekStepMs = seekStepMs,
-                        onOpenMenu = ::openMenu,
-                        savedForLater = savedForLater,
-                        onToggleWatchLater = {
-                            interactions++
-                            onToggleWatchLater()
-                        },
-                    )
-                }
+                )
+            } else {
+                // «مقترحة» under the controls, in the app's direction (right to left in Arabic).
+                SuggestionsDock(
+                    unfolded = suggestionsFocused,
+                    controls = {
+                        controls(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(start = ShashaDimens.ScreenHorizontal, end = ShashaDimens.ScreenHorizontal, top = 72.dp)
+                                .testTag("osd_controls"),
+                        )
+                    },
+                    title = { SuggestionsTitle(unfolded = suggestionsFocused) },
+                    row = {
+                        SuggestionStrip(
+                            videos = suggestions,
+                            watched = suggestionsWatched,
+                            onPlay = onPlaySuggestion,
+                            rowFocus = suggestionsFocus,
+                            onFocused = { focused ->
+                                suggestionsFocused = focused
+                                interactions++
+                            },
+                        )
+                    },
+                )
             }
         }
 
@@ -534,8 +579,13 @@ private fun ControlsRow(
     onOpenMenu: (OsdMenu) -> Unit,
     savedForLater: Boolean?,
     onToggleWatchLater: () -> Unit,
+    down: FocusRequester? = null,
 ) {
-    val upToBar = Modifier.focusProperties { up = seekFocus }
+    // UP goes back to the bar; DOWN, when «مقترحة» is under the controls, opens it.
+    val upToBar = Modifier.focusProperties {
+        up = seekFocus
+        if (down != null) this.down = down
+    }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         val playing = state.playWhenReady && !state.isEnded
         OsdIconButton(

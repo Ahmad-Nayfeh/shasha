@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_suggested_title">Suggested for you</string>
+    <string name="home_suggested_subtitle">Picked beside what you watched last</string>
+    <string name="kids_suggested_subtitle">From your channels, beside what you watched last</string>
+    <string name="home_shorts_title">Shorts</string>
+    <string name="home_shorts_subtitle">From your channels</string>
+    <string name="home_more_title">More from your channels</string>
+    <string name="kids_more_title">More videos</string>
+
+    <string name="channel_shorts_title">Shorts</string>
+    <string name="channel_videos_title">Videos</string>
+
+    <string name="player_suggested">Suggested</string>
+
+    <string name="profile_show_shorts">Show Shorts</string>
+    <string name="profile_show_shorts_body">Short vertical videos: anything marked Shorts, or %1$s long or less. Turned off, they disappear everywhere: Home, search, channels and suggestions.</string>
+    <string name="profile_show_suggestions">Show suggested videos</string>
+    <string name="profile_show_suggestions_body">What YouTube suggests beside what you watch: under the player\'s controls, when a video ends, and “Suggested for you” on Home.</string>
+    <string name="profile_show_suggestions_body_child">What YouTube suggests beside what your child watches, from the allowed channels only: in the player, when a video ends, and on Home.</string>
+</resources>

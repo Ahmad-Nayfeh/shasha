@@ -446,6 +446,13 @@ connect_tv() {
 }
 
 # ─── install and grant ───────────────────────────────────────────────────────────────────────
+# Uninstalling from the TV's Settings can leave the app removed for the current user only: after an update it then
+# stays invisible, with the error "Activity class does not exist". install-existing brings it back; on a normal install
+# it changes nothing. Its output and errors are ignored.
+install_for_current_user() {
+  tv_shell cmd package install-existing "$PKG" > /dev/null 2>&1 || true
+}
+
 install_apk() {
   say "Installing $(basename "$APK") ..." "تثبيت التطبيق على الشاشة (قد يستغرق دقيقة) ..."
   local out
@@ -453,6 +460,7 @@ install_apk() {
   # Old adb versions exit 0 even when the install fails: require the "Success" line too.
   if out=$("$ADB" -s "$SERIAL" install -r "$APK" < /dev/null 2>&1) && grep -q '^Success' <<< "$out"; then
     info "$(tail -n 1 <<< "$out")"
+    install_for_current_user
     return 0
   fi
   printf '%s\n' "$out" >&2

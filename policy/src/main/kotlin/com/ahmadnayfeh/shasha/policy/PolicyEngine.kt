@@ -103,11 +103,19 @@ class PolicyEngine(
      * Short: flagged short-form, a "/shorts/" url, or a known non-live duration of at most
      * [PolicyConfig.shortsMaxSeconds] (3 minutes unless the parent changed it).
      */
-    fun isShort(item: Candidate): Boolean {
-        if (item.isShortFormFlag) return true
-        if (item.url.contains("/shorts/", ignoreCase = true)) return true
-        val duration = item.durationSeconds ?: return false
-        return !item.isLive && duration in 1..config().shortsMaxSeconds
+    fun isShort(item: Candidate): Boolean = isShort(item, config().shortsMaxSeconds)
+
+    /**
+     * A suggested video («الفيديوهات المقترحة»: what YouTube lists beside a video, VideoSource.related) may show:
+     * only in a profile that shows suggestions ([Profile.showSuggestions]), and only what [canShow] lets through
+     * (blocked channels and words, shorts). A suggestion never comes "through" a playlist, so for a child it must be
+     * of an allowlisted channel. Where shorts are hidden, a suggestion whose duration is unknown is left out
+     * ([needsDuration]): nothing will learn it before the card shows.
+     */
+    fun canSuggest(profile: Profile, item: Candidate): Boolean {
+        if (!profile.showSuggestions) return false
+        val suggested = item.copy(viaPlaylistId = null)
+        return canShow(profile, suggested).isAllowed && !needsDuration(profile, suggested)
     }
 
     /**
@@ -132,6 +140,7 @@ class PolicyEngine(
             exitNeedsPin = !adult,
             adultExitChallenge = adult && rules.escape != null,
             channelBrowsing = true,
+            suggestions = profile.showSuggestions,
         )
     }
 
@@ -186,11 +195,36 @@ class PolicyEngine(
     // ---- Playback lock (SPEC section 4) ------------------------------------------------------
 
     /**
-     * The lock a video or playlist that starts gets: [lockPlayback] while «الوضع الجاد» is on, none when the parent
-     * turned it off ([PolicyConfig.seriousMode]: videos are then never locked, in any profile).
+     * The lock a video or playlist that starts gets: [lockPlayback] while «الوضع الجاد» is on for [profile]'s kind
+     * ([PolicyConfig.seriousMode]: the children's switch for a child, the adult's for an adult), none when the parent
+     * turned that switch off (that kind's videos are then never locked; the other kind's still are).
      */
     fun lockFor(profile: Profile, videoId: String, playlistId: String? = null): PlaybackLock? =
-        if (config().seriousMode) lockPlayback(profile, videoId, playlistId) else null
+        if (config().seriousMode.isOnFor(profile)) lockPlayback(profile, videoId, playlistId) else null
+
+    /**
+     * How a lock of [profile]'s can be ended on the TV itself before its video ends, or null when nothing on the TV
+     * can end it (only the phone's parent section: [unlockByParent]).
+     *
+     * - A child: always the parent PIN typed on the TV ([unlockWithPin] ends a [UnlockMethod.PARENT_PIN] lock; the
+     *   player's BACK opens the PIN pad, and «خروج» with the PIN ends it too). A child's profile cannot be entered
+     *   before the parent PIN exists, so that way is always there.
+     * - The adult: the exit challenge, while the parent leaves it on ([PolicyConfig.escape]); the parent PIN does
+     *   not end an adult's lock.
+     */
+    fun tvWayOut(profile: Profile): UnlockMethod? = when {
+        profile.isChild -> UnlockMethod.PARENT_PIN
+        config().escape != null -> UnlockMethod.EXIT_CHALLENGE
+        else -> null
+    }
+
+    /**
+     * v1.2 (owner decision): a video that would start locked in [profile] ([lockFor]) while nothing on the TV can end
+     * it early ([tvWayOut] null: the adult profile with its escape turned off) must first be confirmed from the
+     * parent's phone. The phone is then the only way out, so a phone must be there before the video starts. A
+     * child never needs it (the parent PIN on the TV ends a child's lock).
+     */
+    fun needsPhoneConfirmation(profile: Profile): Boolean = config().seriousMode.isOnFor(profile) && tvWayOut(profile) == null
 
     /** Starting a video or a playlist locks it, in both kinds of profile (see [PlaybackLock]); see [lockFor]. */
     fun lockPlayback(profile: Profile, videoId: String, playlistId: String? = null): PlaybackLock =
@@ -497,6 +531,17 @@ class PolicyEngine(
     companion object {
         const val SHORTS_MAX_SECONDS = 180L
         const val WARNING_SECONDS = 5 * 60L
+
+        /**
+         * [isShort] with the parent's limit given ([PolicyConfig.shortsMaxSeconds]): the one rule behind a tile's «Shorts»
+         * badge and behind hiding shorts, so what is badged where shorts show is exactly what disappears where they do not.
+         */
+        fun isShort(item: Candidate, shortsMaxSeconds: Long): Boolean {
+            if (item.isShortFormFlag) return true
+            if (item.url.contains("/shorts/", ignoreCase = true)) return true
+            val duration = item.durationSeconds ?: return false
+            return !item.isLive && duration in 1..shortsMaxSeconds
+        }
 
         /** A schedule override ending further away than this is treated as "until further notice". */
         private const val FAR_FUTURE_MS = 100L * 366 * 24 * 3_600_000

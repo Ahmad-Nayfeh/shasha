@@ -73,21 +73,25 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun submitSearchesAndMoreResultsComeOnDemand() {
+    fun submitSearches_andAShortFirstPageBringsTheNextOnes() {
         vm.submit("  الخط العربي ")
-        assertThat(source.searches.single()).isEqualTo(FakeUiSource.SearchCall("الخط العربي", SearchFilter.ALL, null))
-        assertThat(vm.results.value.items.map { it.key }).containsExactly("v:${v[0].videoId}", "c:${UiFixtures.calligraphyChannel.channelId}", "v:${v[1].videoId}").inOrder()
-
-        vm.loadMore()
-        vm.loadMore()
+        assertThat(source.searches.first()).isEqualTo(FakeUiSource.SearchCall("الخط العربي", SearchFilter.ALL, null))
+        // Three results are not a screenful: the next page comes at once (PagedLoader fills the first screen), its repeat dropped.
         assertThat(source.searches.map { it.page }).containsExactly(null, PageKey("2")).inOrder()
-        assertThat(vm.results.value.items.map { it.key }.last()).isEqualTo("v:${v[2].videoId}")
-        assertThat(vm.results.value.items).hasSize(4)
+        assertThat(vm.results.value.items.map { it.key }).containsExactly(
+            "v:${v[0].videoId}", "c:${UiFixtures.calligraphyChannel.channelId}", "v:${v[1].videoId}", "v:${v[2].videoId}",
+        ).inOrder()
         assertThat(vm.results.value.endReached).isTrue()
+
+        // At the end, asking for more sends nothing.
+        vm.loadMore()
+        vm.loadMore()
+        assertThat(source.searches).hasSize(2)
     }
 
     @Test
     fun resultsTheProfileHides_neverShow_evenWhenBlockedAfterTheyArrived() {
+        source.searchResult = { ItemsPage(listOf(v[0], UiFixtures.calligraphyChannel, v[1]), null) }
         vm.submit("x")
         assertThat(vm.results.value.items).hasSize(3)
         // Blocked from a card's menu while the results are on screen: they go at once.
@@ -106,7 +110,8 @@ class SearchViewModelTest {
         vm.submit("قناة")
         vm.setFilter(SearchFilter.CHANNELS) // unchanged: nothing sent
         vm.setFilter(SearchFilter.PLAYLISTS)
-        assertThat(source.searches.map { it.filter }).containsExactly(SearchFilter.CHANNELS, SearchFilter.PLAYLISTS).inOrder()
+        // Each run starts again from the first page (the later page that fills the screen follows it).
+        assertThat(source.searches.filter { it.page == null }.map { it.filter }).containsExactly(SearchFilter.CHANNELS, SearchFilter.PLAYLISTS).inOrder()
     }
 
     @Test

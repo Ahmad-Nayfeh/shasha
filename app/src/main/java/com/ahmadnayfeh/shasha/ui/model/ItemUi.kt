@@ -88,12 +88,20 @@ private fun savedVideo(
     url = "https://www.youtube.com/watch?v=$videoId",
 )
 
-/** How much of a video was watched, for the bar under its thumbnail; null when nothing worth showing. */
-fun WatchProgressEntity.watchedFraction(): Float? {
+/** How much of a video was watched, for the red bar along the bottom of its thumbnail ([watchedFraction]). */
+fun WatchProgressEntity.watchedFraction(): Float? = watchedFraction(positionMs, durationMs, isFinished)
+
+/**
+ * The share of a video watched, as its thumbnail's bar shows it: 1 for a finished video ([WatchProgressEntity.isFinished]:
+ * the whole bar), else the position over the length. Any saved progress shows, a tiny one as a sliver
+ * ([MIN_SHOWN_FRACTION] at least); null when there is nothing to show: no length known, or still at the very start.
+ */
+fun watchedFraction(positionMs: Long, durationMs: Long, finished: Boolean): Float? {
     if (durationMs <= 0) return null
-    if (isFinished) return 1f
-    val fraction = positionMs.toFloat() / durationMs
-    return fraction.takeIf { it >= MIN_VISIBLE_FRACTION }?.coerceAtMost(1f)
+    if (finished) return 1f
+    if (positionMs <= 0) return null
+    return (positionMs.toFloat() / durationMs).coerceIn(MIN_SHOWN_FRACTION, 1f)
 }
 
-private const val MIN_VISIBLE_FRACTION = 0.02f
+/** The shortest bar a started video shows: still a visible sliver of red on a card. */
+const val MIN_SHOWN_FRACTION = 0.02f

@@ -16,6 +16,7 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.TV_1080P
+import com.ahmadnayfeh.shasha.search.VoiceAvailability
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
 import com.ahmadnayfeh.shasha.ui.main.MainShell
@@ -135,9 +136,24 @@ class SettingsHubScreenshotTest {
     @Test
     fun diagnostics() = snap("settings_hub_diagnostics", SettingsCategory.DIAGNOSTICS)
 
+    /** DOWN twice, onto the version card: «معلومات تقنية والتراخيص» (the version, SponsorBlock's attribution) comes into view. */
+    @Test
+    fun diagnosticsTechnical() = snap("settings_hub_diagnostics_technical", SettingsCategory.DIAGNOSTICS, keys = List(2) { Key.DirectionDown })
+
+    /** DOWN to the pane's last row: the libraries and the projects whose ideas the app follows, and the closing line. */
+    @Test
+    fun diagnosticsLicenses() = snap("settings_hub_diagnostics_licenses", SettingsCategory.DIAGNOSTICS, keys = List(20) { Key.DirectionDown })
+
+    /** No voice screen and no recognition service on this TV: the line says so (and what to do). */
+    @Test
+    fun diagnosticsWithoutVoice() = snap(
+        "settings_hub_diagnostics_no_voice",
+        SettingsCategory.DIAGNOSTICS,
+        SettingsHubFixtures.state().copy(voice = VoiceAvailability(systemScreen = null, service = null)),
+        keys = listOf(Key.DirectionDown),
+    )
+
+    /** «حول»: the developer and his other apps, and nothing else. */
     @Test
     fun about() = snap("settings_hub_about", SettingsCategory.ABOUT)
-
-    @Test
-    fun aboutLicenses() = snap("settings_hub_about_licenses", SettingsCategory.ABOUT, keys = List(8) { Key.DirectionDown })
 }

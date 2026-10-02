@@ -37,6 +37,7 @@ val PARENT_ROUTES = listOf(
     Triple("POST", "/api/parent/quota", """{"profileId":"c1","minutes":60}"""),
     Triple("POST", "/api/parent/unlock-time", """{"extraMinutes":15}"""),
     Triple("POST", "/api/parent/unlock-video", null),
+    Triple("POST", "/api/parent/confirm", """{"id":"conf1","approve":true}"""),
     Triple("GET", "/api/parent/allowlist?profileId=c1", null),
     Triple("POST", "/api/parent/allowlist/add", """{"profileId":"c1","link":"https://youtube.com/@x"}"""),
     Triple("POST", "/api/parent/allowlist/remove", """{"profileId":"c1","id":"UCx"}"""),
@@ -47,7 +48,7 @@ val PARENT_ROUTES = listOf(
     Triple("GET", "/api/parent/backup", null),
     Triple("POST", "/api/parent/backup", """{"v":1}"""),
     Triple("GET", "/api/parent/settings", null),
-    Triple("POST", "/api/parent/settings", """{"key":"serious_mode","value":false}"""),
+    Triple("POST", "/api/parent/settings", """{"key":"serious_mode_children","value":false}"""),
     Triple("POST", "/api/parent/settings/reset", """{"group":"serious"}"""),
     Triple("GET", "/api/parent/profiles", null),
     Triple("POST", "/api/parent/profile/flags", """{"profileId":"c1","hideShorts":true}"""),
@@ -65,13 +66,16 @@ internal class Harness(val controller: FakeController = FakeController()) {
     var now = 0L
     val sessions = ParentSessions({ now })
     val pinGate = PinGate { now }
+    val presence = PhonePresence { now }
     var token = TOKEN
     /** What the server passed to onError (unexpected controller exceptions). */
     val errors = CopyOnWriteArrayList<Throwable>()
 }
 
 internal fun remoteTest(harness: Harness = Harness(), block: suspend ApplicationTestBuilder.(Harness) -> Unit) = testApplication {
-    application { remoteModule(harness.controller, { harness.token }, harness.sessions, harness.pinGate, onError = harness.errors::add) }
+    application {
+        remoteModule(harness.controller, { harness.token }, harness.sessions, harness.pinGate, presence = harness.presence, onError = harness.errors::add)
+    }
     block(harness)
 }
 

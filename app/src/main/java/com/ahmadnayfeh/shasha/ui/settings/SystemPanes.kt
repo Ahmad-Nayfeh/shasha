@@ -34,6 +34,7 @@ import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.lock.ProtectionStatus
 import com.ahmadnayfeh.shasha.lock.ReturnTime
 import com.ahmadnayfeh.shasha.lock.YouTubeAppState
+import com.ahmadnayfeh.shasha.search.VoiceAvailability
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
@@ -282,7 +283,11 @@ internal fun VersionBlock(versions: AppVersions, modifier: Modifier = Modifier) 
     }
 }
 
-/** «تشخيص»: the test videos, and the facts to give when something breaks. */
+/**
+ * «تشخيص»: the test videos, the facts to give when something breaks (the TV, which voice recognizer it offers, the
+ * subscriptions' last refresh), and «معلومات تقنية والتراخيص» ([TechnicalInfo]: the version and the extractor,
+ * SponsorBlock's attribution, the libraries and their licences; it used to be on «حول»).
+ */
 @Composable
 internal fun DiagnosticsPane(state: SettingsHubState, actions: SettingsHubActions, first: FocusRequester) {
     val formats = rememberFormats()
@@ -294,16 +299,19 @@ internal fun DiagnosticsPane(state: SettingsHubState, actions: SettingsHubAction
             icon = ShashaIcons.PlaylistPlay,
             body = stringResource(R.string.hub_diag_videos_body),
         )
+        // Under the row it starts from, in view as the pane opens. Lower down it would sit between cards that take the
+        // focus, and the pivot scrolling would carry it from under the bottom fade to under the top one.
+        InfoLine(ShashaIcons.Info, stringResource(R.string.hub_diag_hint))
         Spacer(Modifier.height(4.dp))
         SectionLabel(stringResource(R.string.hub_diag_facts), icon = ShashaIcons.Build)
-        // Taking the focus, it lets the remote scroll down to the hint under it.
+        // Taking the focus, it lets the remote scroll through the facts.
         ReadingCard(Modifier.paneItem("hub_diagnostics_facts"), spacing = 10.dp) {
-            val versions = state.versions
-            InfoLine(ShashaIcons.SystemUpdate, stringResource(R.string.hub_fact_app, versions.name, versions.code.toString()), textColor = ShashaColors.Text)
-            InfoLine(ShashaIcons.Build, stringResource(R.string.hub_fact_extractor, versions.extractor), textColor = ShashaColors.Text)
             state.device?.let { device ->
                 val name = listOf(device.maker, device.model).filter { it.isNotBlank() }.joinToString(" ")
                 InfoLine(ShashaIcons.Computer, stringResource(R.string.hub_fact_device, name, device.android, device.sdk.toString()), textColor = ShashaColors.Text)
+            }
+            state.voice?.let { voice ->
+                InfoLine(ShashaIcons.Mic, voiceFact(voice), textColor = ShashaColors.Text, modifier = Modifier.testTag("hub_fact_voice"))
             }
             state.syncHealth?.let { health ->
                 val text = when {
@@ -337,7 +345,21 @@ internal fun DiagnosticsPane(state: SettingsHubState, actions: SettingsHubAction
                 }
             }
         }
-        InfoLine(ShashaIcons.Info, stringResource(R.string.hub_diag_hint))
+        Spacer(Modifier.height(8.dp))
+        TechnicalInfo(state.versions)
+    }
+}
+
+/** Which way of listening the TV offers: the system's voice screen (used first), the in-app recognizer (the fallback), or none. */
+@Composable
+private fun voiceFact(voice: VoiceAvailability): String {
+    val screen = voice.systemScreen
+    val service = voice.service
+    return when {
+        screen != null && service != null -> stringResource(R.string.hub_fact_voice_both, screen, service)
+        screen != null -> stringResource(R.string.hub_fact_voice_system, screen)
+        service != null -> stringResource(R.string.hub_fact_voice_service, service)
+        else -> stringResource(R.string.hub_fact_voice_none)
     }
 }
 

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmadnayfeh.shasha.data.FeedRepository
+import com.ahmadnayfeh.shasha.data.HomeSuggestions
 import com.ahmadnayfeh.shasha.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.data.WatchRepository
 import com.ahmadnayfeh.shasha.policy.Allowlist
@@ -12,6 +13,7 @@ import com.ahmadnayfeh.shasha.ui.model.ChannelUi
 import com.ahmadnayfeh.shasha.ui.model.PlaylistUi
 import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.ui.model.toUi
+import com.ahmadnayfeh.shasha.ui.screens.home.suggestedVideos
 import com.ahmadnayfeh.shasha.ui.screens.watchedFractions
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
@@ -49,6 +51,11 @@ data class KidsHomeState(
     val fetching: Boolean = false,
     /** Every allowed channel failed and nothing is known: the unified error (SPEC §1, never silent). */
     val failure: SourceException? = null,
+    /**
+     * «مقترحة لك», only where the parent turned suggestions on for this child: what is suggested beside its last
+     * videos, from its allowed channels only (PolicyEngine.canSuggest).
+     */
+    val suggested: List<VideoUi> = emptyList(),
 ) {
     val allowlistEmpty: Boolean get() = loaded && channelCount == 0 && playlists.isEmpty()
 }
@@ -69,6 +76,7 @@ class KidsHomeViewModel(
     feed: FeedRepository,
     private val kidsFeed: KidsFeed,
     watch: WatchRepository,
+    suggestions: HomeSuggestions? = null,
 ) : ViewModel() {
     private val local = feed.observeHome()
 
@@ -85,7 +93,7 @@ class KidsHomeViewModel(
 
     private fun ContentFilter.wanted(): Wanted? = profile?.let { Wanted(it.allowlist, withDurations = it.hideShorts) }
 
-    val state: StateFlow<KidsHomeState> = combine(filter, local, fetched, playlistDetails, progress) { f, local, remote, details, p ->
+    private val base = combine(filter, local, fetched, playlistDetails, progress) { f, local, remote, details, p ->
         val profile = f.profile ?: return@combine KidsHomeState()
         val allowlist = profile.allowlist
         val fetchedVideos = remote.values.flatten()
@@ -115,11 +123,18 @@ class KidsHomeViewModel(
             failure = p.lastError.takeIf { videos.isEmpty() && !p.running && p.attempted > 0 && p.failed == p.attempted },
         )
     }
+
+    /** «مقترحة لك» before the child's rules (none unless the parent turned suggestions on: the flow stays empty then). */
+    private val suggestedVideos = suggestedVideos(watch, filter, suggestions)
+
+    val state: StateFlow<KidsHomeState> = combine(base, suggestedVideos, filter) { s, suggested, rules ->
+        if (!s.loaded) s else s.copy(suggested = rules.suggestions(suggested).take(HomeSuggestions.ROW_LIMIT).map { it.toUi() })
+    }
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), KidsHomeState())
 
     val watched: StateFlow<Map<String, Float>> =
-        watchedFractions(watch, state.map { s -> s.videos.map { it.video.videoId } })
+        watchedFractions(watch, state.map { s -> (s.videos + s.suggested).map { it.video.videoId } })
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     init {

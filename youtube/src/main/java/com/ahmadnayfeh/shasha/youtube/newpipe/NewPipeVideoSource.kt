@@ -46,12 +46,20 @@ import org.schabi.newpipe.extractor.stream.StreamInfoItem
 /**
  * [VideoSource] backed by NewPipeExtractor. Constructible without an Android Context (JVM tests).
  * NewPipe's global state is initialised once per process; the first client wins.
+ *
+ * [relatedCache] keeps each extraction's related items for [related]; [fetchRelated] reads a watch page's related items
+ * when nothing is kept (tests replace it to count the requests that [related] makes).
  */
-internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
+internal class NewPipeVideoSource(
+    okHttpClient: OkHttpClient,
+    private val relatedCache: RelatedCache = RelatedCache(),
+    fetchRelated: ((videoId: String) -> List<InfoItem>)? = null,
+) : VideoSource {
 
     private val downloader: NewPipeDownloader = NewPipeInit.ensure(okHttpClient)
     private val service: StreamingService = ServiceList.YouTube
     private val pages = PageStore()
+    private val fetchRelated: (String) -> List<InfoItem> = fetchRelated ?: ::relatedFromWatchPage
 
     override val extractorVersion: String = BuildConfig.EXTRACTOR_VERSION
 
@@ -158,11 +166,50 @@ internal class NewPipeVideoSource(okHttpClient: OkHttpClient) : VideoSource {
     }
 
     override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails {
+        requireVideoId(videoId)
+        return io { toDetails(videoId, StreamInfo.getInfo(service, watchUrl(videoId)), allowLowQuality) }
+    }
+
+    /**
+     * One extraction as the app gets it. Its related items are kept first ([relatedCache]), even when the video then
+     * turns out unplayable here: [related] answers from them and never fetches the same watch page again.
+     */
+    internal fun toDetails(videoId: String, info: StreamInfo, allowLowQuality: Boolean): StreamDetails {
+        relatedCache.put(videoId, ItemMapper.relatedVideos(info.relatedItems, videoId))
+        return StreamMapper.toDetails(info, allowLowQuality)
+    }
+
+    override suspend fun related(videoId: String): List<VideoItem> {
+        requireVideoId(videoId)
+        relatedCache.get(videoId)?.let { return it }
+        return io { ItemMapper.relatedVideos(fetchRelated(videoId), videoId).also { relatedCache.put(videoId, it) } }
+    }
+
+    /**
+     * The related items of a video nothing extracted lately: its watch page only (StreamExtractor.fetchPage), none of the
+     * stream URLs a full extraction deciphers. Blocking: call inside [io].
+     */
+    private fun relatedFromWatchPage(videoId: String): List<InfoItem> {
+        val extractor = service.getStreamExtractor(watchUrl(videoId))
+        extractor.fetchPage()
+        return extractor.relatedItems?.items.orEmpty()
+    }
+
+    override suspend fun channelShorts(channelId: String): List<VideoItem> = io {
+        val tab = service.channelTabLHFactory.fromQuery(channelPath(channelId), listOf(ChannelTabs.SHORTS), "")
+        val info = ChannelTabInfo.getInfo(service, tab)
+        failIfBroken(info.relatedItems, info.errors)
+        // Everything on that tab is a short, whatever each item says about itself.
+        info.relatedItems.toVideos(channelId.takeIf(YouTubeLinkParser::isChannelId)).map { it.copy(isShortForm = true) }
+    }
+
+    private fun requireVideoId(videoId: String) {
         if (!YouTubeLinkParser.isVideoId(videoId)) {
             throw SourceException(SourceErrorKind.CONTENT_UNAVAILABLE, "InvalidVideoId", "Not a video id: $videoId", null)
         }
-        return io { StreamMapper.toDetails(StreamInfo.getInfo(service, "https://www.youtube.com/watch?v=$videoId"), allowLowQuality) }
     }
+
+    private fun watchUrl(videoId: String) = "https://www.youtube.com/watch?v=$videoId"
 
     override suspend fun recentVideos(channelId: String): List<VideoItem> {
         val fromRss = withContext(Dispatchers.IO) {

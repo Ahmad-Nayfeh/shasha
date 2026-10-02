@@ -232,7 +232,7 @@ private fun PaneBody(category: SettingsCategory, state: SettingsHubState, action
         SettingsCategory.RESET -> ResetPane(state, actions, first)
         SettingsCategory.APPEARANCE -> AppearancePane(state, actions, first)
         SettingsCategory.GUIDE -> GuidePane(state, actions, first)
-        SettingsCategory.ABOUT -> AboutPane(state, first)
+        SettingsCategory.ABOUT -> AboutPane(first)
     }
 }
 

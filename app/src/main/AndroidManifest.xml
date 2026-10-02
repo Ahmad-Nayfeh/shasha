@@ -33,12 +33,15 @@
 
     <!-- «حالة الحماية» says whether the official YouTube app is still enabled (targetSdk 30+ hides other
          packages unless they are named here). -->
-    <!-- v1.1 voice search: the remote's microphone through Android's speech recognition (asked for on first use). -->
+    <!-- Voice search listens through the system's own voice screen first (RecognizerIntent: on Google TV the remote's
+         microphone reaches only it, and it needs no permission from this app). RECORD_AUDIO is only for the fallback, the
+         in-app recognizer (SpeechRecognizer), when no voice screen exists; it is asked for on that first use. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <queries>
         <package android:name="com.google.android.youtube.tv" />
-        <!-- Voice search: the recognition service (SpeechRecognizer) and the system's voice screen (the fallback). -->
+        <!-- Voice search, for «تشخيص» (which of them this TV offers): the system's voice screen (used first) and the
+             recognition service (SpeechRecognizer, the fallback). Starting the voice screen needs no visibility. -->
         <intent>
             <action android:name="android.speech.RecognitionService" />
         </intent>

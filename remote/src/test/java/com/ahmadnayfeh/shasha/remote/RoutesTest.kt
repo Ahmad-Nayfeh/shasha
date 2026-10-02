@@ -83,7 +83,7 @@ class RoutesTest {
 
     @Test
     fun play_forwardsTheLink_andPassesTheResultThrough() = remoteTest { h ->
-        h.controller.result = RemoteResult.error("هذه القناة ليست في قائمة السماح.")
+        h.controller.playResult = RemotePlayResult.refused("هذه القناة ليست في قائمة السماح.")
         val res = client.call("POST", "/api/play", """{"url":" https://youtu.be/abcdefghijk "}""")
         assertThat(res.status).isEqualTo(HttpStatusCode.OK)
         val json = res.json()

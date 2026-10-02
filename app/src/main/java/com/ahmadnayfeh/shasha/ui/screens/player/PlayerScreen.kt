@@ -47,15 +47,21 @@ import com.ahmadnayfeh.shasha.player.WatchSession
 import com.ahmadnayfeh.shasha.policy.AdultEscape
 import com.ahmadnayfeh.shasha.policy.PlayOrigin
 import com.ahmadnayfeh.shasha.policy.PolicyConfig
+import com.ahmadnayfeh.shasha.policy.PlaybackLock
 import com.ahmadnayfeh.shasha.policy.PlaybackMeter
+import com.ahmadnayfeh.shasha.policy.PolicyEngine
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.UnlockMethod
+import com.ahmadnayfeh.shasha.remote.ConfirmAnswer
+import com.ahmadnayfeh.shasha.remote.PhoneConfirmations
 import com.ahmadnayfeh.shasha.sponsorblock.PlaybackSkipTarget
 import com.ahmadnayfeh.shasha.sponsorblock.SkipController
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorSkipLayer
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorSkipsViewModel
 import com.ahmadnayfeh.shasha.ui.components.LocalAppMessages
 import com.ahmadnayfeh.shasha.ui.components.LocalBehavior
+import com.ahmadnayfeh.shasha.ui.components.ParentPinPad
+import com.ahmadnayfeh.shasha.ui.components.PinDialog
 import com.ahmadnayfeh.shasha.ui.components.PolicyNotice
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
@@ -66,12 +72,16 @@ import com.ahmadnayfeh.shasha.ui.lock.NoLockActions
 import com.ahmadnayfeh.shasha.ui.lock.PlayerLockActions
 import com.ahmadnayfeh.shasha.ui.lock.lockMethodFor
 import com.ahmadnayfeh.shasha.ui.lock.playerActions
+import com.ahmadnayfeh.shasha.ui.parental.LocalParentUnlock
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
+import com.ahmadnayfeh.shasha.ui.screens.watchedFractions
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.playback.YouTubeMediaSourceFactory
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 
 /**
  * Loads a video and plays it. Any failure, while extracting or while playing, shows the unified
@@ -94,6 +104,13 @@ import kotlinx.coroutines.delay
  * Owner decision ("made for kids" videos, which this extractor only gets as a muxed 360p file): a child
  * profile plays that file, with a "360p" badge; the adult sees the unified error screen (LOW_QUALITY_ONLY)
  * with «شغّل بجودة 360p على أي حال».
+ *
+ * v1.2: a video that would start locked while nothing on the TV could end it early (the adult's way out turned off)
+ * first waits for the parent's «تأكيد» on the phone ([PhoneConfirmPrompt]); «رفض» or two minutes leave the player.
+ * [phoneApproved]: a link the phone sent and the TV accepted (the phone is there: no «تأكيد» on top). [onRestart]
+ * opens this video afresh (a «إعادة التشغيل» that needs the «تأكيد» again); [onPairPhone]: the pairing screen.
+ * «الفيديوهات المقترحة» (where the profile shows them): what YouTube lists beside this video, from its own extraction and
+ * through the profile's rules, in the «مقترحة» row under the controls and on the end card; [onPlaySuggestion] opens one.
  */
 @Composable
 fun PlayerScreen(
@@ -108,9 +125,21 @@ fun PlayerScreen(
     profile: Profile? = null,
     lock: LockController? = null,
     onKidsHome: (() -> Unit)? = null,
+    phoneApproved: Boolean = false,
+    onRestart: () -> Unit = {},
+    onPairPhone: (() -> Unit)? = null,
+    onPlaySuggestion: (VideoItem) -> Unit = {},
 ) {
     val container = LocalContext.current.appContainer
     val locking = if (lock != null && profile != null) lock else null
+    // v1.2: what asks the phone before a start only it could end early (never for تشخيص's videos: no lock).
+    val confirmation = if (locking != null && profile != null && !phoneApproved) {
+        remember(locking, profile, playlistId) {
+            PhoneStartConfirmation(container.policyEngine, locking.lock, profile, playlistId, container.phoneConfirmations)
+        }
+    } else {
+        null
+    }
     val vm: PlayerViewModel = viewModel(
         key = "player:$videoId",
         factory = viewModelFactory {
@@ -131,15 +160,27 @@ fun PlayerScreen(
                         }
                     },
                     gate = PlayGate { id -> policy.checkPlay(id, origin) },
+                    startConfirmation = confirmation,
                     lock = locking?.playerHooks(profile!!.id),
                     playlistId = playlistId,
                     startAtMs = startSeconds?.let { it * 1000 },
                     allowLowQuality = profile?.isChild == true,
                     defaultSpeed = container.behavior.values.value.defaultSpeed,
+                    // Asked after the extraction: VideoSource.related answers from it, nothing is fetched twice.
+                    suggestionsFor = { id ->
+                        if (!policy.filter.value.showsSuggestions) {
+                            emptyList()
+                        } else {
+                            policy.visibleSuggestions(container.videoSource.related(id), exclude = setOf(id)).take(PLAYER_SUGGESTIONS)
+                        }
+                    },
                 )
             }
         },
     )
+    // The red bars on the suggestions' thumbnails.
+    val suggestionsWatched = remember(vm) { watchedFractions(container.watch, vm.suggestions.map { list -> list.map { it.videoId } }) }
+        .collectAsStateWithLifecycle(emptyMap())
     // SPEC §1: SponsorBlock's segments are looked up now, beside the extraction (again later if that failed); the
     // adult may take a skip back.
     val sponsor: SponsorSkipsViewModel = viewModel(
@@ -173,6 +214,19 @@ fun PlayerScreen(
     LaunchedEffect(vm, online) { if (online) vm.retryAfterNetwork() }
     val messages = LocalAppMessages.current
     val surrendered = stringResource(R.string.lock_surrendered)
+    val refusedText = stringResource(R.string.confirm_refused)
+    val timedOutText = stringResource(R.string.confirm_timed_out)
+    val phoneWait = remember(container) {
+        object : PhoneWait {
+            override fun secondsLeft(): Int = container.phoneConfirmations.pending.value?.let(container.phoneConfirmations::secondsLeft) ?: 0
+
+            override fun phoneConnected(): Boolean = container.phoneReach.isConnected()
+        }
+    }
+    // «ربط الجوال»: the pairing screen is the parent's (behind the PIN, as from the settings).
+    val unlock = LocalParentUnlock.current
+    var askingPin by remember { mutableStateOf(false) }
+    val pair = onPairPhone?.let { open -> { if (unlock == null || unlock.isUnlocked) open() else askingPin = true } }
     PlayerContent(
         vm = vm,
         extractorVersion = container.videoSource.extractorVersion,
@@ -189,8 +243,31 @@ fun PlayerScreen(
         maxQuality = { playback.maxQuality.value },
         offerLowQuality = profile?.isChild != true,
         escape = container.policyEngine.config().escape,
+        phoneWait = phoneWait,
+        onRestart = onRestart,
+        onPairPhone = pair,
+        onNotConfirmed = { answer -> messages?.show(if (answer == ConfirmAnswer.REFUSED) refusedText else timedOutText, ShashaIcons.Info) },
+        onPlaySuggestion = onPlaySuggestion,
+        suggestionsWatched = { suggestionsWatched.value },
     )
+    if (askingPin && unlock != null && onPairPhone != null) {
+        PinDialog(onDismiss = { askingPin = false }) {
+            ParentPinPad(
+                title = stringResource(R.string.pin_parent_title),
+                subtitle = stringResource(R.string.settings_pin_body),
+                check = unlock::check,
+                onAccepted = {
+                    askingPin = false
+                    onPairPhone()
+                },
+                initialLockMillis = unlock::lockMillis,
+            )
+        }
+    }
 }
+
+/** At most this many suggestions under the controls and on the end card. */
+private const val PLAYER_SUGGESTIONS = 16
 
 /**
  * How the video came to be played, for [com.ahmadnayfeh.shasha.policy.PolicyGate.checkPlay]: a link counts
@@ -207,6 +284,10 @@ internal fun playOrigin(fromLink: Boolean, playlistId: String?): PlayOrigin = wh
  * created for it: [factory] is not even asked), or the video; all inside the lock ([LockedPlayback]: with
  * [lockMethod] set, every way out goes through it). [offerLowQuality]: the error screen of LOW_QUALITY_ONLY
  * offers to play the 360p file anyway (the adult).
+ *
+ * A suggestion chosen ([onPlaySuggestion]) leaves this video like «رجوع» does: at once when nothing holds it; while a
+ * child's video is locked, through the parent PIN pad, after which the suggestion plays; while the adult's is, the
+ * reminder of the way out (the video stays).
  */
 @Composable
 internal fun PlayerContent(
@@ -225,9 +306,34 @@ internal fun PlayerContent(
     maxQuality: () -> Int = { MAX_AUTO_HEIGHT },
     offerLowQuality: Boolean = false,
     escape: AdultEscape? = PolicyConfig.DEFAULT.escape,
+    phoneWait: PhoneWait? = null,
+    onRestart: () -> Unit = {},
+    onPairPhone: (() -> Unit)? = null,
+    onNotConfirmed: (ConfirmAnswer) -> Unit = {},
+    onPlaySuggestion: (VideoItem) -> Unit = {},
+    suggestionsWatched: () -> Map<String, Float> = { emptyMap() },
 ) {
     val load by vm.load.collectAsStateWithLifecycle()
-    LockedPlayback(lockMethod, lockActions, onLeave = onBack, onSurrendered = onSurrendered, escape = escape) { lock ->
+    // A suggestion a child chose in a locked video: it plays once the parent PIN has let the child out of this one.
+    var pendingSuggestion by remember { mutableStateOf<VideoItem?>(null) }
+    val leave: () -> Unit = {
+        val next = pendingSuggestion
+        pendingSuggestion = null
+        if (next != null) onPlaySuggestion(next) else onBack()
+    }
+    LockedPlayback(lockMethod, lockActions, onLeave = leave, onSurrendered = onSurrendered, escape = escape) { lock ->
+        // The PIN pad closed without the PIN: the choice is forgotten (a later «رجوع» only leaves).
+        LaunchedEffect(lock.covered) { if (!lock.covered) pendingSuggestion = null }
+        val playSuggestion: (VideoItem) -> Unit = { video ->
+            when (lockMethod) {
+                null -> onPlaySuggestion(video)
+                UnlockMethod.PARENT_PIN -> {
+                    pendingSuggestion = video
+                    lock.requestExit()
+                }
+                UnlockMethod.EXIT_CHALLENGE -> lock.requestExit()
+            }
+        }
         AnimatedContent(
             targetState = load,
             contentKey = { it::class },
@@ -248,6 +354,23 @@ internal fun PlayerContent(
                     onPlayLowQuality = if (offerLowQuality) vm::playLowQuality else null,
                 )
                 is PlayerViewModel.Load.Denied -> PolicyNotice(state.reason, lock::requestExit)
+                // v1.2: nothing plays until the phone confirms; «إلغاء» withdraws the request and leaves.
+                is PlayerViewModel.Load.AwaitingPhone -> PhoneConfirmPrompt(
+                    title = state.title,
+                    wait = phoneWait ?: NoPhoneWait,
+                    onCancel = {
+                        vm.cancelStart()
+                        onBack()
+                    },
+                    onPairPhone = onPairPhone,
+                )
+                is PlayerViewModel.Load.NotConfirmed -> {
+                    LaunchedEffect(state) {
+                        onNotConfirmed(state.answer)
+                        onBack()
+                    }
+                    Box(Modifier.fillMaxSize())
+                }
                 is PlayerViewModel.Load.Ready -> VideoPlayer(
                     state,
                     vm,
@@ -259,6 +382,9 @@ internal fun PlayerContent(
                     locked = lockMethod != null,
                     skipper = skipper,
                     maxQuality = maxQuality,
+                    onRestart = onRestart,
+                    onPlaySuggestion = playSuggestion,
+                    suggestionsWatched = suggestionsWatched,
                 )
             }
         }
@@ -318,6 +444,9 @@ private fun VideoPlayer(
     locked: Boolean,
     skipper: SkipController? = null,
     maxQuality: () -> Int = { MAX_AUTO_HEIGHT },
+    onRestart: () -> Unit = {},
+    onPlaySuggestion: (VideoItem) -> Unit = {},
+    suggestionsWatched: () -> Map<String, Float> = { emptyMap() },
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -389,6 +518,7 @@ private fun VideoPlayer(
     val skipped by vm.skippedToEnd.collectAsStateWithLifecycle()
     val savedForLater by vm.savedForLater.collectAsStateWithLifecycle()
     val resumedFrom by vm.resumedFromMs.collectAsStateWithLifecycle()
+    val suggestions by vm.suggestions.collectAsStateWithLifecycle()
     KeepScreenOn(ui.playWhenReady && !ui.isEnded)
     // Progress: every 10 s while playing, and at every pause (the release saves the last position).
     LaunchedEffect(current) {
@@ -432,15 +562,23 @@ private fun VideoPlayer(
                 title = ui.title,
                 onBack = lock::requestExit,
                 onReplay = {
-                    vm.onReplay()
-                    skipper?.onReplay()
-                    current.onAction(PlayerAction.TogglePlayPause)
+                    // v1.2: a replay that only the phone could end early is a new start: it asks the phone first.
+                    if (vm.replayNeedsConfirmation()) {
+                        onRestart()
+                    } else {
+                        vm.onReplay()
+                        skipper?.onReplay()
+                        current.onAction(PlayerAction.TogglePlayPause)
+                    }
                 },
                 onPlayNext = { next -> onPlayNext(next, (ending as? PlaybackEnd.UpNext)?.index ?: -1) },
                 paused = lock.covered,
                 // Skipped to its end, the video is still locked (SPEC §4): no way home but the PIN.
                 kidsHome = onKidsHome.takeUnless { skipped },
                 stillLocked = skipped && locked,
+                suggestions = suggestions,
+                suggestionsWatched = suggestionsWatched(),
+                onPlaySuggestion = onPlaySuggestion,
             )
         } else {
             val controls: @Composable (Modifier) -> Unit = { modifier ->
@@ -454,6 +592,9 @@ private fun VideoPlayer(
                     onToggleWatchLater = { vm.toggleWatchLater(ready.stream.video) },
                     resumedFromMs = resumedFrom,
                     suspended = lock.suspended,
+                    suggestions = suggestions,
+                    suggestionsWatched = suggestionsWatched(),
+                    onPlaySuggestion = onPlaySuggestion,
                 )
             }
             if (skipper != null) {
@@ -498,6 +639,31 @@ internal suspend fun nextVisible(
 }
 
 private const val MAX_HIDDEN_SKIPPED = 200
+
+/**
+ * v1.2: the «تأكيد» [PlayerViewModel] waits for: needed when [profile]'s video would start locked while nothing on the TV
+ * could end it early ([PolicyEngine.needsPhoneConfirmation]), unless [lock] already holds it (this video, or this
+ * playlist's lock moving on); asked of the parent's phone through [confirmations].
+ */
+internal class PhoneStartConfirmation(
+    private val engine: PolicyEngine,
+    private val lock: StateFlow<PlaybackLock?>,
+    private val profile: Profile,
+    private val playlistId: String?,
+    private val confirmations: PhoneConfirmations,
+) : StartConfirmation {
+    override fun needed(videoId: String): Boolean =
+        engine.needsPhoneConfirmation(profile) && lockMethodFor(lock.value, profile.id, videoId, playlistId) == null
+
+    override suspend fun ask(videoId: String, title: String): ConfirmAnswer = confirmations.ask(profile.id, videoId, title)
+}
+
+/** Nothing to read (tests and previews): no time left, no phone. */
+private object NoPhoneWait : PhoneWait {
+    override fun secondsLeft(): Int = 0
+
+    override fun phoneConnected(): Boolean = false
+}
 
 /** Failures that may pass by themselves: the error screen offers «إعادة المحاولة». */
 private val RETRYABLE = setOf(SourceErrorKind.NETWORK, SourceErrorKind.RATE_LIMITED)
