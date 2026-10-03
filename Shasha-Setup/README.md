@@ -14,7 +14,7 @@
 | `Windows - ثبّت شاشة.bat` | مثبّت ويندوز: يُنقر مرتين |
 | `Mac - ثبّت شاشة.command` | مثبّت ماك: يُنقر مرتين. أول مرة في macOS 15 (Sequoia) وما بعده: System Settings ← Privacy & Security ← Open Anyway (لم يعد «الزر الأيمن ← Open» يكفي). سكربت bash يعمل أيضاً على لينكس |
 | `install-linux.sh` | للينكس: `bash install-linux.sh` (يشغّل مثبّت ماك نفسه) |
-| `shasha-1.1.0-1057.apk` | التطبيق، موقّعاً بمفتاح الإصدارات |
+| `shasha-1.1.1-1063.apk` | التطبيق، موقّعاً بمفتاح الإصدارات |
 | `tools/` | أداة `adb` من حزمة Platform-Tools من Google لكل نظام، مع ملف `NOTICE.txt` (الرخص) و[`VERSION.txt`](tools/VERSION.txt) |
 
 هذا الملف (`README.md`) وحده لا يدخل في `Shasha-Setup.zip`.
