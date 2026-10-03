@@ -6,6 +6,7 @@ alignment, so every script word gets a start/end time even when the ASR spells i
 Times are written relative to the scene start (seconds), i.e. voice_offset_s is already added.
 
   ../.venv/bin/python tools/align_words.py              -> src/data/words.json from ../audio/word_timings.json
+  ../.venv/bin/python tools/align_words.py --mobile     -> src/data/words-mobile.json from ../audio-mobile/word_timings.json
   ../.venv/bin/python tools/align_words.py --asr [small|medium]   (fallback: ASR alignment as in v1)
 By default the exact word times of the voice (edge-tts WordBoundary events, see tts/scripts/synth_narration.py)
 are used; the ASR alignment below is only the fallback when they are missing or stale.
@@ -19,6 +20,10 @@ HERE = Path(__file__).resolve().parent
 RM = HERE.parent                      # remotion/
 V = RM.parent                         # video/
 size = next((a for a in sys.argv[1:] if not a.startswith('--')), 'small')
+MOBILE = '--mobile' in sys.argv       # the phone video: timeline-mobile.json + audio-mobile/ -> src/data/words-mobile.json
+TIMELINE = V / ('timeline-mobile.json' if MOBILE else 'timeline.json')
+WORD_TIMINGS = V / ('audio-mobile/word_timings.json' if MOBILE else 'audio/word_timings.json')
+WORDS_OUT = RM / ('src/data/words-mobile.json' if MOBILE else 'src/data/words.json')
 
 DIAC = re.compile(r'[ؐ-ًؚ-ٰٟۖ-ۭـ]')
 
@@ -72,7 +77,7 @@ def align(ref_chars, hyp_chars):
 
 def from_tts(tl):
     """Exact word times from the voice's own WordBoundary events (written by tts/scripts/synth_narration.py)."""
-    p = V / 'audio/word_timings.json'
+    p = WORD_TIMINGS
     if not p.exists():
         return None
     wt = json.loads(p.read_text())
@@ -93,11 +98,11 @@ def from_tts(tl):
 
 
 def main():
-    tl = json.loads((V / 'timeline.json').read_text())
+    tl = json.loads(TIMELINE.read_text())
     if '--asr' not in sys.argv:
         res = from_tts(tl)
         if res:
-            out = RM / 'src/data/words.json'
+            out = WORDS_OUT
             out.write_text(json.dumps(res, ensure_ascii=False, indent=1))
             print('wrote', out, '(from the voice word boundaries)')
             return
@@ -168,7 +173,7 @@ def main():
                             'char_match': round(matched, 3), 'hyp': ' '.join(w.word.strip() for w in hw),
                             'words': words}
         print(sc['id'], 'chars aligned', round(matched, 3), flush=True)
-    out = RM / 'src/data/words.json'
+    out = WORDS_OUT
     out.write_text(json.dumps(result, ensure_ascii=False, indent=1))
     print('wrote', out)
 

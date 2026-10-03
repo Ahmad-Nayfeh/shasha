@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.roborazzi)
 }
 
 // Release signing, versionCode and the updater's token come from CI (contract documented at the top of
@@ -31,7 +32,7 @@ android {
         versionCode = ciEnv("SHASHA_VERSION_CODE")
             ?.let { it.toIntOrNull() ?: error("SHASHA_VERSION_CODE must be an integer, got '$it'") }
             ?: 1
-        versionName = "1.2.0"
+        versionName = "1.2.1"
         // The updater reads this repository's latest release. The repository is private, so it needs a read-only
         // token (CI's SHASHA_UPDATE_TOKEN); empty = the updater says that updates are unavailable in this build.
         buildConfigField("String", "UPDATE_REPO", javaString("Ahmad-Nayfeh/shasha"))
@@ -83,11 +84,17 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+roborazzi {
+    // Commit-able reference screenshots, which the guide and the video reuse (record: ./gradlew :mobile:recordRoborazziDebug).
+    outputDir.set(file("src/test/screenshots"))
+}
+
 // Robolectric downloads its android-all jars at test time. Maven Central (repo1) rate-limits this build
 // environment, so use Google's mirror of it, the same one settings.gradle.kts uses.
 tasks.withType<Test>().configureEach {
     systemProperty("robolectric.dependency.repo.url", "https://maven-central.storage-download.googleapis.com/maven2")
-    maxHeapSize = "2g"
+    // The screenshot tests draw phone-sized bitmaps (as :app does at 3g).
+    maxHeapSize = "3g"
 }
 
 dependencies {
@@ -136,4 +143,7 @@ dependencies {
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
+    // Screenshots of the main screens with fake data (src/test/screenshots), checked by verifyRoborazziDebug.
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
 }

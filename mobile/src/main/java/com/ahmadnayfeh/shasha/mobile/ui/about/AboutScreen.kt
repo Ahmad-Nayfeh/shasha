@@ -2,6 +2,7 @@ package com.ahmadnayfeh.shasha.mobile.ui.about
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.ahmadnayfeh.shasha.mobile.BuildConfig
 import com.ahmadnayfeh.shasha.mobile.R
@@ -47,7 +49,9 @@ fun AboutScreen(onBack: () -> Unit) {
                 Image(
                     painterResource(R.drawable.ic_launcher_foreground),
                     contentDescription = null,
-                    modifier = Modifier.size(96.dp).clip(RoundedCornerShape(24.dp)).background(Color(0xFF0B0F14)),
+                    // A thin edge: in the dark theme the icon's own dark square would melt into the page.
+                    modifier = Modifier.size(96.dp).clip(RoundedCornerShape(24.dp)).background(Color(0xFF0B0F14))
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp)),
                 )
                 Text(stringResource(R.string.app_name), Modifier.padding(top = 12.dp), style = MaterialTheme.typography.headlineSmall)
                 Text(
@@ -94,7 +98,8 @@ fun AboutScreen(onBack: () -> Unit) {
             Text(
                 stringResource(R.string.sponsorblock_attribution_exact),
                 Modifier.padding(horizontal = 16.dp),
-                style = MaterialTheme.typography.bodyMedium,
+                // English, whatever the app's language: a right-to-left paragraph would move its closing "/." to the front.
+                style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr),
             )
             Text(
                 stringResource(R.string.sponsorblock_attribution),

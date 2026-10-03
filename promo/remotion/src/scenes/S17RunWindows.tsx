@@ -4,7 +4,7 @@ import {ConsoleView, Desktop, FileManager, Pointer, SmartScreen, Window} from '.
 import {INSTALL_LAPTOP, SideSteps, StepHeader} from '../components/Install';
 import {LaptopDesk} from '../components/InstallKit';
 import {tween} from '../lib/anim';
-import {KIT_DIR, KIT_FILES, WIN_INSTALLER} from '../lib/installer';
+import {KIT_DIR, KIT_FILES, KIT_ROW_H, WIN_INSTALLER} from '../lib/installer';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // Step 5 (Windows): double-click the Windows installer; SmartScreen → «More info» → «Run anyway».
@@ -25,7 +25,7 @@ export const S17RunWindows: React.FC<{scene: Scene}> = ({scene}) => {
   const clickRun = tRun + 14;
   const ssOut = tween(f, clickRun + 4, 6);
   const con = tween(f, clickRun + 8, 8);
-  const rowY = 50 + 44 + 52 + 36 + WIN_ROW * 66 + 31;
+  const rowY = 50 + 44 + 52 + 36 + WIN_ROW * (KIT_ROW_H + 4) + 2 + KIT_ROW_H / 2;
   const files = KIT_FILES.map((k, i) => ({...k, highlight: i === WIN_ROW ? tween(f, tDbl - 6, 8) : 0}));
 
   return (
@@ -34,7 +34,7 @@ export const S17RunWindows: React.FC<{scene: Scene}> = ({scene}) => {
       <LaptopDesk x={INSTALL_LAPTOP.x} y={INSTALL_LAPTOP.y} w={INSTALL_LAPTOP.w}>
         <Desktop os="win">
           <Window os="win" x={60} y={50} w={1160} h={640} title={KIT_DIR}>
-            <FileManager os="win" path={['This PC', 'Downloads', KIT_DIR]} files={files} selected={f >= dbl ? WIN_ROW : -1} rowH={62} />
+            <FileManager os="win" path={['This PC', 'Downloads', KIT_DIR]} files={files} selected={f >= dbl ? WIN_ROW : -1} rowH={KIT_ROW_H} />
           </Window>
           {ss > 0 && ssOut < 1 ? (
             <div style={{position: 'absolute', inset: 0, opacity: 1 - ssOut}}>

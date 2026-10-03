@@ -9,7 +9,7 @@ import {TvFrame} from '../components/Tv';
 import {clamp, sp, tween} from '../lib/anim';
 import {beatsFor, Scene} from '../lib/timeline';
 
-// Installation, intro: what you need (a personal Windows or Mac computer on the TV's Wi-Fi), the nine steps.
+// Installation, intro: what you need (a personal Windows or Mac computer on the TV's Wi-Fi), the eight steps.
 export const S11Install: React.FC<{scene: Scene}> = ({scene}) => {
   const f = useCurrentFrame();
   const b = beatsFor(scene);
@@ -26,8 +26,8 @@ export const S11Install: React.FC<{scene: Scene}> = ({scene}) => {
   const wifi = tween(f, tNet - 2, 16);
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <SectionCard title="التثبيت" sub={`${arDigits(9)} خطوات · نحو ربع ساعة · مرة واحدة`} t={cardIn} out={cardOut} />
-      {/* the nine steps under the title */}
+      <SectionCard title="التثبيت" sub={`${arDigits(STEPS.length)} خطوات · نحو ربع ساعة · مرة واحدة`} t={cardIn} out={cardOut} />
+      {/* the steps under the title */}
       <div style={{position: 'absolute', left: 260, right: 260, top: 760, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, direction: 'rtl', fontFamily: brand.font, opacity: cardIn * (1 - cardOut)}}>
         {STEPS.map((s, i) => (
           <div key={i} style={{display: 'flex', alignItems: 'center', gap: 12, padding: '10px 18px', borderRadius: 99, background: 'rgba(234,240,246,0.06)', border: '1px solid rgba(234,240,246,0.1)', fontSize: 24, fontWeight: 600, color: brand.text, opacity: clamp(tween(f, 6 + i * 3, 12)), whiteSpace: 'nowrap'}}>

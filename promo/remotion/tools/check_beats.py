@@ -9,13 +9,13 @@ from beats import Beats  # noqa: E402
 RM = Path(__file__).resolve().parents[1]
 index = (RM / 'src/scenes/index.ts').read_text()
 comp_to_ids = {}
-for sid, comp in re.findall(r"(s\d\d_[a-z_]+):\s*(\w+)", index):
+for sid, comp in re.findall(r"([sm]\d\d_[a-z_]+):\s*(\w+)", index):
     comp_to_ids.setdefault(comp, []).append(sid)
 missing, n = [], 0
 for path in sorted((RM / 'src/scenes').glob('*.tsx')):
     comp = path.stem
     ids = comp_to_ids.get(comp, [])
-    phrases = re.findall(r"(?:\bb|beats|s\d\d)\.(?:at|end)\('([^']+)'", path.read_text()) + re.findall(r"tryAt\('([^']+)'", path.read_text())
+    phrases = re.findall(r"(?:\bb|beats|[sm]\d\d)\.(?:at|end)\('([^']+)'", path.read_text()) + re.findall(r"tryAt\('([^']+)'", path.read_text())
     for sid in ids:
         bt = Beats(sid)
         for ph in phrases:
@@ -25,7 +25,7 @@ for path in sorted((RM / 'src/scenes').glob('*.tsx')):
             except Exception:
                 missing.append(f'{comp} ({sid}): «{ph}»')
 main = (RM / 'src/Main.tsx').read_text()
-for var, sid in re.findall(r"const (\w+) = sceneById\('(s\d\d_[a-z_]+)'\)", main):
+for var, sid in re.findall(r"const (\w+) = sceneById\('([sm]\d\d_[a-z_]+)'\)", main):
     for ph in re.findall(rf"beatsFor\({var}\)\.(?:at|end)\('([^']+)'", main):
         n += 1
         try:

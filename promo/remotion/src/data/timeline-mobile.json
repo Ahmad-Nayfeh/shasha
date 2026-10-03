@@ -1,0 +1,473 @@
+{
+ "fps": 30,
+ "width": 1920,
+ "height": 1080,
+ "total_duration_s": 123.033,
+ "total_frames": 3691,
+ "narration_track": "audio-mobile/narration_full.wav",
+ "tts": {
+  "engine": "ElevenLabs text-to-speech with character timestamps",
+  "voice_id": "pCKbQ4EPGE06zpEPGNvS",
+  "voice": "Abdullah - Professional, and Energetic",
+  "model": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_192",
+  "text_field": "tts",
+  "pauses_s": {
+   "comma": 0.25,
+   "colon": 0.3,
+   "sentence": 0.5,
+   "beat": 0.9
+  },
+  "note": "phrase-by-phrase synthesis (previous_text/next_text for continuity), silences inserted by us"
+ },
+ "loudness": {
+  "target": "-16 LUFS integrated, true peak <= -1.5 dBTP (EBU R128 / ffmpeg loudnorm)",
+  "measured_combined": {
+   "integrated_lufs": -16.03,
+   "true_peak_dbtp": -2.05,
+   "lra": 2.7
+  }
+ },
+ "asr_check": null,
+ "padding_s": {
+  "lead_in": 0.3,
+  "tail": 0.4,
+  "section_extra": 0.6,
+  "first_lead": 2.2,
+  "last_hold": 3.0
+ },
+ "scenes": [
+  {
+   "id": "m01_intro",
+   "section": "intro",
+   "title": "شاشة في جوالك",
+   "step": null,
+   "audio": "audio-mobile/scenes/m01_intro.wav",
+   "audio_duration_s": 7.335,
+   "start_s": 0.0,
+   "duration_s": 9.933,
+   "start_frame": 0,
+   "duration_frames": 298,
+   "voice_offset_s": 2.2,
+   "voice_offset_frames": 66,
+   "cues": [
+    {
+     "start_s": 2.3,
+     "end_s": 4.705,
+     "start_frame": 69,
+     "end_frame": 141,
+     "text_display": "«شاشة» في جوالك الأندرويد أيضاً:",
+     "text_tts": "شاشة في جوالك الأندرويد أيضا:"
+    },
+    {
+     "start_s": 5.005,
+     "end_s": 9.435,
+     "start_frame": 150,
+     "end_frame": 283,
+     "text_display": "يوتيوب هادئ، بلا إعلانات، وبلا تسجيل دخول.",
+     "text_tts": "يوتيوب هادئ، بلا إعلانات، وبلا تسجيل دخول."
+    }
+   ]
+  },
+  {
+   "id": "m02_download",
+   "section": "install",
+   "title": "تنزيل التطبيق",
+   "step": null,
+   "audio": "audio-mobile/scenes/m02_download.wav",
+   "audio_duration_s": 6.08,
+   "start_s": 9.933,
+   "duration_s": 7.367,
+   "start_frame": 298,
+   "duration_frames": 221,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 6.88,
+     "start_frame": 30,
+     "end_frame": 206,
+     "text_display": "ابدأ بتنزيل ملف التطبيق من صفحة «شاشة» على GitHub، وافتحه من جوالك.",
+     "text_tts": "ابدأ بتنزيل ملف التطبيق من صفحة شاشة على غيت هب، وافتحه من جوالك."
+    }
+   ]
+  },
+  {
+   "id": "m03_allow",
+   "section": "install",
+   "title": "السماح بالتثبيت",
+   "step": null,
+   "audio": "audio-mobile/scenes/m03_allow.wav",
+   "audio_duration_s": 8.97,
+   "start_s": 17.3,
+   "duration_s": 9.667,
+   "start_frame": 519,
+   "duration_frames": 290,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 1.65,
+     "start_frame": 12,
+     "end_frame": 50,
+     "text_display": "سيسألك جوالك:",
+     "text_tts": "سيسألك جوالك:"
+    },
+    {
+     "start_s": 1.95,
+     "end_s": 4.31,
+     "start_frame": 59,
+     "end_frame": 129,
+     "text_display": "هل تسمح بالتثبيت من هذا المصدر؟",
+     "text_tts": "هل تسمح بالتثبيت من هذا المصدر؟"
+    },
+    {
+     "start_s": 4.81,
+     "end_s": 7.01,
+     "start_frame": 144,
+     "end_frame": 210,
+     "text_display": "اسمح له، ثم اضغط «تثبيت».",
+     "text_tts": "اسمح له، ثم اضغط تثبيت."
+    },
+    {
+     "start_s": 7.51,
+     "end_s": 9.17,
+     "start_frame": 225,
+     "end_frame": 275,
+     "text_display": "ولن يسألك مرة أخرى.",
+     "text_tts": "ولن يسألك مرة أخرى."
+    }
+   ]
+  },
+  {
+   "id": "m05_search",
+   "section": "watch",
+   "title": "البحث",
+   "step": null,
+   "audio": "audio-mobile/scenes/m05_search.wav",
+   "audio_duration_s": 8.872,
+   "start_s": 26.967,
+   "duration_s": 10.167,
+   "start_frame": 809,
+   "duration_frames": 305,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 3.7,
+     "start_frame": 30,
+     "end_frame": 111,
+     "text_display": "افتح البحث، واكتب ما تريد.",
+     "text_tts": "افتح البحث، واكتب ما تريد."
+    },
+    {
+     "start_s": 4.2,
+     "end_s": 9.672,
+     "start_frame": 126,
+     "end_frame": 290,
+     "text_display": "تظهر لك فيديوهات وقنوات وقوائم تشغيل، من غير إعلانات بينها.",
+     "text_tts": "تظهر لك فيديوهات وقنوات وقوائم تشغيل، من غير إعلانات بينها."
+    }
+   ]
+  },
+  {
+   "id": "m06_channel",
+   "section": "watch",
+   "title": "صفحة القناة",
+   "step": null,
+   "audio": "audio-mobile/scenes/m06_channel.wav",
+   "audio_duration_s": 6.782,
+   "start_s": 37.133,
+   "duration_s": 7.467,
+   "start_frame": 1114,
+   "duration_frames": 224,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 3.312,
+     "start_frame": 12,
+     "end_frame": 99,
+     "text_display": "وفي صفحة القناة تنتقل بين الأقسام:",
+     "text_tts": "وفي صفحة القناة تنتقل بين الأقسام:"
+    },
+    {
+     "start_s": 3.612,
+     "end_s": 6.982,
+     "start_frame": 108,
+     "end_frame": 209,
+     "text_display": "الفيديوهات والقصيرة، وقوائم التشغيل.",
+     "text_tts": "الفيديوهات والقصيرة، وقوائم التشغيل."
+    }
+   ]
+  },
+  {
+   "id": "m07_background",
+   "section": "player",
+   "title": "التشغيل في الخلفية",
+   "step": null,
+   "audio": "audio-mobile/scenes/m07_background.wav",
+   "audio_duration_s": 6.91,
+   "start_s": 44.6,
+   "duration_s": 8.2,
+   "start_frame": 1338,
+   "duration_frames": 246,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 2.77,
+     "start_frame": 30,
+     "end_frame": 83,
+     "text_display": "والمشغّل يعمل في الخلفية:",
+     "text_tts": "والمشغل يعمل في الخلفية:"
+    },
+    {
+     "start_s": 3.07,
+     "end_s": 7.71,
+     "start_frame": 92,
+     "end_frame": 231,
+     "text_display": "يستمر الصوت والشاشة مطفأة، وأنت تفعل ما تشاء.",
+     "text_tts": "يستمر الصوت والشاشة مطفأة، وأنت تفعل ما تشاء."
+    }
+   ]
+  },
+  {
+   "id": "m08_pip",
+   "section": "player",
+   "title": "صورة داخل صورة",
+   "step": null,
+   "audio": "audio-mobile/scenes/m08_pip.wav",
+   "audio_duration_s": 9.56,
+   "start_s": 52.8,
+   "duration_s": 10.267,
+   "start_frame": 1584,
+   "duration_frames": 308,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 9.76,
+     "start_frame": 12,
+     "end_frame": 293,
+     "text_display": "وبلمسة واحدة يصبح الفيديو نافذة صغيرة عائمة، وهي «صورة داخل صورة»، فتتابعه وأنت تفعل شيئاً آخر.",
+     "text_tts": "وبلمسة واحدة يصبح الفيديو نافذة صغيرة عائمة، وهي صورة داخل صورة، فتتابعه وأنت تفعل شيئا آخر."
+    }
+   ]
+  },
+  {
+   "id": "m09_speed",
+   "section": "player",
+   "title": "السرعة",
+   "step": null,
+   "audio": "audio-mobile/scenes/m09_speed.wav",
+   "audio_duration_s": 6.697,
+   "start_s": 63.067,
+   "duration_s": 7.4,
+   "start_frame": 1892,
+   "duration_frames": 222,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 3.18,
+     "start_frame": 12,
+     "end_frame": 95,
+     "text_display": "وتختار سرعة التشغيل التي تناسبك:",
+     "text_tts": "وتختار سرعة التشغيل التي تناسبك:"
+    },
+    {
+     "start_s": 3.48,
+     "end_s": 6.897,
+     "start_frame": 104,
+     "end_frame": 207,
+     "text_display": "أبطأ لتفهم، أو أسرع لتوفّر وقتك.",
+     "text_tts": "أبطأ لتفهم، أو أسرع لتوفر وقتك."
+    }
+   ]
+  },
+  {
+   "id": "m10_sponsor",
+   "section": "player",
+   "title": "تخطي فقرات الرعاية",
+   "step": null,
+   "audio": "audio-mobile/scenes/m10_sponsor.wav",
+   "audio_duration_s": 7.25,
+   "start_s": 70.467,
+   "duration_s": 7.933,
+   "start_frame": 2114,
+   "duration_frames": 238,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 7.45,
+     "start_frame": 12,
+     "end_frame": 224,
+     "text_display": "وتتخطى «شاشة» فقرات الرعاية وحدها، وهي الإعلانات التي يضعها صاحب الفيديو داخله.",
+     "text_tts": "وتتخطى شاشة فقرات الرعاية وحدها، وهي الإعلانات التي يضعها صاحب الفيديو داخله."
+    }
+   ]
+  },
+  {
+   "id": "m11_downloads",
+   "section": "library",
+   "title": "التنزيل",
+   "step": null,
+   "audio": "audio-mobile/scenes/m11_downloads.wav",
+   "audio_duration_s": 8.378,
+   "start_s": 78.4,
+   "duration_s": 9.667,
+   "start_frame": 2352,
+   "duration_frames": 290,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 2.658,
+     "start_frame": 30,
+     "end_frame": 80,
+     "text_display": "وللتنزيل خياران:",
+     "text_tts": "وللتنزيل خياران:"
+    },
+    {
+     "start_s": 2.958,
+     "end_s": 5.558,
+     "start_frame": 89,
+     "end_frame": 167,
+     "text_display": "الفيديو كاملاً، أو الصوت فقط.",
+     "text_tts": "الفيديو كاملا، أو الصوت فقط."
+    },
+    {
+     "start_s": 6.058,
+     "end_s": 9.178,
+     "start_frame": 182,
+     "end_frame": 275,
+     "text_display": "فتتابعه بلا إنترنت، وفي أي مكان.",
+     "text_tts": "فتتابعه بلا إنترنت، وفي أي مكان."
+    }
+   ]
+  },
+  {
+   "id": "m12_subscriptions",
+   "section": "library",
+   "title": "الاشتراكات",
+   "step": null,
+   "audio": "audio-mobile/scenes/m12_subscriptions.wav",
+   "audio_duration_s": 7.45,
+   "start_s": 88.067,
+   "duration_s": 8.133,
+   "start_frame": 2642,
+   "duration_frames": 244,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 7.65,
+     "start_frame": 12,
+     "end_frame": 230,
+     "text_display": "وتشترك في القنوات التي تحبها بضغطة واحدة، فتجد جديدها كله في مكان واحد.",
+     "text_tts": "وتشترك في القنوات التي تحبها بضغطة واحدة، فتجد جديدها كله في مكان واحد."
+    }
+   ]
+  },
+  {
+   "id": "m13_history",
+   "section": "library",
+   "title": "سجل المشاهدة",
+   "step": null,
+   "audio": "audio-mobile/scenes/m13_history.wav",
+   "audio_duration_s": 6.531,
+   "start_s": 96.2,
+   "duration_s": 7.233,
+   "start_frame": 2886,
+   "duration_frames": 217,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 6.731,
+     "start_frame": 12,
+     "end_frame": 202,
+     "text_display": "وفي سجل المشاهدة تجد كل ما شاهدته، فتكمل أي فيديو من حيث توقفت.",
+     "text_tts": "وفي سجل المشاهدة تجد كل ما شاهدته، فتكمل أي فيديو من حيث توقفت."
+    }
+   ]
+  },
+  {
+   "id": "m14_update",
+   "section": "update",
+   "title": "التحديث بضغطة",
+   "step": null,
+   "audio": "audio-mobile/scenes/m14_update.wav",
+   "audio_duration_s": 7.72,
+   "start_s": 103.433,
+   "duration_s": 9.033,
+   "start_frame": 3103,
+   "duration_frames": 271,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 8.52,
+     "start_frame": 30,
+     "end_frame": 256,
+     "text_display": "وإذا صدر إصدار جديد، فاضغط زراً واحداً في الإعدادات، فيبدأ التنزيل والتثبيت وحدهما.",
+     "text_tts": "وإذا صدر إصدار جديد، فاضغط زرا واحدا في الإعدادات، فيبدأ التنزيل والتثبيت وحدهما."
+    }
+   ]
+  },
+  {
+   "id": "m15_outro",
+   "section": "outro",
+   "title": "الخاتمة",
+   "step": null,
+   "audio": "audio-mobile/scenes/m15_outro.wav",
+   "audio_duration_s": 6.68,
+   "start_s": 112.467,
+   "duration_s": 10.567,
+   "start_frame": 3374,
+   "duration_frames": 317,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 3.74,
+     "start_frame": 30,
+     "end_frame": 112,
+     "text_display": "«شاشة» في جيبك، هادئة وآمنة.",
+     "text_tts": "شاشة في جيبك، هادئة وآمنة."
+    },
+    {
+     "start_s": 4.24,
+     "end_s": 6.05,
+     "start_frame": 127,
+     "end_frame": 182,
+     "text_display": "صُنع بحب لعائلتي.",
+     "text_tts": "صُنِعَ بحب لعائلتي."
+    },
+    {
+     "start_s": 6.55,
+     "end_s": 7.48,
+     "start_frame": 197,
+     "end_frame": 224,
+     "text_display": "احمد نايفه.",
+     "text_tts": "أحمد نايفه."
+    }
+   ]
+  }
+ ]
+}

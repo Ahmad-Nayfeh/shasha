@@ -15,7 +15,7 @@
 
 <a href="docs/video/shasha-explainer.mp4"><img src="docs/video/preview.webp" width="760" alt="فيديو شرح شاشة"></a>
 
-**[▶ شاهد فيديو الشرح كاملاً بالصوت (٦ دقائق)](docs/video/shasha-explainer.mp4)**
+**[▶ شاهد فيديو الشرح كاملاً بالصوت (٦ دقائق)](docs/video/shasha-explainer.mp4)** · **[📱 فيديو تطبيق الجوال (دقيقتان)](docs/video/shasha-mobile.mp4)**
 
 </div>
 
@@ -72,7 +72,8 @@
 |---|---|
 | 📘 **دليل شاشة** (عربي) | [docs/دليل-شاشة.pdf](docs/دليل-شاشة.pdf): الشاشات المدعومة، والتثبيت، والاستخدام، والوالدين، وتطبيق الجوال، والتحديث، وحل المشاكل |
 | 📗 **Shasha Guide** (English) | [docs/Shasha-Guide.pdf](docs/Shasha-Guide.pdf) |
-| 🎬 **فيديو الشرح** | [docs/video/shasha-explainer.mp4](docs/video/shasha-explainer.mp4) |
+| 🎬 **فيديو الشرح** (الشاشة) | [docs/video/shasha-explainer.mp4](docs/video/shasha-explainer.mp4) |
+| 📱 **فيديو تطبيق الجوال** | [docs/video/shasha-mobile.mp4](docs/video/shasha-mobile.mp4) |
 
 > الدليل والفيديو موجودان أيضاً داخل التطبيق: «الإعدادات ← الدليل والفيديو».
 

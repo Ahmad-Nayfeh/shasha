@@ -1,7 +1,8 @@
 """Check a rendered clip's audio against the source mix (narration + music) at the clip's start frame.
   ../.venv/bin/python tools/check_sync.py <clip.mp4> <startFrame>
-Prints the best lag (ms) and the residual; lag 0 = sample-accurate A/V sync."""
-import subprocess, sys
+Prints the best lag (ms) and the residual; lag 0 = sample-accurate A/V sync.
+  COMP=Mobile ../.venv/bin/python tools/check_sync.py <clip.mp4> <startFrame>   (the phone video)"""
+import os, subprocess, sys
 from pathlib import Path
 import numpy as np
 RM = Path(__file__).resolve().parents[1]
@@ -13,8 +14,9 @@ def load(args):
     return np.frombuffer(raw, np.float32).astype(np.float64)
 a = load(['-i', clip])
 ss = f'{start / 30:.6f}'
-n = load(['-ss', ss, '-i', str(RM / 'public/audio/narration_full.wav')])
-m = load(['-ss', ss, '-i', str(RM / 'public/audio/music_bed.wav')])
+AUD = 'public/audio-mobile' if os.environ.get('COMP') == 'Mobile' else 'public/audio'
+n = load(['-ss', ss, '-i', str(RM / AUD / 'narration_full.wav')])
+m = load(['-ss', ss, '-i', str(RM / AUD / 'music_bed.wav')])
 L = min(len(a), len(n), len(m)) - 4000
 ref = n[:L] + m[:L]
 best = None

@@ -26,24 +26,20 @@ export const XFADE = 10; // frames of cross-fade between scenes (+12 px slide, R
 // Scene pairs that share the same TV framing: pure cross-fade (no slide) so the TV stays put and only
 // its content dissolves.
 const CONTINUOUS = new Set([
-  's03_home_search>s04_player',
-  's04_player>s05_profiles',
-  's05_profiles>s06_time',
-  's06_time>s07_lock',
-  's07_lock>s08_guard',
-  's08_guard>s09_phone',
-  's09_phone>s10_stats',
+  // the feature tour: the same TV from one scene to the next (its content dissolves, the TV stays)
+  's03_home>s04_profiles',
+  's04_profiles>s05_time',
+  's05_time>s06_serious',
+  's06_serious>s07_guard',
+  's10_search>s12_phone',
   // installation: the same laptop / the same TV from one step to the next
-  's12_download>s13_folder',
-  's14_devmode>s15_debugging',
-  's15_debugging>s16_find_ip',
-  's17_run_windows>s18_run_mac',
-  's18_run_mac>s19_type_ip',
-  's20_allow>s21_pairing',
-  's23_first_start>s24_phone',
+  's21_devmode>s22_debugging',
+  's22_debugging>s23_find_ip',
+  's24_run_windows>s25_run_mac',
+  's25_run_mac>s26_type_ip',
 ]);
 
-const SceneWrap: React.FC<{scene: Scene; first: boolean; last: boolean; slideIn: boolean; slideOut: boolean; children: React.ReactNode}> = ({
+export const SceneWrap: React.FC<{scene: Scene; first: boolean; last: boolean; slideIn: boolean; slideOut: boolean; children: React.ReactNode}> = ({
   scene,
   first,
   last,
@@ -112,11 +108,11 @@ export const Main: React.FC<MainProps> = ({captions = true, music = true, grain 
   );
 };
 
-// The TV's IP, noted in step 4 (s16), stays pinned in the top-left corner through step 5 (s17-s19: one element,
+// The TV's IP, noted in step 4 (s23), stays pinned in the top-left corner through step 5 (s24-s26: one element,
 // so it does not flicker in the cross-fades) and glows while it is typed into the installer.
 const PersistentIpNote: React.FC = () => {
-  const s16 = sceneById('s16_find_ip');
-  const s19 = sceneById('s19_type_ip');
+  const s16 = sceneById('s23_find_ip');
+  const s19 = sceneById('s26_type_ip');
   const land = s16.start_frame + beatsFor(s16).at('أرقاما') + IP_NOTE_LAND;
   const end = s19.start_frame + s19.duration_frames + XFADE;
   const typeAt = s19.start_frame + beatsFor(s19).at('اكتب العنوان') + 6 - land;

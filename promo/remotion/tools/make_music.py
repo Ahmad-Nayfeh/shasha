@@ -6,9 +6,11 @@ at the end. Ducked ~7 dB under the narration (envelope follower on audio/narrati
 normalised to about -28 LUFS integrated. Writes public/audio/music_bed.wav (48 kHz stereo).
 
   ../.venv/bin/python tools/make_music.py
+  ../.venv/bin/python tools/make_music.py --mobile    (the phone video: timeline-mobile.json, audio-mobile/ -> public/audio-mobile/music_bed.wav)
 """
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -20,7 +22,9 @@ RM = HERE.parent
 V = RM.parent
 FFMPEG = str(V / 'bin/ffmpeg')
 SR = 48000
-tl = json.loads((V / 'timeline.json').read_text())
+MOBILE = '--mobile' in sys.argv
+AUDIO = 'audio-mobile' if MOBILE else 'audio'
+tl = json.loads((V / ('timeline-mobile.json' if MOBILE else 'timeline.json')).read_text())
 DUR = tl['total_duration_s']
 N = int(DUR * SR)
 t = np.arange(N) / SR
@@ -112,7 +116,7 @@ L *= fade_in * fade_out
 R *= fade_in * fade_out
 
 # ducking under the narration
-voice_audio, vsr = sf.read(str(V / 'audio/narration_full.wav'), dtype='float64')
+voice_audio, vsr = sf.read(str(V / AUDIO / 'narration_full.wav'), dtype='float64')
 if voice_audio.ndim > 1:
     voice_audio = voice_audio.mean(axis=1)
 assert vsr == SR, vsr
@@ -140,8 +144,9 @@ R *= gain
 
 mix = np.stack([L, R], axis=1)
 mix /= np.abs(mix).max() + 1e-9
-tmp = RM / 'public/audio/music_bed_raw.wav'
-out = RM / 'public/audio/music_bed.wav'
+(RM / 'public' / AUDIO).mkdir(parents=True, exist_ok=True)
+tmp = RM / 'public' / AUDIO / 'music_bed_raw.wav'
+out = RM / 'public' / AUDIO / 'music_bed.wav'
 sf.write(str(tmp), (mix * 0.5).astype(np.float32), SR, subtype='FLOAT')
 
 # measure and normalise to -28 LUFS integrated

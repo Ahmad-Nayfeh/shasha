@@ -5,7 +5,7 @@ import {clamp, easeInOut, easeOut, mix, sp, tween} from '../lib/anim';
 import {TV_IP} from '../lib/demo';
 import {Icon, IconName} from './Icons';
 
-// Shared parts of the installation section (INSTALL_FLOW v2, nine steps): the step header, the side checklist,
+// Shared parts of the installation section (eight steps): the step header, the side checklist,
 // the TV's IP noted on a card, the section card.
 
 export type Where = 'pc' | 'tv' | 'phone';
@@ -18,7 +18,6 @@ export const STEPS: Array<{title: string; where: Where}> = [
   {title: 'اسمح للكمبيوتر', where: 'tv'},
   {title: 'التثبيت التلقائي', where: 'pc'},
   {title: 'أول تشغيل لـ«شاشة»', where: 'tv'},
-  {title: 'اربط جوالك (اختياري)', where: 'phone'},
 ];
 const WHERE: Record<Where, {label: string; icon: IconName}> = {
   pc: {label: 'على الكمبيوتر', icon: 'terminal'},
@@ -26,7 +25,7 @@ const WHERE: Record<Where, {label: string; icon: IconName}> = {
   phone: {label: 'على الجوال', icon: 'phone'},
 };
 
-/** Top-right header: «التثبيت · الخطوة ٣ من ٩», the step title, where it happens, nine progress dots. */
+/** Top-right header: «التثبيت · الخطوة ٣ من ٩», the step title, where it happens, one progress dot per step. */
 export const StepHeader: React.FC<{step: number; from?: number; sub?: string}> = ({step, from = 0, sub}) => {
   const f = useCurrentFrame();
   const a = tween(f, from, 16);
@@ -37,7 +36,7 @@ export const StepHeader: React.FC<{step: number; from?: number; sub?: string}> =
     <div style={{position: 'absolute', top: 50, right: 90, direction: 'rtl', fontFamily: brand.font, color: brand.text, textAlign: 'right'}}>
       <div style={{display: 'flex', alignItems: 'center', gap: 16, opacity: a, transform: `translateX(${(1 - a) * -20}px)`}}>
         <span style={{fontSize: 26, fontWeight: 600, color: brand.primary}}>
-          التثبيت · الخطوة {arDigits(step)} من {arDigits(9)}
+          التثبيت · الخطوة {arDigits(step)} من {arDigits(STEPS.length)}
         </span>
         <div style={{display: 'flex', gap: 7}}>
           {STEPS.map((_, i) => (

@@ -1,0 +1,32 @@
+[
+ {
+  "voice_id": "Se2Vw1WbHmGbBbyWTuu4",
+  "public_owner_id": "89aa1f4768185949a1b12bf3aa6a9f31995d2cf8ff70e9051d4e2dfa758d1ab5",
+  "name": "Allison - Inviting and Velvety",
+  "accent": "british",
+  "age": "young",
+  "gender": "female",
+  "descriptive": "pleasant",
+  "use_case": "narrative_story",
+  "category": "high_quality",
+  "cloned_by_count": 65555,
+  "usage_character_count_1y": 10359665752,
+  "description": "A smooth British accent that is elegant and engaging. A perfect choice for audiobook narration and YouTube. ",
+  "file": "en-female-01"
+ },
+ {
+  "voice_id": "ZF6FPAbjXT4488VcRRnw",
+  "public_owner_id": "9265ac49c437181ced8d508db9b8248e1b839589ba453afca0db0f9d60ff389a",
+  "name": "Amelia - Enthusiastic and Expressive",
+  "accent": "british",
+  "age": "young",
+  "gender": "female",
+  "descriptive": "upbeat",
+  "use_case": "narrative_story",
+  "category": "high_quality",
+  "cloned_by_count": 483839,
+  "usage_character_count_1y": 6352684102,
+  "description": "A young British English woman's voice, clear and easy to understand. Expressive and enthusiastic, it's beautiful for narration, podcasts and social media such as YouTube, Tiktok, Reels and Stories. This studio-produced audio is great for a young woman's Gen-Z voice in audiobooks, high-quality video dubbing, advertising and reading.",
+  "file": "en-female-02"
+ }
+]

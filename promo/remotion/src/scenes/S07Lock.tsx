@@ -11,7 +11,8 @@ import {FEATURE_TV} from '../lib/layout';
 import {focusRects} from '../lib/screens';
 import {beatsFor, Scene} from '../lib/timeline';
 
-// s07 — the lock inside the app: Back does nothing in kids mode (the video stays; leaving needs the parents'
+// s06 — «الوضع الجاد» (serious mode): a started video is watched to its end; separate switches for children and
+// adults. The lock inside the app: Back does nothing in kids mode (the video stays; leaving needs the parents'
 // PIN); in adult mode leaving early needs a 10-second hold and then typing a phrase shown on screen (logged in
 // the stats). All on the real captures: the hold ring counts down and the phrase gets typed key by key.
 
@@ -23,11 +24,13 @@ const HOP = 8; // frames per key
 export const S07Lock: React.FC<{scene: Scene}> = ({scene}) => {
   const f = useCurrentFrame();
   const b = beatsFor(scene);
-  const tBack = b.at('زر الرجوع');
-  const tAdult = b.at('وفي ملف الكبار');
-  const tHold = b.at('ضغطا مطولا');
-  const tTen = b.at('لعشر ثوان');
-  const tType = b.at('ثم كتابة');
+  const tSerious = b.at('الوضع الجاد');
+  const tToggles = b.at('ولكل من');
+  const tBack = b.at('فالطفل');
+  const tAdult = b.at('والكبير');
+  const tHold = b.at('بضغطة');
+  const tTen = b.at('مطولة') + 4;
+  const tType = b.at('ثم عبارة');
 
   const tvIn = 1; // continuity: same TV as the previous scene (pure cross-fade, no entrance)
   const deny = tBack + 6;
@@ -50,7 +53,10 @@ export const S07Lock: React.FC<{scene: Scene}> = ({scene}) => {
   const keyPresses = keyTrack.map((k) => k.f + 5); // the ring has landed (snappy glide) before OK
   const n = PRE + keyPresses.filter((p) => f >= p).length;
 
-  const kidTag = tween(f, 4, 14) * (1 - tween(f, tAdult - 4, 10));
+  const kidTag = tween(f, tBack - 6, 14) * (1 - tween(f, tAdult - 4, 10));
+  // the settings page with the two separate switches (children / adults), between the idea and the two ways out
+  const settingsIn = tween(f, tToggles - 6, 12) * (1 - tween(f, tBack - 8, 12));
+  const seriousChip = tween(f, tSerious - 4, 14) * (1 - tween(f, tToggles - 8, 10));
   const adultTag = tween(f, tAdult + 4, 14);
   const holdCardIn = sp(f, holdFrom - 6, {damping: 22});
   const holdCardOut = tween(f, tType - 4, 12);
@@ -58,10 +64,11 @@ export const S07Lock: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="جولة في الميزات" index="٥ / ٨" title="القفل داخل التطبيق" />
+      <Header kicker="حماية الأطفال" index="٣ / ٥" title="الوضع الجاد" />
 
       <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)} shakeX={shake} glowColor={adultIn > 0.5 ? brand.primary : brand.kids}>
         <Screen name="kids_video" />
+        <Screen name="serious_settings" opacity={settingsIn} />
         <Screen name="kids_player_locked" opacity={promptIn} />
         <Screen name="player_overlay" opacity={adultIn * (1 - holdScreen)} />
         <div style={{position: 'absolute', inset: 0, opacity: holdScreen * (1 - phraseScreen)}}>
@@ -72,12 +79,16 @@ export const S07Lock: React.FC<{scene: Scene}> = ({scene}) => {
           <Screen name="lock_phrase" />
           <PhraseOverlay phrase={PHRASE} typed={n} blink={Math.floor(f / 8) % 2 === 0} />
         </div>
+        <FocusRing track={[{f: tToggles + 4, rect: fr('serious_settings', 'kidsToggle'), r: 34}, {f: tToggles + 34, rect: fr('serious_settings', 'adultToggle'), r: 34}]} until={tBack - 8} width={5} />
         <FocusRing track={[{f: deny + 8, rect: fr('kids_player_locked', 'lockHint'), r: 26}]} until={tAdult} color={brand.amber} width={5} />
         <FocusRing track={keyTrack} until={scene.duration_frames + 20} width={5} presses={keyPresses} glide={{frames: 4}} />
       </TvFrame>
 
       {/* mode tags, top-left of the TV */}
       <div style={{position: 'absolute', left: TV.x, top: TV.y - 74}}>
+        <div style={{position: 'absolute', left: 0, top: 0, opacity: seriousChip}}>
+          <Chip icon="lock" label="الوضع الجاد" tone="teal" size={24} />
+        </div>
         <div style={{position: 'absolute', left: 0, top: 0, opacity: kidTag}}>
           <Chip icon="star" label="وضع الطفل" tone="kids" size={24} />
         </div>

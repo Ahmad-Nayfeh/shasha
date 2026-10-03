@@ -58,7 +58,7 @@ sealed interface LaunchRequest {
  * The app's objects, built lazily and once per process (manual dependency injection, like the TV app): the shared
  * HTTP client, the YouTube source, the database, the settings, the repositories, the player, the downloads and the updater.
  */
-class AppContainer(private val app: Application) {
+open class AppContainer(private val app: Application) {
     /** Work that outlives any screen and needs no main thread. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -74,7 +74,7 @@ class AppContainer(private val app: Application) {
             .build()
     }
 
-    val videoSource: VideoSource by lazy { YouTube.create(app, okHttp) }
+    open val videoSource: VideoSource by lazy { YouTube.create(app, okHttp) }
     private val mediaSourceFactory: YouTubeMediaSourceFactory by lazy { YouTubeMediaSourceFactory(app, okHttp) }
 
     val database: ShashaDatabase by lazy { ShashaDatabase.create(app) }
@@ -119,7 +119,7 @@ class AppContainer(private val app: Application) {
     /** What a video can be downloaded as, from a fresh extraction (its streams' addresses expire). */
     val optionsSource: OptionsSource by lazy { OptionsSource { videoId -> videoSource.stream(videoId).downloadOptions() } }
 
-    val downloads: DownloadManager by lazy {
+    open val downloads: DownloadManager by lazy {
         val downloader = StreamDownloader(okHttp)
         DownloadManager(
             dao = database.downloads(),

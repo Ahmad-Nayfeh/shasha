@@ -4,21 +4,21 @@ import {Browser, ContextMenu, Desktop, FileManager, Pointer, RepoFilePage, RepoP
 import {INSTALL_LAPTOP, SideSteps, StepHeader} from '../components/Install';
 import {camMix, LaptopDesk} from '../components/InstallKit';
 import {tween} from '../lib/anim';
-import {KIT_DIR, KIT_ZIP, KIT_ZIP_SIZE, REPO_PATH} from '../lib/installer';
+import {KIT_DATE, KIT_DIR, KIT_TAG, KIT_ZIP, KIT_ZIP_SIZE, REPO_PATH} from '../lib/installer';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // Step 1 (a): on the repository page click «Shasha-Setup.zip» → the download button → extract it
 // (Windows: right-click → «Extract All…»; Mac: double-click).
 const ROWS: RepoRow[] = [
   {name: '.github', kind: 'dir', msg: 'CI: build and release', when: '2 days ago'},
-  {name: 'Shasha-Setup', kind: 'dir', msg: 'Installer kit v1.0.0', when: '2 days ago'},
-  {name: 'app', kind: 'dir', msg: 'Phase 7: in-app updater', when: '2 days ago'},
-  {name: 'docs', kind: 'dir', msg: 'Install guide and manual', when: 'yesterday'},
+  {name: 'Shasha-Setup', kind: 'dir', msg: `Installer kit ${KIT_TAG}`, when: 'today'},
+  {name: 'app', kind: 'dir', msg: 'One-press updates', when: '2 days ago'},
+  {name: 'docs', kind: 'dir', msg: 'The new guide', when: 'yesterday'},
+  {name: 'mobile', kind: 'dir', msg: 'The phone app', when: 'yesterday'},
   {name: 'remote', kind: 'dir', msg: 'Phone remote page', when: 'last week'},
   {name: 'youtube', kind: 'dir', msg: 'Extractor update', when: 'last week'},
-  {name: 'MAINTENANCE.md', kind: 'file', msg: 'Maintenance guide', when: '2 days ago'},
   {name: 'README.md', kind: 'file', msg: 'Install steps', when: 'yesterday'},
-  {name: KIT_ZIP, kind: 'zip', msg: 'Installer kit v1.0.0 (one download)', when: '2 days ago'},
+  {name: KIT_ZIP, kind: 'zip', msg: `Installer kit ${KIT_TAG} (one download)`, when: 'today'},
 ];
 const ZIP_ROW = ROWS.length - 1;
 
@@ -54,8 +54,8 @@ export const S12Download: React.FC<{scene: Scene}> = ({scene}) => {
   // window bar 44 + browser bar 54 + repo header 70 + tabs 44 + table margin 18 + table header 46 + rows of 46 (desktop space)
   const zipRowY = 44 + 54 + 70 + 44 + 18 + 46 + 46 * ZIP_ROW + 23;
   const winFiles = [
-    ...(extracted ? [{name: KIT_DIR, kind: 'folder' as const, size: '', date: '30/09/2026', highlight: tween(f, clickExtract + 10, 8)}] : []),
-    {name: KIT_ZIP, kind: 'zip' as const, size: KIT_ZIP_SIZE, date: '30/09/2026'},
+    ...(extracted ? [{name: KIT_DIR, kind: 'folder' as const, size: '', date: KIT_DATE, highlight: tween(f, clickExtract + 10, 8)}] : []),
+    {name: KIT_ZIP, kind: 'zip' as const, size: KIT_ZIP_SIZE, date: KIT_DATE},
     {name: 'holiday-photos.jpg', kind: 'pdf' as const, size: '3.1 MB', date: '12/09/2026'},
   ];
   const macFiles = [

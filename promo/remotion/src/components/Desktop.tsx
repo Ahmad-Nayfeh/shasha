@@ -2,7 +2,7 @@ import React from 'react';
 import {useCurrentFrame} from 'remotion';
 import {brand, rgba} from '../brand';
 import {clamp, easeInOut, easeOut, mix, tween} from '../lib/anim';
-import {KitFile, KitKind} from '../lib/installer';
+import {KIT_DATE, KIT_TAG, KitFile, KitKind} from '../lib/installer';
 import {isolateArabic, isolateLatin} from './Laptop';
 
 // Redrawn, generic desktop UI for the installation steps (no vendor logos): a Windows-like and a macOS-like
@@ -34,7 +34,7 @@ export const Mixed: React.FC<{text: string; style?: React.CSSProperties}> = ({te
 };
 
 // ------------------------------------------------------------------------------------------------ desktop
-export const Desktop: React.FC<{os: OS; children?: React.ReactNode; clock?: string; bare?: boolean}> = ({os, children, clock = '9:41', bare = false}) => (
+export const Desktop: React.FC<{os: OS; children?: React.ReactNode; clock?: string; bare?: boolean; app?: string}> = ({os, children, clock = '9:41', bare = false, app = 'Finder'}) => (
   <div style={{position: 'absolute', left: 0, top: 0, width: DW, height: DH, overflow: 'hidden', fontFamily: UI}}>
     <div
       style={{
@@ -49,11 +49,11 @@ export const Desktop: React.FC<{os: OS; children?: React.ReactNode; clock?: stri
     {os === 'mac' && !bare ? (
       <div style={{position: 'absolute', left: 0, right: 0, top: 0, height: 34, background: 'rgba(20,22,34,0.55)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', gap: 26, padding: '0 22px', color: '#E8EAF2', fontSize: 17, direction: 'ltr'}}>
         <div style={{width: 16, height: 16, borderRadius: 4, background: 'rgba(232,234,242,0.85)'}} />
-        <b>Finder</b>
+        <b>{app}</b>
         <span>File</span>
         <span>Edit</span>
         <span>View</span>
-        <span>Go</span>
+        <span>{app === 'Finder' ? 'Go' : 'Window'}</span>
         <span style={{marginLeft: 'auto'}}>{clock}</span>
       </div>
     ) : null}
@@ -68,7 +68,7 @@ export const Desktop: React.FC<{os: OS; children?: React.ReactNode; clock?: stri
         <div style={{position: 'absolute', right: 20, color: '#E8EAF2', fontSize: 16, textAlign: 'right', lineHeight: 1.25}}>
           {clock}
           <br />
-          30/09/2026
+          {KIT_DATE}
         </div>
       </div>
     ) : null}
@@ -379,7 +379,7 @@ export const RepoPage: React.FC<{owner: string; repo: string; rows: RepoRow[]; h
     </div>
     <div style={{margin: '18px 34px', border: '1px solid #30363D', borderRadius: 10, overflow: 'hidden'}}>
       <div style={{background: '#161B22', padding: '12px 18px', fontSize: 15, color: '#9198A1', display: 'flex', gap: 12}}>
-        <b style={{color: '#E6EDF3'}}>Ahmad-Nayfeh</b> Installer kit v1.0.0 <span style={{marginLeft: 'auto'}}>2 days ago</span>
+        <b style={{color: '#E6EDF3'}}>Ahmad-Nayfeh</b> Installer kit {KIT_TAG} <span style={{marginLeft: 'auto'}}>today</span>
       </div>
       {rows.map((r, i) => (
         <div
@@ -508,16 +508,23 @@ export const SmartScreen: React.FC<{t: number; more: number; file: string; runPr
   </div>
 );
 
-/** The macOS prompt after right-click → Open on a file from the internet (redrawn). */
-export const MacOpenDialog: React.FC<{t: number; file: string; pressed?: number}> = ({t, file, pressed = 0}) => (
+/** Where the «Done» button of the macOS 15 prompt is (desktop space), for the pointer. */
+export const MAC_NOT_OPENED = {x: 390, y: 140, w: 500, h: 340, doneX: 752, doneY: 140 + 340 - 22 - 19};
+/**
+ * The macOS 15 (Sequoia) prompt after a double-click on a script downloaded from the internet (redrawn): the file is
+ * «Not Opened»; the way on is System Settings → Privacy & Security → «Open Anyway».
+ */
+export const MacNotOpened: React.FC<{t: number; file: string; pressed?: number}> = ({t, file, pressed = 0}) => (
   <div
     style={{
       position: 'absolute',
-      left: 390,
-      top: 150,
-      width: 500,
-      padding: '30px 30px 22px',
-      borderRadius: 16,
+      left: MAC_NOT_OPENED.x,
+      top: MAC_NOT_OPENED.y,
+      width: MAC_NOT_OPENED.w,
+      height: MAC_NOT_OPENED.h,
+      padding: '28px 30px 0',
+      boxSizing: 'border-box',
+      borderRadius: 18,
       background: 'rgba(238,238,242,0.98)',
       boxShadow: '0 30px 80px rgba(0,0,0,0.5)',
       opacity: clamp(t * 1.5),
@@ -529,17 +536,101 @@ export const MacOpenDialog: React.FC<{t: number; file: string; pressed?: number}
       zIndex: 8,
     }}
   >
-    <div style={{width: 64, height: 64, margin: '0 auto 16px', borderRadius: 14, background: '#4B4F5C', display: 'grid', placeItems: 'center', color: '#fff', fontFamily: 'IBM Plex Mono, monospace', fontWeight: 700}}>{'>_'}</div>
-    <div style={{fontSize: 18, fontWeight: 700, lineHeight: 1.35}}>
-      macOS cannot verify the developer of “<Mixed text={file} />”. Are you sure you want to open it?
+    <div style={{position: 'relative', width: 64, height: 64, margin: '0 auto 16px'}}>
+      <div style={{width: 64, height: 64, borderRadius: 14, background: '#4B4F5C', display: 'grid', placeItems: 'center', color: '#fff', fontFamily: 'IBM Plex Mono, monospace', fontWeight: 700}}>{'>_'}</div>
+      <div style={{position: 'absolute', right: -10, bottom: -10, width: 30, height: 30, borderRadius: 99, background: '#E5484D', border: '3px solid #EEEEF2', display: 'grid', placeItems: 'center', color: '#fff', fontWeight: 800, fontSize: 19}}>!</div>
     </div>
-    <div style={{fontSize: 14, color: '#555B66', marginTop: 10, lineHeight: 1.4}}>By opening this app, you will be overriding system security.</div>
-    <div style={{display: 'flex', gap: 10, marginTop: 22}}>
-      <div style={{flex: 1, padding: '9px 0', borderRadius: 8, background: '#fff', border: '1px solid rgba(0,0,0,0.12)', fontSize: 16}}>Cancel</div>
-      <div style={{flex: 1, padding: '9px 0', borderRadius: 8, background: pressed > 0 ? '#1E5BD8' : '#2F6FEB', color: '#fff', fontSize: 16, fontWeight: 600}}>Open</div>
+    <div style={{fontSize: 18, fontWeight: 700, lineHeight: 1.35}}>
+      “<Mixed text={file} />” Not Opened
+    </div>
+    <div style={{fontSize: 15, color: '#555B66', marginTop: 10, lineHeight: 1.4}}>
+      Apple could not verify “<Mixed text={file} />” is free of malware that may harm your Mac or compromise your privacy.
+    </div>
+    <div style={{position: 'absolute', left: 30, right: 30, bottom: 22, display: 'flex', gap: 10}}>
+      <div style={{flex: 1, height: 38, display: 'grid', placeItems: 'center', borderRadius: 8, background: '#fff', border: '1px solid rgba(0,0,0,0.12)', fontSize: 16}}>Move to Trash</div>
+      <div style={{flex: 1, height: 38, display: 'grid', placeItems: 'center', borderRadius: 8, background: pressed > 0 ? '#1E5BD8' : '#2F6FEB', color: '#fff', fontSize: 16, fontWeight: 600}}>Done</div>
     </div>
   </div>
 );
+
+/** System Settings of macOS 15 (redrawn): the window, its sidebar rows and the «Open Anyway» button (desktop space). */
+export const MAC_SETTINGS = {x: 140, y: 70, w: 1000, h: 640, side: 270, bar: 40, rowH: 44, top: 76, privacyRow: 5};
+export const MAC_SIDEBAR = ['Wi-Fi', 'Bluetooth', 'Network', 'Notifications', 'Sound', 'Privacy & Security', 'Desktop & Dock', 'Displays'];
+/** Centre of a sidebar row. */
+export const macSidebarY = (i: number) => MAC_SETTINGS.y + MAC_SETTINGS.bar + MAC_SETTINGS.top + i * MAC_SETTINGS.rowH + MAC_SETTINGS.rowH / 2;
+export const MAC_OPEN_ANYWAY = {x: MAC_SETTINGS.x + MAC_SETTINGS.w - 36 - 22 - 75, y: MAC_SETTINGS.y + MAC_SETTINGS.bar + 312 + 65};
+
+export const MacSettings: React.FC<{t: number; go: number; file: string; pressed?: number; glow?: number}> = ({t, go, file, pressed = 0, glow = 0}) => {
+  const S = MAC_SETTINGS;
+  const dots = ['#4C8DF6', '#5B6BF0', '#3F9C6B', '#E5484D', '#E9B949', '#2F6FEB', '#7A7F8C', '#4C8DF6'];
+  const sel = go > 0.4 ? S.privacyRow : 0;
+  const card = {background: '#fff', borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)'} as const;
+  return (
+    <Window os="mac" x={S.x} y={S.y} w={S.w} h={S.h} title="System Settings" t={t}>
+      <div style={{position: 'absolute', inset: 0, display: 'flex', background: '#F5F5F7', color: '#1F2329', direction: 'ltr', fontFamily: UI}}>
+        <div style={{width: S.side, background: '#E8E8ED', borderRight: '1px solid rgba(0,0,0,0.08)', boxSizing: 'border-box', padding: '14px 12px'}}>
+          <div style={{height: 34, borderRadius: 9, background: 'rgba(0,0,0,0.07)', color: '#7A8292', fontSize: 16, display: 'flex', alignItems: 'center', padding: '0 12px', marginBottom: S.top - 34 - 14}}>Search</div>
+          {MAC_SIDEBAR.map((name, i) => (
+            <div key={name} style={{height: S.rowH - 4, margin: '2px 0', borderRadius: 9, display: 'flex', alignItems: 'center', gap: 12, padding: '0 10px', fontSize: 17, background: i === sel ? '#2F6FEB' : 'transparent', color: i === sel ? '#fff' : '#1F2329'}}>
+              <div style={{width: 24, height: 24, borderRadius: 6, background: dots[i]}} />
+              {name}
+            </div>
+          ))}
+        </div>
+        <div style={{position: 'relative', flex: 1}}>
+          <div style={{position: 'absolute', inset: 0, opacity: 1 - go}}>
+            <div style={{position: 'absolute', left: 36, top: 20, fontSize: 28, fontWeight: 700}}>Wi-Fi</div>
+            <div style={{...card, position: 'absolute', left: 36, right: 36, top: 76, height: 130, padding: '0 22px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14, fontSize: 18}}>
+              <div style={{display: 'flex', alignItems: 'center'}}>
+                <span style={{flex: 1}}>Wi-Fi</span>
+                <div style={{width: 46, height: 26, borderRadius: 13, background: '#34C759', position: 'relative'}}>
+                  <div style={{position: 'absolute', right: 3, top: 3, width: 20, height: 20, borderRadius: 10, background: '#fff'}} />
+                </div>
+              </div>
+              <div style={{display: 'flex', fontSize: 17, color: '#555B66'}}>
+                <span style={{flex: 1}}>HomeWiFi</span>
+                <span>Connected</span>
+              </div>
+            </div>
+          </div>
+          <div style={{position: 'absolute', inset: 0, opacity: go}}>
+            <div style={{position: 'absolute', left: 36, top: 20, fontSize: 28, fontWeight: 700}}>Privacy &amp; Security</div>
+            <div style={{...card, position: 'absolute', left: 36, right: 36, top: 76, height: 184, overflow: 'hidden', fontSize: 18}}>
+              {['Location Services', 'Contacts', 'Calendars', 'Photos'].map((n, i) => (
+                <div key={n} style={{height: 46, display: 'flex', alignItems: 'center', padding: '0 22px', borderTop: i ? '1px solid rgba(0,0,0,0.07)' : undefined}}>
+                  <span style={{flex: 1}}>{n}</span>
+                  <span style={{color: '#9AA1AE'}}>›</span>
+                </div>
+              ))}
+            </div>
+            <div style={{position: 'absolute', left: 38, top: 282, fontSize: 16, fontWeight: 700, color: '#555B66'}}>Security</div>
+            <div style={{...card, position: 'absolute', left: 36, right: 36, top: 312, height: 130, display: 'flex', alignItems: 'center', padding: '0 22px', gap: 18}}>
+              <div style={{flex: 1, fontSize: 17, lineHeight: 1.45}}>
+                “<Mixed text={file} />” was blocked to protect your Mac.
+              </div>
+              <div
+                style={{
+                  width: 150,
+                  height: 38,
+                  display: 'grid',
+                  placeItems: 'center',
+                  borderRadius: 8,
+                  background: pressed > 0 ? '#D9DCE3' : '#fff',
+                  border: '1px solid rgba(0,0,0,0.18)',
+                  fontSize: 16,
+                  fontWeight: 600,
+                  boxShadow: glow > 0 ? `0 0 0 ${4 * glow}px ${rgba(brand.primary, 0.55 * glow)}` : undefined,
+                }}
+              >
+                Open Anyway
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Window>
+  );
+};
 
 // ------------------------------------------------------------------------------------------------ console
 export type CLine = {t: number; text: string; kind?: string; type?: number; typeFrom?: number; prompt?: string};

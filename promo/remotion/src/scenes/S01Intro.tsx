@@ -2,80 +2,44 @@ import React from 'react';
 import {useCurrentFrame} from 'remotion';
 import {brand} from '../brand';
 import {LogoMark, Wordmark, WORDMARK_RATIO} from '../components/Brand';
+import {Icon} from '../components/Icons';
 import {Screen, TvFrame} from '../components/Tv';
 import {Chip, Strike} from '../components/ui';
 import {clamp, easeInOut, easeOut, mix, sp, tween} from '../lib/anim';
 import {beatsFor, Scene} from '../lib/timeline';
 
-// s01 — logo reveal, then "this is Shasha": the TV with the home feed, ads & algorithm crossed out,
-// and the four features as chips.
+// s01 — logo reveal, then "this is Shasha": the TV with the home feed, ads and the sign-in crossed out,
+// and the family features (kids' profiles, a set time, the phone as remote) as chips.
 
 const TV = {x: 448, y: 176, w: 1024};
 const TVH = (TV.w * 9) / 16;
 
-const Tangle: React.FC<{f: number; from: number; untangle: number; out: number}> = ({f, from, untangle, out}) => {
-  const N = 46;
-  const appear = tween(f, from, 14);
+/** A sign-in form over the TV that gets crossed out: «بلا حاجة إلى تسجيل الدخول». */
+const SignIn: React.FC<{f: number; from: number; strike: number; out: number}> = ({f, from, strike, out}) => {
+  const appear = sp(f, from, {damping: 20});
   const gone = tween(f, out, 14);
-  if (appear <= 0 || gone >= 1) return null;
-  const x0 = TV.x + 90;
-  const x1 = TV.x + TV.w - 90;
-  const yLine = TV.y + TVH * 0.52;
-  const pts: Array<[number, number]> = [];
-  for (let i = 0; i < N; i++) {
-    const u = i / (N - 1);
-    // tangled curve: loops made of summed sines
-    const tx = TV.x + TV.w * (0.5 + 0.34 * Math.sin(u * 17.3 + 0.6) * Math.cos(u * 5.1));
-    const ty = TV.y + TVH * (0.5 + 0.32 * Math.sin(u * 13.7 + 1.9) * Math.sin(u * 3.3 + 0.4));
-    // straight, time-ordered (newest at the right — RTL)
-    const sx = mix(x1, x0, u);
-    const t = clamp(tween(f, untangle + i * 0.35, 26, easeInOut));
-    pts.push([mix(tx, sx, t), mix(ty, yLine, t)]);
-  }
-  const d = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
-  const straight = tween(f, untangle + 18, 20);
-  const labels = ['الآن', 'منذ ساعتين', 'أمس', 'منذ يومين', 'الأسبوع الماضي'];
+  if (appear <= 0.01 || gone >= 1) return null;
+  const s = tween(f, strike, 10, easeInOut);
+  const field = (label: string, w: number) => (
+    <div style={{height: 64, borderRadius: 14, background: 'rgba(234,240,246,0.07)', border: '1.5px solid rgba(234,240,246,0.16)', display: 'flex', alignItems: 'center', padding: '0 22px', fontSize: 28, color: brand.muted, width: w, direction: 'rtl'}}>
+      {label}
+    </div>
+  );
   return (
-    <div style={{position: 'absolute', inset: 0, opacity: appear * (1 - gone)}}>
-      <svg width={1920} height={1080} style={{position: 'absolute', inset: 0}}>
-        <defs>
-          <filter id="tglow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="6" />
-          </filter>
-        </defs>
-        <rect x={TV.x} y={TV.y} width={TV.w} height={TVH} fill="rgba(5,8,11,0.55)" opacity={appear} />
-        <path d={d} fill="none" stroke={straight > 0.5 ? brand.primary : brand.amber} strokeWidth={10} opacity={0.35} filter="url(#tglow)" />
-        <path d={d} fill="none" stroke={straight > 0.5 ? brand.primary : brand.amber} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
-        {labels.map((_, i) => {
-          const x = mix(x1, x0, i / (labels.length - 1));
-          return <circle key={i} cx={x} cy={yLine} r={11 * straight} fill={brand.primary} stroke={brand.bg} strokeWidth={4} />;
-        })}
-      </svg>
-      {labels.map((l, i) => {
-        const x = mix(x1, x0, i / (labels.length - 1));
-        const t = tween(f, untangle + 22 + i * 3, 14);
-        return (
-          <div
-            key={l}
-            style={{
-              position: 'absolute',
-              left: x - 110,
-              width: 220,
-              top: yLine + 26,
-              textAlign: 'center',
-              fontFamily: brand.font,
-              fontSize: 26,
-              fontWeight: 600,
-              color: i === 0 ? brand.primary : brand.text,
-              opacity: t,
-              transform: `translateY(${(1 - t) * 10}px)`,
-              direction: 'rtl',
-            }}
-          >
-            {l}
+    <div style={{position: 'absolute', left: TV.x + TV.w / 2 - 270, top: TV.y + TVH / 2 - 235, width: 540, opacity: clamp(appear * 1.4) * (1 - gone), transform: `scale(${mix(0.92, 1, appear)})`}}>
+      <div style={{position: 'relative', padding: '34px 40px 38px', borderRadius: 28, background: 'rgba(14,19,26,0.94)', border: '1.5px solid rgba(234,240,246,0.2)', boxShadow: '0 30px 70px rgba(0,0,0,0.5)', direction: 'rtl', fontFamily: brand.font}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24}}>
+          <div style={{width: 64, height: 64, borderRadius: 999, background: 'rgba(234,240,246,0.1)', display: 'grid', placeItems: 'center'}}>
+            <Icon name="user" size={36} color={brand.text} stroke={2.2} />
           </div>
-        );
-      })}
+          <div style={{fontSize: 38, fontWeight: 700, color: brand.text}}>تسجيل الدخول</div>
+        </div>
+        <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+          {field('البريد الإلكتروني', 460)}
+          {field('كلمة المرور', 460)}
+        </div>
+        <Strike p={s} color={brand.amber} width={8} />
+      </div>
     </div>
   );
 };
@@ -112,17 +76,16 @@ export const S01Intro: React.FC<{scene: Scene}> = ({scene}) => {
   const tvIn = sp(f, b.at('يوتيوب') - 2, {damping: 22, stiffness: 80});
   const adsFrom = b.at('بلا إعلانات') - 6;
   const adsStrike = b.at('إعلانات') + 4;
-  const adsOut = b.at('وبلا خوارزمية') + 2;
-  const algoFrom = b.at('وبلا خوارزمية') - 4;
-  const algoUntangle = b.at('خوارزمية') + 6;
-  const algoOut = b.at('ومعه') + 4;
+  const adsOut = b.at('وبلا حاجة') + 2;
+  const loginFrom = b.at('وبلا حاجة') - 2;
+  const loginStrike = b.at('تسجيل الدخول') + 14;
+  const loginOut = b.at('ومعه') + 4;
 
   // feature montage inside the TV, in sync with the chips
   const feats = [
-    {at: b.at('حصص للوقت'), icon: 'hourglass' as const, label: 'حصص للوقت', tone: 'teal' as const, screen: 'quota_warning'},
-    {at: b.at('وملف للأطفال'), icon: 'star' as const, label: 'ملف للأطفال', tone: 'kids' as const, screen: 'kids_home'},
-    {at: b.at('وقفل للفيديو'), icon: 'lock' as const, label: 'قفل للفيديو', tone: 'teal' as const, screen: 'kids_player_locked'},
-    {at: b.at('وريموت من جوالك'), icon: 'phone' as const, label: 'ريموت من جوالك', tone: 'teal' as const, screen: 'remote_qr'},
+    {at: b.at('ملفات خاصة'), icon: 'star' as const, label: 'ملفات للأطفال', tone: 'kids' as const, screen: 'kids_home'},
+    {at: b.at('ووقت محدد'), icon: 'hourglass' as const, label: 'وقت محدد', tone: 'teal' as const, screen: 'quota_warning'},
+    {at: b.at('وريموت'), icon: 'phone' as const, label: 'ريموت من جوالك', tone: 'teal' as const, screen: 'remote_qr'},
   ];
   const screens = ['home_adult', ...feats.map((x) => x.screen)];
   const starts = [0, ...feats.map((x) => x.at)];
@@ -195,7 +158,7 @@ export const S01Intro: React.FC<{scene: Scene}> = ({scene}) => {
         </>
       ) : null}
 
-      <Tangle f={f} from={algoFrom} untangle={algoUntangle} out={algoOut} />
+      <SignIn f={f} from={loginFrom} strike={loginStrike} out={loginOut} />
 
       {/* feature chips under the TV (enter from the left, first chip on the right) */}
       <div

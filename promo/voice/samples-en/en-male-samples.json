@@ -1,0 +1,47 @@
+[
+ {
+  "voice_id": "MFZUKuGQUsGJPQjTS4wC",
+  "public_owner_id": "b45c1524a1f360319535f16b301e5b6f37edf26fd1d59861eda66206ff25cdc9",
+  "name": "Jon - Warm & Grounded Storyteller",
+  "accent": "american",
+  "age": "middle_aged",
+  "gender": "male",
+  "descriptive": "calm",
+  "use_case": "narrative_story",
+  "category": "high_quality",
+  "cloned_by_count": 822492,
+  "usage_character_count_1y": 7185464807,
+  "description": "A warm, trustworthy American voice with a mature and grounded tone. Ideal for narration and commercials. It carries an intelligent and calm presence, making it perfect for delivering messages with clarity.",
+  "file": "en-male-01"
+ },
+ {
+  "voice_id": "G17SuINrv2H9FC6nvetn",
+  "public_owner_id": "f13913702490da75fc7c40d5df4c32442d935af25a575fccb96c63096f992025",
+  "name": "Christopher - Gentle and Trustworthy",
+  "accent": "british",
+  "age": "middle_aged",
+  "gender": "male",
+  "descriptive": "calm",
+  "use_case": "narrative_story",
+  "category": "high_quality",
+  "cloned_by_count": 1355617,
+  "usage_character_count_1y": 6170002405,
+  "description": "British male narrator, English, well-spoken, gentle and trustworthy voice. Great for audiobooks, podcasts and voiceovers.",
+  "file": "en-male-02"
+ },
+ {
+  "voice_id": "ZthjuvLPty3kTMaNKVKb",
+  "public_owner_id": "37242178387aa74ac807790c7307e81312f0791cf06777a4791b86d941a77525",
+  "name": "Peter",
+  "accent": "american",
+  "age": "middle_aged",
+  "gender": "male",
+  "descriptive": "confident",
+  "use_case": "narrative_story",
+  "category": "high_quality",
+  "cloned_by_count": 1403470,
+  "usage_character_count_1y": 6155434047,
+  "description": "Confident, reliable, credible narrator. A resolute voice that you can trust.",
+  "file": "en-male-03"
+ }
+]

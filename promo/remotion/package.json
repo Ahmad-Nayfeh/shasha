@@ -7,10 +7,13 @@
     "sync": "./sync-assets.sh && ./sync-screens.sh",
     "screens": "./sync-screens.sh",
     "words": "../.venv/bin/python tools/align_words.py",
+    "words:mobile": "../.venv/bin/python tools/align_words.py --mobile",
     "music": "../.venv/bin/python tools/make_music.py",
+    "music:mobile": "../.venv/bin/python tools/make_music.py --mobile",
     "stills": "node tools/stills.mjs",
     "preview": "./render-preview.sh",
     "render:main": "./render-final.sh out/shasha_explainer.mp4",
+    "render:mobile": "COMP=Mobile ./render-final.sh out/shasha_mobile.mp4",
     "render:test": "remotion render src/index.ts TestArabic out/test_arabic.mp4 --concurrency=1"
   },
   "dependencies": {

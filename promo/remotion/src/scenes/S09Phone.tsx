@@ -113,7 +113,7 @@ export const S09Phone: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="جولة في الميزات" index="٧ / ٨" title="الجوال كريموت" />
+      <Header kicker="الجوال" index="١ / ٣" title="الجوال ريموتاً وقسماً للأب" />
 
       <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)} glowColor={tvTimeUp > 0.5 && tvKids < 0.5 ? brand.amber : brand.primary}>
         <Screen name="remote_qr" />

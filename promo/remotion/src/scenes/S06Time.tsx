@@ -94,7 +94,7 @@ export const S06Time: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="جولة في الميزات" index="٤ / ٨" title="الحصص والجدول" />
+      <Header kicker="حماية الأطفال" index="٢ / ٥" title="الحصص والجدول" />
 
       <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)} glowColor={upIn > 0.5 ? brand.amber : brand.primary}>
         <Screen name="settings_quota" />

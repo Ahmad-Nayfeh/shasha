@@ -1,8 +1,7 @@
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
 import {brand, rgba} from '../brand';
-import {Icon} from '../components/Icons';
-import {Remote} from '../components/Remote';
+import {Icon, IconName} from '../components/Icons';
 import {ScreenPatch} from '../components/Patches';
 import {fr, Screen, TvFrame} from '../components/Tv';
 import {Chip, CrossedOut, FocusRing, Header} from '../components/ui';
@@ -11,8 +10,8 @@ import {FEATURE_TV, rectToStage} from '../lib/layout';
 import {focusRect} from '../lib/screens';
 import {beatsFor, Scene} from '../lib/timeline';
 
-// s03 — home = latest videos of your channels (RSS, no account), no recommendations/trending;
-// search exists in the adult profile.
+// s03 — home: the newest videos of the channels you chose (no account), newest first; nothing is forced on you
+// (no autoplay chain, no endless feed).
 
 const TV = FEATURE_TV;
 // the channels of the capture's first row (right → left), so each RSS dot lands on its own card
@@ -23,39 +22,27 @@ const CHANNELS: Array<[string, string, string]> = [
   ['م', 'مطبخ سلمى', '#26386B'],
 ];
 
-export const S03HomeSearch: React.FC<{scene: Scene}> = ({scene}) => {
+export const S03Home: React.FC<{scene: Scene}> = ({scene}) => {
   const f = useCurrentFrame();
   const b = beatsFor(scene);
-  const tChannels = b.at('قنواتك');
-  const tRss = b.at('والأحدث');
-  const tNoAcc = b.at('بلا أي حساب');
-  const tNoRec = b.at('لا مقترحات');
-  const tTrend = b.at('رائج');
-  const tSearch = b.at('والبحث');
-  const tAdult = b.at('ملف الكبار');
+  const tOpen = b.at('تفتح');
+  const tChannels = b.at('القنوات التي');
+  const tNewest = b.at('والأحدث');
+  const tNone1 = b.at('لا شيء');
+  const tNone2 = b.at('ولا شيء');
 
   const tvIn = sp(f, 0, {damping: 24, stiffness: 90});
-  const reveal = tween(f, 6, 34, easeOut); // home rows settle top → bottom
+  const reveal = tween(f, tOpen + 4, 34, easeOut); // home rows settle top → bottom
+  const fCard = tNewest + 40;
 
-  // search: the D-pad focus starts on the first card (where the app has it), then right → the rail's «home»,
-  // down → «search», OK press, cut to the search screen
-  const fCard = 22;
-  const fFocus = tSearch - 2;
-  const fPress = tSearch + 22;
-  const fCut = fPress + 6;
-  const toSearch = tween(f, fCut, 10);
-
-  const colOut = tween(f, tSearch - 10, 14);
-  const remoteIn = sp(f, tSearch - 14, {damping: 22});
-
-  // avatars in the right column
   const avX = 1742;
   const avY = (i: number) => 330 + i * 118;
   const row1 = rectToStage(TV, focusRect('home_adult', 'row1'));
+  const channelsOut = tween(f, tNone1 - 14, 14);
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="جولة في الميزات" index="١ / ٨" title="الرئيسية والبحث" />
+      <Header kicker="جولة في «شاشة»" title="الرئيسية" />
 
       <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)}>
         <div
@@ -66,11 +53,10 @@ export const S03HomeSearch: React.FC<{scene: Scene}> = ({scene}) => {
             WebkitMaskImage: `linear-gradient(180deg, black ${reveal * 120 - 20}%, transparent ${reveal * 120}%)`,
           }}
         >
-          <Screen name="home_adult" opacity={1 - toSearch} />
-          <ScreenPatch name="home_adult" patch="unfocusFirstCard" opacity={tween(f, fCard, 10) * (1 - toSearch)} />
+          <Screen name="home_adult" />
+          <ScreenPatch name="home_adult" patch="unfocusFirstCard" opacity={tween(f, fCard, 10)} />
         </div>
-        <Screen name="search_adult" opacity={toSearch} />
-        {/* new items arriving: soft teal pulse on the first row as RSS dots land */}
+        {/* new items arriving: soft teal pulse on the first row as the RSS dots land */}
         <div
           style={{
             position: 'absolute',
@@ -80,35 +66,15 @@ export const S03HomeSearch: React.FC<{scene: Scene}> = ({scene}) => {
             height: fr('home_adult', 'row1')[3],
             borderRadius: 24,
             boxShadow: `0 0 0 4px ${rgba(brand.primary, 0.5)}, 0 0 60px ${rgba(brand.primary, 0.35)}`,
-            opacity: Math.max(0, Math.sin(clamp((f - (tRss + 26)) / 40) * Math.PI)) * 0.8 * (1 - toSearch),
+            opacity: Math.max(0, Math.sin(clamp((f - (tNewest + 26)) / 40) * Math.PI)) * 0.8,
           }}
         />
-        <FocusRing
-          track={[
-            {f: fCard, rect: fr('home_adult', 'firstCard'), r: 24},
-            {f: fFocus - 8, rect: fr('home_adult', 'home'), r: 44},
-            {f: fFocus, rect: fr('home_adult', 'search'), r: 44},
-          ]}
-          until={fCut}
-          presses={[fPress]}
-          width={6}
-        />
+        <FocusRing track={[{f: fCard, rect: fr('home_adult', 'firstCard'), r: 24}]} width={6} />
       </TvFrame>
 
       {/* channels → RSS → home */}
-      <div style={{opacity: 1 - colOut}}>
-        <div style={{opacity: 1 - tween(f, tNoRec - 12, 12)}}>
-        <div
-          style={{
-            position: 'absolute',
-            right: 90,
-            top: 244,
-            fontSize: 26,
-            fontWeight: 600,
-            color: brand.muted,
-            opacity: tween(f, tChannels - 6, 14),
-          }}
-        >
+      <div style={{opacity: 1 - channelsOut}}>
+        <div style={{position: 'absolute', right: 90, top: 244, fontSize: 26, fontWeight: 600, color: brand.muted, opacity: tween(f, tChannels - 6, 14)}}>
           قنواتك
         </div>
         {CHANNELS.map(([l, name, c], i) => {
@@ -144,7 +110,6 @@ export const S03HomeSearch: React.FC<{scene: Scene}> = ({scene}) => {
                 }}
               >
                 {l}
-                {/* RSS badge */}
                 <div
                   style={{
                     position: 'absolute',
@@ -156,7 +121,7 @@ export const S03HomeSearch: React.FC<{scene: Scene}> = ({scene}) => {
                     background: brand.bg,
                     display: 'grid',
                     placeItems: 'center',
-                    opacity: tween(f, tRss - 4 + i * 4, 10),
+                    opacity: tween(f, tNewest - 4 + i * 4, 10),
                   }}
                 >
                   <Icon name="rss" size={24} color={brand.primary} stroke={2.6} />
@@ -170,7 +135,7 @@ export const S03HomeSearch: React.FC<{scene: Scene}> = ({scene}) => {
         <svg width={1920} height={1080} style={{position: 'absolute', inset: 0, overflow: 'visible'}}>
           {CHANNELS.map((_, i) =>
             [0, 1, 2].map((k) => {
-              const start = tRss + i * 5 + k * 7;
+              const start = tNewest + i * 5 + k * 7;
               const t = tween(f, start, 30, easeInOut);
               if (t <= 0 || t >= 1) return null;
               const x0 = avX - 30;
@@ -190,33 +155,21 @@ export const S03HomeSearch: React.FC<{scene: Scene}> = ({scene}) => {
             }),
           )}
         </svg>
-        </div>
-        {/* chips: RSS + no account */}
         <div style={{position: 'absolute', right: 90, top: 820, display: 'flex', gap: 18, direction: 'rtl'}}>
-          <Chip icon="rss" label="من خلاصات RSS" size={26} t={sp(f, tRss + 6, {damping: 20})} />
-          <Chip icon="userSlash" label="بلا أي حساب" size={26} t={sp(f, tNoAcc - 2, {damping: 20})} />
+          <Chip icon="clock" label="الأحدث أولاً" size={26} t={sp(f, tNewest + 6, {damping: 20})} />
+          <Chip icon="userSlash" label="بلا حساب" size={26} t={sp(f, tChannels + 30, {damping: 20})} />
         </div>
       </div>
 
-      {/* recommendations / trending, crossed out — in the right column after the channels */}
-      <div
-        style={{
-          position: 'absolute',
-          right: 90,
-          top: 360,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          gap: 26,
-          direction: 'rtl',
-          opacity: 1 - tween(f, tSearch - 12, 12),
-        }}
-      >
-        {[
-          ['مقترح لك', tNoRec - 2, b.at('مقترحات') + 8, 'sparkle'],
-          ['رائج الآن', tTrend - 6, tTrend + 6, 'flame'],
-        ].map(([label, from, strike, icon]) => (
-          <CrossedOut key={label as string} from={from as number} strikeAt={strike as number}>
+      {/* what is NOT forced on you, crossed out — in the right column after the channels */}
+      <div style={{position: 'absolute', right: 90, top: 330, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 30, direction: 'rtl'}}>
+        {(
+          [
+            ['تشغيل تلقائي لا ينتهي', tNone1 - 2, tNone1 + 18, 'play'],
+            ['تمرير بلا نهاية', tNone2 - 2, tNone2 + 18, 'flame'],
+          ] as Array<[string, number, number, IconName]>
+        ).map(([label, from, strike, icon]) => (
+          <CrossedOut key={label} from={from} strikeAt={strike}>
             <div
               style={{
                 display: 'flex',
@@ -231,40 +184,12 @@ export const S03HomeSearch: React.FC<{scene: Scene}> = ({scene}) => {
                 color: brand.text,
               }}
             >
-              <Icon name={icon as 'flame'} size={40} color={brand.text} />
-              {label as string}
+              <Icon name={icon} size={40} color={brand.text} />
+              {label}
             </div>
           </CrossedOut>
         ))}
       </div>
-
-      {/* remote for the search press */}
-      <Remote
-        x={1590}
-        y={330}
-        scale={0.95}
-        rotate={-8}
-        opacity={clamp(remoteIn * 1.5)}
-        presses={[
-          {btn: 'right', f: fFocus - 8},
-          {btn: 'down', f: fFocus},
-          {btn: 'ok', f: fPress},
-        ]}
-      />
-
-      {/* «ملف الكبار فقط» tag, top-left of the TV (RTL end) */}
-      <div
-        style={{
-          position: 'absolute',
-          left: TV.x,
-          top: TV.y - 74,
-          opacity: tween(f, tAdult - 4, 14),
-          transform: `translateY(${(1 - tween(f, tAdult - 4, 14)) * 10}px)`,
-        }}
-      >
-        <Chip icon="lock" label="ملف الكبار فقط" size={24} t={1} />
-      </div>
     </div>
   );
 };
-
