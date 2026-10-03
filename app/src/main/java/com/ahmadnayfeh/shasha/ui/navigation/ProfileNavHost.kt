@@ -47,7 +47,6 @@ import com.ahmadnayfeh.shasha.ui.parental.LocalParentUnlock
 import com.ahmadnayfeh.shasha.ui.parental.ParentUnlock
 import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
 import com.ahmadnayfeh.shasha.ui.screens.channel.ChannelRoute
-import com.ahmadnayfeh.shasha.ui.screens.diagnostics.DiagnosticsRoute
 import com.ahmadnayfeh.shasha.ui.screens.guide.ExplainerRoute
 import com.ahmadnayfeh.shasha.ui.screens.guide.GuideRoute
 import com.ahmadnayfeh.shasha.ui.screens.home.HomeRoute
@@ -94,7 +93,7 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.popExit(): ExitTra
 /**
  * The screens of one profile. Its navigation graph holds only what the profile may reach (SPEC §3): a
  * child's has the rail's two tabs, channel and playlist pages and the player, nothing else (no search,
- * no settings, no diagnostics, no import). The adult's context menus carry the parental actions.
+ * no settings, no import). The adult's context menus carry the parental actions.
  *
  * [onSwitchProfile] is the adult's «تبديل الملف»; [onExitProfile] a child's «خروج» (the caller asks for
  * the parent PIN). [tabsNav] and [tabContent] are for tests.
@@ -183,6 +182,10 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
             nameHint = route.name,
             adult = adult,
             onPlay = actions.play,
+            // Its Playlists section: the playlist opens knowing whose it is (a child may open its channel's playlists).
+            onOpenPlaylist = { playlistId ->
+                nav.navigate(Screen.Playlist(playlistId, ownerChannelId = route.channelId)) { launchSingleTop = true }
+            },
             onBack = dropUnlessResumed { nav.popBackStack() },
             onCheckUpdates = actions.checkUpdates,
         )
@@ -191,6 +194,7 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
         val route = entry.toRoute<Screen.Playlist>()
         PlaylistRoute(
             playlistId = route.playlistId,
+            ownerChannelId = route.ownerChannelId,
             adult = adult,
             onPlay = { videoId, playlistId, index -> nav.navigate(Screen.Player(videoId, playlistId, index)) { launchSingleTop = true } },
             onBack = dropUnlessResumed { nav.popBackStack() },
@@ -219,8 +223,7 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
                 }
             },
             profile = profile,
-            // تشخيص's test videos are not watched: nothing locks them.
-            lock = lock.takeUnless { route.diagnostic },
+            lock = lock,
             // A child's video or playlist that ended frees the child: back to the child home (SPEC §4).
             onKidsHome = if (adult) null else dropUnlessResumed { nav.showHome() },
             // v1.2: a link the TV accepted needs no «تأكيد» from the phone (the phone that sent it is there).
@@ -274,11 +277,8 @@ private fun NavHostController.showHome() {
     popBackStack(Screen.Main, inclusive = false)
 }
 
-/** Diagnostics, the import and the parent's settings: the adult profile only. */
+/** The import and the parent's settings: the adult profile only. */
 private fun NavGraphBuilder.adultDestinations(nav: NavHostController, actions: BrowseActions, settings: SettingsActions) {
-    composable<Screen.Diagnostics> {
-        DiagnosticsRoute(onOpen = { videoId -> nav.navigate(Screen.Player(videoId, diagnostic = true)) { launchSingleTop = true } })
-    }
     composable<Screen.ImportSubscriptions> {
         // «إلى الرئيسية»: back to the rail's home tab, where the imported channels' videos arrive.
         ImportRoute(onDone = dropUnlessResumed { nav.showHome() })
@@ -335,7 +335,6 @@ private fun browseActions(nav: NavHostController) = BrowseActions(
     openChannel = { channelId, name -> nav.navigate(Screen.Channel(channelId, name)) { launchSingleTop = true } },
     openPlaylist = { playlistId -> nav.navigate(Screen.Playlist(playlistId)) { launchSingleTop = true } },
     openImport = { nav.navigate(Screen.ImportSubscriptions) { launchSingleTop = true } },
-    openDiagnostics = { nav.navigate(Screen.Diagnostics) { launchSingleTop = true } },
     checkUpdates = { nav.navigate(Screen.Updates) { launchSingleTop = true } },
 )
 
@@ -347,7 +346,6 @@ private fun settingsActions(nav: NavHostController) = SettingsActions(
     openChangePin = { nav.navigate(Screen.ChangePin) { launchSingleTop = true } },
     openStats = { nav.navigate(Screen.Stats) { launchSingleTop = true } },
     openImport = { nav.navigate(Screen.ImportSubscriptions) { launchSingleTop = true } },
-    openDiagnostics = { nav.navigate(Screen.Diagnostics) { launchSingleTop = true } },
     openProtection = { nav.navigate(Screen.Protection) { launchSingleTop = true } },
     openRemote = { nav.navigate(Screen.RemoteControl) { launchSingleTop = true } },
     openBackup = { nav.navigate(Screen.Backup) { launchSingleTop = true } },

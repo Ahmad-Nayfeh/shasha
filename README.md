@@ -7,11 +7,11 @@
 
 ### يوتيوب هادئ لتلفاز البيت: بلا إعلانات، وبحماية كاملة للأطفال
 
-![Version](https://img.shields.io/badge/version-1.1.1-0d9488?style=for-the-badge)
-![Platform](https://img.shields.io/badge/Android_TV_·_Google_TV-3DDC84?style=for-the-badge&logo=android&logoColor=white)
+![Version](https://img.shields.io/badge/version-1.2.0-0d9488?style=for-the-badge)
+![Platform](https://img.shields.io/badge/Android_TV_·_Google_TV_·_Fire_TV_·_Phone-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Languages](https://img.shields.io/badge/العربية_·_English-1f2937?style=for-the-badge)
 
-*A calm YouTube app for the family TV: no ads, no sign-in, kids' profiles with allowed channels, and your phone as a remote.*
+*A calm YouTube app for the family TV (Android TV, Google TV, Fire TV): no ads, no sign-in, kids' profiles with allowed channels, your phone as a remote, and a phone app with downloads.*
 
 <a href="docs/video/shasha-explainer.mp4"><img src="docs/video/preview.webp" width="760" alt="فيديو شرح شاشة"></a>
 
@@ -23,17 +23,20 @@
 
 ## ✨ ما هو «شاشة»؟
 
-تطبيق يوتيوب خاص بتلفاز البيت (أندرويد تي في وجوجل تي في): **بلا إعلانات ولا تسجيل دخول**، والفيديوهات المقترحة والقصيرة تظهر أو تختفي بقرارك. لكل طفل ملف لا يرى فيه إلا القنوات التي تسمح بها، بوقت يومي ومواعيد محددة. ويُدار كله بالريموت أو من جوالك.
+تطبيق يوتيوب خاص بتلفاز البيت: **بلا إعلانات ولا تسجيل دخول**، والفيديوهات المقترحة والقصيرة تظهر أو تختفي بقرارك. لكل طفل ملف لا يرى فيه إلا القنوات التي تسمح بها، بوقت يومي ومواعيد محددة. ويُدار كله بالريموت أو من جوالك.
+
+- 📺 **يعمل على:** شاشات أندرويد تي في وجوجل تي في (سوني، TCL، هايسنس، فيليبس، شاومي…) وأجهزة Amazon Fire TV. ولشاشات سامسونج وإل جي وغيرها: جهاز أندرويد تي في صغير يوصل بمنفذ HDMI (التفاصيل في الدليل).
+- 📱 **وتطبيق للجوال (أندرويد):** يوتيوب بلا إعلانات، مع تنزيل الفيديو أو الصوت، والتشغيل في الخلفية، والنافذة الصغيرة.
 
 ## 🚀 ابدأ من هنا
 
 | | الخطوة |
 |:-:|---|
-| **١** | **نزّل** [`Shasha-Setup.zip`](Shasha-Setup.zip): اضغط الملف، ثم زر التنزيل، ثم فك ضغطه. |
+| **١** | **نزّل** [`Shasha-Setup.zip`](Shasha-Setup.zip): اضغط الملف، ثم زر التنزيل، ثم فك ضغطه. (تطبيق الجوال في مجلد `Phone` داخله.) |
 | **٢** | **افتح «دليل شاشة.pdf»** الذي في المجلد، واتبع خطوات التثبيت بالصور (نحو ١٠ دقائق). |
 | **٣** | **شغّل المثبّت** واكتب عنوان الشاشة، ثم وافق على الرسالة التي تظهر في التلفاز. تمّ! |
 
-> 💡 **للتحديث لاحقاً:** من داخل التطبيق: «الإعدادات ← فحص التحديثات»، أو شغّل المثبّت من مجلد أحدث. تبقى بياناتك وإعداداتك كما هي.
+> 💡 **للتحديث لاحقاً:** ضغطة واحدة من داخل التطبيق: «الإعدادات ← فحص التحديثات»؛ ينزّل أحدث إصدار ويثبّته بنفسه، وتبقى بياناتك وإعداداتك كما هي. وتطبيق الجوال يحدّث نفسه بالطريقة نفسها.
 
 ## 🌟 المزايا
 
@@ -44,6 +47,7 @@
 | ⏭️ تخطّي المقاطع الدعائية داخل الفيديو تلقائياً | 🔒 «الوضع الجاد»: الفيديو الذي يبدأ يُكمل حتى نهايته |
 | ⚡ سرعة تشغيل حتى ٤ أضعاف | 🔑 رمز للوالدين، وإعداد لكل سلوك مع زر «إرجاع الأصل» |
 | 🌐 واجهة عربية أو إنجليزية، ومظهر داكن أو فاتح | 📱 تحكم كامل من الجوال: الوقت والقوائم والإعدادات |
+| 📂 أقسام القناة (الفيديوهات، القصيرة، البث المباشر، القوائم) وترتيبها: الأحدث، الأكثر مشاهدة، الأقدم | ✅ ما يُرسل من الجوال ينتظر «قبول / رفض» على الشاشة |
 
 ## 🖼️ لقطات من التطبيق
 
@@ -58,7 +62,7 @@
   </tr>
   <tr>
     <td align="center"><img src="app/src/test/screenshots/remote_pairing.png" width="400"><br><sub>التحكم من الجوال</sub></td>
-    <td align="center"><img src="app/src/test/screenshots/settings_hub_about_apps.png" width="400"><br><sub>صفحة «حول»</sub></td>
+    <td align="center"><img src="app/src/test/screenshots/channel.png" width="400"><br><sub>صفحة القناة: أقسامها وترتيبها</sub></td>
   </tr>
 </table>
 
@@ -80,13 +84,14 @@
 | الملف | ماذا فيه |
 |---|---|
 | [docs/dev/MAINTENANCE.md](docs/dev/MAINTENANCE.md) | الصيانة: البناء، والتوقيع، والإصدارات، وإصلاح الاستخراج حين يتغيّر يوتيوب |
-| [docs/dev/ARCHITECTURE.md](docs/dev/ARCHITECTURE.md) | خريطة الكود: الوحدات الأربع وما في كل منها |
+| [docs/dev/ARCHITECTURE.md](docs/dev/ARCHITECTURE.md) | خريطة الكود: الوحدات (`app` للشاشة، و`mobile` للجوال، و`youtube` و`policy` و`remote`) |
 | [docs/dev/SPEC.md](docs/dev/SPEC.md) | المواصفات الأصلية |
 | [docs/dev/phone-tv-scenarios.md](docs/dev/phone-tv-scenarios.md) | جدول حالات الجوال والشاشة |
+| [docs/dev/tv-compatibility.md](docs/dev/tv-compatibility.md) | الشاشات والأجهزة المدعومة وخطوات كل نوع |
 
 ```bash
-./gradlew :policy:test :youtube:testDebugUnitTest :remote:testDebugUnitTest :app:verifyRoborazziDebug
-./gradlew :app:assembleRelease
+./gradlew :policy:test :youtube:testDebugUnitTest :remote:testDebugUnitTest :app:verifyRoborazziDebug :mobile:testDebugUnitTest
+./gradlew :app:assembleRelease :mobile:assembleRelease
 ```
 
 </details>

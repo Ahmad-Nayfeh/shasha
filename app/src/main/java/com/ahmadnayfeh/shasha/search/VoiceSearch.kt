@@ -76,7 +76,8 @@ sealed interface VoiceOutcome {
 }
 
 /**
- * The ways this TV can listen, found out without starting any of them ([VoiceSearch.availability]); «تشخيص» shows them.
+ * The ways this TV can listen, found out without starting any of them ([VoiceSearch.availability]). With neither (Fire
+ * TV, whose voice button never reaches apps), the search screen shows no microphone.
  * @property systemScreen the package that answers [RecognizerIntent.ACTION_RECOGNIZE_SPEECH]: the system's voice
  *   screen, which on Google TV is the one place the remote's microphone reaches. It is used first.
  * @property service the package that provides the recognition service apps may use ([SpeechRecognizer]): the fallback.
@@ -306,7 +307,7 @@ class VoiceSearch(private val context: Context) : VoiceInput {
             else -> VoiceError.OTHER
         }
 
-        /** Which ways of listening this TV offers, for «تشخيص»: asked of the package manager, nothing is started. */
+        /** Which ways of listening this TV offers: asked of the package manager, nothing is started. */
         fun availability(context: Context): VoiceAvailability {
             val pm = context.packageManager
             val screen = runCatching { activityPackage(pm, Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)) }.getOrNull()

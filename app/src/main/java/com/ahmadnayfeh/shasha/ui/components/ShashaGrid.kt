@@ -1,5 +1,6 @@
 package com.ahmadnayfeh.shasha.ui.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -163,6 +164,8 @@ fun PagingFooter(
     extractorVersion: String,
     onCheckUpdates: () -> Unit,
     modifier: Modifier = Modifier,
+    /** What failed, when it is not "more of the list" (a section's first page). */
+    @StringRes errorTitle: Int = R.string.paging_error,
 ) {
     Box(modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
         when {
@@ -180,7 +183,7 @@ fun PagingFooter(
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
-                            stringResource(if (updateMayHelp) ErrorTexts.title(error.kind) else R.string.paging_error),
+                            stringResource(if (updateMayHelp) ErrorTexts.title(error.kind) else errorTitle),
                             style = MaterialTheme.typography.titleSmall,
                         )
                         Text(

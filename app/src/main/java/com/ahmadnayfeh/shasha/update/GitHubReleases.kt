@@ -17,7 +17,10 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
-/** Why the updater stopped. The screen explains each in Arabic ([com.ahmadnayfeh.shasha.ui.screens.updates]). */
+/**
+ * Why the updater stopped. The screen explains each in plain words, in the app's language, and never names the service
+ * behind it ([com.ahmadnayfeh.shasha.ui.screens.updates]); the details here are for the log.
+ */
 enum class UpdateErrorKind {
     /** No connection, DNS, a timeout: not GitHub's fault. */
     NETWORK,
@@ -76,7 +79,10 @@ class GitHubReleases(
     private val token: String,
     private val apiBase: HttpUrl = "https://api.github.com/".toHttpUrl(),
 ) {
-    /** A private repository's releases cannot be read without it: the screen explains how to add one. */
+    /**
+     * A private repository's releases cannot be read without it. A build without one (a local build) cannot update
+     * itself: the screen says so in plain words and sends the viewer to the installer kit.
+     */
     val hasToken: Boolean get() = token.isNotBlank()
 
     private val withoutRedirects: OkHttpClient by lazy { client.newBuilder().followRedirects(false).followSslRedirects(false).build() }

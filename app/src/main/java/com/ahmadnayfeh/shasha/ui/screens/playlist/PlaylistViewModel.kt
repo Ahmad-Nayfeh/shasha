@@ -31,6 +31,10 @@ import kotlinx.coroutines.launch
  * is fetched before the profile's rules allow the playlist ([access]; a child only opens allowlisted
  * ones), and its videos pass the same rules, as videos of this playlist (an allowlisted playlist brings
  * its videos into a child profile whatever their channel).
+ *
+ * [ownerChannelId]: the channel whose page listed the playlist (its Playlists section), null when the playlist was opened
+ * from anywhere else: a child may open a playlist of an allowlisted channel too ([ContentFilter.playlist]), though only
+ * the videos of allowlisted channels (or of an allowlisted playlist) show in it.
  */
 class PlaylistViewModel(
     private val playlistId: String,
@@ -38,6 +42,7 @@ class PlaylistViewModel(
     watch: WatchRepository,
     private val queues: PlayQueues,
     filter: StateFlow<ContentFilter>,
+    private val ownerChannelId: String? = null,
 ) : ViewModel() {
 
     private val _details = MutableStateFlow<PlaylistItem?>(null)
@@ -45,7 +50,7 @@ class PlaylistViewModel(
 
     /** Null until the profile is known; the title's blocked keywords count once the details are in. */
     val access: StateFlow<Decision?> = combine(filter, _details) { rules, details ->
-        rules.profile?.let { rules.playlist(playlistId, ownerChannelId = null, title = details?.title) }
+        rules.profile?.let { rules.playlist(playlistId, ownerChannelId = ownerChannelId, title = details?.title) }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     // Pages keep coming until the screen is full of videos the profile's rules show (a child's rules may hide most of a page).

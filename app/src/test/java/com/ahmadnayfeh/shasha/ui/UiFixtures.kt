@@ -13,6 +13,7 @@ import com.ahmadnayfeh.shasha.ui.model.TimeKind
 import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.youtube.ChannelDetails
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.youtube.ChannelTab
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 
@@ -123,7 +124,42 @@ object UiFixtures {
 
     val subscribedIds: Set<String> = setOf(calligraphyChannel.channelId)
 
-    val channelDetails = ChannelDetails(calligraphyChannel, bannerUrl = "fake://banner/khat", description = null)
+    val channelDetails = ChannelDetails(calligraphyChannel, bannerUrl = "fake://banner/khat", description = null, tabs = ChannelTab.entries.toList())
+
+    /** The channel's Shorts section: portrait tiles. */
+    val channelShorts: List<VideoUi> = listOf(
+        "حرف الضاد بخط الثلث في 30 ثانية" to 31L,
+        "قلم القصب: كيف يُبرى" to 48L,
+        "الثلث أم النسخ؟" to 27L,
+        "Ink test #4" to 15L,
+        "تمرين اليوم: الألف المبسوطة" to 52L,
+        "من الحبر إلى اللوحة" to 40L,
+        "How to hold the reed pen" to 33L,
+        "نقطة الخطاط" to 21L,
+        "قص الورق المقهّر" to 58L,
+        "سرّ الحبر الأسود" to 44L,
+        "المسطرة والتناسب" to 36L,
+        "ثلاث لمسات للنون" to 29L,
+    ).mapIndexed { i, (title, seconds) -> short(80 + i, title, "فنون الخط", seconds, (i + 1) * DAY).let { VideoUi(it, it.publishedAtEpochMs) } }
+
+    /** The channel's live streams: one on now, then past ones (with their length). */
+    val channelLive: List<VideoUi> = listOf(
+        video(90, "بث مباشر: ورشة الخط العربي، الأسئلة والأجوبة", "فنون الخط", null, 25 * MINUTE, live = true),
+        video(91, "بث سابق: رسم لوحة كاملة بخط الثلث", "فنون الخط", 7_240, 6 * DAY),
+        video(92, "بث سابق: الأسئلة الشائعة للمبتدئين", "فنون الخط", 5_410, 20 * DAY),
+        video(93, "Live replay: Reed pens from scratch", "فنون الخط", 3_905, 41 * DAY),
+        video(94, "بث سابق: معرض اللوحات السنوي", "فنون الخط", 9_020, 95 * DAY),
+    ).map { VideoUi(it, it.publishedAtEpochMs) }
+
+    /** The channel's playlists. */
+    val channelPlaylists: List<PlaylistUi> = listOf(
+        PlaylistItem("PLfixture0001", "دروس الخط العربي للمبتدئين", "فنون الخط", "fake://playlist/khat", 24),
+        PlaylistItem("PLfixture0002", "خط الثلث: من الحرف إلى اللوحة", "فنون الخط", "fake://playlist/thuluth", 18),
+        PlaylistItem("PLfixture0003", "Q&A: your calligraphy questions", "فنون الخط", "fake://playlist/qa", 9),
+        PlaylistItem("PLfixture0004", "أدوات الخطاط وصناعتها", "فنون الخط", "fake://playlist/tools", 12),
+        PlaylistItem("PLfixture0005", "جولات في مراسم الخطاطين", "فنون الخط", "fake://playlist/studios", 7),
+        PlaylistItem("PLfixture0006", "الديواني والرقعة والنسخ", "فنون الخط", null, null),
+    ).map { PlaylistUi(it) }
 
     val channelVideos: List<VideoUi> = listOf(
         video(30, "أسرار الخط العربي: الثلث والديواني وكيف تبدأ", "فنون الخط", 860, 3 * DAY),

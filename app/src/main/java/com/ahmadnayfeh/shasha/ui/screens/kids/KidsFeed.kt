@@ -1,6 +1,8 @@
 package com.ahmadnayfeh.shasha.ui.screens.kids
 
 import com.ahmadnayfeh.shasha.data.BackgroundThreads
+import com.ahmadnayfeh.shasha.data.ChannelUploads
+import com.ahmadnayfeh.shasha.data.UploadsPaused
 import com.ahmadnayfeh.shasha.data.asSourceException
 import com.ahmadnayfeh.shasha.player.PlaybackActivity
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
@@ -19,13 +21,18 @@ import java.util.concurrent.ConcurrentHashMap
  * pictures. One instance per process (AppContainer.kidsFeed), so going back and forth costs nothing.
  *
  * Gentle like the feed sync (SPEC §2): at most [MAX_PARALLEL] requests at a time across all callers, on
- * background-priority threads, none started while a video plays, and each answer kept [FRESH_MS].
+ * background-priority threads, none started while a video plays (not between the steps of one channel's chain either),
+ * and each answer kept [FRESH_MS].
+ *
+ * A channel's uploads come through [ChannelUploads]' chain, so one way failing on a TV (the Videos tab answering with
+ * `ContentNotAvailableException`) does not fail the channel: see there, and [uploads].
  */
 class KidsFeed(
     private val source: VideoSource,
     private val clock: () -> Long = System::currentTimeMillis,
     private val isPlaying: () -> Boolean = { PlaybackActivity.isPlaying.value },
     private val lowPriority: suspend (suspend () -> Any) -> Any = { block -> BackgroundThreads.lowPriorityIo { block() } },
+    private val chain: ChannelUploads = ChannelUploads(source),
 ) {
     private class Timed<T>(val value: T, val atMs: Long)
 
@@ -49,22 +56,19 @@ class KidsFeed(
         uploads[Uploads(channelId, withDurations)]?.let { clock() - it.atMs !in 0 until FRESH_MS } ?: true
 
     /**
-     * The channel's newest uploads, fetched unless fresh: RSS (the channel's Videos tab when RSS fails), or,
-     * [withDurations], the Videos tab itself, where every upload has its duration. A profile that hides
-     * shorts needs those: RSS has none, and a regular 2-minute upload is a short there. Null when a video
-     * is playing (nothing starts then; ask again later).
-     * @throws SourceException when YouTube could not be asked.
+     * The channel's newest uploads, fetched unless fresh: RSS first (the channel's Videos tab when RSS fails), or,
+     * [withDurations], the Videos tab, where every upload has its duration. A profile that hides shorts needs those:
+     * RSS has none, and a regular 2-minute upload is a short there. When that way fails too, the channel's long-form
+     * uploads playlist («UULF…», the same list with the same durations) answers instead: [ChannelUploads.newest] says
+     * which way is tried when, and why RSS is not one of them for [withDurations]. Null when a video is playing
+     * (nothing starts then; ask again later).
+     * @throws SourceException when no way of asking YouTube answered (the first one's error); each failure is logged.
      */
     suspend fun uploads(channelId: String, withDurations: Boolean): List<VideoItem>? {
         val key = Uploads(channelId, withDurations)
         if (!isStale(channelId, withDurations)) return uploads.getValue(key).value
         return fetch {
-            val videos = if (withDurations) {
-                source.channelVideos(channelId).items.filterIsInstance<VideoItem>()
-            } else {
-                source.recentVideos(channelId)
-            }
-            videos.map { if (it.channelId == null) it.copy(channelId = channelId) else it }
+            chain.newest(channelId, withDurations, proceed = { !isPlaying() }).videos
                 .also { uploads[key] = Timed(it, clock()) }
         }
     }
@@ -89,6 +93,8 @@ class KidsFeed(
             lowPriority { block() } as T
         } catch (e: CancellationException) {
             throw e
+        } catch (_: UploadsPaused) {
+            null // a video started between two steps of a chain: nothing more is asked
         } catch (e: Exception) {
             throw e.asSourceException()
         }

@@ -20,7 +20,10 @@ set "PKG=com.ahmadnayfeh.shasha"
 set "ACTIVITY=com.ahmadnayfeh.shasha/.MainActivity"
 rem The app starts its guard itself (at its start and after a reboot); this script only reports whether it runs.
 set "GUARD=com.ahmadnayfeh.shasha/.lock.GuardService"
-set "YT_PKG=com.google.android.youtube.tv"
+rem The official YouTube app: Google's on Android TV and Google TV, YouTube for Fire TV on Fire TV. YT_PKG is
+rem the one this TV has, found after connecting.
+set "YT_PKGS=com.google.android.youtube.tv com.amazon.firetv.youtube"
+set "YT_PKG="
 rem SYSTEM_ALERT_WINDOW: the guard draws over other apps. GET_USAGE_STATS: it sees which app is
 rem in front. REQUEST_INSTALL_PACKAGES: the in-app updater may open the system installer.
 set "OPS=SYSTEM_ALERT_WINDOW GET_USAGE_STATS REQUEST_INSTALL_PACKAGES"
@@ -31,11 +34,20 @@ set "GUARD_PERMS=android.permission.SYSTEM_ALERT_WINDOW android.permission.PACKA
 set "CONNECT_TIMEOUT=60"
 rem Wrong answers in a row, an address or a pairing code, before the script gives up.
 set "MAX_TRIES=5"
+rem Shasha's minSdk: Android 7.1, which is Fire OS 6.
+set "MIN_SDK=25"
+rem Set after connecting: the API level, and LEGACY=1 on Android 7.1 and older (Fire OS 6), which have no
+rem REQUEST_INSTALL_PACKAGES app-op: the TV-wide Unknown sources setting is used instead.
+set "TV_SDK="
+set "LEGACY=0"
+set "UNDO_FAILED=0"
 rem Taken before any shift: shift moves the script's own name too.
 set "SELF=%~f0"
 set "SELF_NAME=%~nx0"
 set "SCRIPT_DIR=%~dp0"
 set "TMPOUT=%TEMP%\shasha-setup-%RANDOM%.txt"
+rem The TV's maker, model and Android version, as the TV wrote them (printed only through for /f).
+set "TVINFO=%TEMP%\shasha-setup-tv-%RANDOM%.txt"
 set "UNDO=0"
 set "TV="
 set "APK="
@@ -98,8 +110,13 @@ for /f "delims=" %%v in ("%ADB_VERSION%") do echo(    %%v
 rem ---------------------------------------------------------------- the TV's address
 if defined TV goto have_tv
 echo(
-echo(==^> Type the TV's IP address (Settings ^> Network ^& Internet ^> your Wi-Fi, or Ethernet ^> under «Connected»)
-echo(    اكتب عنوان IP للشاشة (الإعدادات ← الشبكة والإنترنت ← شبكتك، أو Ethernet ← تحت «Connected»)
+echo(==^> Type the TV's IP address
+echo(    اكتب عنوان IP للشاشة
+echo(    - Google TV / Android TV: Settings ^> Network ^& Internet ^> your Wi-Fi ^> IP address
+echo(      (with a cable: Ethernet ^> under «Connected»).
+echo(      الإعدادات ← الشبكة والإنترنت ← شبكتك ← IP address (بالسلك: Ethernet ← تحت «Connected»).
+echo(    - Fire TV: Settings ^> My Fire TV (on Fire TV sets: Device ^& Software) ^> About ^> Network.
+echo(      الإعدادات ← My Fire TV (في أجهزة التلفاز: Device ^& Software) ← About ← Network.
 echo(    Example / مثال: 192.168.1.50
 call :read_addr any "IP: "
 if errorlevel 1 goto no_address
@@ -131,6 +148,8 @@ echo(    APK: "%APK%"
 
 call :connect
 if errorlevel 1 goto fail
+call :describe_tv
+if errorlevel 1 goto fail
 
 call :say "Installing the APK ..." "تثبيت التطبيق على الشاشة، قد يستغرق دقيقة ..."
 rem No -g: it would grant the guard's permissions for good, beyond the app-ops below and beyond --undo.
@@ -149,6 +168,7 @@ goto grant
 type "%TMPOUT%"
 findstr /l /i /c:"INSTALL_FAILED_UPDATE_INCOMPATIBLE" /c:"signatures do not match" "%TMPOUT%" >nul && goto install_other_key
 findstr /l /i /c:"INSTALL_FAILED_VERSION_DOWNGRADE" "%TMPOUT%" >nul && goto install_downgrade
+findstr /l /i /c:"INSTALL_FAILED_OLDER_SDK" "%TMPOUT%" >nul && goto install_too_old
 findstr /l /i /c:"NO_CERTIFICATES" /c:"no signatures" "%TMPOUT%" >nul && goto install_unsigned
 call :warn "Installation failed, see the message above." "فشل التثبيت، انظر الرسالة أعلاه."
 goto fail
@@ -171,6 +191,10 @@ goto fail
 call :warn "The TV already has a newer Shasha than this APK." "النسخة على الشاشة أحدث من هذا الملف. حمّل أحدث ملف من صفحة GitHub Releases."
 goto fail
 
+:install_too_old
+call :too_old_help
+goto fail
+
 :install_unsigned
 call :warn "This APK is not signed, a CI build made without the signing key." "هذا الملف غير موقّع، بناء بلا مفتاح التوقيع. حمّل الملف من صفحة GitHub Releases."
 goto fail
@@ -179,10 +203,13 @@ goto fail
 call :say "Granting permissions: display over apps, usage access, install updates ..." "منح الصلاحيات: العرض فوق التطبيقات، الوصول إلى الاستخدام، تثبيت التحديثات ..."
 for %%o in (%OPS%) do call :appops_set %%o allow
 if "%OPS_FAILED%"=="1" goto fail
+if "%LEGACY%"=="1" call :unknown_sources_set 1
+if "%OPS_FAILED%"=="1" goto fail
 
 rem ---------------------------------------------------------------- official YouTube app
-call :find_package all %YT_PKG%
-if "%FOUND%"=="0" goto youtube_absent
+set "YT_PKG="
+for %%y in (%YT_PKGS%) do if not defined YT_PKG call :find_youtube %%y
+if not defined YT_PKG goto youtube_absent
 call :find_package disabled %YT_PKG%
 if "%FOUND%"=="1" goto youtube_already_disabled
 echo(
@@ -234,6 +261,7 @@ call :warn "Could not start the app; open it from the TV home screen." "تعذّ
 call :say "Verification" "التحقق"
 set "OPS_OK=1"
 for %%o in (%OPS%) do call :check_op %%o allow
+if "%LEGACY%"=="1" call :check_unknown_sources 1
 "%ADB%" -s %SERIAL% shell dumpsys activity services %GUARD% <nul >"%TMPOUT%" 2>&1
 findstr /l /c:"ServiceRecord{" "%TMPOUT%" >nul && set "GUARD_STATUS=running / تعمل"
 echo(    Guard service / خدمة الحارس: %GUARD_STATUS%
@@ -242,6 +270,7 @@ if "%OPS_OK%"=="0" set "OPS_TEXT=INCOMPLETE / ناقصة"
 
 call :say "Summary" "الملخص"
 echo(    TV / الشاشة:              %SERIAL%
+for /f "usebackq delims=" %%l in ("%TVINFO%") do echo(    Model / الطراز:            %%l
 for %%a in ("%APK%") do echo(    APK / الملف:               %%~nxa
 echo(    Permissions / الصلاحيات:   %OPS_TEXT%
 echo(    Guard / الحارس:            %GUARD_STATUS%
@@ -264,15 +293,10 @@ rem ---------------------------------------------------------------- undo
 if defined APK call :warn "--undo ignores the APK argument." "خيار --undo يتجاهل ملف APK."
 call :connect
 if errorlevel 1 goto fail
-call :find_package all %YT_PKG%
-if "%FOUND%"=="0" goto undo_ops
-call :say "Re-enabling the official YouTube app ..." "إعادة تفعيل تطبيق يوتيوب الرسمي ..."
-"%ADB%" -s %SERIAL% shell pm enable %YT_PKG% <nul
-if errorlevel 1 (
-  call :warn "Could not re-enable YouTube, see above." "تعذّرت إعادة تفعيل يوتيوب، انظر الرسالة أعلاه."
-  goto fail
-)
-set "YOUTUBE_STATUS=enabled / مفعّل"
+call :describe_tv
+if errorlevel 1 goto fail
+for %%y in (%YT_PKGS%) do call :undo_youtube %%y
+if "%UNDO_FAILED%"=="1" goto fail
 
 :undo_ops
 set "OPS_TEXT=app not installed / التطبيق غير مثبّت"
@@ -284,6 +308,10 @@ rem Not granted is not an error here, and a real failure shows in the verificati
 for %%p in (%GUARD_PERMS%) do "%ADB%" -s %SERIAL% shell pm revoke %PKG% %%p <nul >nul 2>&1
 for %%o in (%OPS%) do call :appops_set %%o default
 if "%OPS_FAILED%"=="1" goto fail
+if "%LEGACY%"=="1" call :unknown_sources_set 0
+if "%OPS_FAILED%"=="1" goto fail
+if "%LEGACY%"=="1" call :info "Other apps you install by hand may need Unknown sources on again. Fire TV: Developer options, Apps from Unknown Sources."
+if "%LEGACY%"=="1" call :info "قد تحتاج تشغيل «مصادر غير معروفة» لتطبيقات أخرى تثبّتها بنفسك. في Fire TV: Developer options ← Apps from Unknown Sources."
 call :say "Stopping Shasha so its guard stops now ..." "إيقاف تطبيق شاشة ليتوقف الحارس الآن ..."
 call :info "It starts again only once its permissions are granted again: run the installer without --undo."
 call :info "لا يعود الحارس حتى تُمنح صلاحيتاه من جديد: شغّل المثبّت دون --undo."
@@ -291,6 +319,7 @@ call :info "لا يعود الحارس حتى تُمنح صلاحيتاه من �
 call :say "Verification" "التحقق"
 set "OPS_OK=1"
 for %%o in (%OPS%) do call :check_op %%o default
+if "%LEGACY%"=="1" call :check_unknown_sources 0
 call :check_perms
 set "OPS_TEXT=default / افتراضية"
 if "%OPS_OK%"=="0" set "OPS_TEXT=CHECK ABOVE / راجع أعلاه"
@@ -302,6 +331,7 @@ echo(    Guard service / خدمة الحارس: %UNDO_GUARD%
 :undo_summary
 call :say "Summary" "الملخص"
 echo(    TV / الشاشة:              %SERIAL%
+for /f "usebackq delims=" %%l in ("%TVINFO%") do echo(    Model / الطراز:            %%l
 echo(    Permissions / الصلاحيات:   %OPS_TEXT%
 echo(    Guard / الحارس:            %UNDO_GUARD%
 echo(    YouTube / يوتيوب الرسمي:  %YOUTUBE_STATUS%
@@ -360,6 +390,7 @@ set "EXITCODE=1"
 rem The bundled adb's background server would otherwise keep running from this folder.
 if "%STOP_ADB_SERVER%"=="1" "%ADB%" kill-server <nul >nul 2>&1
 if exist "%TMPOUT%" del /q "%TMPOUT%" >nul 2>&1
+if exist "%TVINFO%" del /q "%TVINFO%" >nul 2>&1
 if "%INTERACTIVE%"=="1" (
   echo(
   echo(    Press any key to close. / اضغط أي زر للإغلاق.
@@ -641,8 +672,8 @@ exit /b 0
 
 :allow_hint
 echo(
-echo(==^> Look at the TV: it asks «Allow USB debugging?»
-echo(    انظر إلى الشاشة: تظهر نافذة «Allow USB debugging?» (السماح بتصحيح الأخطاء).
+echo(==^> Look at the TV: it asks «Allow USB debugging?» (Fire TV asks the same)
+echo(    انظر إلى الشاشة: تظهر نافذة «Allow USB debugging?» (السماح بتصحيح الأخطاء)، وكذلك في Fire TV.
 echo(    With the remote, tick «Always allow from this computer», then press OK.
 echo(    بالريموت: فعّل «Always allow from this computer» (السماح دائماً من هذا الحاسوب) ثم اضغط OK.
 echo(    Waiting up to %CONNECT_TIMEOUT% s ... / بانتظار الموافقة حتى %CONNECT_TIMEOUT% ثانية ...
@@ -671,8 +702,11 @@ echo(    - Is the address right? TV Settings ^> Network ^& Internet ^> your netw
 echo(      هل العنوان صحيح؟ الإعدادات ← الشبكة والإنترنت ← شبكتك ← IP address.
 echo(      With a cable: Network ^& Internet ^> Ethernet ^> the number under «Connected».
 echo(      بالسلك: الشبكة والإنترنت ← Ethernet ← الرقم تحت «Connected».
+echo(      Fire TV: Settings ^> My Fire TV (or Device ^& Software) ^> About ^> Network.
+echo(      في Fire TV: الإعدادات ← My Fire TV (أو Device ^& Software) ← About ← Network.
 echo(    - Developer options ^> «USB debugging» (and «Network debugging», if present) must be ON.
-echo(      يجب تفعيل خيارات المطوّر ← «USB debugging» (و«Network debugging» إن وُجد).
+echo(      On Fire TV: Developer options ^> «ADB debugging».
+echo(      يجب تفعيل خيارات المطوّر ← «USB debugging» (و«Network debugging» إن وُجد)، وفي Fire TV: «ADB debugging».
 echo(    - Still stuck: run the command below, then try again. / إن استمرت المشكلة نفّذ الأمر التالي ثم أعد المحاولة:
 echo(        "%ADB%" kill-server
 exit /b 0
@@ -681,10 +715,17 @@ exit /b 0
 echo(
 echo(!!  The TV refused the connection on %SERIAL%.
 echo(    رفضت الشاشة الاتصال على %SERIAL%.
-echo(    - Most often «USB debugging» is off. On the TV: Settings ^> System ^> Developer options:
-echo(      turn on «USB debugging» (and «Network debugging» if it exists), then run the installer again.
-echo(      غالباً «USB debugging» غير مفعّل. في الشاشة: الإعدادات ← النظام ← خيارات المطوّر:
-echo(      فعّل «USB debugging» (و«Network debugging» إن وُجد)، ثم شغّل المثبّت من جديد.
+echo(    - Most often debugging is off. Turn it on, then run the installer again:
+echo(      غالباً تصحيح الأخطاء غير مفعّل. فعّله ثم شغّل المثبّت من جديد:
+echo(      Google TV / Android TV: Settings ^> System ^> Developer options ^> «USB debugging»
+echo(      (and «Network debugging» if it exists).
+echo(      الإعدادات ← النظام ← خيارات المطوّر ← «USB debugging» (و«Network debugging» إن وُجد).
+echo(      Fire TV: Settings ^> My Fire TV (or Device ^& Software) ^> Developer options ^> «ADB debugging».
+echo(      في Fire TV: الإعدادات ← My Fire TV (أو Device ^& Software) ← Developer options ← «ADB debugging».
+echo(    - No «Developer options»? Open «About» and press OK 7 times on «Android TV OS build» (or «Build»);
+echo(      on Fire TV, on the device's name (like «Fire TV Stick»). Then go back: it is there.
+echo(      لا ترى خيارات المطوّر؟ افتح «About» واضغط OK سبع مرات على «Android TV OS build» (أو «Build»)،
+echo(      وفي Fire TV على اسم الجهاز (مثل «Fire TV Stick»)، ثم ارجع: ستظهر.
 echo(    - Some TVs only have «Wireless debugging»: the installer can pair with it using a 6-digit code.
 echo(      بعض الشاشات ليس فيها إلا «Wireless debugging»: يستطيع المثبّت الإقران بها برمز من 6 أرقام.
 exit /b 0
@@ -778,6 +819,86 @@ set "PM_FLAG="
 if "%~1"=="disabled" set "PM_FLAG=-d"
 "%ADB%" -s %SERIAL% shell pm list packages %PM_FLAG% %~2 <nul >"%TMPOUT%" 2>nul
 for /f "usebackq delims=" %%l in ("%TMPOUT%") do if "%%l"=="package:%~2" set "FOUND=1"
+exit /b 0
+
+rem Says which TV this is (maker, model, Android version), warns when the device does not call itself a TV, and
+rem sets LEGACY=1 on Android 7.1 and older (Fire OS 6). Returns 1 when its Android is older than Shasha's minimum.
+:describe_tv
+rem The TV's own shell builds the line, so its text never passes through cmd's parser here.
+"%ADB%" -s %SERIAL% shell "echo $(getprop ro.product.manufacturer) $(getprop ro.product.model), Android $(getprop ro.build.version.release), API $(getprop ro.build.version.sdk)" <nul >"%TVINFO%" 2>nul
+echo(
+for /f "usebackq delims=" %%l in ("%TVINFO%") do echo(==^> The TV / الشاشة: %%l
+set "TV_SDK="
+"%ADB%" -s %SERIAL% shell getprop ro.build.version.sdk <nul >"%TMPOUT%" 2>nul
+for /f "usebackq tokens=1" %%v in ("%TMPOUT%") do if not defined TV_SDK set "TV_SDK=%%v"
+rem Digits only, else unknown.
+if defined TV_SDK for /f "delims=0123456789" %%x in ("%TV_SDK%") do set "TV_SDK="
+rem Android TV and Google TV declare leanback, every Fire TV declares amazon.hardware.fire_tv.
+"%ADB%" -s %SERIAL% shell pm list features <nul >"%TMPOUT%" 2>nul
+findstr /l /c:"feature:" "%TMPOUT%" >nul || goto describe_sdk
+findstr /l /c:"feature:android.software.leanback" /c:"feature:android.hardware.type.television" /c:"feature:amazon.hardware.fire_tv" "%TMPOUT%" >nul && goto describe_sdk
+call :warn "This device does not say it is a TV: no Android TV, Google TV or Fire TV feature." "هذا الجهاز لا يعرّف نفسه تلفازاً: لا ميزة Android TV ولا Google TV ولا Fire TV."
+call :info "Shasha is made for a TV and its remote. Installing anyway; check the address if this is not your TV."
+call :info "«شاشة» مصمَّم للتلفاز وريموته. سيُثبَّت على أي حال؛ تأكد من العنوان إن لم يكن هذا تلفازك."
+:describe_sdk
+if not defined TV_SDK exit /b 0
+if %TV_SDK% LSS %MIN_SDK% goto describe_too_old
+if %TV_SDK% LSS 26 set "LEGACY=1"
+if "%LEGACY%"=="1" set "OPS=SYSTEM_ALERT_WINDOW GET_USAGE_STATS"
+exit /b 0
+:describe_too_old
+call :too_old_help
+exit /b 1
+
+:too_old_help
+call :warn "This TV's system is too old: Shasha needs Android 7.1 or newer, on Fire TV Fire OS 6 or newer." "نظام هذه الشاشة أقدم مما يحتاجه «شاشة»: أندرويد 7.1 أو أحدث، وفي Fire TV: Fire OS 6 أو أحدث."
+exit /b 0
+
+rem %1 = a package: sets YT_PKG when it is installed.
+:find_youtube
+call :find_package all %1
+if "%FOUND%"=="1" set "YT_PKG=%1"
+exit /b 0
+
+rem %1 = a package: enabled again when it is installed. Sets UNDO_FAILED=1 when that fails.
+:undo_youtube
+call :find_package all %1
+if "%FOUND%"=="0" exit /b 0
+call :say "Re-enabling the official YouTube app ..." "إعادة تفعيل تطبيق يوتيوب الرسمي ..."
+"%ADB%" -s %SERIAL% shell pm enable %1 <nul
+if errorlevel 1 (
+  set "UNDO_FAILED=1"
+  call :warn "Could not re-enable YouTube, see above." "تعذّرت إعادة تفعيل يوتيوب، انظر الرسالة أعلاه."
+  exit /b 1
+)
+set "YOUTUBE_STATUS=enabled / مفعّل"
+exit /b 0
+
+rem Android 7.1 and older (Fire OS 6) have no per-app permission to install: the TV-wide Unknown sources setting,
+rem on Fire TV Developer options, Apps from Unknown Sources, lets Check for updates open the system installer.
+rem %1 = 1 (on) or 0 (off). Sets OPS_FAILED=1 when it fails.
+:unknown_sources_set
+"%ADB%" -s %SERIAL% shell settings put secure install_non_market_apps %1 <nul
+if errorlevel 1 (
+  set "OPS_FAILED=1"
+  call :warn "Could not change Unknown sources, see above." "تعذّر تغيير «مصادر غير معروفة»، انظر الرسالة أعلاه."
+  exit /b 1
+)
+echo(    Unknown sources / مصادر غير معروفة: %1
+exit /b 0
+
+rem %1 = expected value, 1 or 0. Clears OPS_OK when Unknown sources differs.
+:check_unknown_sources
+"%ADB%" -s %SERIAL% shell settings get secure install_non_market_apps <nul >"%TMPOUT%" 2>&1
+set "US_VALUE="
+for /f "usebackq tokens=1" %%v in ("%TMPOUT%") do if not defined US_VALUE set "US_VALUE=%%v"
+if "%US_VALUE%"=="%1" goto check_unknown_sources_ok
+set "OPS_OK=0"
+echo(    [!!] Unknown sources / مصادر غير معروفة:
+type "%TMPOUT%"
+exit /b 1
+:check_unknown_sources_ok
+echo(    [OK] Unknown sources / مصادر غير معروفة: %1
 exit /b 0
 
 rem %1 = op, %2 = allow or default

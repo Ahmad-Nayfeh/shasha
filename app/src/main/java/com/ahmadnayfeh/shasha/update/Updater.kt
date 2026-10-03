@@ -12,11 +12,8 @@ data class InstalledVersion(val name: String, val code: Long)
 interface UpdateSteps {
     val installed: InstalledVersion
 
-    /** False: this build has no read token, and the private repository's releases cannot be read. */
+    /** False: this build has no read token, so it cannot read the private repository's releases at all. */
     val hasToken: Boolean
-
-    /** The one adb command that allows installing (REQUEST_INSTALL_PACKAGES). */
-    val installCommand: String
 
     val installEvents: Flow<InstallEvent>
 
@@ -26,6 +23,7 @@ interface UpdateSteps {
     /** Downloads [release]'s APK (or finds it already downloaded) and checks it ([ApkVerifier]). @throws UpdateException */
     suspend fun download(release: ReleaseInfo, onProgress: (Long, Long?) -> Unit): File
 
+    /** False: Android does not let this app install anything yet (the kit grants the permission). */
     fun installAllowed(): Boolean
 
     /** @return the installer session's id. */
@@ -35,9 +33,9 @@ interface UpdateSteps {
 }
 
 /**
- * SPEC §6 «فحص التحديثات»: the latest GitHub Release ([releases]), its APK downloaded into [downloads]
- * (cacheDir/updates) and checked against the installed app ([inspector], [ApkVerifier]), then the system installer
- * ([installer]). Nothing is ever installed without the system's own confirmation.
+ * SPEC §6 «فحص التحديثات»: the latest release ([releases]), its APK downloaded into [downloads] (cacheDir/updates)
+ * and checked against the installed app ([inspector], [ApkVerifier]: the same app, newer, the same signing key), then
+ * the system installer ([installer]: silent where Android allows it, else with the system's own confirmation).
  */
 class Updater(
     private val releases: GitHubReleases,
@@ -48,7 +46,6 @@ class Updater(
     events: InstallEvents,
 ) : UpdateSteps {
     override val hasToken: Boolean get() = releases.hasToken
-    override val installCommand: String get() = installer.installCommand
     override val installEvents: Flow<InstallEvent> = events.events
 
     override suspend fun latest(): ReleaseInfo? = releases.latest()

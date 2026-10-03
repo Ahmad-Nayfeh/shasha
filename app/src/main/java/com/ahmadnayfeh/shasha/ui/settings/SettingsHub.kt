@@ -228,7 +228,6 @@ private fun PaneBody(category: SettingsCategory, state: SettingsHubState, action
         SettingsCategory.REMOTE -> RemotePane(state, actions, first)
         SettingsCategory.DATA -> DataPane(state, actions, first)
         SettingsCategory.UPDATES -> UpdatesPane(state, actions, first)
-        SettingsCategory.DIAGNOSTICS -> DiagnosticsPane(state, actions, first)
         SettingsCategory.RESET -> ResetPane(state, actions, first)
         SettingsCategory.APPEARANCE -> AppearancePane(state, actions, first)
         SettingsCategory.GUIDE -> GuidePane(state, actions, first)

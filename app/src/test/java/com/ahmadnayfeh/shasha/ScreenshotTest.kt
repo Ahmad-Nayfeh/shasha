@@ -18,7 +18,6 @@ import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import com.ahmadnayfeh.shasha.player.PlaybackProgress
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoaderWithText
-import com.ahmadnayfeh.shasha.ui.screens.diagnostics.DiagnosticsScreen
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
 import com.ahmadnayfeh.shasha.ui.screens.player.OsdMenu
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerErrorScreen
@@ -56,16 +55,6 @@ class ScreenshotTest {
         }
         compose.waitForIdle()
         compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
-    }
-
-    @Test
-    fun diagnostics() = snap("diagnostics") {
-        DiagnosticsScreen(Fixtures.diagnostics, extractorVersion = "v0.26.5", appVersion = "0.1.0", onOpen = {}, onRecheck = {})
-    }
-
-    @Test
-    fun diagnosticsFocusOnFailedKidsVideo() = snap("diagnostics_kids_failed") {
-        DiagnosticsScreen(Fixtures.diagnostics, "v0.26.5", "0.1.0", onOpen = {}, onRecheck = {}, initialFocus = 2)
     }
 
     @Test

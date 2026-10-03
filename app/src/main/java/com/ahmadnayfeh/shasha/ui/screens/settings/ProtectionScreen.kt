@@ -179,9 +179,9 @@ fun ProtectionScreen(
             StatusRow(
                 level = s.level { it.installPackages },
                 title = stringResource(R.string.protection_install_title),
-                body = stringResource(R.string.protection_install_body),
+                body = stringResource(if (s?.unknownSources == true) R.string.protection_install_body_unknown_sources else R.string.protection_install_body),
                 value = s.granted { it.installPackages },
-                command = ProtectionCommands.installPackages(packageName).takeIf { s != null && !s.installPackages },
+                command = s?.takeIf { !it.installPackages }?.let { ProtectionCommands.installPackages(packageName, it.unknownSources) },
                 modifier = Modifier.testTag("protection_install"),
             )
             val youtube = s?.youtube
@@ -204,7 +204,7 @@ fun ProtectionScreen(
                         },
                     )
                 },
-                command = ProtectionCommands.disableYouTube.takeIf { youtube == YouTubeAppState.ENABLED },
+                command = s?.takeIf { youtube == YouTubeAppState.ENABLED }?.let { ProtectionCommands.disableYouTube(it.youtubePackage) },
                 modifier = Modifier.testTag("protection_youtube"),
             )
             val autoTime = s?.autoTime ?: true
@@ -231,7 +231,7 @@ fun ProtectionScreen(
         Spacer(Modifier.height(20.dp))
         SectionLabel(stringResource(R.string.protection_section_limits), icon = ShashaIcons.Info)
         Spacer(Modifier.height(8.dp))
-        LimitsCard(packageName)
+        LimitsCard(packageName, fireTv = s?.fireTv == true)
     }
 }
 
@@ -404,10 +404,11 @@ private fun ReturnLine(back: ReturnTime, times: TimeTexts, zone: ZoneId) {
 
 /**
  * SPEC: «القفل ليس منيعاً» — what the guard cannot prevent, said plainly; and the one way it can shut the
- * owner out (the parent PIN locked out while a restriction lasts), with its way out.
+ * owner out (the parent PIN locked out while a restriction lasts), with its way out. On a Fire TV, first: Amazon does
+ * not officially support covering other apps, so the guard is to be tried there.
  */
 @Composable
-private fun LimitsCard(packageName: String) {
+private fun LimitsCard(packageName: String, fireTv: Boolean) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val shape = RoundedCornerShape(18.dp)
@@ -421,7 +422,8 @@ private fun LimitsCard(packageName: String) {
             .testTag("protection_limits"),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        val lines = listOf(
+        val lines = listOfNotNull(
+            if (fireTv) stringResource(R.string.protection_limits_fire_tv) else null,
             stringResource(R.string.protection_limits_outside),
             stringResource(R.string.protection_limits_force_stop),
             stringResource(R.string.protection_limits_keys),

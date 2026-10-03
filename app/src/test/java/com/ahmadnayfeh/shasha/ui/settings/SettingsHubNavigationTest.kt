@@ -72,7 +72,6 @@ class SettingsHubNavigationTest {
         openBackup = { calls += "backup" },
         openImport = { calls += "import" },
         openUpdates = { calls += "updates" },
-        openDiagnostics = { calls += "diagnostics" },
         setQuota = { id, minutes -> calls += "quota:$id=$minutes" },
         setSchedule = { id, schedule -> calls += "schedule:$id=$schedule" },
         setSponsorCategory = { category, on -> calls += "sponsor:${category.apiKey}=$on" },
@@ -335,17 +334,11 @@ class SettingsHubNavigationTest {
     }
 
     @Test
-    fun theAppPanes_checkForUpdates_openTheTestVideos_andReadAbout() {
+    fun theAppPanes_checkForUpdates_andReadAbout() {
         show()
         goTo(SettingsCategory.UPDATES)
         press(Key.DirectionLeft)
         focused("hub_check_updates")
-        press(Key.DirectionCenter)
-        press(Key.Back)
-
-        press(Key.DirectionDown) // تشخيص
-        press(Key.DirectionLeft)
-        focused("hub_diagnostics_videos")
         press(Key.DirectionCenter)
         press(Key.Back)
 
@@ -354,7 +347,7 @@ class SettingsHubNavigationTest {
         press(Key.DirectionDown) // حول
         press(Key.DirectionLeft)
         // The developer first, then his other apps one card each: nothing else (the version, the extractor,
-        // SponsorBlock's attribution and the licences are under تشخيص).
+        // SponsorBlock's attribution and the licences are at the bottom of فحص التحديثات).
         focused("about_developer")
         listOf("shadra", "silah", "masarif", "khatwa").forEach { app ->
             press(Key.DirectionDown)
@@ -362,26 +355,23 @@ class SettingsHubNavigationTest {
         }
         press(Key.DirectionDown)
         focused("about_app_khatwa") // the last card of the pane
-        listOf("about_version", "about_sponsorblock", "license_NewPipeExtractor", "diag_version", "hub_diagnostics_facts").forEach {
+        listOf("about_version", "about_sponsorblock", "license_NewPipeExtractor", "tech_sponsorblock", "hub_version").forEach {
             assertThat(exists(it)).isFalse()
         }
-        assertThat(calls).containsExactly("updates", "diagnostics").inOrder()
+        assertThat(calls).containsExactly("updates")
     }
 
     @Test
-    fun theDiagnosticsPane_readsTheFacts_thenTheTechnicalInfoAndEveryLicence() {
+    fun theUpdatesPane_hasOneButton_thenTheTechnicalInfoAndEveryLicence() {
         show()
-        goTo(SettingsCategory.DIAGNOSTICS)
+        goTo(SettingsCategory.UPDATES)
         press(Key.DirectionLeft)
-        focused("hub_diagnostics_videos")
+        // One button (the version above it is plain text), then «معلومات تقنية والتراخيص»: SponsorBlock's attribution,
+        // then the libraries and the projects whose ideas the app follows, one row each, in the order of the list.
+        focused("hub_check_updates")
+        assertThat(exists("hub_version")).isTrue()
         press(Key.DirectionDown)
-        focused("hub_diagnostics_facts")
-        // «معلومات تقنية والتراخيص»: the version and the extractor, SponsorBlock's attribution, then the libraries
-        // and the projects whose ideas the app follows, one row each, in the order of the list.
-        press(Key.DirectionDown)
-        focused("diag_version")
-        press(Key.DirectionDown)
-        focused("diag_sponsorblock")
+        focused("tech_sponsorblock")
         (Licenses.libraries + Licenses.ideas).forEach { entry ->
             press(Key.DirectionDown)
             focused("license_${entry.name}")

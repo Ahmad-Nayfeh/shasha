@@ -1,10 +1,13 @@
 package com.ahmadnayfeh.shasha.policy
 
 import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
 import java.util.Base64
+import javax.crypto.Mac
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * Hashes the parent PIN as `pbkdf2$<iterations>$<saltBase64>$<hashBase64>` (PBKDF2WithHmacSHA256,
@@ -57,9 +60,15 @@ class PinHasher(
     }
 
     private fun derive(pin: String, salt: ByteArray, iterations: Int): ByteArray {
+        val factory = try {
+            SecretKeyFactory.getInstance(ALGORITHM)
+        } catch (_: NoSuchAlgorithmException) {
+            // Android 7.1 and older (Fire OS 6) have PBKDF2 only with SHA-1: the same derivation, done here.
+            return pbkdf2HmacSha256(pin.toByteArray(Charsets.UTF_8), salt, iterations, KEY_BITS / 8)
+        }
         val spec = PBEKeySpec(pin.toCharArray(), salt, iterations, KEY_BITS)
         try {
-            return SecretKeyFactory.getInstance(ALGORITHM).generateSecret(spec).encoded
+            return factory.generateSecret(spec).encoded
         } finally {
             spec.clearPassword()
         }
@@ -83,5 +92,38 @@ class PinHasher(
         /** 4 to 8 ASCII digits (0-9 only; the app uses Western digits everywhere). */
         fun validatePinFormat(pin: String): Boolean =
             pin.length in MIN_LENGTH..MAX_LENGTH && pin.all { it in '0'..'9' }
+
+        /**
+         * PBKDF2 with HMAC-SHA256 (RFC 8018, section 5.2) on [javax.crypto.Mac], which every Android version has: the
+         * fallback for systems whose provider lacks [ALGORITHM] (Android before 8). Same result as [ALGORITHM] for the
+         * same bytes; a PIN is ASCII digits, so its bytes are the same in every encoding.
+         */
+        internal fun pbkdf2HmacSha256(password: ByteArray, salt: ByteArray, iterations: Int, keyBytes: Int): ByteArray {
+            require(iterations > 0 && keyBytes > 0) { "iterations and key length must be > 0" }
+            val mac = Mac.getInstance("HmacSHA256").apply { init(SecretKeySpec(password, "HmacSHA256")) }
+            val block = mac.macLength
+            val key = ByteArray(keyBytes)
+            val u = ByteArray(block)
+            val t = ByteArray(block)
+            var index = 1
+            var offset = 0
+            while (offset < keyBytes) {
+                // U1 = PRF(P, S || INT(i)); Uj = PRF(P, Uj-1); T = U1 xor ... xor Uc.
+                mac.update(salt)
+                mac.update(byteArrayOf((index ushr 24).toByte(), (index ushr 16).toByte(), (index ushr 8).toByte(), index.toByte()))
+                mac.doFinal(u, 0)
+                u.copyInto(t)
+                repeat(iterations - 1) {
+                    mac.update(u)
+                    mac.doFinal(u, 0)
+                    for (k in 0 until block) t[k] = (t[k].toInt() xor u[k].toInt()).toByte()
+                }
+                val count = minOf(block, keyBytes - offset)
+                t.copyInto(key, offset, 0, count)
+                offset += count
+                index++
+            }
+            return key
+        }
     }
 }

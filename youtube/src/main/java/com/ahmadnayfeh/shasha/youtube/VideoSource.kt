@@ -46,6 +46,34 @@ interface VideoSource {
     /** The first page of a channel's Shorts tab, newest first, every item marked short-form; empty when it has none. */
     suspend fun channelShorts(channelId: String): List<VideoItem> = emptyList()
 
+    /**
+     * One page of a section of a channel's page ([tab]), in the order [sort] (null [page]: the first page). The videos,
+     * Shorts and live streams are [VideoItem]s (every one of the Shorts marked short-form), the playlists [PlaylistItem]s;
+     * a section the channel does not have is empty. Every section pages on its own: a [PageKey] belongs to the
+     * [channelId], [tab] and [sort] that returned it.
+     *
+     * Only the sorts in [ChannelTabPage.sorts] of the section's first page may be asked for ([ChannelSort.LATEST] always
+     * may), and only for the sections that list videos ([ChannelTab.listsVideos]); anything else fails with
+     * [SourceErrorKind.CONTENT_UNAVAILABLE]. Unfiltered YouTube content: the app decides who may see it.
+     *
+     * The default serves what [channelVideos] and [channelShorts] know: the newest videos (paged) and the first page of
+     * the Shorts, nothing else.
+     */
+    suspend fun channelTab(channelId: String, tab: ChannelTab, sort: ChannelSort = ChannelSort.LATEST, page: PageKey? = null): ChannelTabPage {
+        if (sort != ChannelSort.LATEST) return ChannelTabPage(emptyList(), null)
+        return when (tab) {
+            ChannelTab.VIDEOS -> channelVideos(channelId, page).let { ChannelTabPage(it.items, it.next) }
+            ChannelTab.SHORTS -> ChannelTabPage(if (page == null) channelShorts(channelId) else emptyList(), null)
+            ChannelTab.LIVE, ChannelTab.PLAYLISTS -> ChannelTabPage(emptyList(), null)
+        }
+    }
+
+    /**
+     * A channel's Playlists tab, page by page ([PlaylistItem]s; a channel without playlists answers an empty page). Used by
+     * the phone app's channel page; the default answers nothing, so other implementations need not know it.
+     */
+    suspend fun channelPlaylists(channelId: String, page: PageKey? = null): ItemsPage = ItemsPage(emptyList(), null)
+
     /** Latest uploads for the home feed: RSS first, channel Videos tab as fallback. */
     suspend fun recentVideos(channelId: String): List<VideoItem>
 

@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * «حول»: who made Shasha, and the developer's other apps (a QR code each), and nothing else. The version, the
- * extractor, SponsorBlock's attribution and the licences are under «تشخيص» → «معلومات تقنية والتراخيص»
+ * extractor, SponsorBlock's attribution and the licences are at the bottom of «فحص التحديثات»
  * ([TechnicalInfo]). Each card takes the focus in turn, so the D-pad reads the page from top to bottom.
  */
 @Composable

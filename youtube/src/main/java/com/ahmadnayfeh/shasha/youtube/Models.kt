@@ -42,7 +42,47 @@ data class PlaylistItem(
     val videoCount: Long?,
 ) : SourceItem
 
-data class ChannelDetails(val channel: ChannelItem, val bannerUrl: String?, val description: String?)
+/**
+ * The sections of a channel's page, as YouTube's channel tabs: its videos, its Shorts, its live streams (past, current
+ * and scheduled) and its playlists. [VideoSource.channelTab] reads one of them.
+ */
+enum class ChannelTab {
+    VIDEOS,
+    SHORTS,
+    LIVE,
+    PLAYLISTS,
+    ;
+
+    /** The sections that list videos: the only ones that can be sorted ([ChannelSort]). The playlists are not. */
+    val listsVideos: Boolean get() = this != PLAYLISTS
+}
+
+/** How a section of a channel is ordered. [LATEST] is YouTube's own order and the default. */
+enum class ChannelSort { LATEST, POPULAR, OLDEST }
+
+/**
+ * One page of a channel's section ([VideoSource.channelTab]): [VideoItem]s, or [PlaylistItem]s in [ChannelTab.PLAYLISTS].
+ *
+ * [sorts] are the orders this section really offers, [ChannelSort.LATEST] first: only [ChannelSort.LATEST] where YouTube
+ * gives no choice (a section with very few items, the playlists), and the same on every page of one section. A sort
+ * that is not in it must not be offered: asking for it fails.
+ */
+data class ChannelTabPage(
+    val items: List<SourceItem>,
+    val next: PageKey?,
+    val sorts: List<ChannelSort> = listOf(ChannelSort.LATEST),
+)
+
+/**
+ * [tabs]: the sections the channel really has (fixed order: [ChannelTab.entries]). A source that cannot tell says only
+ * [ChannelTab.VIDEOS], the page every channel has always shown.
+ */
+data class ChannelDetails(
+    val channel: ChannelItem,
+    val bannerUrl: String?,
+    val description: String?,
+    val tabs: List<ChannelTab> = listOf(ChannelTab.VIDEOS),
+)
 
 data class StreamDetails(
     /** channelId is always filled here. */

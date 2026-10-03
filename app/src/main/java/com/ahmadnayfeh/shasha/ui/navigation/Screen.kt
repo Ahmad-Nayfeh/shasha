@@ -15,15 +15,17 @@ sealed interface Screen {
     @Serializable
     data class Channel(val channelId: String, val name: String? = null) : Screen
 
+    /**
+     * [ownerChannelId]: the channel whose page listed the playlist (its Playlists section): a child who may open that channel
+     * may open its playlists ([com.ahmadnayfeh.shasha.policy.ContentFilter.playlist]); null from anywhere else.
+     */
     @Serializable
-    data class Playlist(val playlistId: String) : Screen
+    data class Playlist(val playlistId: String, val ownerChannelId: String? = null) : Screen
 
     /**
      * Inside a playlist, [playlistIndex] is the video's position: the next one plays when it ends.
      * [fromLink]: the video arrived as a link (the phone, another app); the policy then ignores any
-     * playlist it names and asks for the video's own channel. [diagnostic]: one of تشخيص's fixed test
-     * videos (adult only): it is not locked (SPEC §4's lock is about watching, not about checking that
-     * playback works; the live test never ends and would only leave through a surrender).
+     * playlist it names and asks for the video's own channel.
      * [startSeconds]: where a shared link asks the video to start (its `t=`), in place of the saved position.
      * [phoneApproved] (v1.2): a request from the phone that was accepted on the TV; the phone that sent it is there,
      * so this video needs no «تأكيد» from the phone before it starts.
@@ -34,20 +36,18 @@ sealed interface Screen {
         val playlistId: String? = null,
         val playlistIndex: Int = -1,
         val fromLink: Boolean = false,
-        val diagnostic: Boolean = false,
         val startSeconds: Long? = null,
         val phoneApproved: Boolean = false,
     ) : Screen
 
-    /** Placeholder until the GitHub Releases updater arrives (SPEC phase 7). */
+    /**
+     * «فحص التحديثات» (SPEC §6): checks at once and, when a newer version is out, downloads and installs it. Reached
+     * from Settings and from the error screens; a child's graph has it too, but shows only who can update the app.
+     */
     @Serializable
     data object Updates : Screen
 
     // ---- Adult profile only ---------------------------------------------------------------------
-
-    /** Fixed test videos ("فيديوهات تجريبية"), under Settings → تشخيص. */
-    @Serializable
-    data object Diagnostics : Screen
 
     /** Settings → استيراد الاشتراكات. */
     @Serializable

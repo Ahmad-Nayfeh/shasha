@@ -8,13 +8,11 @@ import com.ahmadnayfeh.shasha.data.AppLanguage
 import com.ahmadnayfeh.shasha.data.AppTheme
 import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.BehaviorSettings
-import com.ahmadnayfeh.shasha.data.FeedRepository
 import com.ahmadnayfeh.shasha.data.PhraseMode
 import com.ahmadnayfeh.shasha.data.PlaybackSettings
 import com.ahmadnayfeh.shasha.data.ProfileRepository
 import com.ahmadnayfeh.shasha.data.SettingsReset
 import com.ahmadnayfeh.shasha.data.SubscriptionRepository
-import com.ahmadnayfeh.shasha.data.SyncHealth
 import com.ahmadnayfeh.shasha.data.UsageRepository
 import com.ahmadnayfeh.shasha.policy.PolicyEngine
 import com.ahmadnayfeh.shasha.policy.Profile
@@ -47,7 +45,6 @@ class SettingsHubViewModel(
     private val playback: PlaybackSettings,
     private val remoteSettings: RemoteSettings,
     remoteState: StateFlow<RemoteState>,
-    feed: FeedRepository,
     private val usageRepository: UsageRepository,
     private val engine: PolicyEngine,
     private val zone: () -> ZoneId,
@@ -73,8 +70,6 @@ class SettingsHubViewModel(
 
     val remote: StateFlow<RemoteSummary?> = combine(remoteSettings.enabled, remoteState) { enabled, state -> RemoteSummary.of(enabled, state) }
         .stateIn(viewModelScope, WHILE_SHOWN, null)
-
-    val syncHealth: StateFlow<SyncHealth?> = feed.observeSyncHealth().stateIn(viewModelScope, WHILE_SHOWN, null)
 
     private val _usage = MutableStateFlow<Map<String, UsageSummary>?>(null)
 

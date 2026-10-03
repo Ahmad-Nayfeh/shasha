@@ -30,3 +30,7 @@ Thumbs.db
 
 # Agent worktrees (local only)
 .claude/worktrees/
+
+# JVM crash reports (a test JVM that died)
+hs_err_pid*.log
+replay_pid*.log

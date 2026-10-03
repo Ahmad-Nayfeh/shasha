@@ -1,6 +1,5 @@
 package com.ahmadnayfeh.shasha.ui.settings
 
-import android.os.Build
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.datastore.preferences.core.Preferences
@@ -9,28 +8,18 @@ import com.ahmadnayfeh.shasha.data.AppTheme
 import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.PhraseMode
 import com.ahmadnayfeh.shasha.data.PlaybackSettings
-import com.ahmadnayfeh.shasha.data.SyncHealth
 import com.ahmadnayfeh.shasha.lock.ProtectionStatus
 import com.ahmadnayfeh.shasha.lock.ReturnTime
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.Schedule
 import com.ahmadnayfeh.shasha.policy.UsageSummary
 import com.ahmadnayfeh.shasha.remote.RemoteState
-import com.ahmadnayfeh.shasha.search.VoiceAvailability
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.ui.settings.remote.PairingStatus
 
 /** The app's version (BuildConfig: name, and the versionCode CI sets) and the extractor's (SPEC §1's error screen shows it too). */
 @Immutable
 data class AppVersions(val name: String, val code: Int, val extractor: String)
-
-/** The TV itself, for «تشخيص». */
-@Immutable
-data class DeviceFacts(val maker: String, val model: String, val android: String, val sdk: Int) {
-    companion object {
-        fun current() = DeviceFacts(Build.MANUFACTURER.orEmpty(), Build.MODEL.orEmpty(), Build.VERSION.RELEASE.orEmpty(), Build.VERSION.SDK_INT)
-    }
-}
 
 /**
  * «الخادم المحلي» at a glance: whether it is on and where it listens. Never the pairing token: that stays on the
@@ -67,12 +56,6 @@ data class SettingsHubState(
     /** The guard's newest measured return (SPEC acceptance: Home → back within 2 s). */
     val lastReturn: ReturnTime? = null,
     val remote: RemoteSummary? = null,
-    val syncHealth: SyncHealth? = null,
-    val device: DeviceFacts? = null,
-    /** Which voice recognizers this TV offers, for «تشخيص» (null = not read yet). */
-    val voice: VoiceAvailability? = null,
-    /** "Now" for texts like «منذ 5 دقائق». */
-    val nowMs: Long = 0,
     /** The parent's adjustable behaviour (Serious Mode, timings, the PIN's brake). */
     val behavior: Behavior? = null,
     /** The phone remote's chosen port. */
@@ -99,7 +82,6 @@ class SettingsHubActions(
     val openBackup: () -> Unit = {},
     val openImport: () -> Unit = {},
     val openUpdates: () -> Unit = {},
-    val openDiagnostics: () -> Unit = {},
     val setQuota: (profileId: String, minutes: Int?) -> Unit = { _, _ -> },
     val setSchedule: (profileId: String, schedule: Schedule?) -> Unit = { _, _ -> },
     val setSponsorCategory: (category: SponsorCategory, enabled: Boolean) -> Unit = { _, _ -> },

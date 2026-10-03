@@ -20,6 +20,14 @@
 # versionName stays in app/build.gradle.kts; CI reads it back from the APK (aapt2 dump badging).
 # Published as: tag v<versionName>-<versionCode>, asset shasha-<versionName>-<versionCode>.apk.
 #
+# ─── The phone app (:mobile) ─────────────────────────────────────────────────────────────────
+# Built from the same commit with the same variables (same signing key, same versionCode, same update token), tested
+# with the others, and attached to the SAME Release as a second asset: shasha-mobile-<versionName>-<versionCode>.apk
+# (versionName stays in mobile/build.gradle.kts and is read back from the APK like the TV's). The phone's updater
+# reads the latest Release and picks that asset. The TV's tag and asset name do not change.
+# NO FILE NAME may pass between jobs as a job output: the key alias secret is "shasha", and GitHub drops an output
+# that contains a secret's value. Only the version name travels; the release job rebuilds both names.
+#
 # ─── Repository secrets (Settings > Secrets and variables > Actions) ─────────────────────────
 #   SIGNING_KEYSTORE_BASE64    the .jks as one base64 line:
 #                                Linux:   base64 -w0 shasha-release.jks
@@ -54,6 +62,7 @@ env:
   ANDROID_PLATFORM: platforms;android-37.0
   ANDROID_BUILD_TOOLS: 37.0.0
   APPLICATION_ID: com.ahmadnayfeh.shasha
+  MOBILE_APPLICATION_ID: com.ahmadnayfeh.shasha.mobile
 
 # An explicit `bash` runs steps with -eo pipefail (the implicit default is only -e).
 defaults:
@@ -105,6 +114,7 @@ jobs:
         run: >-
           ./gradlew --stacktrace --continue
           :policy:test :youtube:testDebugUnitTest :remote:testDebugUnitTest :app:verifyRoborazziDebug
+          :mobile:testDebugUnitTest
 
       - name: Upload test reports
         if: failure()
@@ -130,6 +140,7 @@ jobs:
     outputs:
       signed: ${{ steps.apk.outputs.signed }}
       version_name: ${{ steps.apk.outputs.version_name }}
+      mobile_version_name: ${{ steps.mobile_apk.outputs.version_name }}
       version_code: ${{ steps.prep.outputs.version_code }}
       extractor_version: ${{ steps.prep.outputs.extractor_version }}
       cert_sha256: ${{ steps.prep.outputs.cert_sha256 }}
@@ -219,6 +230,23 @@ jobs:
             ./gradlew --stacktrace :app:assembleRelease :app:assembleDebug
           fi
 
+      # The phone app, from the same commit, with the same key and version code.
+      - name: Build phone APK
+        env:
+          SHASHA_KEYSTORE_FILE: ${{ steps.prep.outputs.keystore_file }}
+          SHASHA_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          SHASHA_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SHASHA_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          SHASHA_VERSION_CODE: ${{ steps.prep.outputs.version_code }}
+          SHASHA_UPDATE_TOKEN: ${{ secrets.UPDATE_TOKEN }}
+        run: |
+          if [ -n "$SHASHA_KEYSTORE_FILE" ]; then
+            ./gradlew --stacktrace :mobile:assembleRelease
+          else
+            # No key: the release build still has to pass (R8), the debug APK is what gets uploaded.
+            ./gradlew --stacktrace :mobile:assembleRelease :mobile:assembleDebug
+          fi
+
       # The error screen shows the failing exception's class name (SourceException.technicalName). R8
       # would rename them ("l50" instead of ContentNotAvailableException); youtube/consumer-rules.pro
       # keeps them. Fail here if that rule ever stops working.
@@ -237,12 +265,36 @@ jobs:
             exit 1
           fi
 
+      # The same check on the phone app (mobile/proguard-rules.pro keeps its own *Error and *Exception names).
+      - name: Check that R8 kept exception names (phone app)
+        run: |
+          mapping=mobile/build/outputs/mapping/release/mapping.txt
+          if ! grep -q '^org\.schabi\.newpipe\.extractor\.exceptions\.ContentNotAvailableException -> ' "$mapping"; then
+            echo "::error::$mapping is missing or has an unexpected format"
+            exit 1
+          fi
+          renamed=$(grep -E '^(org\.schabi\.newpipe\.extractor\.exceptions\.|com\.ahmadnayfeh\.shasha\.)[A-Za-z0-9_.$]*(Exception|Error) -> ' "$mapping" |
+            awk '$1 ":" != $3 { print $1 " -> " $3 }')
+          if [ -n "$renamed" ]; then
+            echo "::error title=Exception names obfuscated (phone app)::The error screen would show these renamed:" \
+              "${renamed//$'\n'/, }. Check -keepnames in youtube/consumer-rules.pro and mobile/proguard-rules.pro."
+            exit 1
+          fi
+
       # For decoding stack traces of this exact build (retrace). Not part of the Release.
       - name: Upload R8 mapping
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: r8-mapping-${{ steps.prep.outputs.version_code }}
           path: app/build/outputs/mapping/release/mapping.txt
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Upload R8 mapping (phone app)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: r8-mapping-mobile-${{ steps.prep.outputs.version_code }}
+          path: mobile/build/outputs/mapping/release/mapping.txt
           retention-days: 90
           if-no-files-found: error
 
@@ -341,6 +393,96 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+      # The phone app's APK: the same checks, and its own artifact. Its name is built here and in the release job from
+      # the version name and code; it never leaves this job as an output (see the top of this file).
+      - name: Verify and name the phone APK
+        id: mobile_apk
+        env:
+          VERSION_CODE: ${{ steps.prep.outputs.version_code }}
+          EXPECTED_CERT: ${{ steps.prep.outputs.cert_sha256 }}
+        run: |
+          tools="$ANDROID_HOME/build-tools/$ANDROID_BUILD_TOOLS"
+          shopt -s nullglob
+          only_apk() {
+            local apks=("$1"/*.apk)
+            if [ "${#apks[@]}" -ne 1 ]; then
+              echo "::error::Expected exactly one APK in $1, found ${#apks[@]}: ${apks[*]}" >&2
+              return 1
+            fi
+            printf '%s\n' "${apks[0]}"
+          }
+          package_line() { local b; b=$("$tools/aapt2" dump badging "$1") && grep -m1 '^package:' <<< "$b"; }
+
+          release_apk=$(only_apk mobile/build/outputs/apk/release)
+          line=$(package_line "$release_apk")
+          echo "$release_apk: $line"
+          package=$(sed -nE "s/^package: name='([^']+)'.*/\1/p" <<< "$line")
+          code=$(sed -nE "s/.* versionCode='([0-9]+)'.*/\1/p" <<< "$line")
+          name=$(sed -nE "s/.* versionName='([^']+)'.*/\1/p" <<< "$line")
+          if [ "$package" != "$MOBILE_APPLICATION_ID" ]; then
+            echo "::error::Phone APK package is '$package', expected '$MOBILE_APPLICATION_ID'"
+            exit 1
+          fi
+          if [ "$code" != "$VERSION_CODE" ]; then
+            echo "::error title=versionCode not applied (phone app)::APK has '$code', expected $VERSION_CODE (SHASHA_VERSION_CODE)."
+            exit 1
+          fi
+          if ! [[ "$name" =~ ^[0-9A-Za-z._-]+$ ]]; then
+            echo "::error::Phone versionName '$name' is empty or unusable in a file name"
+            exit 1
+          fi
+
+          if [ -n "$EXPECTED_CERT" ]; then
+            if ! certs=$("$tools/apksigner" verify --print-certs "$release_apk"); then
+              echo "::error title=Not signed (phone app)::apksigner rejected $release_apk."
+              exit 1
+            fi
+            echo "$certs"
+            actual=$(sed -nE 's/.*[Ss]igner.* certificate SHA-256 digest: ([0-9a-f]{64})$/\1/p' <<< "$certs" | sort -u)
+            if [ "$actual" != "$EXPECTED_CERT" ]; then
+              echo "::error title=Wrong signing key (phone app)::APK signed by: ${actual//$'\n'/, }. Expected only $EXPECTED_CERT."
+              exit 1
+            fi
+            apk=$release_apk
+            apk_name="shasha-mobile-$name-$code.apk"
+            signed=true
+          else
+            apk=$(only_apk mobile/build/outputs/apk/debug)
+            echo "$apk: $(package_line "$apk")"
+            if ! "$tools/apksigner" verify --print-certs "$apk"; then
+              echo "::error::apksigner rejected the debug APK $apk"
+              exit 1
+            fi
+            apk_name="shasha-mobile-$name-$code-debug.apk"
+            signed=false
+            echo "::warning title=Debug APK - not release-signed (phone app)::$apk_name is for testing only; it cannot" \
+              "update the app installed from Releases."
+          fi
+
+          mkdir -p dist
+          cp "$apk" "dist/$apk_name"
+          {
+            echo "apk_name=$apk_name"
+            echo "version_name=$name"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo
+            echo "### $apk_name"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| versionName / versionCode | \`$name\` / \`$code\` |"
+            echo "| Release-signed | $signed |"
+            echo "| Size | $(du -h "dist/$apk_name" | cut -f1) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: dist/${{ steps.mobile_apk.outputs.apk_name }}
+          archive: false
+          retention-days: 14
+          if-no-files-found: error
+
       - name: Delete decoded keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/shasha-release.jks"
@@ -369,6 +511,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           VERSION_NAME: ${{ needs.build.outputs.version_name }}
           VERSION_CODE: ${{ needs.build.outputs.version_code }}
+          MOBILE_VERSION_NAME: ${{ needs.build.outputs.mobile_version_name }}
           EXTRACTOR_VERSION: ${{ needs.build.outputs.extractor_version }}
           CERT_SHA256: ${{ needs.build.outputs.cert_sha256 }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -388,6 +531,24 @@ jobs:
               exit 1
             fi
             mv "${files[0]}" "$apk"
+          fi
+
+          # The phone app's APK, named here from its version name and the shared code (never passed as an output).
+          if [ -z "$MOBILE_VERSION_NAME" ]; then
+            echo "::error::The build job reported no phone versionName"
+            exit 1
+          fi
+          MOBILE_APK_NAME="shasha-mobile-$MOBILE_VERSION_NAME-$VERSION_CODE.apk"
+          mobile_apk="dist/$MOBILE_APK_NAME"
+          if [ ! -f "$mobile_apk" ]; then
+            mobile_files=()
+            while IFS= read -r -d '' f; do mobile_files+=("$f"); done < <(find dist -type f -name 'shasha-mobile-*.apk' -print0)
+            if [ "${#mobile_files[@]}" -ne 1 ]; then
+              echo "::error::$MOBILE_APK_NAME was not downloaded"
+              ls -laR dist
+              exit 1
+            fi
+            mv "${mobile_files[0]}" "$mobile_apk"
           fi
 
           if gh release view "$tag" > /dev/null 2>&1; then
@@ -419,7 +580,7 @@ jobs:
             echo "التثبيت: زر «فحص التحديثات» في التطبيق، أو من الحاسوب: ضع \`$APK_NAME\` في مجلد Shasha-Setup وشغّل المثبّت (انظر «دليل شاشة.pdf» في Shasha-Setup)."
           } > "$notes"
 
-          gh release create "$tag" "$apk" \
+          gh release create "$tag" "$apk" "$mobile_apk" \
             --target "$GITHUB_SHA" \
             --title "شاشة $VERSION_NAME ($VERSION_CODE)" \
             --notes-file "$notes" \

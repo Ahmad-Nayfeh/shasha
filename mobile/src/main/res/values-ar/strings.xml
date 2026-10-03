@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">شاشة</string>
+
+    <!-- التنقل -->
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_search">بحث</string>
+    <string name="nav_library">مكتبتي</string>
+    <string name="nav_settings">الإعدادات</string>
+
+    <!-- أزرار عامة -->
+    <string name="action_back">رجوع</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="action_clear">مسح</string>
+    <string name="action_clear_all">مسح الكل</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_more">خيارات أخرى</string>
+    <string name="action_ok">حسناً</string>
+    <string name="action_remove">إزالة</string>
+    <string name="action_reset">إرجاع الأصل</string>
+    <string name="action_retry">حاول مرة أخرى</string>
+    <string name="action_saved">تم الحفظ</string>
+    <string name="action_subscribe">اشتراك</string>
+    <string name="action_unsubscribe">إلغاء الاشتراك</string>
+    <string name="action_watch_later">المشاهدة لاحقاً</string>
+
+    <!-- الأرقام والأوقات (الأرقام غربية دائماً: تُمرَّر نصاً) -->
+    <string name="count_thousand">%1$s ألف</string>
+    <string name="count_million">%1$s مليون</string>
+    <string name="count_billion">%1$s مليار</string>
+    <string name="views_count">%1$s مشاهدة</string>
+    <string name="subscribers_count">%1$s مشترك</string>
+    <string name="videos_count">%1$s فيديو</string>
+    <string name="badge_live">مباشر</string>
+    <string name="time_just_now">الآن</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="zero">قبل %1$s دقيقة</item>
+        <item quantity="one">قبل دقيقة</item>
+        <item quantity="two">قبل دقيقتين</item>
+        <item quantity="few">قبل %1$s دقائق</item>
+        <item quantity="many">قبل %1$s دقيقة</item>
+        <item quantity="other">قبل %1$s دقيقة</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="zero">قبل %1$s ساعة</item>
+        <item quantity="one">قبل ساعة</item>
+        <item quantity="two">قبل ساعتين</item>
+        <item quantity="few">قبل %1$s ساعات</item>
+        <item quantity="many">قبل %1$s ساعة</item>
+        <item quantity="other">قبل %1$s ساعة</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="zero">قبل %1$s يوم</item>
+        <item quantity="one">قبل يوم</item>
+        <item quantity="two">قبل يومين</item>
+        <item quantity="few">قبل %1$s أيام</item>
+        <item quantity="many">قبل %1$s يوماً</item>
+        <item quantity="other">قبل %1$s يوم</item>
+    </plurals>
+    <plurals name="time_weeks_ago">
+        <item quantity="zero">قبل %1$s أسبوع</item>
+        <item quantity="one">قبل أسبوع</item>
+        <item quantity="two">قبل أسبوعين</item>
+        <item quantity="few">قبل %1$s أسابيع</item>
+        <item quantity="many">قبل %1$s أسبوعاً</item>
+        <item quantity="other">قبل %1$s أسبوع</item>
+    </plurals>
+    <plurals name="time_months_ago">
+        <item quantity="zero">قبل %1$s شهر</item>
+        <item quantity="one">قبل شهر</item>
+        <item quantity="two">قبل شهرين</item>
+        <item quantity="few">قبل %1$s أشهر</item>
+        <item quantity="many">قبل %1$s شهراً</item>
+        <item quantity="other">قبل %1$s شهر</item>
+    </plurals>
+    <plurals name="time_years_ago">
+        <item quantity="zero">قبل %1$s سنة</item>
+        <item quantity="one">قبل سنة</item>
+        <item quantity="two">قبل سنتين</item>
+        <item quantity="few">قبل %1$s سنوات</item>
+        <item quantity="many">قبل %1$s سنة</item>
+        <item quantity="other">قبل %1$s سنة</item>
+    </plurals>
+
+    <!-- الأخطاء -->
+    <string name="error_network">لا يوجد اتصال، أو لم يردّ الخادم. تحقق من الإنترنت وحاول مجدداً.</string>
+    <string name="error_unavailable">هذا المحتوى غير متاح.</string>
+    <string name="error_private">هذا الفيديو خاص.</string>
+    <string name="error_age">هذا الفيديو مقيّد بالعمر ولا يمكن تشغيله هنا.</string>
+    <string name="error_geo">هذا الفيديو غير متاح في بلدك.</string>
+    <string name="error_paid">يتطلب هذا الفيديو دفعاً أو عضوية.</string>
+    <string name="error_terminated">هذه القناة لم تعد موجودة.</string>
+    <string name="error_bot">طلب يوتيوب تحققاً لا يستطيع التطبيق إجراءه. حاول لاحقاً.</string>
+    <string name="error_blocked">رفض يوتيوب الطلب. حاول بعد قليل.</string>
+    <string name="error_rate_limited">طلبات كثيرة. انتظر قليلاً ثم حاول مجدداً.</string>
+    <string name="error_low_quality">لم يُعثر إلا على جودة منخفضة جداً لهذا الفيديو.</string>
+    <string name="error_broken">تعذّرت قراءة يوتيوب. ربما يحتاج التطبيق إلى تحديث.</string>
+    <string name="error_generic">حدث خطأ ما.</string>
+
+    <!-- الرئيسية -->
+    <string name="home_empty_title">لا اشتراكات بعد</string>
+    <string name="home_empty_body">ابحث عن قناة واشترك فيها لتظهر هنا أحدث فيديوهاتها.</string>
+    <string name="home_empty_action">ابحث</string>
+    <string name="home_no_videos_title">لا جديد حتى الآن</string>
+    <string name="home_no_videos_body">اسحب للأسفل للتحديث. تظهر هنا أحدث فيديوهات قنواتك.</string>
+
+    <!-- البحث -->
+    <string name="search_hint">ابحث عن فيديوهات وقنوات</string>
+    <string name="search_recent">عمليات البحث الأخيرة</string>
+    <string name="search_no_results">لا توجد نتائج</string>
+    <string name="search_no_results_body">جرّب كلمات أخرى أو تصفية أخرى.</string>
+    <string name="filter_all">الكل</string>
+    <string name="filter_videos">فيديوهات</string>
+    <string name="filter_channels">قنوات</string>
+    <string name="filter_playlists">قوائم تشغيل</string>
+
+    <!-- القناة وقائمة التشغيل -->
+    <string name="tab_videos">الفيديوهات</string>
+    <string name="tab_shorts">القصيرة</string>
+    <string name="tab_playlists">القوائم</string>
+    <string name="channel_no_videos">لا توجد فيديوهات</string>
+    <string name="channel_no_shorts">لا توجد مقاطع قصيرة</string>
+    <string name="channel_no_playlists">لا توجد قوائم تشغيل</string>
+    <string name="playlist_empty">قائمة التشغيل فارغة</string>
+    <string name="playlist_play_all">تشغيل الكل</string>
+
+    <!-- قائمة الفيديو -->
+    <string name="menu_add_watch_later">المشاهدة لاحقاً</string>
+    <string name="menu_remove_watch_later">إزالة من المشاهدة لاحقاً</string>
+    <string name="menu_download">تنزيل</string>
+    <string name="menu_share">مشاركة</string>
+    <string name="menu_open_channel">فتح القناة</string>
+    <string name="snack_watch_later_added">حُفظ في المشاهدة لاحقاً</string>
+    <string name="snack_watch_later_removed">أُزيل من المشاهدة لاحقاً</string>
+    <string name="snack_download_started">بدأ التنزيل</string>
+
+    <!-- المشغّل -->
+    <string name="player_play">تشغيل</string>
+    <string name="player_pause">إيقاف مؤقت</string>
+    <string name="player_back_10">رجوع 10 ثوانٍ</string>
+    <string name="player_forward_10">تقديم 10 ثوانٍ</string>
+    <string name="player_fullscreen">ملء الشاشة</string>
+    <string name="player_exit_fullscreen">إنهاء ملء الشاشة</string>
+    <string name="player_pip">صورة داخل صورة</string>
+    <string name="player_settings">إعدادات المشغّل</string>
+    <string name="player_speed">السرعة</string>
+    <string name="player_quality">الجودة</string>
+    <string name="player_quality_none">تظهر الجودات بعد أن يبدأ الفيديو.</string>
+    <string name="quality_auto">تلقائي</string>
+    <string name="quality_auto_playing">تلقائي (%1$sp)</string>
+    <string name="player_low_quality">هذا الفيديو متاح بجودة %1$sp فقط.</string>
+    <string name="seek_forward_seconds">+%1$s ث</string>
+    <string name="seek_back_seconds">-%1$s ث</string>
+    <string name="skip_notice">تم تخطي: %1$s</string>
+    <string name="skip_undo">تراجع</string>
+    <string name="watch_related">فيديوهات مقترحة</string>
+    <string name="watch_playlist">قائمة التشغيل</string>
+
+    <!-- المكتبة -->
+    <string name="library_downloads">التنزيلات</string>
+    <string name="library_history">السجل</string>
+    <string name="library_watch_later">المشاهدة لاحقاً</string>
+    <string name="library_subscriptions">الاشتراكات</string>
+    <string name="history_empty">لا يوجد سجل بعد</string>
+    <string name="history_empty_body">تظهر هنا الفيديوهات التي تشاهدها.</string>
+    <string name="history_clear_title">مسح سجل المشاهدة؟</string>
+    <string name="history_clear_body">سيُنسى أيضاً المكان الذي توقفت عنده في كل فيديو.</string>
+    <string name="watch_later_empty">لا شيء محفوظ</string>
+    <string name="watch_later_empty_body">احفظ فيديو من قائمته ليظهر هنا.</string>
+    <string name="watch_later_clear_title">إفراغ المشاهدة لاحقاً؟</string>
+    <string name="subscriptions_empty">لا اشتراكات بعد</string>
+
+    <!-- التنزيلات -->
+    <string name="download_title">تنزيل</string>
+    <string name="download_video_section">فيديو (MP4 بالصوت)</string>
+    <string name="download_audio_section">الصوت فقط</string>
+    <string name="download_audio_only">صوت (M4A)</string>
+    <string name="download_audio_label">صوت</string>
+    <string name="download_preferred">جودتك المفضلة</string>
+    <string name="download_unavailable">لا يمكن تنزيل هذا الفيديو.</string>
+    <string name="download_preparing">جارٍ التحضير…</string>
+    <string name="download_downloading">جارٍ التنزيل…</string>
+    <string name="download_downloading_percent">جارٍ التنزيل %1$s%%</string>
+    <string name="download_merging">جارٍ دمج الصورة والصوت…</string>
+    <string name="download_queued">في الانتظار…</string>
+    <string name="download_done">اكتمل التنزيل</string>
+    <string name="download_failed">تعذّر التنزيل</string>
+    <string name="downloads_empty">لا توجد تنزيلات</string>
+    <string name="downloads_empty_body">نزّل فيديو من قائمته. يُحفظ الفيديو في Movies/Shasha والصوت في Music/Shasha.</string>
+    <string name="downloads_delete_title">حذف هذا التنزيل؟</string>
+    <string name="downloads_delete_body">سيُحذف «%1$s» من هاتفك.</string>
+    <string name="downloads_delete_failed">تعذّر الحذف</string>
+    <string name="downloads_delete_failed_body">احذف الملف من المعرض أو من مدير الملفات.</string>
+    <string name="notif_channel_downloads">التنزيلات</string>
+    <string name="notif_channel_downloads_done">التنزيلات المكتملة</string>
+    <string name="notif_channel_updates">التحديثات</string>
+
+    <!-- الإعدادات -->
+    <string name="settings_language">اللغة</string>
+    <string name="language_system">حسب الهاتف</string>
+    <string name="settings_theme">المظهر</string>
+    <string name="theme_system">حسب الهاتف</string>
+    <string name="theme_light">فاتح</string>
+    <string name="theme_dark">داكن</string>
+    <string name="settings_default_quality">الجودة الافتراضية</string>
+    <string name="settings_default_quality_hint">الجودة التي يبدأ بها الفيديو. التلقائي يتكيّف مع اتصالك.</string>
+    <string name="settings_playback">التشغيل</string>
+    <string name="settings_background">التشغيل في الخلفية</string>
+    <string name="settings_background_hint">يستمر الصوت عند مغادرة التطبيق أو إطفاء الشاشة.</string>
+    <string name="settings_pip">صورة داخل صورة</string>
+    <string name="settings_pip_hint">عند مغادرة التطبيق أثناء تشغيل فيديو يتحوّل إلى نافذة صغيرة عائمة.</string>
+    <string name="settings_download_quality">جودة التنزيل</string>
+    <string name="settings_download_quality_hint">تُظهر قائمة التنزيل أفضل جودة في الفيديو حتى هذا الحد.</string>
+    <string name="settings_sponsorblock">SponsorBlock</string>
+    <string name="settings_sponsorblock_hint">يتخطى وحده الأجزاء الإعلانية وما يشبهها من الفيديو، ببيانات يصنعها مجتمع من المتطوعين.</string>
+    <string name="settings_sponsorblock_enabled">تخطي المقاطع تلقائياً</string>
+    <string name="settings_reset_all">إرجاع كل الإعدادات</string>
+    <string name="settings_reset_all_body">ترجع اللغة والمظهر والجودة والتشغيل وSponsorBlock إلى حالتها الأصلية.</string>
+    <string name="sponsorblock_attribution_short">بيانات التخطي: SponsorBlock (sponsor.ajay.app)، رخصة CC BY-NC-SA 4.0.</string>
+
+    <string name="sb_category_sponsor">راعٍ</string>
+    <string name="sb_category_sponsor_body">ترويج مدفوع وإعلانات مباشرة.</string>
+    <string name="sb_category_selfpromo">ترويج ذاتي</string>
+    <string name="sb_category_selfpromo_body">ترويج غير مدفوع لمنتجات صاحب القناة أو قنواته أو مواقعه.</string>
+    <string name="sb_category_interaction">تذكير بالتفاعل</string>
+    <string name="sb_category_interaction_body">طلب الإعجاب أو الاشتراك أو المتابعة.</string>
+    <string name="sb_category_intro">المقدمة</string>
+    <string name="sb_category_intro_body">مقدمة متحركة أو عنوان تمهيدي.</string>
+    <string name="sb_category_outro">الخاتمة</string>
+    <string name="sb_category_outro_body">شارة النهاية أو بطاقات الختام.</string>
+    <string name="sb_category_preview">ملخص أو لقطات سابقة</string>
+    <string name="sb_category_preview_body">لقطات تُظهر ما سيأتي أو ما حدث قبل قليل.</string>
+    <string name="sb_category_hook">تشويق</string>
+    <string name="sb_category_hook_body">لمحة تشويقية عمّا سيأتي.</string>
+    <string name="sb_category_filler">حشو</string>
+    <string name="sb_category_filler_body">استطرادات تُضاف للحشو أو للفكاهة فقط.</string>
+    <string name="sb_category_music_offtopic">موسيقى: جزء غير موسيقي</string>
+    <string name="sb_category_music_offtopic_body">في الفيديوهات الموسيقية: الأجزاء التي ليست موسيقى.</string>
+
+    <!-- التحديثات -->
+    <string name="update_title">فحص التحديثات</string>
+    <string name="update_summary">هل يوجد إصدار أحدث؟</string>
+    <string name="update_checking">جارٍ الفحص…</string>
+    <string name="update_up_to_date">لديك أحدث إصدار</string>
+    <string name="update_installed_version">الإصدار المثبّت: %1$s</string>
+    <string name="update_check_again">افحص مرة أخرى</string>
+    <string name="update_available">الإصدار %1$s متاح</string>
+    <string name="update_download_install">نزّل وثبّت</string>
+    <string name="update_downloading">جارٍ تنزيل التحديث…</string>
+    <string name="update_needs_permission">اسمح لشاشة بتثبيت التطبيقات مرة واحدة، ثم ارجع إلى هنا.</string>
+    <string name="update_allow_install">السماح بالتثبيت</string>
+    <string name="update_installing">جارٍ التثبيت… قد يطلب النظام تأكيدك.</string>
+    <string name="update_unavailable">التحديثات غير متاحة في هذا الإصدار من التطبيق.</string>
+    <string name="update_err_network">تعذّر الوصول إلى خادم التحديثات. تحقق من الإنترنت.</string>
+    <string name="update_err_unavailable">تعذّرت قراءة التحديثات الآن.</string>
+    <string name="update_err_server">لم يُفهم ردّ خادم التحديثات.</string>
+    <string name="update_err_download">انقطع التنزيل. حاول مرة أخرى.</string>
+    <string name="update_err_file">الملف المنزَّل ليس تحديثاً صالحاً لهذا التطبيق.</string>
+    <string name="update_err_signature">وُقّع التحديث بمفتاح غير مفتاح هذا التثبيت، فسيرفضه أندرويد. ثبّت النسخة الرسمية مرة واحدة.</string>
+    <string name="update_err_install">تعذّر التثبيت.</string>
+    <string name="update_notif_title">التحديث جاهز</string>
+    <string name="update_notif_text">اضغط لإكمال التثبيت.</string>
+
+    <!-- حول -->
+    <string name="about_title">حول</string>
+    <string name="about_version">الإصدار %1$s (%2$s)</string>
+    <string name="about_developer_caption">المطوّر</string>
+    <string name="about_developer_name">احمد نايفه</string>
+    <string name="about_made_with_love">صُنع بحب لعائلتي</string>
+    <string name="about_more_apps">تطبيقات أخرى من المطوّر</string>
+    <string name="about_link_website">الموقع</string>
+    <string name="about_link_open">فتح</string>
+    <string name="about_sponsorblock_title">SponsorBlock</string>
+    <string name="about_licenses">التراخيص</string>
+    <string name="about_licenses_intro">البرمجيات الحرة التي بُني عليها هذا التطبيق.</string>
+    <string name="sponsorblock_attribution">بيانات التخطي من SponsorBlock على sponsor.ajay.app، يساهم بها مجتمعه، ومرخّصة بموجب CC BY-NC-SA 4.0.</string>
+    <string name="license_role_newpipe">قراءة يوتيوب: البحث والقنوات وروابط التشغيل</string>
+    <string name="license_role_androidx">الواجهة والمشغّل وقاعدة البيانات والإعدادات</string>
+    <string name="license_role_okhttp">الاتصال بالشبكة</string>
+    <string name="license_role_kotlinx">لغة البرمجة والتزامن وقراءة JSON</string>
+    <string name="license_role_coil">تحميل الصور المصغّرة</string>
+    <string name="license_role_rhino">تشغيل شيفرة يوتيوب داخل مكتبة الاستخراج</string>
+    <string name="license_role_jsoup">قراءة صفحات HTML داخل مكتبة الاستخراج</string>
+    <string name="license_role_nanojson">قراءة JSON داخل مكتبة الاستخراج</string>
+    <string name="license_role_protobuf">طلبات يوتيوب الثنائية داخل مكتبة الاستخراج</string>
+    <string name="license_role_helpers">مكتبات مساعدة تعتمد عليها المكتبات أعلاه</string>
+    <string name="license_role_desugar">ميزات جافا الحديثة على إصدارات أندرويد الأقدم</string>
+    <string name="license_role_plex">خط الواجهة العربي</string>
+</resources>

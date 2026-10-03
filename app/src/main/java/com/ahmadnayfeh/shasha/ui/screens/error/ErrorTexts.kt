@@ -26,23 +26,6 @@ object ErrorTexts {
         SourceErrorKind.EXTRACTION_BROKEN -> R.string.error_explain_extraction_broken
     }
 
-    /** Two or three words, for status chips (diagnostics). */
-    @StringRes
-    fun short(kind: SourceErrorKind): Int = when (kind) {
-        SourceErrorKind.CONTENT_UNAVAILABLE -> R.string.error_short_content_unavailable
-        SourceErrorKind.PRIVATE -> R.string.error_short_private
-        SourceErrorKind.AGE_RESTRICTED -> R.string.error_short_age_restricted
-        SourceErrorKind.GEO_RESTRICTED -> R.string.error_short_geo_restricted
-        SourceErrorKind.PAID -> R.string.error_short_paid
-        SourceErrorKind.ACCOUNT_TERMINATED -> R.string.error_short_account_terminated
-        SourceErrorKind.BOT_CHECK -> R.string.error_short_bot_check
-        SourceErrorKind.BLOCKED_403 -> R.string.error_short_blocked_403
-        SourceErrorKind.RATE_LIMITED -> R.string.error_short_rate_limited
-        SourceErrorKind.LOW_QUALITY_ONLY -> R.string.error_short_low_quality_only
-        SourceErrorKind.NETWORK -> R.string.error_short_network
-        SourceErrorKind.EXTRACTION_BROKEN -> R.string.error_short_extraction_broken
-    }
-
     /**
      * Whether a newer app (extractor) may fix it: not for a missing network or YouTube asking to slow down.
      * The unified error screen offers «فحص التحديثات» for every kind; smaller places only for these.

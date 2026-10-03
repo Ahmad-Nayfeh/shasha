@@ -10,10 +10,6 @@ import com.ahmadnayfeh.shasha.player.PlaybackProgress
 import com.ahmadnayfeh.shasha.player.PlayerUiState
 import com.ahmadnayfeh.shasha.player.QualityChoice
 import com.ahmadnayfeh.shasha.player.SubtitleOption
-import com.ahmadnayfeh.shasha.ui.screens.diagnostics.CheckStatus
-import com.ahmadnayfeh.shasha.ui.screens.diagnostics.DiagnosticItem
-import com.ahmadnayfeh.shasha.ui.screens.diagnostics.StreamSummary
-import com.ahmadnayfeh.shasha.ui.screens.diagnostics.TestVideo
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 
@@ -31,42 +27,6 @@ const val TV_1080P_EN = "en-$TV_DEVICE"
 
 object Fixtures {
     fun error(kind: SourceErrorKind, technical: String, message: String? = null) = SourceException(kind, technical, message, null)
-
-    val diagnostics = listOf(
-        DiagnosticItem(
-            TestVideo.NORMAL,
-            CheckStatus.Ready(
-                StreamSummary(
-                    title = "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)",
-                    channelName = "Rick Astley",
-                    thumbnailUrl = "fake://normal",
-                    durationSeconds = 213,
-                    isLive = false,
-                    bestHeight = 2160,
-                    subtitleCount = 6,
-                ),
-                elapsedMs = 1_420,
-            ),
-        ),
-        DiagnosticItem(
-            TestVideo.LIVE,
-            CheckStatus.Ready(
-                StreamSummary(
-                    title = "بث مباشر: الحرم المكي الشريف",
-                    channelName = "قناة تجريبية",
-                    thumbnailUrl = "fake://live",
-                    durationSeconds = null,
-                    isLive = true,
-                    bestHeight = 1080,
-                    subtitleCount = 0,
-                ),
-                elapsedMs = 2_310,
-            ),
-        ),
-        DiagnosticItem(TestVideo.KIDS, CheckStatus.Failed(error(SourceErrorKind.LOW_QUALITY_ONLY, "MuxedOnly360p"), 1_850)),
-        DiagnosticItem(TestVideo.DELETED, CheckStatus.Failed(error(SourceErrorKind.CONTENT_UNAVAILABLE, "ContentNotAvailableException"), 640)),
-        DiagnosticItem(TestVideo.SPONSOR_BLOCK, CheckStatus.Checking),
-    )
 
     val osd = PlayerUiState(
         title = "رحلة إلى أعماق المحيط: كائنات لم ترها من قبل",

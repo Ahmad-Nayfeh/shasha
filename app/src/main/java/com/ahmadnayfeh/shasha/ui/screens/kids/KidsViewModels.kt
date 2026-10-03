@@ -1,12 +1,15 @@
 package com.ahmadnayfeh.shasha.ui.screens.kids
 
+import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ahmadnayfeh.shasha.data.ChannelUploads
 import com.ahmadnayfeh.shasha.data.FeedRepository
 import com.ahmadnayfeh.shasha.data.HomeSuggestions
 import com.ahmadnayfeh.shasha.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.data.WatchRepository
+import com.ahmadnayfeh.shasha.data.asSourceException
 import com.ahmadnayfeh.shasha.policy.Allowlist
 import com.ahmadnayfeh.shasha.policy.ContentFilter
 import com.ahmadnayfeh.shasha.ui.model.ChannelUi
@@ -52,6 +55,12 @@ data class KidsHomeState(
     /** Every allowed channel failed and nothing is known: the unified error (SPEC §1, never silent). */
     val failure: SourceException? = null,
     /**
+     * How many allowed channels could not be fetched in the last run, although [ChannelUploads] tried its ways. Fewer than
+     * all of them: the home shows the others' videos and no error, because one channel failing must never blank it. Each failure
+     * is in the log (`adb logcat -s KidsHome ChannelUploads`).
+     */
+    val failedChannels: Int = 0,
+    /**
      * «مقترحة لك», only where the parent turned suggestions on for this child: what is suggested beside its last
      * videos, from its allowed channels only (PolicyEngine.canSuggest).
      */
@@ -69,7 +78,12 @@ data class KidsHomeState(
  * have none, and a regular upload of 3 minutes or less is a short there, which the player would refuse
  * after the card was shown. So for it [KidsFeed] reads each channel's Videos tab (durations known, shorts
  * not listed), the feed's rows borrow those durations, and a video whose duration is still unknown is
- * left out ([ContentFilter.needsDuration]).
+ * left out ([ContentFilter.needsDuration]): never a card that the player then refuses.
+ *
+ * **A failing way does not fail the home.** A channel's Videos tab that answers with an error is followed by the same list
+ * as a playlist, with the same durations (see [ChannelUploads]); only a channel for which no way answered counts as failed,
+ * is logged with `Log.w` (channel id and message) and leaves the others' videos on the home ([KidsHomeState.failedChannels]).
+ * The unified error ([KidsHomeState.failure]) shows only when every channel failed and nothing is known.
  */
 class KidsHomeViewModel(
     private val filter: StateFlow<ContentFilter>,
@@ -121,6 +135,7 @@ class KidsHomeViewModel(
             channelCount = allowlist.channels.size,
             fetching = videos.isEmpty() && p.running,
             failure = p.lastError.takeIf { videos.isEmpty() && !p.running && p.attempted > 0 && p.failed == p.attempted },
+            failedChannels = p.failed,
         )
     }
 
@@ -186,8 +201,11 @@ class KidsHomeViewModel(
                             kidsFeed.uploads(channel.channelId, withDurations)?.let { videos -> fetched.update { it + (channel.channelId to videos) } }
                         } catch (e: CancellationException) {
                             throw e
-                        } catch (e: SourceException) {
-                            progress.update { it.copy(failed = it.failed + 1, lastError = e) }
+                        } catch (e: Exception) {
+                            // Whatever it is, it is this channel's failure: it must not cancel the others' (one scope) nor crash the app.
+                            val error = e.asSourceException()
+                            Log.w(TAG, "No uploads for ${channel.channelId} (${channel.name}): ${error.technicalName}: ${error.message}")
+                            progress.update { it.copy(failed = it.failed + 1, lastError = error) }
                         }
                     }
                 }
@@ -209,6 +227,7 @@ class KidsHomeViewModel(
 
     private companion object {
         const val MAX_VIDEOS = 120
+        const val TAG = "KidsHome"
     }
 }
 
@@ -257,19 +276,27 @@ class AllowedChannelsViewModel(
     private suspend fun load(allowlist: Allowlist) = coroutineScope {
         allowlist.channels.forEach { c ->
             kidsFeed.cachedChannel(c.channelId)?.let { item -> details.update { it + (c.channelId to item) } }
-                ?: launch { quietly { kidsFeed.channel(c.channelId) }?.let { item -> details.update { it + (c.channelId to item) } } }
+                ?: launch { quietly("channel ${c.channelId}") { kidsFeed.channel(c.channelId) }?.let { item -> details.update { it + (c.channelId to item) } } }
         }
         allowlist.playlists.forEach { p ->
-            launch { quietly { kidsFeed.playlist(p.playlistId) }?.let { item -> playlistDetails.update { it + (p.playlistId to item) } } }
+            launch { quietly("playlist ${p.playlistId}") { kidsFeed.playlist(p.playlistId) }?.let { item -> playlistDetails.update { it + (p.playlistId to item) } } }
         }
     }
 
-    /** A missing picture is not an error: the card shows the name's first letter. */
-    private suspend fun <T> quietly(block: suspend () -> T?): T? = try {
+    /**
+     * A missing picture is not an error: the card shows the name's first letter (the names and the list itself come from the
+     * profile, so no failure here can blank the page). The failure is only logged, for `adb logcat`.
+     */
+    private suspend fun <T> quietly(what: String, block: suspend () -> T?): T? = try {
         block()
     } catch (e: CancellationException) {
         throw e
-    } catch (_: SourceException) {
+    } catch (e: SourceException) {
+        Log.w(TAG, "No details for $what: ${e.technicalName}: ${e.message}")
         null
+    }
+
+    private companion object {
+        const val TAG = "AllowedChannels"
     }
 }

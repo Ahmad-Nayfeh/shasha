@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -37,7 +38,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.data.BehaviorKeys
+import com.ahmadnayfeh.shasha.search.VoiceSearch
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
 import com.ahmadnayfeh.shasha.ui.components.EmptyState
 import com.ahmadnayfeh.shasha.ui.components.PagingFooter
@@ -62,7 +66,13 @@ import com.ahmadnayfeh.shasha.youtube.SearchFilter
 
 @Composable
 fun SearchRoute(focus: ContentFocus, actions: BrowseActions) {
-    val container = LocalContext.current.appContainer
+    val context = LocalContext.current
+    val container = context.appContainer
+    // A TV with neither the system's voice screen nor a recognition service (Fire TV, some boxes) shows no microphone:
+    // typing and the phone page search there. The remote's SEARCH key still says so plainly (VoiceError.UNAVAILABLE).
+    val canListen by produceState(initialValue = false, context) {
+        value = withContext(Dispatchers.IO) { VoiceSearch.availability(context.applicationContext).any }
+    }
     val vm = containerViewModel { SearchViewModel(it.videoSource, it.subscriptions, it.watch, it.policy.filter, it.searchHistory) }
     val extractorVersion = container.videoSource.extractorVersion
     val query by vm.query.collectAsStateWithLifecycle()
@@ -115,6 +125,7 @@ fun SearchRoute(focus: ContentFocus, actions: BrowseActions) {
             alternatives = alternatives,
             voice = voiceState,
             voiceLanguage = behavior.voiceLanguage,
+            micAvailable = canListen,
         ),
         voice = VoiceCallbacks(
             onMic = voice::listen,

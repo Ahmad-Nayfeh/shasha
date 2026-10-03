@@ -1,8 +1,6 @@
 package com.ahmadnayfeh.shasha.lock
 
 import android.app.AppOpsManager
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.usage.UsageStatsManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -14,7 +12,9 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
+import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
@@ -269,11 +269,12 @@ class GuardService : LifecycleService() {
 
     private fun startInForeground() {
         val texts = texts()
-        val notifications = getSystemService(NotificationManager::class.java)
-        notifications.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, texts.getString(R.string.guard_channel_name), NotificationManager.IMPORTANCE_MIN).apply {
-                setShowBadge(false)
-            },
+        // Channels exist from Android 8; below it (Fire OS 6) the compat call does nothing.
+        NotificationManagerCompat.from(this).createNotificationChannel(
+            NotificationChannelCompat.Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_MIN)
+                .setName(texts.getString(R.string.guard_channel_name))
+                .setShowBadge(false)
+                .build(),
         )
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)

@@ -45,6 +45,7 @@ import com.ahmadnayfeh.shasha.ui.main.Tab
 import com.ahmadnayfeh.shasha.ui.paging.PagedState
 import com.ahmadnayfeh.shasha.ui.screens.channel.ChannelHeader
 import com.ahmadnayfeh.shasha.ui.screens.channel.ChannelScreen
+import com.ahmadnayfeh.shasha.ui.screens.channel.ChannelSections
 import com.ahmadnayfeh.shasha.ui.screens.home.HomeScreen
 import com.ahmadnayfeh.shasha.ui.screens.home.HomeState
 import com.ahmadnayfeh.shasha.ui.screens.home.HomeSync
@@ -65,6 +66,8 @@ import com.ahmadnayfeh.shasha.ui.settings.SettingsHubActions
 import com.ahmadnayfeh.shasha.ui.settings.SettingsHubScreen
 import com.ahmadnayfeh.shasha.ui.settings.SettingsHubState
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
+import com.ahmadnayfeh.shasha.youtube.ChannelSort
+import com.ahmadnayfeh.shasha.youtube.ChannelTab
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -178,11 +181,18 @@ class BrowseScreenshotTest {
 
     @Test
     fun channel() = snap("channel") {
+        // The channel's page as it opens: its videos, newest first, under the sections and the orders YouTube offers.
         ChannelScreen(
             channelId = UiFixtures.calligraphyChannel.channelId,
             nameHint = null,
             header = ChannelHeader.Ready(UiFixtures.channelDetails),
-            videos = PagedState(items = UiFixtures.channelVideos, loadingFirst = false),
+            sections = ChannelSections(
+                tabs = ChannelTab.entries,
+                selected = ChannelTab.VIDEOS,
+                sorts = ChannelSort.entries,
+                sort = ChannelSort.LATEST,
+            ),
+            items = PagedState(items = UiFixtures.channelVideos, loadingFirst = false),
             subscribed = true,
             watched = stateOf(mapOf(UiFixtures.channelVideos[1].video.videoId to 0.5f)),
             nowMs = NOW,
@@ -191,6 +201,9 @@ class BrowseScreenshotTest {
             onToggleSubscription = {},
             onUnsubscribe = {},
             onPlay = {},
+            onOpenPlaylist = {},
+            onSelectTab = {},
+            onSelectSort = {},
             onLoadMore = {},
             onRetryMore = {},
             onBack = {},
@@ -205,7 +218,8 @@ class BrowseScreenshotTest {
             channelId = UiFixtures.calligraphyChannel.channelId,
             nameHint = null,
             header = ChannelHeader.Failed(Fixtures.error(SourceErrorKind.ACCOUNT_TERMINATED, "AccountTerminatedException")),
-            videos = PagedState(items = emptyList(), loadingFirst = true),
+            sections = ChannelSections(),
+            items = PagedState(items = emptyList(), loadingFirst = true),
             subscribed = true,
             watched = stateOf(emptyMap()),
             nowMs = NOW,
@@ -214,6 +228,9 @@ class BrowseScreenshotTest {
             onToggleSubscription = {},
             onUnsubscribe = {},
             onPlay = {},
+            onOpenPlaylist = {},
+            onSelectTab = {},
+            onSelectSort = {},
             onLoadMore = {},
             onRetryMore = {},
             onBack = {},

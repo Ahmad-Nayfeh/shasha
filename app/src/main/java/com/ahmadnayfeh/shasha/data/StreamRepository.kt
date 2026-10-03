@@ -13,8 +13,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * Stream extraction with a short in-memory cache, so opening a video that was just checked (the
- * diagnostics screen checks all of its videos) starts playing without a second extraction.
+ * Stream extraction with a short in-memory cache, so opening a video that was just checked (the policy looks a
+ * video up before it plays) starts playing without a second extraction.
  *
  * Only successes are cached, only the last [MAX_CACHED], and only for a few minutes: googlevideo URLs
  * expire after some hours, a failure should always be retried for real, and each entry holds a whole
@@ -75,7 +75,7 @@ class StreamRepository(
     private fun StreamDetails.usableFor(allowLowQuality: Boolean) = allowLowQuality || lowQualityHeight == null
 
     private companion object {
-        /** The diagnostics screen's videos, checked and then played. */
+        /** The last few videos looked up, checked and then played. */
         const val MAX_CACHED = 6
     }
 }

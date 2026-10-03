@@ -38,6 +38,47 @@ class PinHasherTest {
         assertThat(hasher.verify("2468", encoded)).isTrue()
     }
 
+    // The fallback for Android 7.1 and older (Fire OS 6), whose provider has no PBKDF2WithHmacSHA256: it must give the
+    // very same hashes, or a PIN set on one TV would not open a backup restored on another.
+
+    @Test
+    fun fallback_knownAnswers() {
+        // Same vector as above.
+        val pin = PinHasher.pbkdf2HmacSha256("2468".toByteArray(), ByteArray(16) { it.toByte() }, 60_000, 32)
+        assertThat(Base64.getEncoder().encodeToString(pin)).isEqualTo("CH5RVjbfFlGxiEFI1vj+Rp0cs/edr8m0NvaqwHEc20w=")
+        // RFC 7914, section 11 (two blocks of output).
+        val rfc = PinHasher.pbkdf2HmacSha256("passwd".toByteArray(), "salt".toByteArray(), 1, 64)
+        assertThat(rfc.hex()).isEqualTo(
+            "55ac046e56e3089fec1691c22544b605f94185216dde0465e68b9d57c20dacbc49ca9cccf179b645991664b39d77ef317c71b845b1e30bd509112041d3a19783",
+        )
+        // A length that is not a whole block. Python: hashlib.pbkdf2_hmac('sha256', b'1234', b'NaCl', 3, 40)
+        val partial = PinHasher.pbkdf2HmacSha256("1234".toByteArray(), "NaCl".toByteArray(), 3, 40)
+        assertThat(partial.hex()).isEqualTo("382727dd65cde94673ca26a5431131c2ecc0b2d2b0ae9d6676f6aad6ea798bc72c54c9366f660d9b")
+    }
+
+    @Test
+    fun fallback_matchesThePlatformDerivation() {
+        val random = java.util.Random(7)
+        repeat(20) {
+            val pin = (1..(4 + random.nextInt(5))).joinToString("") { random.nextInt(10).toString() }
+            val salt = ByteArray(16).also(random::nextBytes)
+            val iterations = 1 + random.nextInt(300)
+            val spec = javax.crypto.spec.PBEKeySpec(pin.toCharArray(), salt, iterations, 256)
+            val platform = javax.crypto.SecretKeyFactory.getInstance(PinHasher.ALGORITHM).generateSecret(spec).encoded
+            assertThat(PinHasher.pbkdf2HmacSha256(pin.toByteArray(), salt, iterations, 32)).isEqualTo(platform)
+        }
+    }
+
+    @Test
+    fun fallback_verifiesAStoredHash() {
+        val encoded = PinHasher(iterations = 1_000).hash("90210")
+        val parts = encoded.split("$")
+        val derived = PinHasher.pbkdf2HmacSha256("90210".toByteArray(), Base64.getDecoder().decode(parts[2]), 1_000, 32)
+        assertThat(Base64.getEncoder().encodeToString(derived)).isEqualTo(parts[3])
+    }
+
+    private fun ByteArray.hex(): String = joinToString("") { "%02x".format(it) }
+
     @Test
     fun verify_rightAndWrongPin() {
         val encoded = hasher.hash("90210")

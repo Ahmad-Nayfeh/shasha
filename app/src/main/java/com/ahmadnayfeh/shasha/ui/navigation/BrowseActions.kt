@@ -14,7 +14,6 @@ class BrowseActions(
     val openChannel: (channelId: String, name: String?) -> Unit,
     val openPlaylist: (playlistId: String) -> Unit,
     val openImport: () -> Unit,
-    val openDiagnostics: () -> Unit,
     val checkUpdates: () -> Unit,
 ) {
     fun open(item: ItemUi) = when (item) {
@@ -34,11 +33,10 @@ class SettingsActions(
     val openChangePin: () -> Unit,
     val openStats: () -> Unit,
     val openImport: () -> Unit,
-    val openDiagnostics: () -> Unit,
     val openProtection: () -> Unit = {},
     val openRemote: () -> Unit = {},
     val openBackup: () -> Unit = {},
-    /** «فحص التحديثات» (SPEC §6): the GitHub Releases updater (a child sees who can update instead). */
+    /** «فحص التحديثات» (SPEC §6): the one-press updater (a child sees who can update instead). */
     val openUpdates: () -> Unit = {},
     /** «الدليل والفيديو»: «دليل شاشة»'s pages, and the explainer video. */
     val openGuide: () -> Unit = {},

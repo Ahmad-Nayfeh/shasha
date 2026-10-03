@@ -1,7 +1,5 @@
 package com.ahmadnayfeh.shasha.remote
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -13,7 +11,9 @@ import android.net.NetworkRequest
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.util.Log
+import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
@@ -172,11 +172,12 @@ class RemoteService : LifecycleService() {
     private fun startInForeground() {
         // The app's texts in «اللغة» of the moment (the service's own resources follow the TV's system language).
         val texts = AppLocale.localize(this, appContainer.appearance.current().language)
-        val notifications = getSystemService(NotificationManager::class.java)
-        notifications.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, texts.getString(R.string.remote_channel_name), NotificationManager.IMPORTANCE_MIN).apply {
-                setShowBadge(false)
-            },
+        // Channels exist from Android 8; below it (Fire OS 6) the compat call does nothing.
+        NotificationManagerCompat.from(this).createNotificationChannel(
+            NotificationChannelCompat.Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_MIN)
+                .setName(texts.getString(R.string.remote_channel_name))
+                .setShowBadge(false)
+                .build(),
         )
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
