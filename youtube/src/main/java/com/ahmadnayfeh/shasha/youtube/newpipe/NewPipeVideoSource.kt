@@ -3,6 +3,9 @@ package com.ahmadnayfeh.shasha.youtube.newpipe
 import com.ahmadnayfeh.shasha.youtube.BuildConfig
 import com.ahmadnayfeh.shasha.youtube.ChannelDetails
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.youtube.ChannelSort
+import com.ahmadnayfeh.shasha.youtube.ChannelTab
+import com.ahmadnayfeh.shasha.youtube.ChannelTabPage
 import com.ahmadnayfeh.shasha.youtube.ItemsPage
 import com.ahmadnayfeh.shasha.youtube.MAX_SUGGESTIONS
 import com.ahmadnayfeh.shasha.youtube.PageKey
@@ -59,6 +62,7 @@ internal class NewPipeVideoSource(
     private val downloader: NewPipeDownloader = NewPipeInit.ensure(okHttpClient)
     private val service: StreamingService = ServiceList.YouTube
     private val pages = PageStore()
+    private val channelTabs = ChannelTabLoader(service, downloader.browseTaps, pages)
     private val fetchRelated: (String) -> List<InfoItem> = fetchRelated ?: ::relatedFromWatchPage
 
     override val extractorVersion: String = BuildConfig.EXTRACTOR_VERSION
@@ -107,6 +111,7 @@ internal class NewPipeVideoSource(
             ),
             bannerUrl = ItemMapper.banner(info.banners),
             description = info.description?.takeIf { it.isNotBlank() },
+            tabs = ChannelTabLoader.tabsOf(info.tabs),
         )
     }
 
@@ -132,6 +137,9 @@ internal class NewPipeVideoSource(
 
     private fun videosTab(channelId: String) =
         service.channelTabLHFactory.fromQuery(channelPath(channelId), listOf(ChannelTabs.VIDEOS), "")
+
+    override suspend fun channelTab(channelId: String, tab: ChannelTab, sort: ChannelSort, page: PageKey?): ChannelTabPage =
+        io { channelTabs.load(channelId, tab, sort, page) }
 
     override suspend fun playlist(playlistId: String, page: PageKey?): PlaylistPage {
         if (!YouTubeLinkParser.isPlaylistId(playlistId)) {
@@ -201,6 +209,21 @@ internal class NewPipeVideoSource(
         failIfBroken(info.relatedItems, info.errors)
         // Everything on that tab is a short, whatever each item says about itself.
         info.relatedItems.toVideos(channelId.takeIf(YouTubeLinkParser::isChannelId)).map { it.copy(isShortForm = true) }
+    }
+
+    override suspend fun channelPlaylists(channelId: String, page: PageKey?): ItemsPage = io {
+        val owner = "channel-playlists:$channelId"
+        val tab = service.channelTabLHFactory.fromQuery(channelPath(channelId), listOf(ChannelTabs.PLAYLISTS), "")
+        if (page == null) {
+            val info = ChannelTabInfo.getInfo(service, tab)
+            failIfBroken(info.relatedItems, info.errors)
+            ItemsPage(info.relatedItems.mapNotNull(ItemMapper::toSourceItem).filterIsInstance<PlaylistItem>(), pages.put(owner, info.nextPage))
+        } else {
+            val (next, _) = pages.get(owner, page) ?: return@io ItemsPage(emptyList(), null)
+            val more = ChannelTabInfo.getMoreItems(service, tab, next)
+            failIfBroken(more.items, more.errors)
+            ItemsPage(more.items.mapNotNull(ItemMapper::toSourceItem).filterIsInstance<PlaylistItem>(), pages.put(owner, more.nextPage))
+        }
     }
 
     private fun requireVideoId(videoId: String) {

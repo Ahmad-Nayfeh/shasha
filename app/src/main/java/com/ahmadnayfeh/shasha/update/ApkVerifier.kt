@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.content.pm.PackageInfoCompat
 import java.io.File
 import java.security.MessageDigest
 
@@ -43,15 +44,21 @@ object ApkVerifier {
     private const val HEX = "0123456789abcdef"
 }
 
-/** Reads [ApkIdentity]s with the PackageManager (minSdk 28: signing certificates, not the old signatures). */
+/**
+ * Reads [ApkIdentity]s with the PackageManager. Every call is safe from API 25: the signing certificates and the
+ * long version code arrived with API 28 (Android 9), so below that the same facts are read from the old
+ * `GET_SIGNATURES` / `signatures` / `versionCode` (deprecated, but the only way there). An APK and the installed app are
+ * always read the same way on one device, so their digests are comparable.
+ */
 class ApkInspector(private val context: Context) {
     fun installed(): ApkIdentity {
         val pm = context.packageManager
+        val flags = signatureFlags()
         val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            pm.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong()))
+            pm.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(flags.toLong()))
         } else {
             @Suppress("DEPRECATION")
-            pm.getPackageInfo(context.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+            pm.getPackageInfo(context.packageName, flags)
         }
         return identity(info)
     }
@@ -59,12 +66,13 @@ class ApkInspector(private val context: Context) {
     /** Null when the system cannot read [apk] as a package. */
     fun archive(apk: File): ApkIdentity? {
         val pm = context.packageManager
+        val flags = signatureFlags()
         val info = try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                pm.getPackageArchiveInfo(apk.path, PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong()))
+                pm.getPackageArchiveInfo(apk.path, PackageManager.PackageInfoFlags.of(flags.toLong()))
             } else {
                 @Suppress("DEPRECATION")
-                pm.getPackageArchiveInfo(apk.path, PackageManager.GET_SIGNING_CERTIFICATES)
+                pm.getPackageArchiveInfo(apk.path, flags)
             }
         } catch (e: RuntimeException) {
             null
@@ -72,13 +80,30 @@ class ApkInspector(private val context: Context) {
         return info?.let(::identity)
     }
 
-    private fun identity(info: PackageInfo): ApkIdentity {
-        // The certificates that sign the contents now (not the past ones a rotated key proved): they must be the same.
-        val signers = info.signingInfo?.apkContentsSigners.orEmpty()
-        return ApkIdentity(
-            packageName = info.packageName,
-            versionCode = info.longVersionCode,
-            certificateDigests = signers.mapTo(HashSet()) { ApkVerifier.digest(it.toByteArray()) },
-        )
+    private fun identity(info: PackageInfo): ApkIdentity = ApkIdentity(
+        packageName = info.packageName,
+        versionCode = PackageInfoCompat.getLongVersionCode(info),
+        certificateDigests = certificates(info).mapTo(HashSet()) { ApkVerifier.digest(it) },
+    )
+
+    private companion object {
+        /** What to ask the PackageManager for: the signing certificates (API 28+), else the signatures. */
+        fun signatureFlags(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            PackageManager.GET_SIGNING_CERTIFICATES
+        } else {
+            @Suppress("DEPRECATION")
+            PackageManager.GET_SIGNATURES
+        }
+
+        /**
+         * The certificates that sign the contents now (from API 28 not the past ones a rotated key proved): they must
+         * be the same. Below API 28 an APK has no key rotation, and its signatures are those certificates.
+         */
+        fun certificates(info: PackageInfo): List<ByteArray> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            info.signingInfo?.apkContentsSigners.orEmpty().map { it.toByteArray() }
+        } else {
+            @Suppress("DEPRECATION")
+            info.signatures.orEmpty().map { it.toByteArray() }
+        }
     }
 }

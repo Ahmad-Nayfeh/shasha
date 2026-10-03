@@ -15,10 +15,6 @@
     <string name="home_more_title">المزيد من قنواتك</string>
     <string name="kids_more_title">المزيد من الفيديوهات</string>
 
-    <!-- A channel's page: its Shorts tab under the first line of its videos, then the rest of its videos. -->
-    <string name="channel_shorts_title">&#x2068;Shorts&#x2069;</string>
-    <string name="channel_videos_title">الفيديوهات</string>
-
     <!-- The player: the row under the controls (DOWN) and on the end card. -->
     <string name="player_suggested">مقترحة</string>
 

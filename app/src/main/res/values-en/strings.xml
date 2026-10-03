@@ -22,46 +22,9 @@
     <string name="error_explain_low_quality_only">YouTube only gave 360p or lower, a sign that extraction is broken.</string>
     <string name="error_explain_network">Make sure the TV is connected to the network, then try again.</string>
     <string name="error_explain_extraction_broken">YouTube\'s answer couldn\'t be understood. YouTube most likely changed something on its site.</string>
-    <string name="error_short_content_unavailable">Unavailable</string>
-    <string name="error_short_private">Private</string>
-    <string name="error_short_age_restricted">Age-restricted</string>
-    <string name="error_short_geo_restricted">Blocked in your country</string>
-    <string name="error_short_paid">Paid</string>
-    <string name="error_short_account_terminated">Channel closed</string>
-    <string name="error_short_bot_check">Robot check</string>
-    <string name="error_short_blocked_403">Refused 403</string>
-    <string name="error_short_rate_limited">Too many requests</string>
-    <string name="error_short_low_quality_only">360p only</string>
-    <string name="error_short_network">Offline</string>
-    <string name="error_short_extraction_broken">Extraction broken</string>
 
-    <!-- Updates placeholder -->
+    <!-- A child's notice where the updater would be (the updater's own texts are in strings_updates.xml). -->
     <string name="updates_current_version">Current version: %1$s · extraction library %2$s</string>
-
-    <!-- Diagnostics -->
-    <string name="diag_title">Test videos</string>
-    <string name="diag_subtitle">Check playback when YouTube breaks</string>
-    <string name="diag_recheck">Check again</string>
-    <string name="diag_versions">Extraction library %1$s · app %2$s</string>
-    <string name="diag_case_normal">Regular</string>
-    <string name="diag_case_live">Live</string>
-    <string name="diag_case_kids">Made for kids</string>
-    <string name="diag_case_deleted">Deleted</string>
-    <string name="diag_case_sponsorblock">SponsorBlock</string>
-    <string name="diag_about_normal">A regular video: it should play in 1080p.</string>
-    <string name="diag_about_live">A live stream: if it has ended, an error is expected.</string>
-    <string name="diag_about_kids">A video marked “made for kids”: the hardest case on YouTube right now.</string>
-    <string name="diag_about_deleted">A deleted video: the right result is the error screen.</string>
-    <string name="diag_about_sponsorblock">It has a known sponsor segment: it should be skipped by itself.</string>
-    <string name="diag_status_waiting">Waiting</string>
-    <string name="diag_status_checking">Checking…</string>
-    <string name="diag_status_ready">Works · up to %1$sp</string>
-    <string name="diag_status_ready_plain">Works</string>
-    <string name="diag_status_ready_live">Works · live</string>
-    <string name="diag_fact_best_quality">Best quality %1$sp</string>
-    <string name="diag_fact_subtitles">Subtitles: %1$s</string>
-    <string name="diag_fact_elapsed">Checked in %1$s s</string>
-    <string name="diag_fact_live">Live</string>
 
     <!-- Player -->
     <string name="player_loading">Getting the video ready…</string>
@@ -228,7 +191,19 @@
 
     <!-- Channel and playlist pages -->
     <string name="channel_loading">Fetching videos…</string>
+    <string name="channel_loading_playlists">Fetching playlists…</string>
     <string name="channel_no_videos">This channel has no videos.</string>
+    <string name="channel_section_error">Couldn\'t load this section</string>
+    <string name="channel_no_shorts">This channel has no Shorts.</string>
+    <string name="channel_no_live">This channel has no live streams.</string>
+    <string name="channel_no_playlists">This channel has no playlists.</string>
+    <string name="channel_tab_videos">Videos</string>
+    <string name="channel_tab_shorts">Shorts</string>
+    <string name="channel_tab_live">Live</string>
+    <string name="channel_tab_playlists">Playlists</string>
+    <string name="channel_sort_latest">Latest</string>
+    <string name="channel_sort_popular">Most viewed</string>
+    <string name="channel_sort_oldest">Oldest</string>
     <string name="channel_unsubscribe">Unsubscribe</string>
     <string name="channel_parental">Parental controls</string>
     <string name="playlist_label">Playlist</string>
@@ -270,7 +245,6 @@
 
     <!-- Settings (SPEC §7). The hub's own strings are the hub_* section. -->
     <string name="settings_title">Settings</string>
-    <string name="settings_diagnostics">Diagnostics</string>
     <string name="settings_version">Shasha %1$s · extraction library %2$s</string>
 
     <string-array name="count_minutes">
@@ -614,6 +588,7 @@
     <string name="protection_guard_body_stopped">Stopped. It starts when the app is opened again.</string>
     <string name="protection_install_title">Installing updates</string>
     <string name="protection_install_body">So that “Check for updates” can open the system installer with the new version.</string>
+    <string name="protection_install_body_unknown_sources">On Android 7 and older (like Fire OS 6) there is no permission per app, only one setting for the whole TV: “Unknown sources”. With it, “Check for updates” can open the system installer.</string>
     <string name="protection_youtube_title">The official YouTube app</string>
     <string name="protection_youtube_body_enabled">Its remote button opens it in the adult profile (in a kid\'s profile the guard covers it and brings Shasha back). Disabling it is optional:</string>
     <string name="protection_youtube_body_disabled">Disabled, so the remote button doesn\'t open it.</string>
@@ -638,6 +613,7 @@
     <string name="protection_limits_outside">In the adult profile, the guard only steps in during a Serious Mode video or when time is up, and not after a kid\'s profile was left with the parent PIN until another profile is chosen. At those times, whoever reaches the TV\'s settings can stop the app, clear its data or uninstall it, revoke these two permissions, or bring YouTube back.</string>
     <string name="protection_limits_force_stop">“Force stop” in settings stops the guard until the app is opened again, and restarting the TV doesn\'t bring it back.</string>
     <string name="protection_limits_keys">In a kid\'s profile and in Serious Mode, the Home button, the remote\'s app buttons, voice commands, casting from a phone and the HDMI input aren\'t blocked: whatever appears is covered and Shasha comes back within a second or two.</string>
+    <string name="protection_limits_fire_tv">This is a Fire TV, and Amazon doesn\'t officially support an app covering other apps. Try the guard once: enter a kid\'s profile and press Home. If Shasha doesn\'t come back by itself, the guard doesn\'t work on this device, and the lock inside the app stays as it is.</string>
     <string name="protection_limits_owner">Blocking all of that needs &#x2068;Device Owner&#x2069; mode, which was ruled out on purpose: the lock isn\'t unbreakable.</string>
     <string name="protection_limits_pin_lockout">In a kid\'s profile, when time is up and outside viewing hours, only the parent PIN leaves Shasha (on the TV, or switching profiles from the phone page with its own counter). If the PIN is locked after wrong attempts (5 minutes up to 4 hours; restarting doesn\'t end the wait) or forgotten, the whole TV stays on Shasha until the wait or the block ends. The way out: from the computer that set it up, with debugging still on, run &#x2068;%1$s&#x2069; (the guard stops until the app is opened again).</string>
 
@@ -787,8 +763,7 @@
     <string name="hub_remote">Local server</string>
     <string name="hub_remote_summary">The phone remote: turning it on, the pairing QR code and a new code</string>
     <string name="hub_data_summary">A backup of all the TV\'s data, and your subscriptions from Takeout</string>
-    <string name="hub_updates_summary">The installed version, and the latest on GitHub Releases</string>
-    <string name="hub_diagnostics_summary">Help for when YouTube breaks: test videos, TV details, version and licenses</string>
+    <string name="hub_updates_summary">Update Shasha with one press, plus version and license information</string>
     <string name="hub_about">About</string>
     <string name="hub_about_summary">Who made Shasha, and the developer\'s other apps</string>
     <string name="hub_loading">Loading…</string>
@@ -858,26 +833,11 @@
     <!-- فحص التحديثات -->
     <string name="hub_version">Shasha %1$s</string>
     <string name="hub_build_line">Build %1$s · extraction library %2$s</string>
-    <string name="hub_updates_how">Reads the latest version from GitHub Releases, downloads it and opens the system installer: Android doesn\'t allow silent updates.</string>
-    <string name="hub_updates_when">When YouTube breaks, the fix is usually a newer version of the extraction library.</string>
-    <string name="hub_updates_adb">Or instead: install the new version by running the installer again, as in the Shasha Guide.</string>
+    <string name="hub_updates_how">Shasha checks whether a newer version is out and, if there is one, downloads and installs it by itself: the app closes for a moment, then opens again.</string>
+    <string name="hub_updates_when">When YouTube stops working, try updating first: the fix is usually in the newer version.</string>
 
-    <!-- تشخيص -->
-    <string name="hub_diag_videos_body">Regular, live, made for kids, deleted, and one with a sponsor SponsorBlock skips: find out in seconds what broke</string>
-    <string name="hub_diag_facts">Diagnostic details</string>
-    <string name="hub_fact_device">&#x2068;%1$s&#x2069; · Android %2$s (API %3$s)</string>
-    <string name="hub_fact_voice_both">Voice recognition: the system voice screen &#x2068;%1$s&#x2069;, with an in-app fallback &#x2068;%2$s&#x2069;</string>
-    <string name="hub_fact_voice_system">Voice recognition: the system voice screen &#x2068;%1$s&#x2069; (no in-app fallback)</string>
-    <string name="hub_fact_voice_service">Voice recognition: in-app only &#x2068;%1$s&#x2069; (no system voice screen)</string>
-    <string name="hub_fact_voice_none">Voice recognition: not available on this TV, so type what you\'re looking for</string>
-    <string name="hub_fact_no_subscriptions">No subscriptions yet</string>
-    <string name="hub_fact_feed_never">Subscriptions: %1$s · not refreshed yet</string>
-    <string name="hub_fact_feed">Subscriptions: %1$s · last refreshed %2$s</string>
-    <string name="hub_fact_feed_failed">Channels that failed to refresh last time: %1$s</string>
-    <string name="hub_diag_hint">When something breaks: play the test videos first, then “Check for updates”. The Shasha Guide explains the rest.</string>
-
-    <!-- تشخيص ← معلومات تقنية والتراخيص (كانت في «حول») -->
-    <string name="hub_diag_technical">Technical information and licenses</string>
+    <!-- Check for updates → technical information and licenses (it used to be on About, then under Diagnostics) -->
+    <string name="hub_tech_title">Technical information and licenses</string>
     <string name="hub_tech_data_title">Segment skip data</string>
     <string name="hub_tech_licenses">Libraries and their licenses</string>
     <string name="hub_tech_ideas">Ideas from open-source projects, with code written anew</string>

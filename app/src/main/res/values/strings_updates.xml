@@ -1,65 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- SPEC §6 «فحص التحديثات»: the latest GitHub Release of the private repository, read with a read-only token,
-         downloaded, checked (same app, newer, same signing key) and handed to the system installer. -->
+    <!-- SPEC §6 «فحص التحديثات»: one press. «شاشة» compares its version with the latest release and, if a newer one is
+         out, downloads and installs it by itself. These words never name where the releases are kept, never ask for a
+         command or a key, and say what happens: the app closes for a moment, then opens again. -->
     <string name="updates_checking_title">جارٍ البحث عن تحديث…</string>
-    <string name="updates_checking_body">نقرأ آخر إصدار منشور على GitHub Releases.</string>
-    <string name="updates_up_to_date_title">لديك آخر إصدار</string>
-    <string name="updates_up_to_date_body">الإصدار المثبّت هو أحدث ما نُشر على GitHub Releases.</string>
-    <string name="updates_none_published_body">لا يوجد على GitHub Releases إصدار منشور أحدث من المثبّت.</string>
-    <string name="updates_available_title">يتوفر إصدار جديد</string>
-    <string name="updates_available_body">يُنزَّل ويُتحقَّق من توقيعه، ثم يسألك أندرويد قبل التثبيت: لا تحديث صامت.</string>
-    <string name="updates_available_not_allowed">التثبيت يحتاج إذناً يُمنح مرة واحدة من الحاسوب؛ يظهر أمره بعد التنزيل.</string>
+    <string name="updates_checking_body">لحظة، نقارن إصدارك بآخر إصدار.</string>
+    <string name="updates_up_to_date_title">لديك أحدث إصدار</string>
+    <string name="updates_up_to_date_body">لا حاجة إلى تحديث الآن.</string>
     <string name="updates_downloading_title">جارٍ تنزيل الإصدار الجديد…</string>
-    <string name="updates_downloading_body">لا تُطفئ الشاشة حتى يكتمل التنزيل.</string>
+    <string name="updates_downloading_body">بعد التنزيل يُثبَّت وحده: يُغلق التطبيق لحظة ثم يُفتح من جديد. لا تُطفئ الشاشة.</string>
     <!-- %1$s, %2$s: megabytes with one decimal (Western digits). -->
     <string name="updates_progress">%1$s من %2$s ميغابايت</string>
     <string name="updates_progress_unknown">%1$s ميغابايت</string>
-    <string name="updates_installing_title">أكّد التحديث في نافذة النظام</string>
-    <string name="updates_installing_body">أندرويد يسأل قبل كل تحديث. بعد التثبيت تُغلق «شاشة»؛ افتحها من جديد.</string>
-    <string name="updates_installing_closed">أُغلقت نافذة التأكيد. إن ألغيت التحديث فاضغط «إعادة المحاولة».</string>
+    <string name="updates_installing_title">جارٍ تثبيت التحديث…</string>
+    <string name="updates_installing_body">سيُغلق التطبيق لحظة ثم يُفتح من جديد وحده. لا تُطفئ الشاشة.</string>
+    <!-- Where Android still asks before installing (older versions): its own window appears. -->
+    <string name="updates_asked_title">وافق على التثبيت</string>
+    <string name="updates_asked_body">ظهرت نافذة من نظام الشاشة: وافق فيها على التثبيت. سيُغلق التطبيق لحظة ثم يُفتح من جديد.</string>
+    <string name="updates_closed_title">لم يكتمل التحديث بعد</string>
+    <string name="updates_closed_body">أُغلقت نافذة النظام قبل أن تجيب. اضغط «إعادة المحاولة» لتحدّث الآن.</string>
     <string name="updates_installed_title">ثُبّت التحديث</string>
     <string name="updates_installed_body">افتح «شاشة» من جديد لتعمل بالإصدار الجديد.</string>
-    <string name="updates_not_allowed_title">تثبيت التحديثات غير مسموح بعد</string>
-    <string name="updates_not_allowed_body">امنح «شاشة» إذن تثبيت التطبيقات مرة واحدة من حاسوب على شبكة الشاشة نفسها (تشغيل المثبّت من جديد يفعل ذلك، كما في «دليل شاشة»)، ثم اضغط «إعادة المحاولة»:</string>
-    <string name="updates_token_title">فحص التحديثات يحتاج رمز قراءة</string>
-    <string name="updates_token_body">مستودع «شاشة» على GitHub خاص، فلا تُقرأ إصداراته إلا برمز قراءة فقط يُضاف إلى أسرار المستودع (UPDATE_TOKEN) قبل البناء، كما في «دليل شاشة». هذا الإصدار بُني بلا رمز.</string>
-    <string name="updates_token_adb">وبديلاً: نزّل آخر APK من صفحة Releases على الحاسوب، وثبّته فوق هذا الإصدار بتشغيل المثبّت من جديد، أو عبر ADB:</string>
+    <string name="updates_cancelled_title">أُلغي التحديث</string>
+    <string name="updates_cancelled_body">لم يتغيّر شيء في «شاشة». اضغط «إعادة المحاولة» حين تريد التحديث.</string>
+    <!-- The installer kit grants this permission, so it is normally never seen. -->
+    <string name="updates_not_allowed_title">التثبيت غير مسموح بعد</string>
+    <string name="updates_not_allowed_body">لم تُمنح «شاشة» إذن تثبيت التحديثات. شغّل المثبّت من حقيبة التثبيت على الحاسوب مرة أخرى، فهو يمنحها هذا الإذن، ثم اضغط «إعادة المحاولة».</string>
+    <!-- A copy built without the key that reads releases (a local build). -->
+    <string name="updates_token_title">التحديث غير متاح في هذه النسخة</string>
+    <string name="updates_token_body">هذه النسخة لا تستطيع فحص التحديثات. ثبّت أحدث نسخة من «شاشة» بالمثبّت من حقيبة التثبيت على الحاسوب، وبعدها تتحدّث بضغطة واحدة.</string>
     <string name="updates_installed_version">المثبّت</string>
     <string name="updates_latest_version">الأحدث</string>
     <!-- %1$s versionName, %2$s versionCode. -->
     <string name="updates_version_value">%1$s (%2$s)</string>
-    <string name="updates_notes">ملاحظات الإصدار</string>
-    <string name="updates_action_install">تنزيل وتثبيت</string>
     <string name="updates_action_check_again">إعادة الفحص</string>
-    <string name="updates_action_cancel">إلغاء</string>
 
-    <string name="updates_error_network_title">تعذّر الوصول إلى GitHub</string>
-    <string name="updates_error_network_body">تأكّد من اتصال الشاشة بالإنترنت ثم أعد المحاولة.</string>
-    <string name="updates_error_token_title">رمز القراءة مرفوض</string>
-    <string name="updates_error_token_body">رفض GitHub رمز القراءة الذي بُني به هذا الإصدار: انتهت صلاحيته أو أُلغي. جدّده وضعه في سر UPDATE_TOKEN، ثم ثبّت الإصدار التالي بتشغيل المثبّت من جديد، كما في «دليل شاشة».</string>
-    <string name="updates_error_forbidden_title">رفض GitHub الطلب</string>
-    <string name="updates_error_forbidden_body">إما أن الطلبات تجاوزت الحد المسموح (انتظر قليلاً ثم أعد المحاولة)، أو أن رمز القراءة لا يملك إذن قراءة المستودع.</string>
-    <string name="updates_error_not_found_title">لم نجد إصداراً منشوراً</string>
-    <string name="updates_error_not_found_body">لا يوجد إصدار على GitHub Releases بعد، أو أن رمز القراءة لا يصل إلى مستودع «شاشة».</string>
-    <string name="updates_error_no_apk_title">آخر إصدار بلا ملف تثبيت</string>
-    <string name="updates_error_no_apk_body">آخر إصدار منشور لا يحوي ملف APK. انتظر الإصدار التالي أو ثبّت عبر ADB.</string>
-    <string name="updates_error_bad_tag_title">اسم الإصدار غير مفهوم</string>
-    <string name="updates_error_bad_tag_body">وسم آخر إصدار لا يطابق الشكل الذي ينشره البناء: v&lt;الإصدار&gt;-&lt;رقم البناء&gt;.</string>
-    <string name="updates_error_bad_answer_title">ردّ غير متوقع من GitHub</string>
-    <string name="updates_error_bad_answer_body">لم نفهم ردّ GitHub. أعد المحاولة بعد قليل.</string>
+    <string name="updates_error_network_title">تعذّر الاتصال بالإنترنت</string>
+    <string name="updates_error_network_body">تأكّد من اتصال الشاشة بالإنترنت ثم اضغط «إعادة المحاولة».</string>
+    <string name="updates_error_token_title">تعذّر فحص التحديثات</string>
+    <string name="updates_error_token_body">لم تعد هذه النسخة قادرة على قراءة التحديثات. ثبّت أحدث نسخة من «شاشة» بالمثبّت من حقيبة التثبيت على الحاسوب، وبعدها تتحدّث بضغطة واحدة.</string>
+    <string name="updates_error_forbidden_title">الخدمة مشغولة الآن</string>
+    <string name="updates_error_forbidden_body">تعذّر فحص التحديثات الآن. انتظر قليلاً ثم اضغط «إعادة المحاولة».</string>
+    <string name="updates_error_not_found_title">لم نجد تحديثاً منشوراً</string>
+    <string name="updates_error_not_found_body">لا يوجد إصدار منشور بعد، أو تعذّر الوصول إليه. حاول لاحقاً.</string>
+    <string name="updates_error_no_apk_title">الإصدار الجديد لم يكتمل نشره</string>
+    <string name="updates_error_no_apk_body">ما زال آخر إصدار قيد التجهيز. حاول بعد قليل.</string>
+    <string name="updates_error_bad_tag_title">تعذّر فهم معلومات الإصدار</string>
+    <string name="updates_error_bad_tag_body">وصلتنا معلومات غير مفهومة عن آخر إصدار. حاول لاحقاً.</string>
+    <string name="updates_error_bad_answer_title">ردّ غير متوقع</string>
+    <string name="updates_error_bad_answer_body">وصلنا ردّ لم نفهمه. اضغط «إعادة المحاولة» بعد قليل.</string>
     <string name="updates_error_download_title">انقطع التنزيل</string>
-    <string name="updates_error_download_body">تعذّر تنزيل الملف كاملاً. أعد المحاولة.</string>
-    <string name="updates_error_bad_apk_title">الملف ليس تطبيقاً صالحاً</string>
-    <string name="updates_error_bad_apk_body">لم يستطع النظام قراءة الملف المنزَّل، فلم يُثبَّت.</string>
-    <string name="updates_error_wrong_package_title">الملف لتطبيق آخر</string>
-    <string name="updates_error_wrong_package_body">الملف المنزَّل ليس «شاشة»، فلم يُثبَّت.</string>
-    <string name="updates_error_not_newer_title">الملف ليس أحدث من المثبّت</string>
-    <string name="updates_error_not_newer_body">رقم بناء الملف المنزَّل ليس أعلى من رقم الإصدار المثبّت، فلم يُثبَّت.</string>
-    <string name="updates_error_signature_title">مفتاح التوقيع مختلف</string>
-    <string name="updates_error_signature_body">هذا الملف موقّع بمفتاح غير مفتاح «شاشة» المثبّتة، فرُفض. مفتاح التوقيع يجب ألا يتغيّر أبداً: أندرويد لا يثبّت تحديثاً موقّعاً بمفتاح آخر فوق النسخة الحالية.</string>
+    <string name="updates_error_download_body">تعذّر تنزيل الملف كاملاً. اضغط «إعادة المحاولة».</string>
+    <string name="updates_error_bad_apk_title">الملف المنزَّل غير صالح</string>
+    <string name="updates_error_bad_apk_body">لم يستطع النظام قراءة الملف، فلم يُثبَّت شيء. اضغط «إعادة المحاولة».</string>
+    <string name="updates_error_wrong_package_title">الملف ليس لـ«شاشة»</string>
+    <string name="updates_error_wrong_package_body">الملف المنزَّل لتطبيق آخر، فلم يُثبَّت.</string>
+    <string name="updates_error_not_newer_title">لا يوجد ما هو أحدث</string>
+    <string name="updates_error_not_newer_body">الملف المنزَّل ليس أحدث من إصدارك الحالي، فلم يُثبَّت.</string>
+    <string name="updates_error_signature_title">رُفض التحديث حمايةً لك</string>
+    <string name="updates_error_signature_body">الملف المنزَّل ليس موقَّعاً بتوقيع «شاشة» الأصلي، فلم يُثبَّت.</string>
     <string name="updates_error_install_title">لم يكتمل التثبيت</string>
-    <string name="updates_error_install_body">رفض نظام الشاشة التثبيت. التفاصيل أدناه؛ أعد المحاولة أو ثبّت عبر ADB.</string>
+    <string name="updates_error_install_body">رفض نظام الشاشة التثبيت. اضغط «إعادة المحاولة»، فإن تكرّر فشغّل المثبّت من حقيبة التثبيت على الحاسوب.</string>
 
     <!-- A child profile never reaches the updater. -->
     <string name="updates_child_title">التحديث من ملف الكبار</string>

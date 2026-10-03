@@ -5,7 +5,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -16,8 +15,6 @@ import com.ahmadnayfeh.shasha.BuildConfig
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.remote.RemoteService
-import com.ahmadnayfeh.shasha.search.VoiceAvailability
-import com.ahmadnayfeh.shasha.search.VoiceSearch
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
 import com.ahmadnayfeh.shasha.ui.components.LocalAppMessages
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
@@ -30,9 +27,7 @@ import com.ahmadnayfeh.shasha.ui.parental.ParentUnlock
 import com.ahmadnayfeh.shasha.ui.screens.guide.ExplainerVideo
 import com.ahmadnayfeh.shasha.ui.screens.settings.rememberProtectionStatus
 import com.ahmadnayfeh.shasha.ui.theme.LocalAppLanguage
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 
 /**
  * The settings tab of the adult profile ([SettingsHubScreen]). The parental parts ask for the parent PIN first
@@ -52,7 +47,6 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
             playback = c.playbackSettings,
             remoteSettings = c.remoteSettings,
             remoteState = c.remote.state,
-            feed = c.feed,
             usageRepository = c.usage,
             engine = c.policyEngine,
             zone = { c.clock.zone },
@@ -80,7 +74,6 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
     val sponsorCategories by vm.sponsorCategories.collectAsStateWithLifecycle()
     val maxQuality by vm.maxQuality.collectAsStateWithLifecycle()
     val remote by vm.remote.collectAsStateWithLifecycle()
-    val syncHealth by vm.syncHealth.collectAsStateWithLifecycle()
     val usage by vm.usage.collectAsStateWithLifecycle()
     val behavior by vm.behavior.collectAsStateWithLifecycle()
     val remotePort by vm.remotePort.collectAsStateWithLifecycle()
@@ -91,10 +84,6 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
     val protection by rememberProtectionStatus()
     val returns by container.guardReturnTimes.times.collectAsStateWithLifecycle(initialValue = emptyList())
     val versions = remember { AppVersions(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE, container.videoSource.extractorVersion) }
-    val device = remember { DeviceFacts.current() }
-    // Which voice recognizers the TV offers (package queries: asked off the main thread, shown once known).
-    val voice by produceState<VoiceAvailability?>(null, context) { value = withContext(Dispatchers.IO) { VoiceSearch.availability(context) } }
-    val now = remember(syncHealth) { container.clock.millis() }
 
     val actions = remember(settings, gate, vm) {
         SettingsHubActions(
@@ -110,7 +99,6 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
             openBackup = { gate.guarded(settings.openBackup) },
             openImport = settings.openImport,
             openUpdates = settings.openUpdates,
-            openDiagnostics = settings.openDiagnostics,
             setQuota = { id, minutes -> gate.guarded { vm.setQuota(id, minutes) } },
             setSchedule = { id, schedule -> gate.guarded { vm.setSchedule(id, schedule) } },
             setSponsorCategory = vm::setSponsorCategory,
@@ -156,10 +144,6 @@ fun SettingsRoute(focus: ContentFocus, settings: SettingsActions) {
             protection = protection,
             lastReturn = returns.firstOrNull(),
             remote = remote,
-            syncHealth = syncHealth,
-            device = device,
-            voice = voice,
-            nowMs = now,
             behavior = behavior,
             remotePort = remotePort,
             explainerAvailable = explainerAvailable,

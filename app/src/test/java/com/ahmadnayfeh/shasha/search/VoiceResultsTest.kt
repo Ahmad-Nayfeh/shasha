@@ -2,19 +2,12 @@ package com.ahmadnayfeh.shasha.search
 
 import android.app.Activity
 import android.app.Application
-import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
-import android.content.pm.ResolveInfo
-import android.content.pm.ServiceInfo
-import android.speech.RecognitionService
 import android.speech.RecognizerIntent
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -25,8 +18,6 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35], application = Application::class)
 class VoiceResultsTest {
-    private val context = ApplicationProvider.getApplicationContext<Context>()
-
     private fun answer(vararg words: String) = Intent().putStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS, arrayListOf(*words))
 
     // ---- The request ----------------------------------------------------------------------------------------------
@@ -94,50 +85,5 @@ class VoiceResultsTest {
         assertThat(failure(RecognizerIntent.RESULT_AUDIO_ERROR)).isEqualTo(VoiceOutcome.Failed(VoiceError.AUDIO))
         assertThat(failure(RecognizerIntent.RESULT_CLIENT_ERROR)).isEqualTo(VoiceOutcome.Failed(VoiceError.OTHER))
         assertThat(failure(99)).isEqualTo(VoiceOutcome.Failed(VoiceError.OTHER))
-    }
-
-    // ---- Which recognizer this TV has (for «تشخيص») ---------------------------------------------------------------
-
-    private fun activity(pkg: String) = ResolveInfo().apply {
-        activityInfo = ActivityInfo().apply {
-            packageName = pkg
-            name = "$pkg.VoiceActivity"
-        }
-        isDefault = true
-    }
-
-    private fun service(pkg: String) = ResolveInfo().apply {
-        serviceInfo = ServiceInfo().apply {
-            packageName = pkg
-            name = "$pkg.Recognizer"
-        }
-    }
-
-    @Test
-    fun aTvWithNeither_hasNoRecognizer() {
-        val found = VoiceSearch.availability(context)
-        assertThat(found).isEqualTo(VoiceAvailability(systemScreen = null, service = null))
-        assertThat(found.any).isFalse()
-    }
-
-    @Test
-    fun theVoiceScreenAndTheService_areReportedByTheirPackages() {
-        val packages = shadowOf(context.packageManager)
-        packages.addResolveInfoForIntent(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH), activity("com.google.android.katniss"))
-        packages.addResolveInfoForIntent(Intent(RecognitionService.SERVICE_INTERFACE), service("com.google.android.googlequicksearchbox"))
-        val found = VoiceSearch.availability(context)
-        assertThat(found.systemScreen).isEqualTo("com.google.android.katniss")
-        assertThat(found.service).isEqualTo("com.google.android.googlequicksearchbox")
-        assertThat(found.any).isTrue()
-    }
-
-    @Test
-    fun aTvWithOnlyTheVoiceScreen_orOnlyTheService_saysWhich() {
-        val packages = shadowOf(context.packageManager)
-        packages.addResolveInfoForIntent(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH), activity("com.google.android.katniss"))
-        assertThat(VoiceSearch.availability(context)).isEqualTo(VoiceAvailability("com.google.android.katniss", null))
-        packages.removeResolveInfosForIntent(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH), "com.google.android.katniss")
-        packages.addResolveInfoForIntent(Intent(RecognitionService.SERVICE_INTERFACE), service("com.example.recognizer"))
-        assertThat(VoiceSearch.availability(context)).isEqualTo(VoiceAvailability(null, "com.example.recognizer"))
     }
 }

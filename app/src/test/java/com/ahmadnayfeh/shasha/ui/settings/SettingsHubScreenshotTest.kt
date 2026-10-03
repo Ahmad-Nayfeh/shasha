@@ -16,7 +16,6 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.TV_1080P
-import com.ahmadnayfeh.shasha.search.VoiceAvailability
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
 import com.ahmadnayfeh.shasha.ui.main.MainShell
@@ -133,25 +132,13 @@ class SettingsHubScreenshotTest {
     @Test
     fun updates() = snap("settings_hub_updates", SettingsCategory.UPDATES)
 
+    /** DOWN once, onto SponsorBlock's attribution: «معلومات تقنية والتراخيص» comes into view under the button. */
     @Test
-    fun diagnostics() = snap("settings_hub_diagnostics", SettingsCategory.DIAGNOSTICS)
-
-    /** DOWN twice, onto the version card: «معلومات تقنية والتراخيص» (the version, SponsorBlock's attribution) comes into view. */
-    @Test
-    fun diagnosticsTechnical() = snap("settings_hub_diagnostics_technical", SettingsCategory.DIAGNOSTICS, keys = List(2) { Key.DirectionDown })
+    fun updatesTechnical() = snap("settings_hub_updates_technical", SettingsCategory.UPDATES, keys = listOf(Key.DirectionDown))
 
     /** DOWN to the pane's last row: the libraries and the projects whose ideas the app follows, and the closing line. */
     @Test
-    fun diagnosticsLicenses() = snap("settings_hub_diagnostics_licenses", SettingsCategory.DIAGNOSTICS, keys = List(20) { Key.DirectionDown })
-
-    /** No voice screen and no recognition service on this TV: the line says so (and what to do). */
-    @Test
-    fun diagnosticsWithoutVoice() = snap(
-        "settings_hub_diagnostics_no_voice",
-        SettingsCategory.DIAGNOSTICS,
-        SettingsHubFixtures.state().copy(voice = VoiceAvailability(systemScreen = null, service = null)),
-        keys = listOf(Key.DirectionDown),
-    )
+    fun updatesLicenses() = snap("settings_hub_updates_licenses", SettingsCategory.UPDATES, keys = List(20) { Key.DirectionDown })
 
     /** «حول»: the developer and his other apps, and nothing else. */
     @Test

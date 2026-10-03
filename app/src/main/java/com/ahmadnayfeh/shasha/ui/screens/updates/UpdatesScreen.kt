@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -32,17 +31,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -55,6 +49,7 @@ import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoader
+import com.ahmadnayfeh.shasha.ui.components.brandLockup
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
@@ -62,8 +57,6 @@ import com.ahmadnayfeh.shasha.update.InstalledVersion
 import com.ahmadnayfeh.shasha.update.ReleaseInfo
 import com.ahmadnayfeh.shasha.update.UpdateErrorKind
 import java.util.Locale
-import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
-import com.ahmadnayfeh.shasha.ui.components.brandLockup
 
 /**
  * «فحص التحديثات» (SPEC §6), from Settings and from the unified error screen. Only the adult profile reaches the
@@ -93,7 +86,7 @@ fun UpdatesRoute(adult: Boolean, onBack: () -> Unit) {
     UpdatesScreen(
         state = state,
         installed = container.updater.installed,
-        actions = UpdatesActions(onBack = onBack, onCheck = vm::check, onInstall = vm::install, onCancel = vm::cancelDownload),
+        actions = UpdatesActions(onBack = onBack, onCheck = vm::check, onRetry = vm::retry, onCancel = vm::cancel),
     )
 }
 
@@ -101,43 +94,21 @@ fun UpdatesRoute(adult: Boolean, onBack: () -> Unit) {
 class UpdatesActions(
     val onBack: () -> Unit,
     val onCheck: () -> Unit = {},
-    val onInstall: () -> Unit = {},
+    val onRetry: () -> Unit = {},
     val onCancel: () -> Unit = {},
 )
 
-/**
- * The updater in one [state]: what it found or does, the two versions and its buttons; an update on offer shows
- * its release notes beside them (the TV is wide, not tall).
- */
+/** The updater in one [state]: what it found or does, the version(s), and the few buttons that state has. */
 @Composable
 fun UpdatesScreen(state: UpdateUiState, installed: InstalledVersion, actions: UpdatesActions, modifier: Modifier = Modifier) {
     val (title, body) = texts(state)
-    val release = state.release()
-    val notes = (state as? UpdateUiState.Available)?.release?.notes?.takeIf { it.isNotBlank() }
-    UpdatesLayout(
-        title = title,
-        body = body,
-        modifier = modifier.testTag("updates"),
-        focusKey = state::class,
-        side = notes?.let { { ReleaseNotesCard(it) } },
-    ) { first ->
-        when (state) {
-            UpdateUiState.Checking -> ShashaLoader(size = 48.dp)
-            UpdateUiState.TokenMissing -> {
-                Text(stringResource(R.string.updates_token_adb), style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Muted, textAlign = TextAlign.Center)
-                CommandBox(ADB_INSTALL_COMMAND)
-            }
-            is UpdateUiState.InstallNotAllowed -> CommandBox(state.command)
-            is UpdateUiState.Downloading -> DownloadProgress(state.bytes, state.total)
-            is UpdateUiState.Failed -> state.detail?.let { TechnicalDetail(it) }
-            else -> Unit
+    UpdatesLayout(title = title, body = body, modifier = modifier.testTag("updates"), focusKey = state.focusKey()) { first ->
+        when {
+            state == UpdateUiState.Checking -> ShashaLoader(size = 48.dp)
+            state is UpdateUiState.Downloading -> DownloadProgress(state.bytes, state.total)
+            state is UpdateUiState.Installing && !state.confirmationClosed -> ShashaLoader(size = 48.dp)
         }
-        if (state != UpdateUiState.Checking) {
-            VersionFacts(installed, release ?: (state as? UpdateUiState.UpToDate)?.latest, highlightLatest = release != null)
-        }
-        if (state is UpdateUiState.Available && !state.installAllowed) {
-            Text(stringResource(R.string.updates_available_not_allowed), style = MaterialTheme.typography.bodyMedium, color = ShashaColors.Secondary, textAlign = TextAlign.Center)
-        }
+        if (state != UpdateUiState.Checking) VersionFacts(installed, state.release())
         Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) { Buttons(state, actions, first) }
     }
 }
@@ -160,17 +131,13 @@ fun UpdatesChildNotice(appVersion: String, extractorVersion: String, onBack: () 
     }
 }
 
-/**
- * The brand, [title] and [body], then [content]; with [side] (the release notes) the two sit side by side: the
- * information at the start (right), the notes at the end.
- */
+/** The brand, [title] and [body], then [content], all centred. */
 @Composable
 private fun UpdatesLayout(
     title: String,
     body: String,
     modifier: Modifier,
     focusKey: Any,
-    side: (@Composable () -> Unit)? = null,
     content: @Composable (first: FocusRequester) -> Unit,
 ) {
     val first = remember { FocusRequester() }
@@ -179,27 +146,21 @@ private fun UpdatesLayout(
         withFrameNanos { }
         runCatching { first.requestFocus() }
     }
-    val main = @Composable { columnModifier: Modifier ->
-        Column(columnModifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Image(painterResource(brandLockup()), contentDescription = null, modifier = Modifier.height(40.dp))
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, modifier = Modifier.testTag("updates_title"))
-                Text(body, style = MaterialTheme.typography.bodyLarge, color = ShashaColors.Muted, textAlign = TextAlign.Center)
-            }
-            content(first)
-        }
-    }
     Box(
         modifier.fillMaxSize().background(ShashaColors.Background).padding(ShashaDimens.ScreenPadding),
         contentAlignment = Alignment.Center,
     ) {
-        if (side == null) {
-            main(Modifier.widthIn(max = 760.dp))
-        } else {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(40.dp), verticalAlignment = Alignment.CenterVertically) {
-                main(Modifier.weight(1f))
-                Box(Modifier.weight(1f)) { side() }
+        Column(
+            Modifier.widthIn(max = 760.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Image(painterResource(brandLockup()), contentDescription = null, modifier = Modifier.height(40.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, modifier = Modifier.testTag("updates_title"))
+                Text(body, style = MaterialTheme.typography.bodyLarge, color = ShashaColors.Muted, textAlign = TextAlign.Center, modifier = Modifier.testTag("updates_body"))
             }
+            content(first)
         }
     }
 }
@@ -208,36 +169,31 @@ private fun UpdatesLayout(
 private fun Buttons(state: UpdateUiState, actions: UpdatesActions, first: FocusRequester) {
     when (state) {
         UpdateUiState.Checking, UpdateUiState.TokenMissing, is UpdateUiState.Installed -> BackButton(actions, first)
-        is UpdateUiState.UpToDate -> {
+        UpdateUiState.UpToDate -> {
             BackButton(actions, first)
             ShashaButton(stringResource(R.string.updates_action_check_again), actions.onCheck, icon = ShashaIcons.Refresh, modifier = Modifier.testTag("updates_check"))
         }
-        is UpdateUiState.Available -> {
-            PrimaryButton(R.string.updates_action_install, ShashaIcons.SystemUpdate, actions.onInstall, "updates_install", first)
-            BackButton(actions)
-        }
         is UpdateUiState.Downloading -> ShashaButton(
-            stringResource(R.string.updates_action_cancel),
+            stringResource(R.string.action_cancel),
             actions.onCancel,
             icon = ShashaIcons.Close,
             modifier = Modifier.focusRequester(first).testTag("updates_cancel"),
         )
         is UpdateUiState.Installing -> if (state.confirmationClosed) {
-            PrimaryButton(R.string.action_retry, ShashaIcons.Refresh, actions.onInstall, "updates_retry", first)
-            BackButton(actions)
+            RetryAndBack(actions, first)
         } else {
             BackButton(actions, first)
         }
-        is UpdateUiState.InstallNotAllowed -> {
-            PrimaryButton(R.string.action_retry, ShashaIcons.Refresh, actions.onInstall, "updates_retry", first)
-            BackButton(actions)
-        }
-        is UpdateUiState.Failed -> {
-            // A failed check is checked again; a failed download or install is tried again.
-            PrimaryButton(R.string.action_retry, ShashaIcons.Refresh, if (state.release != null) actions.onInstall else actions.onCheck, "updates_retry", first)
-            BackButton(actions)
-        }
+        // A failed check is checked again; a stopped download or install is tried again (the ViewModel knows which).
+        is UpdateUiState.InstallNotAllowed, is UpdateUiState.Cancelled, is UpdateUiState.Failed -> RetryAndBack(actions, first)
     }
+}
+
+/** «إعادة المحاولة» first (it has the focus), then «رجوع». */
+@Composable
+private fun RetryAndBack(actions: UpdatesActions, first: FocusRequester) {
+    PrimaryButton(R.string.action_retry, ShashaIcons.Refresh, actions.onRetry, "updates_retry", first)
+    BackButton(actions)
 }
 
 /** «رجوع»; [focus] when it is the state's first button. */
@@ -256,9 +212,9 @@ private fun PrimaryButton(@StringRes text: Int, icon: ImageVector, onClick: () -
     ShashaButton(stringResource(text), onClick, icon = icon, primary = true, modifier = Modifier.focusRequester(focus).testTag(tag))
 }
 
-/** The installed version beside the newest published one (in the accent when it is the update on offer). */
+/** The installed version, beside the one being installed (in the accent) when there is one. */
 @Composable
-private fun VersionFacts(installed: InstalledVersion, latest: ReleaseInfo?, highlightLatest: Boolean) {
+private fun VersionFacts(installed: InstalledVersion, latest: ReleaseInfo?) {
     val shape = RoundedCornerShape(16.dp)
     Row(
         Modifier
@@ -275,7 +231,7 @@ private fun VersionFacts(installed: InstalledVersion, latest: ReleaseInfo?, high
             Fact(
                 stringResource(R.string.updates_latest_version),
                 stringResource(R.string.updates_version_value, latest.versionName, latest.versionCode.toString()),
-                highlight = highlightLatest,
+                highlight = true,
             )
         }
     }
@@ -290,32 +246,6 @@ private fun Fact(label: String, value: String, highlight: Boolean = false) {
             style = MaterialTheme.typography.titleMedium.copy(textDirection = TextDirection.Ltr),
             color = if (highlight) LocalAccent.current.bright else ShashaColors.Text,
             maxLines = 1,
-        )
-    }
-}
-
-/** The release's own text (CI writes the extractor version, the commit and the signing key's fingerprint there). */
-@Composable
-private fun ReleaseNotesCard(notes: String) {
-    val shape = RoundedCornerShape(16.dp)
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(ShashaColors.Surface, shape)
-            .border(1.dp, ShashaColors.Outline, shape)
-            .padding(horizontal = 22.dp, vertical = 14.dp)
-            .testTag("updates_notes"),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Text(stringResource(R.string.updates_notes), style = MaterialTheme.typography.labelLarge, color = ShashaColors.Muted, modifier = Modifier.fillMaxWidth())
-        // Lines in Latin keep their own order but, like everything else, hang from the right edge.
-        Text(
-            notes,
-            style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content),
-            textAlign = StartTextAlign,
-            maxLines = NOTES_MAX_LINES,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -352,62 +282,37 @@ private fun DownloadProgress(bytes: Long, total: Long?) {
     }
 }
 
-/** An adb command as it is typed: left to right, fixed width. */
-@Composable
-private fun CommandBox(command: String) {
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        Text(
-            command,
-            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontSize = 15.sp, textDirection = TextDirection.Ltr),
-            color = ShashaColors.Text,
-            modifier = Modifier
-                .background(ShashaColors.Surface, RoundedCornerShape(10.dp))
-                .border(1.dp, ShashaColors.Outline, RoundedCornerShape(10.dp))
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .testTag("updates_command"),
-        )
-    }
-}
-
-/** What failed, as GitHub or the system said it (Latin, left to right). */
-@Composable
-private fun TechnicalDetail(detail: String) {
-    Text(
-        detail,
-        style = MaterialTheme.typography.labelLarge.copy(textDirection = TextDirection.Ltr),
-        color = ShashaColors.Secondary,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.testTag("updates_detail"),
-    )
-}
-
 /** Title and explanation of each state. */
 @Composable
 private fun texts(state: UpdateUiState): Pair<String, String> = when (state) {
     UpdateUiState.Checking -> stringResource(R.string.updates_checking_title) to stringResource(R.string.updates_checking_body)
     UpdateUiState.TokenMissing -> stringResource(R.string.updates_token_title) to stringResource(R.string.updates_token_body)
-    is UpdateUiState.UpToDate -> stringResource(R.string.updates_up_to_date_title) to
-        stringResource(if (state.latest != null) R.string.updates_up_to_date_body else R.string.updates_none_published_body)
-    is UpdateUiState.Available -> stringResource(R.string.updates_available_title) to stringResource(R.string.updates_available_body)
+    UpdateUiState.UpToDate -> stringResource(R.string.updates_up_to_date_title) to stringResource(R.string.updates_up_to_date_body)
     is UpdateUiState.Downloading -> stringResource(R.string.updates_downloading_title) to stringResource(R.string.updates_downloading_body)
-    is UpdateUiState.Installing -> stringResource(R.string.updates_installing_title) to
-        stringResource(if (state.confirmationClosed) R.string.updates_installing_closed else R.string.updates_installing_body)
+    is UpdateUiState.Installing -> when {
+        state.confirmationClosed -> stringResource(R.string.updates_closed_title) to stringResource(R.string.updates_closed_body)
+        state.asked -> stringResource(R.string.updates_asked_title) to stringResource(R.string.updates_asked_body)
+        else -> stringResource(R.string.updates_installing_title) to stringResource(R.string.updates_installing_body)
+    }
     is UpdateUiState.Installed -> stringResource(R.string.updates_installed_title) to stringResource(R.string.updates_installed_body)
     is UpdateUiState.InstallNotAllowed -> stringResource(R.string.updates_not_allowed_title) to stringResource(R.string.updates_not_allowed_body)
+    is UpdateUiState.Cancelled -> stringResource(R.string.updates_cancelled_title) to stringResource(R.string.updates_cancelled_body)
     is UpdateUiState.Failed -> stringResource(errorTitle(state.kind)) to stringResource(errorBody(state.kind))
 }
 
+/** The release a state is about (null: none yet, or the installed one is the latest). */
 private fun UpdateUiState.release(): ReleaseInfo? = when (this) {
-    is UpdateUiState.Available -> release
     is UpdateUiState.Downloading -> release
     is UpdateUiState.Installing -> release
     is UpdateUiState.Installed -> release
     is UpdateUiState.InstallNotAllowed -> release
+    is UpdateUiState.Cancelled -> release
     is UpdateUiState.Failed -> release
     else -> null
 }
+
+/** What moves the focus onto the state's first button: another kind of state, or the confirmation having closed. */
+private fun UpdateUiState.focusKey(): Any = if (this is UpdateUiState.Installing) "installing-$confirmationClosed" else this::class
 
 /** Every [UpdateErrorKind] has its words; `when` is exhaustive, so a new kind cannot be forgotten. */
 @StringRes
@@ -446,8 +351,3 @@ internal fun errorBody(kind: UpdateErrorKind): Int = when (kind) {
 
 /** Megabytes with one decimal, Western digits whatever the TV's language. */
 private fun megabytes(bytes: Long): String = String.format(Locale.ROOT, "%.1f", bytes / 1_048_576.0)
-
-/** The adb alternative when the build has no token (the file name as downloaded from the Releases page). */
-private const val ADB_INSTALL_COMMAND = "adb install -r shasha-<version>.apk"
-
-private const val NOTES_MAX_LINES = 12

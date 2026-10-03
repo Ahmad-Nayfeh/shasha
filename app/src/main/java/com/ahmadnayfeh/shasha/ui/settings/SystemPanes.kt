@@ -24,8 +24,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextDirection
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
@@ -34,18 +32,15 @@ import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.lock.ProtectionStatus
 import com.ahmadnayfeh.shasha.lock.ReturnTime
 import com.ahmadnayfeh.shasha.lock.YouTubeAppState
-import com.ahmadnayfeh.shasha.search.VoiceAvailability
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
 import com.ahmadnayfeh.shasha.ui.format.rememberFormats
-import com.ahmadnayfeh.shasha.ui.screens.settings.SectionLabel
 import com.ahmadnayfeh.shasha.ui.settings.remote.PairingStatus
 import com.ahmadnayfeh.shasha.ui.settings.remote.RemoteIcons
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import java.util.Locale
-import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
 /**
  * «حالة الحماية» at a glance (SPEC §4, §7): the last measured return and the goal it is measured against, then
@@ -244,8 +239,9 @@ internal fun DataPane(state: SettingsHubState, actions: SettingsHubActions, firs
 }
 
 /**
- * «فحص التحديثات» (SPEC §6): the installed version and the check itself: [SettingsHubActions.openUpdates] opens
- * the GitHub Releases updater (ui/screens/updates).
+ * «فحص التحديثات» (SPEC §6): the installed version, one button, and at the bottom «معلومات تقنية والتراخيص»
+ * ([TechnicalInfo]). The button opens the updater ([SettingsHubActions.openUpdates], ui/screens/updates), which checks
+ * at once and, when a newer version is out, downloads and installs it by itself.
  */
 @Composable
 internal fun UpdatesPane(state: SettingsHubState, actions: SettingsHubActions, first: FocusRequester) {
@@ -260,16 +256,19 @@ internal fun UpdatesPane(state: SettingsHubState, actions: SettingsHubActions, f
                 modifier = Modifier.focusRequester(first).paneItem("hub_check_updates"),
             )
         }
+        // Under the button it starts from, in view as the pane opens: lower down it would sit between cards that take
+        // the focus, and the pivot scrolling would carry it from under the bottom fade to under the top one.
         InfoLine(ShashaIcons.Info, stringResource(R.string.hub_updates_how))
         InfoLine(ShashaIcons.Build, stringResource(R.string.hub_updates_when))
-        InfoLine(ShashaIcons.Computer, stringResource(R.string.hub_updates_adb))
+        Spacer(Modifier.height(6.dp))
+        TechnicalInfo()
     }
 }
 
 /** The logo, the version and its build number, and the extractor's version. */
 @Composable
 internal fun VersionBlock(versions: AppVersions, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.fillMaxWidth().testTag("hub_version"), verticalAlignment = Alignment.CenterVertically) {
         Image(painterResource(R.drawable.splash_logo), contentDescription = null, modifier = Modifier.size(56.dp))
         Spacer(Modifier.width(16.dp))
         Column {
@@ -280,86 +279,6 @@ internal fun VersionBlock(versions: AppVersions, modifier: Modifier = Modifier) 
                 color = ShashaColors.Muted,
             )
         }
-    }
-}
-
-/**
- * «تشخيص»: the test videos, the facts to give when something breaks (the TV, which voice recognizer it offers, the
- * subscriptions' last refresh), and «معلومات تقنية والتراخيص» ([TechnicalInfo]: the version and the extractor,
- * SponsorBlock's attribution, the libraries and their licences; it used to be on «حول»).
- */
-@Composable
-internal fun DiagnosticsPane(state: SettingsHubState, actions: SettingsHubActions, first: FocusRequester) {
-    val formats = rememberFormats()
-    PaneColumn {
-        PaneRow(
-            title = stringResource(R.string.diag_title),
-            onClick = actions.openDiagnostics,
-            modifier = Modifier.focusRequester(first).paneItem("hub_diagnostics_videos"),
-            icon = ShashaIcons.PlaylistPlay,
-            body = stringResource(R.string.hub_diag_videos_body),
-        )
-        // Under the row it starts from, in view as the pane opens. Lower down it would sit between cards that take the
-        // focus, and the pivot scrolling would carry it from under the bottom fade to under the top one.
-        InfoLine(ShashaIcons.Info, stringResource(R.string.hub_diag_hint))
-        Spacer(Modifier.height(4.dp))
-        SectionLabel(stringResource(R.string.hub_diag_facts), icon = ShashaIcons.Build)
-        // Taking the focus, it lets the remote scroll through the facts.
-        ReadingCard(Modifier.paneItem("hub_diagnostics_facts"), spacing = 10.dp) {
-            state.device?.let { device ->
-                val name = listOf(device.maker, device.model).filter { it.isNotBlank() }.joinToString(" ")
-                InfoLine(ShashaIcons.Computer, stringResource(R.string.hub_fact_device, name, device.android, device.sdk.toString()), textColor = ShashaColors.Text)
-            }
-            state.voice?.let { voice ->
-                InfoLine(ShashaIcons.Mic, voiceFact(voice), textColor = ShashaColors.Text, modifier = Modifier.testTag("hub_fact_voice"))
-            }
-            state.syncHealth?.let { health ->
-                val text = when {
-                    health.channels == 0 -> stringResource(R.string.hub_fact_no_subscriptions)
-                    health.lastAttemptAtMs == null -> stringResource(
-                        R.string.hub_fact_feed_never,
-                        formats.count(R.array.count_channels, health.channels.toLong()),
-                    )
-                    else -> stringResource(
-                        R.string.hub_fact_feed,
-                        formats.count(R.array.count_channels, health.channels.toLong()),
-                        formats.ago(health.lastAttemptAtMs, state.nowMs),
-                    )
-                }
-                val failing = health.failed > 0
-                InfoLine(ShashaIcons.Subscriptions, text, tint = if (failing) ShashaColors.Secondary else ShashaColors.Muted, textColor = ShashaColors.Text)
-                if (failing) {
-                    InfoLine(ShashaIcons.Info, stringResource(R.string.hub_fact_feed_failed, health.failed.toString()), tint = ShashaColors.Secondary)
-                    health.lastError?.let { error ->
-                        // The error as the extractor named it, left to right, under the Arabic line.
-                        Text(
-                            "${error.kind.name}: ${error.technicalName}",
-                            style = MaterialTheme.typography.bodySmall.copy(textDirection = TextDirection.Ltr),
-                            color = ShashaColors.Muted,
-                            textAlign = StartTextAlign,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth().padding(start = 28.dp),
-                        )
-                    }
-                }
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-        TechnicalInfo(state.versions)
-    }
-}
-
-/** Which way of listening the TV offers: the system's voice screen (used first), the in-app recognizer (the fallback), or none. */
-@Composable
-private fun voiceFact(voice: VoiceAvailability): String {
-    val screen = voice.systemScreen
-    val service = voice.service
-    return when {
-        screen != null && service != null -> stringResource(R.string.hub_fact_voice_both, screen, service)
-        screen != null -> stringResource(R.string.hub_fact_voice_system, screen)
-        service != null -> stringResource(R.string.hub_fact_voice_service, service)
-        else -> stringResource(R.string.hub_fact_voice_none)
     }
 }
 

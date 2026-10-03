@@ -7,7 +7,7 @@ android {
     namespace = "com.ahmadnayfeh.shasha.remote"
     compileSdk = 37
     defaultConfig {
-        minSdk = 28
+        minSdk = 25
         consumerProguardFiles("consumer-rules.pro")
     }
     compileOptions {

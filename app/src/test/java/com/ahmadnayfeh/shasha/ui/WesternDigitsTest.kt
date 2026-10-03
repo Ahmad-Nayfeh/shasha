@@ -5,9 +5,14 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.Fixtures
 import com.ahmadnayfeh.shasha.TV_DEVICE
-import com.ahmadnayfeh.shasha.ui.screens.diagnostics.DiagnosticsScreen
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerOsd
+import com.ahmadnayfeh.shasha.ui.screens.updates.UpdateUiState
+import com.ahmadnayfeh.shasha.ui.screens.updates.UpdatesActions
+import com.ahmadnayfeh.shasha.ui.screens.updates.UpdatesScreen
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
+import com.ahmadnayfeh.shasha.update.InstalledVersion
+import com.ahmadnayfeh.shasha.update.ReleaseAsset
+import com.ahmadnayfeh.shasha.update.ReleaseInfo
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -41,12 +46,15 @@ class WesternDigitsTest {
     }
 
     @Test
-    fun diagnosticsStatusAndFacts() {
+    fun updaterProgressAndVersions() {
+        val release = ReleaseInfo("v1.2.0-1070", "1.2.0", 1070, ReleaseAsset(7, "shasha-1.2.0-1070.apk", 18_874_368, "https://example.test/assets/7"))
         compose.setContent {
-            ShashaTheme { DiagnosticsScreen(Fixtures.diagnostics, "v0.26.5", "0.1.0", onOpen = {}, onRecheck = {}) }
+            ShashaTheme {
+                UpdatesScreen(UpdateUiState.Downloading(release, bytes = 7_340_032, total = 18_874_368), InstalledVersion("1.1.1", 1057), UpdatesActions(onBack = {}))
+            }
         }
-        compose.onNodeWithText("يعمل · حتى 2160p").assertExists()
-        compose.onNodeWithText("أعلى جودة 2160p").assertExists()
-        compose.onNodeWithText("ترجمات: 6").assertExists()
+        compose.onNodeWithText("7.0 من 18.0 ميغابايت").assertExists()
+        compose.onNodeWithText("1.1.1 (1057)").assertExists()
+        compose.onNodeWithText("1.2.0 (1070)").assertExists()
     }
 }

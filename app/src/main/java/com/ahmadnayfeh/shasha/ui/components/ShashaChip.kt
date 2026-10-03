@@ -22,9 +22,12 @@ import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
-/** A filter pill: accent-tinted with a check when [selected], solid accent when focused. */
+/**
+ * A filter pill: accent-tinted with a check when [selected], solid accent when focused. [large]: a bigger pill for what is
+ * chosen first (a channel's sections), which marks the selected one by its tint alone, without the check.
+ */
 @Composable
-fun ShashaChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ShashaChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, large: Boolean = false) {
     val shape = RoundedCornerShape(percent = 50)
     val accent = LocalAccent.current
     Surface(
@@ -46,15 +49,21 @@ fun ShashaChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: M
             focusedBorder = Border.None,
         ),
     ) {
+        val check = selected && !large
         Row(
-            Modifier.padding(start = if (selected) 14.dp else 22.dp, end = 22.dp, top = 8.dp, bottom = 8.dp),
+            Modifier.padding(
+                start = if (check) 14.dp else if (large) 24.dp else 22.dp,
+                end = if (large) 24.dp else 22.dp,
+                top = if (large) 10.dp else 8.dp,
+                bottom = if (large) 10.dp else 8.dp,
+            ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (selected) {
+            if (check) {
                 Icon(ShashaIcons.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
             }
-            Text(text, style = MaterialTheme.typography.labelLarge)
+            Text(text, style = if (large) MaterialTheme.typography.titleSmall else MaterialTheme.typography.labelLarge)
         }
     }
 }

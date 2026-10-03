@@ -7,11 +7,12 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.TV_1080P
+import com.ahmadnayfeh.shasha.TV_1080P_EN
+import com.ahmadnayfeh.shasha.data.AppLanguage
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.update.InstalledVersion
 import com.ahmadnayfeh.shasha.update.ReleaseAsset
 import com.ahmadnayfeh.shasha.update.ReleaseInfo
-import com.ahmadnayfeh.shasha.update.ReleaseNotes
 import com.ahmadnayfeh.shasha.update.UpdateErrorKind
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
@@ -20,7 +21,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** The updater's states (SPEC §6) at TV size. Record: ./gradlew :app:recordRoborazziDebug. */
+/** The updater's states (SPEC §6) at TV size. Record: ./gradlew :app:recordRoborazziDebug --tests '*UpdatesScreenshotTest*'. */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = TV_1080P)
@@ -28,59 +29,64 @@ class UpdatesScreenshotTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun snap(name: String, content: @Composable () -> Unit) {
+    private fun snap(name: String, language: AppLanguage = AppLanguage.ARABIC, content: @Composable () -> Unit) {
         compose.setContent {
-            CompositionLocalProvider(LocalInspectionMode provides true) { ShashaTheme { content() } }
+            CompositionLocalProvider(LocalInspectionMode provides true) { ShashaTheme(language = language) { content() } }
         }
         compose.waitForIdle()
         compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
     }
 
-    private fun screen(name: String, state: UpdateUiState) = snap(name) { UpdatesScreen(state, INSTALLED, UpdatesActions(onBack = {})) }
+    private fun screen(name: String, state: UpdateUiState, language: AppLanguage = AppLanguage.ARABIC) =
+        snap(name, language) { UpdatesScreen(state, INSTALLED, UpdatesActions(onBack = {})) }
 
     @Test
-    fun upToDate() = screen("updates_up_to_date", UpdateUiState.UpToDate(RELEASE.copy(versionCode = 1041, tag = "v1.0.0-1041")))
+    fun checking() = screen("updates_checking", UpdateUiState.Checking)
 
     @Test
-    fun available() = screen("updates_available", UpdateUiState.Available(RELEASE, installAllowed = true))
+    fun upToDate() = screen("updates_up_to_date", UpdateUiState.UpToDate)
 
     @Test
     fun downloading() = screen("updates_downloading", UpdateUiState.Downloading(RELEASE, bytes = 7_340_032, total = RELEASE.apk.size))
 
     @Test
-    fun tokenMissing() = screen("updates_token_missing", UpdateUiState.TokenMissing)
-
-    @Test
-    fun errorSignature() = screen("updates_error", UpdateUiState.Failed(UpdateErrorKind.SIGNATURE_MISMATCH, detail = null, release = RELEASE))
-
-    @Test
-    fun installNotAllowed() = screen(
-        "updates_not_allowed",
-        UpdateUiState.InstallNotAllowed(RELEASE, "adb shell appops set com.ahmadnayfeh.shasha REQUEST_INSTALL_PACKAGES allow"),
+    @Config(sdk = [35], qualifiers = TV_1080P_EN)
+    fun downloadingEnglish() = screen(
+        "updates_downloading_en",
+        UpdateUiState.Downloading(RELEASE, bytes = 7_340_032, total = RELEASE.apk.size),
+        AppLanguage.ENGLISH,
     )
+
+    /** The app is about to close for a moment and open again: said before the system takes over. */
+    @Test
+    fun installing() = screen("updates_installing", UpdateUiState.Installing(RELEASE))
+
+    /** Where Android still asks (before 12): its own window is up over this screen. */
+    @Test
+    fun theSystemAsks() = screen("updates_asked", UpdateUiState.Installing(RELEASE, asked = true))
+
+    @Test
+    fun cancelled() = screen("updates_cancelled", UpdateUiState.Cancelled(RELEASE))
+
+    @Test
+    fun errorNetwork() = screen("updates_error", UpdateUiState.Failed(UpdateErrorKind.NETWORK, release = null))
+
+    @Test
+    fun installNotAllowed() = screen("updates_not_allowed", UpdateUiState.InstallNotAllowed(RELEASE))
+
+    @Test
+    fun tokenMissing() = screen("updates_token_missing", UpdateUiState.TokenMissing)
 
     @Test
     fun child() = snap("updates_child") { UpdatesChildNotice("1.0.0", "v0.26.5", onBack = {}) }
 
     private companion object {
-        val INSTALLED = InstalledVersion("1.0.0", 1041)
+        val INSTALLED = InstalledVersion("1.1.1", 1057)
         val RELEASE = ReleaseInfo(
-            tag = "v1.0.0-1042",
-            versionName = "1.0.0",
-            versionCode = 1042,
-            notes = ReleaseNotes.plain(
-                """
-                ## شاشة 1.0.0 (1042)
-
-                - **NewPipeExtractor:** `v0.26.5`
-                - **Commit:** [`3f9a2c1`](https://github.com/Ahmad-Nayfeh/shasha/commit/3f9a2c1) Final phase: updater
-                - **Build:** [Android #42](https://github.com/Ahmad-Nayfeh/shasha/actions/runs/1) (push)
-                - **Signing certificate SHA-256:** `5d41402abc4b2a76b9719d911017c592ae8f3c1e2b4d6f8091a2b3c4d5e6f708`
-
-                التثبيت: زر «فحص التحديثات» في التطبيق، أو من الحاسوب بتشغيل المثبّت من جديد (انظر «دليل شاشة»).
-                """.trimIndent(),
-            ),
-            apk = ReleaseAsset(7, "shasha-1.0.0-1042.apk", 18_874_368, "https://api.github.com/repos/Ahmad-Nayfeh/shasha/releases/assets/7"),
+            tag = "v1.2.0-1070",
+            versionName = "1.2.0",
+            versionCode = 1070,
+            apk = ReleaseAsset(7, "shasha-1.2.0-1070.apk", 18_874_368, "https://api.example.test/repos/owner/app/releases/assets/7"),
         )
     }
 }

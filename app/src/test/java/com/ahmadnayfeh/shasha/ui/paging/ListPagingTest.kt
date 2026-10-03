@@ -158,20 +158,20 @@ class ListPagingTest {
         source.channelPages = pagesOf(30, 30, 30, 30, 30, 30, short = { it % 5 != 0 })
         val vm = channelModel()
         assertThat(source.requests).containsExactly("channel:0", "channel:1", "channel:2", "channel:3").inOrder()
-        assertThat(vm.videos.value.items).hasSize(24)
-        assertThat(vm.videos.value.loadingMore).isFalse()
+        assertThat(vm.items.value.items).hasSize(24)
+        assertThat(vm.items.value.loadingMore).isFalse()
     }
 
     @Test
     fun channel_keepsLoadingWhileScrolled_andStopsAtTheEnd() {
         source.channelPages = pagesOf(30, 30, 10)
         val vm = channelModel()
-        assertThat(vm.videos.value.items).hasSize(30) // one full page is enough for the first screen
+        assertThat(vm.items.value.items).hasSize(30) // one full page is enough for the first screen
         vm.loadMore()
-        assertThat(vm.videos.value.items).hasSize(60)
+        assertThat(vm.items.value.items).hasSize(60)
         vm.loadMore()
-        assertThat(vm.videos.value.items).hasSize(70)
-        assertThat(vm.videos.value.endReached).isTrue()
+        assertThat(vm.items.value.items).hasSize(70)
+        assertThat(vm.items.value.endReached).isTrue()
         repeat(3) { vm.loadMore() }
         assertThat(source.requests).containsExactly("channel:0", "channel:1", "channel:2").inOrder()
     }

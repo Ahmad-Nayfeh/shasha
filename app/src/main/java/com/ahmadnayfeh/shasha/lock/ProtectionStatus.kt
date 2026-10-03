@@ -20,7 +20,10 @@ data class ProtectionStatus(
     val overlay: Boolean,
     /** GET_USAGE_STATS: see which app is in front. */
     val usageAccess: Boolean,
-    /** REQUEST_INSTALL_PACKAGES: the updater may open the system installer (phase 7). */
+    /**
+     * REQUEST_INSTALL_PACKAGES: the updater may open the system installer (phase 7). Below Android 8 (Fire OS 6) no such
+     * per-app permission exists: the TV-wide «Unknown sources» setting decides ([unknownSources]).
+     */
     val installPackages: Boolean,
     /** The guard service runs in this process right now. */
     val guardRunning: Boolean,
@@ -30,6 +33,12 @@ data class ProtectionStatus(
      * clock: the daily quota restarts with a date set forward, bedtime opens with a time set back.
      */
     val autoTime: Boolean = true,
+    /** Which official YouTube app [youtube] is about: Google's app for Android TV, or YouTube for Fire TV. */
+    val youtubePackage: String = ProtectionChecks.YOUTUBE_TV_PACKAGE,
+    /** Android 7.1 or older: [installPackages] is the TV-wide «Unknown sources» setting, not a permission of this app. */
+    val unknownSources: Boolean = false,
+    /** An Amazon Fire TV: Amazon does not officially support covering other apps, so the guard is tried, not promised. */
+    val fireTv: Boolean = false,
 ) {
     /** The guard can work: both of its permissions are granted. */
     val guardCanRun: Boolean get() = overlay && usageAccess
@@ -46,16 +55,31 @@ data class ProtectionStatus(
 
 /** Reads each item of [ProtectionStatus] from the system (cheap: a few binder calls, no disk). */
 object ProtectionChecks {
+    /** The official YouTube app on Android TV and Google TV. */
     const val YOUTUBE_TV_PACKAGE = "com.google.android.youtube.tv"
 
-    fun read(context: Context, guardRunning: Boolean) = ProtectionStatus(
-        overlay = canDrawOverlays(context),
-        usageAccess = hasUsageAccess(context),
-        installPackages = canRequestInstalls(context),
-        guardRunning = guardRunning,
-        youtube = youtubeState(context),
-        autoTime = autoTime(context),
-    )
+    /** The official YouTube app on Amazon Fire TV («YouTube for Fire TV»). */
+    const val YOUTUBE_FIRE_TV_PACKAGE = "com.amazon.firetv.youtube"
+
+    /** Every Fire TV declares it (Amazon's documented way to tell a Fire TV). */
+    const val FIRE_TV_FEATURE = "amazon.hardware.fire_tv"
+
+    fun read(context: Context, guardRunning: Boolean): ProtectionStatus {
+        val (youtubePackage, youtube) = youtubeApp(context)
+        return ProtectionStatus(
+            overlay = canDrawOverlays(context),
+            usageAccess = hasUsageAccess(context),
+            installPackages = canRequestInstalls(context),
+            guardRunning = guardRunning,
+            youtube = youtube,
+            autoTime = autoTime(context),
+            youtubePackage = youtubePackage,
+            unknownSources = Build.VERSION.SDK_INT < Build.VERSION_CODES.O,
+            fireTv = isFireTv(context),
+        )
+    }
+
+    fun isFireTv(context: Context): Boolean = runCatching { context.packageManager.hasSystemFeature(FIRE_TV_FEATURE) }.getOrDefault(false)
 
     /** Settings.Global.AUTO_TIME (on unless someone turned it off; unreadable counts as on). */
     fun autoTime(context: Context): Boolean =
@@ -90,23 +114,42 @@ object ProtectionChecks {
         }
     }
 
-    /** REQUEST_INSTALL_PACKAGES is declared (the system throws for apps that do not), so this is the app-op. */
+    /**
+     * REQUEST_INSTALL_PACKAGES is declared (the system throws for apps that do not), so from Android 8 this is the app-op.
+     * Before it (Fire OS 6, Android 7.1) the TV-wide «Unknown sources» setting lets every app open the system installer.
+     */
     fun canRequestInstalls(context: Context): Boolean = try {
-        context.packageManager.canRequestPackageInstalls()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.packageManager.canRequestPackageInstalls()
+        } else {
+            @Suppress("DEPRECATION")
+            Settings.Secure.getInt(context.contentResolver, Settings.Secure.INSTALL_NON_MARKET_APPS, 0) != 0
+        }
     } catch (e: RuntimeException) {
         false
     }
 
-    fun youtubeState(context: Context): YouTubeAppState {
+    /**
+     * The official YouTube app this TV has and its state: one that is enabled first (Google's or Fire TV's), then a disabled
+     * one; [YOUTUBE_TV_PACKAGE] when neither is installed.
+     */
+    fun youtubeApp(context: Context): Pair<String, YouTubeAppState> {
+        val found = listOf(YOUTUBE_TV_PACKAGE, YOUTUBE_FIRE_TV_PACKAGE).map { it to youtubeState(context, it) }
+        return found.firstOrNull { it.second == YouTubeAppState.ENABLED }
+            ?: found.firstOrNull { it.second == YouTubeAppState.DISABLED }
+            ?: (YOUTUBE_TV_PACKAGE to YouTubeAppState.NOT_INSTALLED)
+    }
+
+    fun youtubeState(context: Context, packageName: String = YOUTUBE_TV_PACKAGE): YouTubeAppState {
         val pm = context.packageManager
         val enabled = try {
             @Suppress("DEPRECATION")
-            pm.getApplicationInfo(YOUTUBE_TV_PACKAGE, 0).enabled
+            pm.getApplicationInfo(packageName, 0).enabled
         } catch (e: PackageManager.NameNotFoundException) {
             return YouTubeAppState.NOT_INSTALLED
         }
         val setting = try {
-            pm.getApplicationEnabledSetting(YOUTUBE_TV_PACKAGE)
+            pm.getApplicationEnabledSetting(packageName)
         } catch (e: IllegalArgumentException) {
             PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
         }
@@ -128,16 +171,23 @@ object ProtectionCommands {
 
     fun usageAccess(packageName: String) = "adb shell appops set $packageName GET_USAGE_STATS allow"
 
-    fun installPackages(packageName: String) = "adb shell appops set $packageName REQUEST_INSTALL_PACKAGES allow"
+    /** From Android 8 the app-op; before it (Fire OS 6) the TV-wide «Unknown sources» setting, the only switch there is. */
+    fun installPackages(packageName: String, unknownSources: Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.O) =
+        if (unknownSources) {
+            "adb shell settings put secure install_non_market_apps 1"
+        } else {
+            "adb shell appops set $packageName REQUEST_INSTALL_PACKAGES allow"
+        }
 
     fun startApp(packageName: String) = "adb shell am start -n $packageName/.MainActivity"
 
     /** The owner's emergency exit: the guard stops until Shasha is opened again (a reboot does not restart it). */
     fun forceStop(packageName: String) = "adb shell am force-stop $packageName"
 
-    val disableYouTube = "adb shell pm disable-user --user 0 ${ProtectionChecks.YOUTUBE_TV_PACKAGE}"
+    /** [youtubePackage]: Google's app on Android TV, YouTube for Fire TV on Fire TV ([ProtectionStatus.youtubePackage]). */
+    fun disableYouTube(youtubePackage: String = ProtectionChecks.YOUTUBE_TV_PACKAGE) = "adb shell pm disable-user --user 0 $youtubePackage"
 
-    val enableYouTube = "adb shell pm enable ${ProtectionChecks.YOUTUBE_TV_PACKAGE}"
+    fun enableYouTube(youtubePackage: String = ProtectionChecks.YOUTUBE_TV_PACKAGE) = "adb shell pm enable $youtubePackage"
 
     /** Network time back on (also in the TV's settings: System → Date & time → Automatic). */
     val autoTime = "adb shell settings put global auto_time 1"

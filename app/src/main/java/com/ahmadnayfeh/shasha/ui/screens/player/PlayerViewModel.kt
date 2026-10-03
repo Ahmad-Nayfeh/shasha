@@ -105,7 +105,7 @@ class PlayerViewModel(
     private val session: WatchSession? = null,
     private val nextInPlaylist: (suspend () -> NextVideo?)? = null,
     private val gate: PlayGate? = null,
-    /** v1.2: the phone's «تأكيد» before a start only the phone could end early (null: never asked, e.g. تشخيص's videos). */
+    /** v1.2: the phone's «تأكيد» before a start only the phone could end early (null: never asked, e.g. no lock). */
     private val startConfirmation: StartConfirmation? = null,
     private val elapsedClock: () -> Long = SystemClock::elapsedRealtime,
     private val wallClock: () -> Long = System::currentTimeMillis,

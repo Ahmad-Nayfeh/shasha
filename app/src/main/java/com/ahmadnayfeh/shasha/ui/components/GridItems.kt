@@ -55,6 +55,47 @@ fun LazyGridScope.videoCards(
 }
 
 /**
+ * Shorts as portrait tiles ([ShortCard]) for a grid of [ShelfDefaults.ShortCardMinWidth] cells, like a Shorts shelf's. Same
+ * keys, watched bars and first-card focus as [videoCards].
+ */
+fun LazyGridScope.shortCards(
+    items: List<VideoUi>,
+    watched: State<Map<String, Float>>,
+    firstItem: FocusRequester?,
+    showChannel: Boolean = true,
+    onPlay: (VideoUi) -> Unit,
+) {
+    itemsIndexed(items, key = { _, item -> item.key }, contentType = { _, _ -> "short" }) { index, item ->
+        val id = item.video.videoId
+        val fraction by remember(id, watched) { derivedStateOf { watched.value[id] } }
+        ShortCard(
+            item = item,
+            watched = fraction,
+            onClick = { onPlay(item) },
+            thumbnailModifier = if (index == 0 && firstItem != null) Modifier.focusRequester(firstItem) else Modifier,
+            showChannel = showChannel,
+        )
+    }
+}
+
+/** Playlist cards with stable keys; [firstItem] is attached to the first one, as in [videoCards]. */
+fun LazyGridScope.playlistCards(
+    items: List<PlaylistUi>,
+    formats: Formats,
+    firstItem: FocusRequester?,
+    onOpen: (PlaylistUi) -> Unit,
+) {
+    itemsIndexed(items, key = { _, item -> item.key }, contentType = { _, _ -> "playlist" }) { index, item ->
+        PlaylistCard(
+            item,
+            formats,
+            onClick = { onOpen(item) },
+            tileModifier = if (index == 0 && firstItem != null) Modifier.focusRequester(firstItem) else Modifier,
+        )
+    }
+}
+
+/**
  * Mixed results (search): video cards, channel cards with a subscribe button under them, playlist
  * cards. [subscribed] holds the subscribed channel ids; each channel card reads only its own state.
  */

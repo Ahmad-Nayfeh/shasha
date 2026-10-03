@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Shasha</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_library">Library</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Common actions -->
+    <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_clear_all">Clear all</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_more">More options</string>
+    <string name="action_ok">OK</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_retry">Try again</string>
+    <string name="action_saved">Saved</string>
+    <string name="action_subscribe">Subscribe</string>
+    <string name="action_unsubscribe">Unsubscribe</string>
+    <string name="action_watch_later">Watch later</string>
+
+    <!-- Numbers and times (digits are always Western: numbers are passed in as text) -->
+    <string name="count_thousand">%1$sK</string>
+    <string name="count_million">%1$sM</string>
+    <string name="count_billion">%1$sB</string>
+    <string name="views_count">%1$s views</string>
+    <string name="subscribers_count">%1$s subscribers</string>
+    <string name="videos_count">%1$s videos</string>
+    <string name="badge_live">LIVE</string>
+    <string name="time_just_now">Just now</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">%1$s minute ago</item>
+        <item quantity="other">%1$s minutes ago</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">%1$s hour ago</item>
+        <item quantity="other">%1$s hours ago</item>
+    </plurals>
+    <plurals name="time_days_ago">
+        <item quantity="one">%1$s day ago</item>
+        <item quantity="other">%1$s days ago</item>
+    </plurals>
+    <plurals name="time_weeks_ago">
+        <item quantity="one">%1$s week ago</item>
+        <item quantity="other">%1$s weeks ago</item>
+    </plurals>
+    <plurals name="time_months_ago">
+        <item quantity="one">%1$s month ago</item>
+        <item quantity="other">%1$s months ago</item>
+    </plurals>
+    <plurals name="time_years_ago">
+        <item quantity="one">%1$s year ago</item>
+        <item quantity="other">%1$s years ago</item>
+    </plurals>
+
+    <!-- Errors -->
+    <string name="error_network">No connection, or the server did not answer. Check the internet and try again.</string>
+    <string name="error_unavailable">This content is not available.</string>
+    <string name="error_private">This video is private.</string>
+    <string name="error_age">This video is age-restricted and cannot be played here.</string>
+    <string name="error_geo">This video is not available in your country.</string>
+    <string name="error_paid">This video needs a payment or a membership.</string>
+    <string name="error_terminated">This channel no longer exists.</string>
+    <string name="error_bot">YouTube asked for a check that the app cannot answer. Try again later.</string>
+    <string name="error_blocked">YouTube refused the request. Try again in a moment.</string>
+    <string name="error_rate_limited">Too many requests. Wait a little and try again.</string>
+    <string name="error_low_quality">Only a very low quality was found for this video.</string>
+    <string name="error_broken">Reading YouTube failed. The app may need an update.</string>
+    <string name="error_generic">Something went wrong.</string>
+
+    <!-- Home -->
+    <string name="home_empty_title">No subscriptions yet</string>
+    <string name="home_empty_body">Search for a channel and subscribe to see its newest videos here.</string>
+    <string name="home_empty_action">Search</string>
+    <string name="home_no_videos_title">Nothing new yet</string>
+    <string name="home_no_videos_body">Pull down to refresh. The newest uploads of your channels appear here.</string>
+
+    <!-- Search -->
+    <string name="search_hint">Search videos and channels</string>
+    <string name="search_recent">Recent searches</string>
+    <string name="search_no_results">No results</string>
+    <string name="search_no_results_body">Try different words or another filter.</string>
+    <string name="filter_all">All</string>
+    <string name="filter_videos">Videos</string>
+    <string name="filter_channels">Channels</string>
+    <string name="filter_playlists">Playlists</string>
+
+    <!-- Channel and playlist -->
+    <string name="tab_videos">Videos</string>
+    <string name="tab_shorts">Shorts</string>
+    <string name="tab_playlists">Playlists</string>
+    <string name="channel_no_videos">No videos</string>
+    <string name="channel_no_shorts">No shorts</string>
+    <string name="channel_no_playlists">No playlists</string>
+    <string name="playlist_empty">This playlist is empty</string>
+    <string name="playlist_play_all">Play all</string>
+
+    <!-- Video menu -->
+    <string name="menu_add_watch_later">Watch later</string>
+    <string name="menu_remove_watch_later">Remove from Watch later</string>
+    <string name="menu_download">Download</string>
+    <string name="menu_share">Share</string>
+    <string name="menu_open_channel">Go to channel</string>
+    <string name="snack_watch_later_added">Saved to Watch later</string>
+    <string name="snack_watch_later_removed">Removed from Watch later</string>
+    <string name="snack_download_started">Download started</string>
+
+    <!-- Player -->
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_back_10">Back 10 seconds</string>
+    <string name="player_forward_10">Forward 10 seconds</string>
+    <string name="player_fullscreen">Full screen</string>
+    <string name="player_exit_fullscreen">Exit full screen</string>
+    <string name="player_pip">Picture in picture</string>
+    <string name="player_settings">Player settings</string>
+    <string name="player_speed">Speed</string>
+    <string name="player_quality">Quality</string>
+    <string name="player_quality_none">The qualities appear once the video starts.</string>
+    <string name="quality_auto">Auto</string>
+    <string name="quality_auto_playing">Auto (%1$sp)</string>
+    <string name="player_low_quality">Only %1$sp is available for this video.</string>
+    <string name="seek_forward_seconds">+%1$s s</string>
+    <string name="seek_back_seconds">-%1$s s</string>
+    <string name="skip_notice">Skipped: %1$s</string>
+    <string name="skip_undo">Undo</string>
+    <string name="watch_related">Related videos</string>
+    <string name="watch_playlist">Playlist</string>
+
+    <!-- Library -->
+    <string name="library_downloads">Downloads</string>
+    <string name="library_history">History</string>
+    <string name="library_watch_later">Watch later</string>
+    <string name="library_subscriptions">Subscriptions</string>
+    <string name="history_empty">No history yet</string>
+    <string name="history_empty_body">The videos you watch appear here.</string>
+    <string name="history_clear_title">Clear watch history?</string>
+    <string name="history_clear_body">This also forgets where you stopped in each video.</string>
+    <string name="watch_later_empty">Nothing saved</string>
+    <string name="watch_later_empty_body">Use the menu of a video to save it for later.</string>
+    <string name="watch_later_clear_title">Clear Watch later?</string>
+    <string name="subscriptions_empty">No subscriptions yet</string>
+
+    <!-- Downloads -->
+    <string name="download_title">Download</string>
+    <string name="download_video_section">Video (MP4, with sound)</string>
+    <string name="download_audio_section">Audio only</string>
+    <string name="download_audio_only">Audio (M4A)</string>
+    <string name="download_audio_label">Audio</string>
+    <string name="download_preferred">Your preferred quality</string>
+    <string name="download_unavailable">This video cannot be downloaded.</string>
+    <string name="download_preparing">Preparing…</string>
+    <string name="download_downloading">Downloading…</string>
+    <string name="download_downloading_percent">Downloading %1$s%%</string>
+    <string name="download_merging">Merging video and sound…</string>
+    <string name="download_queued">Waiting…</string>
+    <string name="download_done">Download complete</string>
+    <string name="download_failed">Download failed</string>
+    <string name="downloads_empty">No downloads</string>
+    <string name="downloads_empty_body">Download a video from its menu. Videos are saved in Movies/Shasha and audio in Music/Shasha.</string>
+    <string name="downloads_delete_title">Delete this download?</string>
+    <string name="downloads_delete_body">“%1$s” will be removed from your phone.</string>
+    <string name="downloads_delete_failed">Could not delete</string>
+    <string name="downloads_delete_failed_body">Remove the file from your gallery or file manager.</string>
+    <string name="notif_channel_downloads">Downloads</string>
+    <string name="notif_channel_downloads_done">Finished downloads</string>
+    <string name="notif_channel_updates">Updates</string>
+
+    <!-- Settings -->
+    <string name="settings_language">Language</string>
+    <string name="language_system">Follow the phone</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">Follow the phone</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_default_quality">Default quality</string>
+    <string name="settings_default_quality_hint">The quality a video starts at. Auto adapts to your connection.</string>
+    <string name="settings_playback">Playback</string>
+    <string name="settings_background">Play in the background</string>
+    <string name="settings_background_hint">Keep the sound going when you leave the app or turn the screen off.</string>
+    <string name="settings_pip">Picture in picture</string>
+    <string name="settings_pip_hint">Leaving the app while a video plays turns it into a small floating window.</string>
+    <string name="settings_download_quality">Download quality</string>
+    <string name="settings_download_quality_hint">The download sheet marks the best quality the video has up to this one.</string>
+    <string name="settings_sponsorblock">SponsorBlock</string>
+    <string name="settings_sponsorblock_hint">Skips sponsor, self-promotion and similar parts of a video by itself, using data made by a community.</string>
+    <string name="settings_sponsorblock_enabled">Skip segments automatically</string>
+    <string name="settings_reset_all">Reset all settings</string>
+    <string name="settings_reset_all_body">Language, theme, quality, playback and SponsorBlock go back to how they were.</string>
+    <string name="sponsorblock_attribution_short">Skip data: SponsorBlock (sponsor.ajay.app), CC BY-NC-SA 4.0.</string>
+
+    <string name="sb_category_sponsor">Sponsor</string>
+    <string name="sb_category_sponsor_body">Paid promotion, paid referrals and direct advertisements.</string>
+    <string name="sb_category_selfpromo">Self-promotion</string>
+    <string name="sb_category_selfpromo_body">Unpaid promotion of the creator\'s own products, channels or sites.</string>
+    <string name="sb_category_interaction">Interaction reminder</string>
+    <string name="sb_category_interaction_body">Asks to like, subscribe or follow.</string>
+    <string name="sb_category_intro">Intro</string>
+    <string name="sb_category_intro_body">An intro animation or title sequence.</string>
+    <string name="sb_category_outro">Outro</string>
+    <string name="sb_category_outro_body">Credits or end cards.</string>
+    <string name="sb_category_preview">Preview or recap</string>
+    <string name="sb_category_preview_body">Clips that show what is coming up or what already happened.</string>
+    <string name="sb_category_hook">Hook</string>
+    <string name="sb_category_hook_body">A teaser of what is coming up.</string>
+    <string name="sb_category_filler">Filler</string>
+    <string name="sb_category_filler_body">Tangents added only for filler or humor.</string>
+    <string name="sb_category_music_offtopic">Music: non-music part</string>
+    <string name="sb_category_music_offtopic_body">In music videos: the parts that are not music.</string>
+
+    <!-- Updates -->
+    <string name="update_title">Check for updates</string>
+    <string name="update_summary">Is a newer version available?</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_up_to_date">You\'re up to date</string>
+    <string name="update_installed_version">Installed version: %1$s</string>
+    <string name="update_check_again">Check again</string>
+    <string name="update_available">Version %1$s is available</string>
+    <string name="update_download_install">Download and install</string>
+    <string name="update_downloading">Downloading the update…</string>
+    <string name="update_needs_permission">Allow Shasha to install apps once, then come back here.</string>
+    <string name="update_allow_install">Allow installing</string>
+    <string name="update_installing">Installing… the system may ask you to confirm.</string>
+    <string name="update_unavailable">Updates are not available in this version of the app.</string>
+    <string name="update_err_network">Could not reach the update server. Check the internet.</string>
+    <string name="update_err_unavailable">The updates cannot be read right now.</string>
+    <string name="update_err_server">The update server\'s answer was not understood.</string>
+    <string name="update_err_download">The download was interrupted. Try again.</string>
+    <string name="update_err_file">The downloaded file is not a valid update for this app.</string>
+    <string name="update_err_signature">The update is signed with another key than this installation, so Android would refuse it. Install the official version once.</string>
+    <string name="update_err_install">The installation failed.</string>
+    <string name="update_notif_title">Update ready</string>
+    <string name="update_notif_text">Tap to finish installing.</string>
+
+    <!-- About -->
+    <string name="about_title">About</string>
+    <string name="about_version">Version %1$s (%2$s)</string>
+    <string name="about_developer_caption">Developer</string>
+    <string name="about_developer_name">Ahmad Nayfeh</string>
+    <string name="about_made_with_love">Made with love for my family</string>
+    <string name="about_more_apps">More apps by the developer</string>
+    <string name="about_link_website">Website</string>
+    <string name="about_link_play" translatable="false">Google Play</string>
+    <string name="about_link_open">Open</string>
+    <string name="about_sponsorblock_title">SponsorBlock</string>
+    <string name="about_licenses">Licences</string>
+    <string name="about_licenses_intro">The free software this app is built on.</string>
+    <!-- The attribution SponsorBlock asks for, word for word (its template reads "licensed used"). -->
+    <string name="sponsorblock_attribution_exact" translatable="false">Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/.</string>
+    <string name="sponsorblock_attribution">Skip data comes from SponsorBlock at sponsor.ajay.app, contributed by its community and licensed under CC BY-NC-SA 4.0.</string>
+    <string name="license_role_newpipe">Reading YouTube: search, channels and playback links</string>
+    <string name="license_role_androidx">The interface, the player, the database and the settings</string>
+    <string name="license_role_okhttp">Networking</string>
+    <string name="license_role_kotlinx">The programming language, concurrency and reading JSON</string>
+    <string name="license_role_coil">Loading thumbnails</string>
+    <string name="license_role_rhino">Running YouTube\'s code inside the extraction library</string>
+    <string name="license_role_jsoup">Reading HTML pages inside the extraction library</string>
+    <string name="license_role_nanojson">Reading JSON inside the extraction library</string>
+    <string name="license_role_protobuf">YouTube\'s binary requests inside the extraction library</string>
+    <string name="license_role_helpers">Helper libraries the libraries above depend on</string>
+    <string name="license_role_desugar">Modern Java features on older Android versions</string>
+    <string name="license_role_plex">The interface\'s Arabic font</string>
+</resources>

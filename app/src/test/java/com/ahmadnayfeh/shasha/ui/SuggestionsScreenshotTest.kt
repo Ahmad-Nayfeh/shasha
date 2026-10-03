@@ -43,10 +43,7 @@ import com.ahmadnayfeh.shasha.ui.components.ContentFocus
 import com.ahmadnayfeh.shasha.ui.main.MainShell
 import com.ahmadnayfeh.shasha.ui.main.Tab
 import com.ahmadnayfeh.shasha.ui.model.ItemUi
-import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.ui.paging.PagedState
-import com.ahmadnayfeh.shasha.ui.screens.channel.ChannelHeader
-import com.ahmadnayfeh.shasha.ui.screens.channel.ChannelScreen
 import com.ahmadnayfeh.shasha.ui.screens.home.HomeScreen
 import com.ahmadnayfeh.shasha.ui.screens.home.HomeState
 import com.ahmadnayfeh.shasha.ui.screens.home.HomeSync
@@ -68,7 +65,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * v1.1.1's screens: «الفيديوهات المقترحة» (the home's row, the player's row under its controls, the end card), Shorts
- * (the home's row, the «Shorts» badge on a tile, a channel's Shorts, a vertical video in the player), the red progress
+ * (the home's row, the «Shorts» badge on a tile, a vertical video in the player), the red progress
  * bars of السجل, and the profile page's two switches. JVM screenshots at 1920x1080, like the others.
  */
 @OptIn(ExperimentalTestApi::class, ExperimentalCoilApi::class, ExperimentalFoundationApi::class)
@@ -159,32 +156,7 @@ class SuggestionsScreenshotTest {
         }
     }
 
-    @Test
-    fun channelShorts() = snap("channel_shorts", keys = listOf(Key.DirectionDown)) {
-        // DOWN from the newest upload: the channel's Shorts, under its first line of videos.
-        val shorts = UiFixtures.shorts.take(5).mapIndexed { i, item ->
-            VideoUi(item.video.copy(channelName = "فنون الخط", title = listOf("حرف الضاد في 30 ثانية", "قلم القصب: كيف يُبرى", "الثلث أم النسخ؟", "Ink test #4", "تمرين اليوم")[i]), item.timeMs)
-        }
-        ChannelScreen(
-            channelId = UiFixtures.calligraphyChannel.channelId,
-            nameHint = null,
-            header = ChannelHeader.Ready(UiFixtures.channelDetails),
-            videos = PagedState(items = UiFixtures.channelVideos, loadingFirst = false),
-            subscribed = true,
-            watched = stateOf(mapOf(UiFixtures.channelVideos[1].video.videoId to 0.5f)),
-            nowMs = NOW,
-            focus = remember { ContentFocus() },
-            extractorVersion = "v0.26.5",
-            onToggleSubscription = {},
-            onUnsubscribe = {},
-            onPlay = {},
-            onLoadMore = {},
-            onRetryMore = {},
-            onBack = {},
-            onCheckUpdates = {},
-            shorts = shorts,
-        )
-    }
+    // A channel's Shorts are a section of its page now: ChannelSectionsScreenshotTest takes «channel_shorts».
 
     private val suggestions = UiFixtures.suggested.map { it.video }
     private val suggestionsWatched = mapOf(suggestions[1].videoId to 0.45f, suggestions[4].videoId to 1f)

@@ -22,6 +22,10 @@
     <!-- «فحص التحديثات» hands a downloaded release to the system installer (SPEC §6; adb-setup grants the
          app-op, «حالة الحماية» tells whether it is allowed). -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- With that app-op allowed, Android 12+ lets the app install its own update without a question (the session asks
+         for it with setRequireUserAction(USER_ACTION_NOT_REQUIRED)); before that, or when the system still wants an
+         answer, its own confirmation window appears. -->
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
 
     <!-- SPEC §5, the phone remote: a web server on the home network (INTERNET comes from :remote), in a
          foreground service of type connectedDevice, rebound when the network changes and announced with NSD.
@@ -40,7 +44,9 @@
 
     <queries>
         <package android:name="com.google.android.youtube.tv" />
-        <!-- Voice search, for «تشخيص» (which of them this TV offers): the system's voice screen (used first) and the
+        <!-- The same for Amazon Fire TV, whose official app is «YouTube for Fire TV». -->
+        <package android:name="com.amazon.firetv.youtube" />
+        <!-- Voice search, to know which of them this TV offers (none: no microphone on the search screen): the system's voice screen (used first) and the
              recognition service (SpeechRecognizer, the fallback). Starting the voice screen needs no visibility. -->
         <intent>
             <action android:name="android.speech.RecognitionService" />
@@ -117,6 +123,16 @@
         <receiver
             android:name=".update.InstallStatusReceiver"
             android:exported="false" />
+
+        <!-- After an update the app started itself, the new version opens «شاشة» again (the system's broadcast reaches
+             it unexported). Display over other apps, granted by the kit, is what lets it start the activity. -->
+        <receiver
+            android:name=".update.AppUpdatedReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Starts the phone remote after a reboot and after an update. -->
         <receiver

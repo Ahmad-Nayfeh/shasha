@@ -27,12 +27,12 @@ android {
 
     defaultConfig {
         applicationId = "com.ahmadnayfeh.shasha"
-        minSdk = 28
+        minSdk = 25
         targetSdk = 35
         versionCode = ciEnv("SHASHA_VERSION_CODE")
             ?.let { it.toIntOrNull() ?: error("SHASHA_VERSION_CODE must be an integer, got '$it'") }
             ?: 1
-        versionName = "1.1.1"
+        versionName = "1.2.0"
         // SPEC §6's updater reads this repository's GitHub Releases. The repository is private, so it needs a
         // read-only token (CI's SHASHA_UPDATE_TOKEN); empty = the updater explains that it has none.
         buildConfigField("String", "UPDATE_REPO", javaString("Ahmad-Nayfeh/shasha"))

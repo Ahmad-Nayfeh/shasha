@@ -19,7 +19,10 @@ set -euo pipefail
 
 readonly PKG=com.ahmadnayfeh.shasha
 readonly ACTIVITY="$PKG/.MainActivity"
-readonly YT_PKG=com.google.android.youtube.tv
+# The official YouTube app: Google's on Android TV and Google TV, «YouTube for Fire TV» on Fire TV. YT_PKG is the
+# one this TV has (find_youtube).
+YT_PKGS=(com.google.android.youtube.tv com.amazon.firetv.youtube)
+YT_PKG=""
 # The app starts its guard itself (at its start and after a reboot); this script only reports whether it runs.
 readonly GUARD="$PKG/.lock.GuardService"
 # SYSTEM_ALERT_WINDOW: the guard draws over other apps. GET_USAGE_STATS: it sees which app is in
@@ -32,6 +35,13 @@ GUARD_PERMS=(android.permission.SYSTEM_ALERT_WINDOW android.permission.PACKAGE_U
 readonly CONNECT_TIMEOUT=60
 # Wrong answers in a row (an address, a pairing code) before the script gives up.
 readonly MAX_TRIES=5
+# Shasha's minSdk: Android 7.1, which is Fire OS 6.
+readonly MIN_SDK=25
+# What describe_tv finds: "maker model, Android x (API n)", the API level, and whether the TV has only the TV-wide
+# «Unknown sources» setting instead of the REQUEST_INSTALL_PACKAGES app-op (Android 7.1 and older, Fire OS 6).
+TV_NAME=""
+TV_SDK=""
+UNKNOWN_SOURCES=false
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # What the user started: install-linux.sh passes its own path.
@@ -243,9 +253,13 @@ ask_yes_no() {
 }
 
 ask_tv_address() {
-  say "Type the TV's IP address (Settings > Network & Internet > your Wi-Fi, or Ethernet > under «Connected»)" \
-    "اكتب عنوان IP للشاشة (الإعدادات ← الشبكة والإنترنت ← شبكتك، أو Ethernet ← تحت «Connected»)"
-  info "Example / مثال: 192.168.1.50"
+  say "Type the TV's IP address" "اكتب عنوان IP للشاشة"
+  info "- Google TV / Android TV: Settings > Network & Internet > your Wi-Fi > IP address" \
+    "  (with a cable: Ethernet > under «Connected»)." \
+    "  الإعدادات ← الشبكة والإنترنت ← شبكتك ← IP address (بالسلك: Ethernet ← تحت «Connected»)." \
+    "- Fire TV: Settings > My Fire TV (on Fire TV sets: Device & Software) > About > Network." \
+    "  الإعدادات ← My Fire TV (في أجهزة التلفاز: Device & Software) ← About ← Network." \
+    "Example / مثال: 192.168.1.50"
   read_address "" "IP: "
 }
 
@@ -267,8 +281,8 @@ is_installed() {
 is_refused() { grep -qiE 'refused|10061' <<< "$1"; }
 
 allow_hint() {
-  say "Look at the TV: it asks «Allow USB debugging?»" \
-    "انظر إلى الشاشة: تظهر نافذة «Allow USB debugging?» (السماح بتصحيح الأخطاء)."
+  say "Look at the TV: it asks «Allow USB debugging?» (Fire TV asks the same)" \
+    "انظر إلى الشاشة: تظهر نافذة «Allow USB debugging?» (السماح بتصحيح الأخطاء)، وكذلك في Fire TV."
   info "With the remote, tick «Always allow from this computer», then press OK." \
     "بالريموت: فعّل «Always allow from this computer» (السماح دائماً من هذا الحاسوب) ثم اضغط OK." \
     "Waiting up to ${CONNECT_TIMEOUT} s ... / بانتظار الموافقة حتى ${CONNECT_TIMEOUT} ثانية ..."
@@ -339,18 +353,28 @@ unreachable_help() {
     "  هل العنوان صحيح؟ الإعدادات ← الشبكة والإنترنت ← شبكتك ← IP address." \
     "  With a cable: Network & Internet > Ethernet > the number under «Connected»." \
     "  بالسلك: الشبكة والإنترنت ← Ethernet ← الرقم تحت «Connected»." \
+    "  Fire TV: Settings > My Fire TV (or Device & Software) > About > Network." \
+    "  في Fire TV: الإعدادات ← My Fire TV (أو Device & Software) ← About ← Network." \
     "- Developer options > «USB debugging» (and «Network debugging», if present) must be ON." \
-    "  يجب تفعيل خيارات المطوّر ← «USB debugging» (و«Network debugging» إن وُجد)." \
+    "  On Fire TV: Developer options > «ADB debugging»." \
+    "  يجب تفعيل خيارات المطوّر ← «USB debugging» (و«Network debugging» إن وُجد)، وفي Fire TV: «ADB debugging»." \
     "- Still stuck: run   \"$ADB\" kill-server   then try again." \
     "  إن استمرت المشكلة: نفّذ الأمر السابق ثم أعد المحاولة."
 }
 
 refused_help() {
   warn "The TV refused the connection on $SERIAL." "رفضت الشاشة الاتصال على $SERIAL."
-  info "- Most often «USB debugging» is off. On the TV: Settings > System > Developer options:" \
-    "  turn on «USB debugging» (and «Network debugging» if it exists), then run the installer again." \
-    "  غالباً «USB debugging» غير مفعّل. في الشاشة: الإعدادات ← النظام ← خيارات المطوّر:" \
-    "  فعّل «USB debugging» (و«Network debugging» إن وُجد)، ثم شغّل المثبّت من جديد." \
+  info "- Most often debugging is off. Turn it on, then run the installer again:" \
+    "  غالباً تصحيح الأخطاء غير مفعّل. فعّله ثم شغّل المثبّت من جديد:" \
+    "  Google TV / Android TV: Settings > System > Developer options > «USB debugging»" \
+    "  (and «Network debugging» if it exists)." \
+    "  الإعدادات ← النظام ← خيارات المطوّر ← «USB debugging» (و«Network debugging» إن وُجد)." \
+    "  Fire TV: Settings > My Fire TV (or Device & Software) > Developer options > «ADB debugging»." \
+    "  في Fire TV: الإعدادات ← My Fire TV (أو Device & Software) ← Developer options ← «ADB debugging»." \
+    "- No «Developer options»? Open «About» and press OK 7 times on «Android TV OS build» (or «Build»);" \
+    "  on Fire TV, on the device's name (like «Fire TV Stick»). Then go back: it is there." \
+    "  لا ترى خيارات المطوّر؟ افتح «About» واضغط OK سبع مرات على «Android TV OS build» (أو «Build»)،" \
+    "  وفي Fire TV على اسم الجهاز (مثل «Fire TV Stick»)، ثم ارجع: ستظهر." \
     "- Some TVs only have «Wireless debugging»: the installer can pair with it using a 6-digit code." \
     "  بعض الشاشات ليس فيها إلا «Wireless debugging»: يستطيع المثبّت الإقران بها برمز من 6 أرقام."
 }
@@ -428,13 +452,17 @@ connect_tv() {
   local rc=0
   try_connect || rc=$?
   case "$rc" in
-    0) return 0 ;;
+    0)
+      describe_tv
+      return 0
+      ;;
     1)
       refused_help
       say "Does your TV only have «Wireless debugging»? Pair with a code now?" \
         "هل في شاشتك «Wireless debugging» فقط؟ هل تريد الإقران برمز الآن؟"
       if ask_yes_no "Pair now? [y/N] "; then
         pair_and_connect
+        describe_tv
         return 0
       fi
       info "Turn on «USB debugging», then run the installer again. / فعّل «USB debugging» ثم شغّل المثبّت من جديد."
@@ -443,6 +471,36 @@ connect_tv() {
     3) unauthorized_help; exit 1 ;;
     *) unreachable_help; exit 1 ;;
   esac
+}
+
+# Says which TV this is (maker, model, Android version), warns when the device does not call itself a TV, stops on an
+# Android older than Shasha's minimum, and notes an Android 7.1 or older (Fire OS 6): no REQUEST_INSTALL_PACKAGES there.
+describe_tv() {
+  local maker model release features
+  maker=$(tv_shell getprop ro.product.manufacturer 2> /dev/null || true)
+  model=$(tv_shell getprop ro.product.model 2> /dev/null || true)
+  release=$(tv_shell getprop ro.build.version.release 2> /dev/null || true)
+  TV_SDK=$(tv_shell getprop ro.build.version.sdk 2> /dev/null || true)
+  [[ "$TV_SDK" =~ ^[0-9]+$ ]] || TV_SDK=""
+  TV_NAME="${maker:-?} ${model:-?}, Android ${release:-?}${TV_SDK:+ (API $TV_SDK)}"
+  say "The TV: $TV_NAME" "الشاشة: $TV_NAME"
+  # Android TV and Google TV declare leanback, every Fire TV declares amazon.hardware.fire_tv.
+  features=$(tv_shell pm list features 2> /dev/null || true)
+  if grep -q '^feature:' <<< "$features" &&
+    ! grep -qE '^feature:(android\.software\.leanback|android\.software\.leanback_only|android\.hardware\.type\.television|amazon\.hardware\.fire_tv)$' <<< "$features"; then
+    warn "This device does not say it is a TV (no Android TV, Google TV or Fire TV feature)." \
+      "هذا الجهاز لا يعرّف نفسه تلفازاً (لا ميزة Android TV ولا Google TV ولا Fire TV)."
+    info "Shasha is made for a TV and its remote. Installing anyway; check the address if this is not your TV." \
+      "«شاشة» مصمَّم للتلفاز وريموته. سيُثبَّت على أي حال؛ تأكد من العنوان إن لم يكن هذا تلفازك."
+  fi
+  if [ -n "$TV_SDK" ] && [ "$TV_SDK" -lt "$MIN_SDK" ]; then
+    die "This TV's system is too old: Shasha needs Android 7.1 or newer (on Fire TV: Fire OS 6 or newer)." \
+      "نظام هذه الشاشة أقدم مما يحتاجه «شاشة»: أندرويد 7.1 أو أحدث (وفي Fire TV: Fire OS 6 أو أحدث)."
+  fi
+  if [ -n "$TV_SDK" ] && [ "$TV_SDK" -lt 26 ]; then
+    UNKNOWN_SOURCES=true
+    OPS=(SYSTEM_ALERT_WINDOW GET_USAGE_STATS)
+  fi
 }
 
 # ─── install and grant ───────────────────────────────────────────────────────────────────────
@@ -481,6 +539,10 @@ install_apk() {
       warn "The TV already has a newer Shasha than this APK." \
         "النسخة على الشاشة أحدث من هذا الملف. حمّل أحدث ملف من صفحة GitHub Releases."
       ;;
+    *INSTALL_FAILED_OLDER_SDK*)
+      warn "This TV's system is too old: Shasha needs Android 7.1 or newer (on Fire TV: Fire OS 6 or newer)." \
+        "نظام هذه الشاشة أقدم مما يحتاجه «شاشة»: أندرويد 7.1 أو أحدث (وفي Fire TV: Fire OS 6 أو أحدث)."
+      ;;
     *NO_CERTIFICATES* | *"no signatures"*)
       warn "This APK is not signed (a CI build made without the signing key)." \
         "هذا الملف غير موقّع (بناء بلا مفتاح التوقيع). حمّل الملف من صفحة GitHub Releases."
@@ -501,12 +563,45 @@ grant_ops() {
       die "appops set $op failed (see above)." "فشل منح الصلاحية $op (انظر الرسالة أعلاه)."
     info "$op -> allow"
   done
+  if [ "$UNKNOWN_SOURCES" = true ]; then
+    # Android 7.1 and older (Fire OS 6) have no per-app permission to install: the TV-wide «Unknown sources» setting
+    # (Fire TV: Developer options > Apps from Unknown Sources) lets «Check for updates» open the system installer.
+    tv_shell settings put secure install_non_market_apps 1 ||
+      die "Could not turn on «Unknown sources» (see above)." "تعذّر تفعيل «مصادر غير معروفة» (انظر الرسالة أعلاه)."
+    info "Unknown sources -> on (Android 7: one setting for the whole TV)" \
+      "«مصادر غير معروفة» (Unknown sources) ← مفعّل (في أندرويد 7 إعداد واحد للشاشة كلها)"
+  fi
+}
+
+# $1 = 1 (expected on) or 0 (off): the TV-wide «Unknown sources» of Android 7.1 and older. False when it differs.
+check_unknown_sources() {
+  local value
+  value=$(tv_shell settings get secure install_non_market_apps 2>&1 || true)
+  if [ "$value" = "$1" ]; then
+    info "[OK] Unknown sources / مصادر غير معروفة: $value"
+    return 0
+  fi
+  info "[!!] Unknown sources / مصادر غير معروفة: $value"
+  return 1
 }
 
 YOUTUBE_STATUS="not installed / غير مثبّت"
 
+# Sets YT_PKG to the official YouTube app installed on the TV; false when there is none.
+find_youtube() {
+  local p
+  YT_PKG=""
+  for p in "${YT_PKGS[@]}"; do
+    if is_installed "$p"; then
+      YT_PKG=$p
+      return 0
+    fi
+  done
+  return 1
+}
+
 maybe_disable_youtube() {
-  if ! is_installed "$YT_PKG"; then
+  if ! find_youtube; then
     info "Official YouTube app not found on the TV; skipping." "تطبيق يوتيوب الرسمي غير موجود؛ تخطٍّ."
     return 0
   fi
@@ -601,11 +696,13 @@ setup() {
   say "Verification" "التحقق"
   local ops_ok=true guard
   check_ops allow || ops_ok=false
+  if [ "$UNKNOWN_SOURCES" = true ]; then check_unknown_sources 1 || ops_ok=false; fi
   guard=$(guard_status)
   info "Guard service / خدمة الحارس: $guard"
 
   say "Summary" "الملخص"
   info "TV / الشاشة:              $SERIAL" \
+    "Model / الطراز:            $TV_NAME" \
     "APK / الملف:               $(basename "$APK")" \
     "Permissions / الصلاحيات:   $([ "$ops_ok" = true ] && echo "granted / ممنوحة" || echo "INCOMPLETE / ناقصة")" \
     "Guard / الحارس:            $guard" \
@@ -624,12 +721,14 @@ setup() {
 
 undo() {
   connect_tv
-  if is_installed "$YT_PKG"; then
-    say "Re-enabling the official YouTube app ..." "إعادة تفعيل تطبيق يوتيوب الرسمي ..."
-    tv_shell pm enable "$YT_PKG" ||
+  local yt
+  for yt in "${YT_PKGS[@]}"; do
+    is_installed "$yt" || continue
+    say "Re-enabling the official YouTube app ($yt) ..." "إعادة تفعيل تطبيق يوتيوب الرسمي ..."
+    tv_shell pm enable "$yt" ||
       die "Could not re-enable YouTube (see above)." "تعذّرت إعادة تفعيل يوتيوب (انظر الرسالة أعلاه)."
     YOUTUBE_STATUS="enabled / مفعّل"
-  fi
+  done
   local ops_ok=true guard="-"
   if is_installed "$PKG"; then
     say "Resetting Shasha's permissions to default ..." "إرجاع صلاحيات شاشة إلى الوضع الافتراضي ..."
@@ -643,12 +742,21 @@ undo() {
       tv_shell appops set "$PKG" "$op" default ||
         die "appops set $op default failed (see above)." "فشل إرجاع الصلاحية $op (انظر الرسالة أعلاه)."
     done
+    if [ "$UNKNOWN_SOURCES" = true ]; then
+      # What the installer turned on for the updater on Android 7.1 and older goes back off.
+      tv_shell settings put secure install_non_market_apps 0 ||
+        die "Could not turn «Unknown sources» off (see above)." "تعذّر إطفاء «مصادر غير معروفة» (انظر الرسالة أعلاه)."
+      info "Unknown sources -> off. Other apps you install by hand may need it on again:" \
+        "Fire TV: Settings > My Fire TV > Developer options > Apps from Unknown Sources." \
+        "«مصادر غير معروفة» ← مطفأ. قد تحتاج تشغيله لتطبيقات أخرى تثبّتها بنفسك (في Fire TV: Developer options ← Apps from Unknown Sources)."
+    fi
     say "Stopping Shasha so its guard stops now ..." "إيقاف تطبيق شاشة ليتوقف الحارس الآن ..."
     info "It starts again only once its permissions are granted again (run the installer without --undo)." \
       "لا يعود الحارس حتى تُمنح صلاحيتاه من جديد (بتشغيل المثبّت دون --undo)."
     tv_shell am force-stop "$PKG" || true
     say "Verification" "التحقق"
     check_ops default || ops_ok=false
+    if [ "$UNKNOWN_SOURCES" = true ]; then check_unknown_sources 0 || ops_ok=false; fi
     check_perms_revoked || ops_ok=false
     guard=$(guard_status)
     info "Guard service / خدمة الحارس: $guard"
@@ -657,6 +765,7 @@ undo() {
   fi
   say "Summary" "الملخص"
   info "TV / الشاشة:              $SERIAL" \
+    "Model / الطراز:            $TV_NAME" \
     "Permissions / الصلاحيات:   $([ "$ops_ok" = true ] && echo "default / افتراضية" || echo "CHECK ABOVE / راجع أعلاه")" \
     "Guard / الحارس:            $guard" \
     "YouTube / يوتيوب الرسمي:  $YOUTUBE_STATUS" \

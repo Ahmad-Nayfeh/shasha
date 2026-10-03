@@ -1,7 +1,6 @@
 package com.ahmadnayfeh.shasha.ui.settings
 
 import com.ahmadnayfeh.shasha.data.Behavior
-import com.ahmadnayfeh.shasha.data.SyncHealth
 import com.ahmadnayfeh.shasha.lock.ProtectionStatus
 import com.ahmadnayfeh.shasha.lock.ReturnTime
 import com.ahmadnayfeh.shasha.lock.YouTubeAppState
@@ -13,11 +12,8 @@ import com.ahmadnayfeh.shasha.policy.ListedPlaylist
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.policy.Schedule
 import com.ahmadnayfeh.shasha.policy.UsageSummary
-import com.ahmadnayfeh.shasha.search.VoiceAvailability
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.ui.settings.remote.PairingStatus
-import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
-import com.ahmadnayfeh.shasha.youtube.SourceException
 
 /** A household of three for the settings' tests: the owner, Sara (4 channels, 2 playlists allowed) and Omar. */
 internal object SettingsHubFixtures {
@@ -79,14 +75,6 @@ internal object SettingsHubFixtures {
 
     val remote = RemoteSummary(enabled = true, status = PairingStatus.RUNNING, address = "192.168.1.23:8765")
 
-    val syncHealth = SyncHealth(
-        channels = 20,
-        attempted = 20,
-        failed = 2,
-        lastAttemptAtMs = NOW - 12 * MINUTE,
-        lastError = SourceException(SourceErrorKind.NETWORK, "SocketTimeoutException", null, null),
-    )
-
     fun state(unlocked: Boolean = true, behavior: Behavior = Behavior.DEFAULT) = SettingsHubState(
         versions = AppVersions("0.1.0", 1, "v0.26.5"),
         unlocked = unlocked,
@@ -98,10 +86,6 @@ internal object SettingsHubFixtures {
         protection = protectionOk,
         lastReturn = lastReturn,
         remote = remote,
-        syncHealth = syncHealth,
-        device = DeviceFacts("TCL", "Smart TV Pro", "12", 31),
-        voice = VoiceAvailability(systemScreen = "com.google.android.katniss", service = "com.google.android.googlequicksearchbox"),
-        nowMs = NOW,
         behavior = behavior,
         remotePort = 8765,
     )

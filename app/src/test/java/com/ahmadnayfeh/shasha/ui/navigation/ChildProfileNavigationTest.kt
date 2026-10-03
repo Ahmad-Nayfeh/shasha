@@ -98,7 +98,7 @@ class ChildProfileNavigationTest {
         assertThat(tabs.graph.findNode(Tab.SEARCH.route)).isNull()
         assertThat(tabs.graph.routes()).containsExactly(Tab.HOME.route, Tab.ALLOWED_CHANNELS.route)
         assertThat(nav.graph.routes().filter { "search" in it.lowercase() }).isEmpty()
-        val adultOnly = listOf("Diagnostics", "ImportSubscriptions", "Profiles", "ProfileEdit", "Allowlist", "Blocklist", "ChangePin", "Stats")
+        val adultOnly = listOf("ImportSubscriptions", "Profiles", "ProfileEdit", "Allowlist", "Blocklist", "ChangePin", "Stats")
         assertThat(nav.graph.routes().filter { route -> adultOnly.any { route.endsWith(".$it") || ".$it/" in route || ".$it?" in route } }).isEmpty()
 
         // Not reachable by code either: the graph does not know the route.
@@ -130,7 +130,7 @@ class ChildProfileNavigationTest {
         compose.onNodeWithTag("rail_switch_profile").assertExists()
         compose.onNodeWithTag("rail_exit").assertDoesNotExist()
         assertThat(tabs.graph.findNode(Tab.SEARCH.route)).isNotNull()
-        assertThat(nav.graph.routes().any { it.endsWith(".Diagnostics") }).isTrue()
+        assertThat(nav.graph.routes().any { it.endsWith(".ImportSubscriptions") }).isTrue()
         assertThat(nav.graph.routes().any { it.contains(".Stats") }).isTrue()
     }
 

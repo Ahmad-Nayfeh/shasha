@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.Handler
 import android.provider.Settings
 import android.util.Log
@@ -81,7 +82,7 @@ class GuardOverlay(
     private fun params() = WindowManager.LayoutParams(
         WindowManager.LayoutParams.MATCH_PARENT,
         WindowManager.LayoutParams.MATCH_PARENT,
-        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+        coverWindowType(),
         // Focusable (no FLAG_NOT_FOCUSABLE): every key lands here, not in the app below.
         WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
         PixelFormat.OPAQUE,
@@ -152,13 +153,25 @@ class GuardOverlay(
         override fun onTouchEvent(event: MotionEvent): Boolean = true
     }
 
-    private companion object {
-        const val TAG = "GuardOverlay"
+    internal companion object {
+        private const val TAG = "GuardOverlay"
+
+        /**
+         * The window type of an app's cover over other apps: TYPE_APPLICATION_OVERLAY from Android 8; before it (Fire OS 6,
+         * Android 7.1) the system refuses that type, and TYPE_PHONE is the focusable one SYSTEM_ALERT_WINDOW allows.
+         */
+        fun coverWindowType(): Int =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_PHONE
+            }
 
         // The brand palette (ui/theme/Color.kt), as plain ints for the views.
-        const val BACKGROUND = 0xFF0B0F14.toInt()
-        const val TEXT = 0xFFEAF0F6.toInt()
-        const val MUTED = 0xFF8A97A8.toInt()
-        const val ACCENT = 0xFF2EC4B6.toInt()
+        private const val BACKGROUND = 0xFF0B0F14.toInt()
+        private const val TEXT = 0xFFEAF0F6.toInt()
+        private const val MUTED = 0xFF8A97A8.toInt()
+        private const val ACCENT = 0xFF2EC4B6.toInt()
     }
 }

@@ -132,7 +132,7 @@ fun PlayerScreen(
 ) {
     val container = LocalContext.current.appContainer
     val locking = if (lock != null && profile != null) lock else null
-    // v1.2: what asks the phone before a start only it could end early (never for تشخيص's videos: no lock).
+    // v1.2: what asks the phone before a start only it could end early (never without a lock to end).
     val confirmation = if (locking != null && profile != null && !phoneApproved) {
         remember(locking, profile, playlistId) {
             PhoneStartConfirmation(container.policyEngine, locking.lock, profile, playlistId, container.phoneConfirmations)

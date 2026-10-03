@@ -141,7 +141,7 @@ class PlayerPhoneConfirmTest {
         val phone = FakePhone(needed = false)
         assertThat(player(phone).settled()).isInstanceOf(PlayerViewModel.Load.Ready::class.java)
         assertThat(phone.asked).isEmpty()
-        // No phone side at all (تشخيص's videos): the same.
+        // No phone side at all: the same.
         assertThat(player(null).settled()).isInstanceOf(PlayerViewModel.Load.Ready::class.java)
     }
 

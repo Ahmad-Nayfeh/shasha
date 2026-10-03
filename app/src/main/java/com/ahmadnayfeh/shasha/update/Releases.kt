@@ -10,14 +10,13 @@ data class ReleaseAsset(val id: Long, val name: String, val size: Long, val apiU
 
 /**
  * A published release of Shasha (SPEC §6), as CI names it (.github/workflows/android.yml): tag
- * `v<versionName>-<versionCode>`, one asset `shasha-<versionName>-<versionCode>.apk`. [notes] is the release's
- * text, made plain for the TV ([ReleaseNotes]).
+ * `v<versionName>-<versionCode>`, the TV's APK `shasha-<versionName>-<versionCode>.apk`, and, from v1.2, the phone
+ * app's `shasha-mobile-<versionName>-<versionCode>.apk` ([ReleaseParser] never takes that one).
  */
 data class ReleaseInfo(
     val tag: String,
     val versionName: String,
     val versionCode: Long,
-    val notes: String,
     val apk: ReleaseAsset,
 ) {
     /** Offered only when it is newer than what is installed ([installedVersionCode] = BuildConfig.VERSION_CODE). */
@@ -60,24 +59,28 @@ object ReleaseParser {
         val tagName = release.tagName?.takeIf { it.isNotBlank() } ?: throw UpdateException(UpdateErrorKind.BAD_ANSWER, "no tag_name")
         val tag = ReleaseTag.parse(tagName) ?: throw UpdateException(UpdateErrorKind.BAD_TAG, tagName)
         val apks = release.assets.filter { it.name.endsWith(".apk", ignoreCase = true) && it.state == "uploaded" && it.url.isNotBlank() }
-        // CI's own name first; a debug build is never an update of a release-signed app.
+        // The TV's APK, under CI's own name. The phone app's APK (shasha-mobile-…) rides in the same release and is
+        // never this app's update, whatever the order of the assets; neither is a debug build (never an update of a
+        // release-signed app). A release made by hand under another name still works, by the same two exclusions.
         val expected = "shasha-${tag.versionName}-${tag.versionCode}.apk"
-        val apk = apks.firstOrNull { it.name == expected }
-            ?: apks.firstOrNull { !it.name.endsWith("-debug.apk", ignoreCase = true) }
+        val candidates = apks.filterNot { isPhoneApp(it.name) }
+        val apk = candidates.firstOrNull { it.name == expected }
+            ?: candidates.firstOrNull { !it.name.endsWith("-debug.apk", ignoreCase = true) }
             ?: throw UpdateException(UpdateErrorKind.NO_APK, tagName)
         return ReleaseInfo(
             tag = tagName,
             versionName = tag.versionName,
             versionCode = tag.versionCode,
-            notes = ReleaseNotes.plain(release.body.orEmpty()),
             apk = ReleaseAsset(apk.id, apk.name, apk.size, apk.url),
         )
     }
 
+    /** The phone app's APK: `shasha-mobile-<versionName>-<versionCode>.apk` (any asset naming the mobile app counts). */
+    private fun isPhoneApp(name: String): Boolean = name.contains("mobile", ignoreCase = true)
+
     @Serializable
     private data class ReleaseJson(
         @SerialName("tag_name") val tagName: String? = null,
-        val body: String? = null,
         val draft: Boolean = false,
         val prerelease: Boolean = false,
         val assets: List<AssetJson> = emptyList(),
@@ -93,25 +96,4 @@ object ReleaseParser {
         /** "uploaded" once the file is complete ("new" while it is still being uploaded). */
         val state: String = "uploaded",
     )
-}
-
-/** A release's Markdown (CI writes it) as plain lines for the TV: no `**`, backticks or link syntax. */
-object ReleaseNotes {
-    private val link = Regex("""\[([^\]]*)]\(([^)]*)\)""")
-    private val heading = Regex("""^#{1,6}\s*""")
-    private val bullet = Regex("""^\s*[-*+]\s+""")
-    private val blankRun = Regex("""\n{3,}""")
-
-    fun plain(markdown: String): String = markdown
-        .replace("\r\n", "\n")
-        .lines()
-        .joinToString("\n") { raw ->
-            var line = raw.trimEnd()
-            line = line.replace(heading, "")
-            line = line.replace(bullet, "• ")
-            line = line.replace(link) { it.groupValues[1] }
-            line.replace("**", "").replace("__", "").replace("`", "")
-        }
-        .replace(blankRun, "\n\n")
-        .trim()
 }

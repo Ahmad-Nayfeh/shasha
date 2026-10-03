@@ -10,8 +10,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.IntentCompat
 import com.ahmadnayfeh.shasha.appContainer
-import com.ahmadnayfeh.shasha.lock.ProtectionChecks
-import com.ahmadnayfeh.shasha.lock.ProtectionCommands
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -23,7 +21,10 @@ import java.io.File
 sealed interface InstallEvent {
     val sessionId: Int
 
-    /** The system wants the viewer's confirmation: [intent] opens its dialog (never a silent update, SPEC §6). */
+    /**
+     * The system wants the viewer's confirmation after all: [intent] opens its dialog. That is every Android before 12,
+     * and an update the system does not let go through silently (see [UpdateInstaller]).
+     */
     data class Confirm(override val sessionId: Int, val intent: Intent) : InstallEvent
 
     /** Installed (rarely seen: the update replaces this process). */
@@ -46,24 +47,45 @@ class InstallEvents {
 }
 
 /**
- * Hands a verified APK to the system with the PackageInstaller session API. The system shows its own confirmation
- * (USER_ACTION_REQUIRED from Android 12: never a silent update); the outcome comes back to [InstallStatusReceiver].
- * Needs REQUEST_INSTALL_PACKAGES allowed (the app-op adb-setup grants: [installCommand]).
+ * Hands a verified APK to the system with the PackageInstaller session API; the outcome comes back to
+ * [InstallStatusReceiver].
+ *
+ * Silent where Android allows it. From Android 12 an app that updates itself may install without asking when it asks for
+ * that ([PackageInstaller.SessionParams.setRequireUserAction] with USER_ACTION_NOT_REQUIRED), declares
+ * `UPDATE_PACKAGES_WITHOUT_USER_ACTION`, and targets a recent SDK; REQUEST_INSTALL_PACKAGES must be allowed too (the
+ * Shasha-Setup kit grants that app-op). The system then installs without a question, which stops this process, and
+ * [AppUpdatedReceiver] opens the new version. Everywhere else (Android 7 to 11, or when the system still wants an
+ * answer) the status is STATUS_PENDING_USER_ACTION, and [InstallEvent.Confirm] carries the system's own
+ * confirmation: that fallback is always handled.
+ *
+ * Every call here is safe from API 25: what is newer is guarded by the SDK level ([installAllowed] from 26,
+ * `setInstallReason` from 26, `setRequireUserAction` from 31).
  */
-class UpdateInstaller(private val context: Context) {
-    fun installAllowed(): Boolean = ProtectionChecks.canRequestInstalls(context)
+class UpdateInstaller(
+    private val context: Context,
+    private val relaunch: RelaunchAfterUpdate = RelaunchAfterUpdate(context),
+) {
+    /**
+     * Whether this app may hand an APK to the system installer: the per-app "install apps" switch (API 26+), which the
+     * kit turns on. Before Android 8 there is no such switch: the system's own confirmation is the only gate.
+     */
+    fun installAllowed(): Boolean = try {
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls()
+    } catch (e: RuntimeException) {
+        false
+    }
 
-    /** The one adb command that allows it (`adb shell appops set <pkg> REQUEST_INSTALL_PACKAGES allow`). */
-    val installCommand: String get() = ProtectionCommands.installPackages(context.packageName)
-
-    /** Commits [apk] in a new session and returns its id; the system then asks for the viewer's confirmation. */
+    /**
+     * Commits [apk] in a new session and returns its id. Silent or not (see above), [relaunch] is armed first: the
+     * update stops this process, and the new version must know that it should open itself.
+     */
     suspend fun install(apk: File): Int = withContext(Dispatchers.IO) {
         val installer = context.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(context.packageName)
             setSize(apk.length())
-            setInstallReason(PackageManager.INSTALL_REASON_USER)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) setInstallReason(PackageManager.INSTALL_REASON_USER)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
         }
         val sessionId = installer.createSession(params)
         try {
@@ -72,9 +94,11 @@ class UpdateInstaller(private val context: Context) {
                     apk.inputStream().use { input -> input.copyTo(output, COPY_BUFFER) }
                     session.fsync(output)
                 }
+                relaunch.arm()
                 session.commit(statusReceiver(sessionId))
             }
         } catch (e: Exception) {
+            relaunch.disarm()
             runCatching { installer.abandonSession(sessionId) }
             throw e
         }

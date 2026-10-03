@@ -1,6 +1,6 @@
 # Shasha architecture
 
-Shasha («شاشة») is a private YouTube client for one family's Google TV (Android TV, minSdk 28): no ads, no account, no analytics; kids' profiles with allowlists and a daily quota; a lock that keeps a started video on screen; and a phone page that works as a remote. All data stays on the TV. The only network peers are YouTube (through NewPipeExtractor), SponsorBlock and GitHub Releases (the updater).
+Shasha («شاشة») is a private YouTube client for one family's Google TV (it also runs on any Android TV and on Amazon Fire TV; minSdk 25, that is Android 7.1 / Fire OS 6, see [tv-compatibility.md](tv-compatibility.md)): no ads, no account, no analytics; kids' profiles with allowlists and a daily quota; a lock that keeps a started video on screen; and a phone page that works as a remote. All data stays on the TV. The only network peers are YouTube (through NewPipeExtractor), SponsorBlock and GitHub Releases (the updater).
 
 This file is the map of the code. For "YouTube broke", signing and releases, read [MAINTENANCE.md](MAINTENANCE.md) (Arabic). The owner's original requirements are in [SPEC.md](SPEC.md) (Arabic); their status is in [acceptance.md](acceptance.md).
 
@@ -8,7 +8,7 @@ This file is the map of the code. For "YouTube broke", signing and releases, rea
 
 | Path | What it is |
 |---|---|
-| `app/`, `policy/`, `remote/`, `youtube/` | the four Gradle modules (section 2); each has a short `README.md` |
+| `app/`, `policy/`, `remote/`, `youtube/`, `mobile/` | the five Gradle modules (section 2); all but `mobile/` have a short `README.md` |
 | `gradle/libs.versions.toml` | the only version catalog: exact versions, never ranges or `+` |
 | `.github/` | CI: `workflows/android.yml`, `youtube-canary.yml`, `voice.yml`, and `dependabot.yml` (section 8) |
 | `docs/dev/` | developer documents: this file, `MAINTENANCE.md`, `SPEC.md`, `acceptance.md`, `youtube-test-results.md`, `feed-sync-results.md` |
@@ -26,6 +26,8 @@ Build: JDK 21, Gradle 9.8.0 (wrapper), AGP 9.4.1, Kotlin 2.4.20. AGP's built-in 
 :app ──► :youtube   YouTube access and Media3 sources; the only user of NewPipeExtractor
  ├─────► :policy    every rule; pure Kotlin/JVM
  └─────► :remote    the phone server and page; knows neither :policy nor :youtube
+
+:mobile ──► :youtube   the phone app: a separate APK of the same family; shares nothing else (not :app)
 ```
 
 The three libraries do not depend on each other: `:app` maps its models to theirs and enforces every rule itself. The boundaries that hold the design together:
@@ -33,19 +35,21 @@ The three libraries do not depend on each other: `:app` maps its models to their
 - Only `:youtube` sees NewPipeExtractor, as `implementation`, never `api`. No `org.schabi.*` import exists elsewhere (the one mention in `:app` is a class-name string in the test helper `app/src/test/java/com/ahmadnayfeh/shasha/TestStreams.kt`). Replacing the extractor means editing `:youtube` only.
 - `:policy` is pure Kotlin/JVM (`policy/build.gradle.kts` applies `kotlin.jvm`): no Android imports, an injected clock, plain JUnit tests.
 - `:remote` defines the HTTP API, the wire format and the `RemoteController` interface; `:app` implements the interface.
-- Scope limits from SPEC: no analytics, no Google sign-in, no downloads, no background play.
+- Scope limits from SPEC (for the TV app): no analytics, no Google sign-in, no downloads, no background play. The phone app (`:mobile`, section 12) has downloads and background play by design.
 - Suggested videos («الفيديوهات المقترحة», YouTube's related videos) exist since v1.1.1 by the owner's decision. They are a per-profile setting (`Profile.showSuggestions`: on for adults, off for children) and pass the same rules as any list (`PolicyEngine.canSuggest`).
 
 ### `:youtube` (`youtube/src/main/java/com/ahmadnayfeh/shasha/youtube/`)
 
-- Contract: `VideoSource.kt` (search, suggestions, channel, channelVideos, channelShorts, playlist, stream, related, recentVideos, parseLink, resolveChannelId), `Models.kt`, `PlaybackHandle.kt`, `YouTubeLinkParser.kt`. `YouTube.create()` in `YouTube.kt` builds the implementation.
+- Contract: `VideoSource.kt` (search, suggestions, channel, channelVideos, channelShorts, channelTab, playlist, stream, related, recentVideos, parseLink, resolveChannelId), `Models.kt`, `PlaybackHandle.kt`, `YouTubeLinkParser.kt`. `YouTube.create()` in `YouTube.kt` builds the implementation.
+- `channelTab(channelId, tab, sort, page)` reads one section of a channel's page (`ChannelTab`: videos, Shorts, live, playlists) in one order (`ChannelSort`: latest, popular, oldest), page by page. `ChannelDetails.tabs` says which sections a channel has, and the first page of a section says which orders it offers (`ChannelTabPage.sorts`). The orders come from the order chips of YouTube's own answer, which the extractor does not read: `newpipe/ChannelTabLoader` (the flow), `ChannelChips` (the chips and the answer to a chip's token, pure text) and `BrowseTaps` (how the HTTP layer lets one extractor call see its browse answers). MAINTENANCE.md has the details; a sort that is not offered fails, it is never guessed.
 - `related(videoId)` answers from the related items of the `stream()` extraction that playback already made (`newpipe/RelatedCache`, 6 hours); only a video that was not played in that time costs a request of its own.
 - Every suspend call runs on `Dispatchers.IO` and throws only `SourceException` (kinds such as `BLOCKED_403`, `BOT_CHECK`, `LOW_QUALITY_ONLY`, `NETWORK`, `EXTRACTION_BROKEN`). Its `technicalName` is the failing exception's class name and appears on the error screen, so R8 must not rename exceptions: `youtube/consumer-rules.pro` keeps them (and `app/proguard-rules.pro` keeps the app's own `*Error` and `*Exception` names), and `android.yml` fails if that stops working.
-- `newpipe/` is the only code that imports the extractor: `NewPipeVideoSource`, `NewPipeDownloader` (over OkHttp), `ErrorMapper`, `ItemMapper`, `StreamMapper`, `PageStore` (the opaque `PageKey`).
+- `newpipe/` is the only code that imports the extractor: `NewPipeVideoSource`, `NewPipeDownloader` (over OkHttp), `ErrorMapper`, `ItemMapper`, `StreamMapper`, `PageStore` (the opaque `PageKey`), and the channel sections' `ChannelTabLoader`, `ChannelChips` and `BrowseTaps`. Only `:youtube`'s runtime sees NewPipeExtractor's own JSON library (nanojson), so the module reads JSON itself with kotlinx.serialization.
 - `playback/`: `YouTubeMediaSourceFactory` turns `StreamDetails` into a Media3 `MediaSource`.
   - An adaptive DASH manifest generated in memory (`PlaybackPlanner`, `DashManifestWriter`), HLS for live.
   - googlevideo request quirks (`GoogleVideoRequests`, `YouTubeHttpDataSource`) and playback error mapping (`PlaybackErrorClassifier`).
   - Stream URLs expire after about 6 hours (`StreamExpiry`); the app extracts again.
+- `download/` (added for the phone app): `DownloadOptions.kt` (`StreamDetails.downloadOptions()`: one H.264 MP4 video-only stream per quality, plus the best M4A audio, with their sizes from `clen`) and `StreamDownloader` (fetches a stream in 4 MB ranges shaped like `GoogleVideoQuirks.DASH`, resumable, retried, 403 reported as `BLOCKED_403` so the caller extracts again). `VideoSource.channelPlaylists` (a channel's Playlists tab) was added the same way, with an empty default.
 - A video that only offers muxed 360p fails with `LOW_QUALITY_ONLY`, unless the caller passes `allowLowQuality` (child profiles do; MAINTENANCE.md explains why). YouTube's own texts come back in English whatever locale is requested.
 
 ### `:policy` (`policy/src/main/kotlin/com/ahmadnayfeh/shasha/policy/`)
@@ -71,7 +75,7 @@ Source root: `app/src/main/java/com/ahmadnayfeh/shasha/`. `ShashaApp` creates `A
 | `feed/` | WorkManager home-feed sync: every 2 hours, stands down while a video plays, catches up 15 minutes later |
 | `remote/` | host of the phone remote: `RemoteService`, `RemoteRuntime`, `TvRemoteController`, `PhonePin`, `PhoneSettings`, `PhoneParental`, `RemoteSettings`, `RemoteDisplay`; section 6 |
 | `sponsorblock/` | SponsorBlock client, cache, settings, `SkipController` |
-| `search/` | voice search (Arabic or English) and the per-profile search history. The system's voice screen (`RecognizerIntent.ACTION_RECOGNIZE_SPEECH`, launched for a result; on Google TV the remote's microphone reaches only it) is tried first; the in-app `SpeechRecognizer` (`VoiceSearch`, with `RECORD_AUDIO`) is the fallback when no activity answers. «تشخيص» says which of the two the TV offers |
+| `search/` | voice search (Arabic or English) and the per-profile search history. The system's voice screen (`RecognizerIntent.ACTION_RECOGNIZE_SPEECH`, launched for a result; on Google TV the remote's microphone reaches only it) is tried first; the in-app `SpeechRecognizer` (`VoiceSearch`, with `RECORD_AUDIO`) is the fallback when no activity answers. With neither (Fire TV, whose Alexa button never reaches apps) the search screen shows no microphone |
 | `update/` | the self-updater; section 7 |
 | `backup/` | manual JSON backup and restore |
 | `ui/` | Compose for TV: `app/` (root, `SessionGate`), `navigation/` (`Screen`, `ProfileNavHost`: one graph for adults, a smaller one for children), `main/` (rail and tabs), `screens/<feature>/`, `settings/` (the two-pane Settings hub), `components/`, `lock/`, `parental/`, `theme/`, `format/` |
@@ -80,7 +84,9 @@ Conventions:
 
 - UI text is Arabic, right to left, in `app/src/main/res/values/strings*.xml`. Numbers inside strings use `%1$s` with `n.toString()`, never `%d` (an Arabic system locale would print Arabic-Indic digits). Titles and names inserted into Arabic sentences are wrapped in FSI/PDI (`\u2068` and `\u2069`) so English text keeps its place.
 - Everything is reachable with the D-pad and shows a focus state. Each screen owns a `ContentFocus` (`ui/components/ContentFocus.kt`); focusable elements of a Settings pane use `Modifier.paneItem` (`ui/settings/PaneParts.kt`). The child profile has no text input (`Features.textInput`), and PINs and exit phrases use the app's own pad and keyboard, never the system one.
-- Lists that load page by page (search, a channel's videos, a playlist) use `ui/paging/PagedLoader`. A page is not a screenful (YouTube's «all» search comes through the extractor in pages of 2 to 11 items, and the profile's rules hide more), so it asks for pages until the first screen holds 24 shown items and each scroll brings 12 more, bounded per run, and stops where the source ends.
+- A channel's page (`ui/screens/channel/`) has the header, the sections row (الفيديوهات · القصيرة · البث المباشر · القوائم: only those the channel has and the profile may see; no Shorts where the profile hides them) and, for the sections that list videos, the order chips (الأحدث · الأكثر مشاهدة · الأقدم: only those YouTube offers that section). `ChannelViewModel` keeps one `PagedLoader` per section and order, read when first picked and kept; every item passes the profile's `ContentFilter` (a channel's playlists open with their owner, so a child may open those of an allowlisted channel). Focus enters on the first card, UP climbs to the chips and the header's buttons, and each chip row takes focus on its selected chip (`ChannelFocusTest`).
+- Lists that load page by page (search, a channel's sections, a playlist) use `ui/paging/PagedLoader`. A page is not a screenful (YouTube's «all» search comes through the extractor in pages of 2 to 11 items, and the profile's rules hide more), so it asks for pages until the first screen holds 24 shown items and each scroll brings 12 more, bounded per run, and stops where the source ends.
+- A channel's uploads (a child's home through `ui/screens/kids/KidsFeed`, a channel's page through `ChannelViewModel`) are read through `data/ChannelUploads`'s chain, so one way failing on a TV does not blank the screen: the Videos tab, then the channel's long-form uploads playlist («UULF» + the channel id without «UC»: the same list with every duration, 100 a page, and paging goes on from it), then RSS only where no duration is needed (a profile that hides Shorts never shows a video whose duration is unknown, `ContentFilter.needsDuration`). Every failure is logged (`adb logcat -s ChannelUploads KidsHome ChannelViewModel AllowedChannels`); only a channel that fails everywhere counts as failed, and the unified error shows when every channel did.
 - Any `SourceException` that reaches the viewer is shown by the one unified error screen (`ui/screens/error/ErrorScreen.kt`): what happened, the extractor version, the technical name, and "check for updates".
 - UI code never re-implements a rule: lists, plays and profile switches go through `PolicyGate`.
 
@@ -156,21 +162,25 @@ Conventions:
 
 ## 7. The updater
 
-Code in `app/src/main/java/com/ahmadnayfeh/shasha/update/`, screen in `ui/screens/updates/`. Settings → «فحص التحديثات»:
+Code in `app/src/main/java/com/ahmadnayfeh/shasha/update/`, screen in `ui/screens/updates/`. Settings → «فحص التحديثات» is one button (and, at the bottom of the same pane, «معلومات تقنية والتراخيص»: SponsorBlock's attribution and the libraries' licences, `ui/settings/TechnicalInfo.kt`); the same screen opens from the error screens. One press does everything, with no second button:
 
-1. `GitHubReleases.latest()` reads `repos/<UPDATE_REPO>/releases/latest` (`BuildConfig.UPDATE_REPO`) with a read-only token (`BuildConfig.UPDATE_TOKEN`; the repository is private). `ReleaseParser` expects the tag `v<versionName>-<versionCode>` and the asset `shasha-<versionName>-<versionCode>.apk`.
-2. The APK is downloaded into `cacheDir/updates`. The token goes only to the GitHub API host; the redirect to storage is requested without it.
-3. `ApkVerifier.refusal()` checks the file before the system installer sees it: same package, a higher `versionCode`, and exactly the installed app's signing-certificate SHA-256 set. Android refuses an update signed with another key, so the release key must never change.
-4. `UpdateInstaller` hands it to a `PackageInstaller` session; the system asks the user to confirm. This needs the `REQUEST_INSTALL_PACKAGES` app-op, which the installer in `Shasha-Setup/` grants. A child profile only sees a notice.
+1. `UpdatesViewModel` checks as soon as the screen opens. `GitHubReleases.latest()` reads `repos/<UPDATE_REPO>/releases/latest` (`BuildConfig.UPDATE_REPO`) with a read-only token (`BuildConfig.UPDATE_TOKEN`; the repository is private, so the texts never name or point to GitHub). `ReleaseParser` expects the tag `v<versionName>-<versionCode>` and takes the TV's asset `shasha-<versionName>-<versionCode>.apk`; the phone app's `shasha-mobile-<versionName>-<versionCode>.apk` rides in the same release and is never taken (nor a debug build).
+2. The same installed version or older: «لديك أحدث إصدار». Newer: `Updater.download()` starts at once (progress, «إلغاء») into `cacheDir/updates`. The token goes only to the GitHub API host; the redirect to storage is requested without it. A build without a token, or without the install permission, says so in plain words (`TokenMissing`, `InstallNotAllowed`) and sends the viewer to the installer kit.
+3. `ApkVerifier.refusal()` checks the file before the system installer sees it: same package, a higher `versionCode`, and exactly the installed app's signing-certificate SHA-256 set. Android refuses an update signed with another key, so the release key must never change. `ApkInspector` reads certificates and version codes the way each API level offers (`signingInfo` and the long version code from API 28, `signatures` and `versionCode` below), so every call in `update/` is safe from API 25.
+4. The screen says «سيُغلق التطبيق لحظة ثم يُفتح من جديد», then `UpdateInstaller` hands the APK to a `PackageInstaller` session. From Android 12 the session asks for no user action (`setRequireUserAction(USER_ACTION_NOT_REQUIRED)`; the manifest declares `UPDATE_PACKAGES_WITHOUT_USER_ACTION`; `REQUEST_INSTALL_PACKAGES` is the app-op the installer in `Shasha-Setup/` grants; the app updates itself and targets a recent SDK), so the system installs without a question. Where it still asks (before Android 12, or when the system insists) `STATUS_PENDING_USER_ACTION` arrives as `InstallEvent.Confirm` and the screen opens the system's window. A child profile only sees a notice.
+5. After the update the process is gone. `RelaunchAfterUpdate` (a note on disk, valid 10 minutes, written just before the hand-over) lets `AppUpdatedReceiver` (`ACTION_MY_PACKAGE_REPLACED`, unexported) start `MainActivity` in the new version. An update the app did not start (the kit's reinstall) opens nothing. Starting an activity from the background is free before Android 10 and, from Android 10, allowed for an app with «display over other apps» (`SYSTEM_ALERT_WINDOW`), which the kit grants and the guard relies on for the same intent; where a system refuses anyway, the TV simply stays on its home screen.
 
-The token reaches the build as CI secret `UPDATE_TOKEN`, then environment variable `SHASHA_UPDATE_TOKEN`, then `buildConfigField` in `app/build.gradle.kts`; empty means the screen says it has no token. It ends up inside the APK, so it must stay read-only (Contents: read, this repository). Renewing it, and what to do if the signing key is lost, are in MAINTENANCE.md.
+The token reaches the build as CI secret `UPDATE_TOKEN`, then environment variable `SHASHA_UPDATE_TOKEN`, then `buildConfigField` in `app/build.gradle.kts`; empty means the screen says updates are not available in this copy. It ends up inside the APK, so it must stay read-only (Contents: read, this repository). Renewing it, and what to do if the signing key is lost, are in MAINTENANCE.md.
 
 ## 8. CI (`.github/`)
 
 - **`workflows/android.yml`**: runs on a push to any branch (not docs-, kit-, branding- or promo-only changes), on pull requests, Fridays 03:17 UTC and manually.
   - `test`: `:policy:test :youtube:testDebugUnitTest :remote:testDebugUnitTest :app:verifyRoborazziDebug`.
   - `build`: R8 release APK, signed when the four `SIGNING_*` secrets exist (mandatory on `main`). It checks that R8 kept the exception names, the package, `versionCode` (1000 + the run number) and the signing certificate.
-  - `release` (signed builds of `main` only): a GitHub Release tagged `v<versionName>-<versionCode>` holding `shasha-<versionName>-<versionCode>.apk`, which the updater reads.
+  - `release` (signed builds of `main` only): a GitHub Release tagged `v<versionName>-<versionCode>` holding `shasha-<versionName>-<versionCode>.apk`, which the updater reads (and, from v1.2, the phone app's `shasha-mobile-…apk`, which it ignores).
+  - `test`: `:policy:test :youtube:testDebugUnitTest :remote:testDebugUnitTest :mobile:testDebugUnitTest :app:verifyRoborazziDebug`.
+  - `build`: R8 release APK, signed when the four `SIGNING_*` secrets exist (mandatory on `main`). It checks that R8 kept the exception names, the package, `versionCode` (1000 + the run number) and the signing certificate. It then builds the phone app (`:mobile:assembleRelease`) with the same key and `versionCode` and runs the same checks on it.
+  - `release` (signed builds of `main` only): a GitHub Release tagged `v<versionName>-<versionCode>` holding `shasha-<versionName>-<versionCode>.apk` (the TV app, which its updater reads) and `shasha-mobile-<versionName>-<versionCode>.apk` (the phone app, which its own updater reads).
 - **`workflows/youtube-canary.yml`**: Tuesday and Friday 04:41 UTC, manually, and on pull requests touching `youtube/**`, `gradle/libs.versions.toml` or the workflow. It runs the real-network tests (`:youtube:testDebugUnitTest --tests '*RealNetwork*' -Dyoutube.realNetwork=true`, one retry) and prints `REAL-RESULT` lines in the run summary. Red means YouTube probably changed something.
 - **`workflows/voice.yml`**: a push that touches `promo/voice/request.json`, or manually. `promo/voice/run.py` generates narration and voice samples with ElevenLabs (secret `ELEVEN_LABS`); the audio is uploaded as the `voice-output` artifact.
 - **`dependabot.yml`**: weekly, Thursday: version PRs for the catalog and the pinned Actions. NewPipeExtractor always gets its own PR.
@@ -193,10 +203,12 @@ Secrets: `SIGNING_KEYSTORE_BASE64`, `SIGNING_KEYSTORE_PASSWORD`, `SIGNING_KEY_AL
 | `:youtube` | `youtube/src/test/java/` (Robolectric for playback) | `./gradlew :youtube:testDebugUnitTest` |
 | `:remote` | `remote/src/test/java/` (routes, auth, PIN gate, a real socket) | `./gradlew :remote:testDebugUnitTest` |
 | `:app` | `app/src/test/java/` (Robolectric and Compose; mirrors the package layout) | `./gradlew :app:verifyRoborazziDebug` (what CI runs) |
+| `:mobile` | `mobile/src/test/java/` (JVM, and Robolectric for the screens and the activity) | `./gradlew :mobile:testDebugUnitTest` |
 
 - Tests that talk to the real YouTube or SponsorBlock (`RealNetwork*`, `FeedSyncRealNetworkTest`, `SponsorBlockRealNetworkTest`) are skipped unless `-Dyoutube.realNetwork=true`; they print `REAL-RESULT` lines.
 - **TV screenshot baselines**: `app/src/test/screenshots/*.png`, written by Roborazzi. `:app:verifyRoborazziDebug` fails when a screen no longer matches its PNG; after an intended UI change run `./gradlew :app:recordRoborazziDebug` and review the diff. The guide and the video reuse these images.
 - **Phone-page screenshots**: `remote/src/test/screenshots/*.png`. No Gradle test compares them; they come from driving the page in a browser against `remote/src/test/java/com/ahmadnayfeh/shasha/remote/qa/QaServer.kt` (demo data). `app/src/test/java/com/ahmadnayfeh/shasha/remote/PhonePageQaServer.kt` serves the page over the app's real rules (it needs `SHASHA_QA_DIR`).
+- Tests of code that must work below the app's newest Android (the updater, from API 25) list the old level too, `@Config(sdk = [25, 35])`, and run under `FloorAwareRobolectricRunner` (`app/src/test/java/com/ahmadnayfeh/shasha/`): Robolectric cannot start at an SDK below the app's `minSdk` (it parses the merged manifest), so the runner leaves such levels out until `minSdk` reaches them.
 - `app/schemas/` holds the exported Room schemas that `MigrationTest` uses.
 
 ## 11. Where to change what
@@ -208,4 +220,26 @@ Secrets: `SIGNING_KEYSTORE_BASE64`, `SIGNING_KEYSTORE_PASSWORD`, `SIGNING_KEY_AL
 | add a screen | `ui/screens/<feature>/`; its route in `ui/navigation/Screen.kt`, registered in `ui/navigation/ProfileNavHost.kt` (adult-only routes in `adultDestinations`) |
 | change the database | `data/db/ShashaDatabase.kt`: bump `version`, add the migration, commit the new `app/schemas/.../<n>.json` |
 | change what the phone can do | `RemoteController.kt`, `RemoteModels.kt` and `RemoteRoutes.kt` in `:remote`; `TvRemoteController` in `:app`; then `web/index.html` |
+| change a channel's sections or their orders | the source side: `youtube/.../newpipe/ChannelTabLoader.kt` (and `ChannelChips.kt`); the page: `ui/screens/channel/ChannelViewModel.kt` (what is read and shown) and `ChannelScreen.kt` (the chips and the grid) |
 | react to a YouTube change | `youtube/` only (`newpipe/`, `playback/`), after reading MAINTENANCE.md |
+| react to a YouTube change | `youtube/` only (`newpipe/`, `playback/`, `download/`), after reading MAINTENANCE.md |
+| change the phone app | `mobile/` (section 12); a new screen is a route in `ui/nav/Routes.kt` and a `composable<>` in `ui/ShashaRoot.kt`; a new text goes in `values/strings.xml` and `values-ar/strings.xml` (`StringsParityTest` checks both) |
+
+## 12. The phone app (`:mobile`)
+
+A second app of the family, for one phone: `com.ahmadnayfeh.shasha.mobile`, minSdk 26, Compose Material 3, Arabic and English (`values/` English, `values-ar/` Arabic; the app's own language setting overrides the phone's through `MainActivity.attachBaseContext`), light and dark. It depends on `:youtube` only (small helpers were copied from `:app`, never shared). Source root `mobile/src/main/java/com/ahmadnayfeh/shasha/mobile/`; manual dependency injection in `AppContainer`, like the TV app.
+
+| Package | What lives there |
+|---|---|
+| `data/` | Room (`db/`: subscriptions, feed cache, history, watch later, resume positions, downloads, SponsorBlock cache, recent searches; schemas in `mobile/schemas/`), `AppSettings` (a Preferences DataStore with a reset per group), the repositories |
+| `player/` | `PlayerController` (one ExoPlayer per process: stream extraction, `YouTubeMediaSourceFactory`, quality overrides, speed, resume, SponsorBlock ticker) and `PlaybackService` (a `MediaSessionService` around that same player: notification, lock screen, background audio) |
+| `sponsorblock/` | the TV app's client, cache and `SkipController`, ported; defaults are sponsor, self-promotion and interaction |
+| `download/` | `DownloadManager` (one download at a time, rows in Room, restart-safe), `DownloadService` (foreground service with the progress notification), `MediaMuxerRemuxer` over `SampleInterleaver` (merges DASH video-only MP4 and M4A audio without re-encoding), `MediaStoreSaver` (Movies/Shasha, Music/Shasha) |
+| `update/` | the same model as the TV's updater (read the latest Release with the built-in read-only token, verify package, versionCode and signing certificate, `PackageInstaller`), reading the asset `shasha-mobile-<versionName>-<versionCode>.apk` and taking the version from its name, because the release's tag follows the TV app's version |
+| `ui/` | `ShashaRoot` (theme, bottom tabs, type-safe navigation), one package per screen, `ActivityBridge` (rotation, system bars and picture-in-picture, which belong to the activity) |
+
+Choices worth knowing: leaving the player screen stops playback, leaving the app keeps the sound going (Settings can turn that off); a new video from the player replaces the current one in the back stack, and a player screen that comes back to the front after a detour (video A, its channel, video B, back, back) plays its own video again (`WatchViewModel.onShown`); the Watch route is the only one without the bottom bar; downloads look the streams up again when they start, since the URLs of a queued one expire; user texts never name where the updates come from.
+
+Tests (`./gradlew :mobile:testDebugUnitTest`, JVM and Robolectric): view models over in-memory DAOs and a fake `VideoSource` (`FakeDaos.kt`, `TestSupport.kt`), repositories on a real in-memory Room, the download manager with fakes for the extractor, fetcher, remuxer and MediaStore, `SampleInterleaver`, the updater, settings on a real DataStore, the ported SponsorBlock tests, and string parity between the two languages. `ui/ShashaRootTest.kt` composes the whole app on Robolectric in English and in Arabic (tabs, Library, Settings, About, the update page, right-to-left order) `MainActivityTest.kt` runs the real activity (the app's language over the phone's, a notification opening Downloads) and `WatchOfflineTest.kt` opens a saved video in the player screen with the real ExoPlayer (a file that is not a video ends in the error state). `./gradlew :mobile:lintDebug` is clean apart from the deliberate `targetSdk 35` note (CI does not run lint). What only a device can run (playing real media, `MediaMuxer`, MediaStore, the services, picture-in-picture, gestures) is not covered by tests.
+
+CI (`android.yml`, section 8): the `test` job also runs `:mobile:testDebugUnitTest`; the `build` job builds the phone APK with the same key and version code, checks that R8 kept its exception names (`mobile/proguard-rules.pro`), and uploads `shasha-mobile-<versionName>-<versionCode>.apk` as its own artifact; the `release` job attaches it to the same Release as the TV's APK. No file name travels between jobs as an output (the key alias is the secret "shasha", and GitHub drops an output that contains a secret): only the phone's `versionName` does. The TV installers in `Shasha-Setup/` take the newest `shasha-*.apk` next to them, a pattern that also matches the phone's file: keep the phone APK out of that folder.

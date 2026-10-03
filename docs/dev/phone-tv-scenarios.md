@@ -551,4 +551,4 @@ Per setting (each: valid → saved and the TV behaves accordingly; invalid → S
 | «تشغيل الخادم» (remote on/off) | Switching it off from the phone would cut every phone off with no way back from the phone. |
 | «إعادة توليد الرمز» | It unpairs the phone that asks; the new token is only on the TV's QR. |
 | «تغيير رمز الوالدين» | The TV asks for the current PIN on the TV; a PIN change from a paired phone would let one phone lock the others out of the parent section. |
-| Protection status, updates, diagnostics, about | Information and TV actions, not settings. |
+| Protection status, updates, about | Information and TV actions, not settings. |

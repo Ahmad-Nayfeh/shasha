@@ -23,4 +23,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "shasha"
 
-include(":app", ":youtube", ":policy", ":remote")
+include(":app", ":youtube", ":policy", ":remote", ":mobile")

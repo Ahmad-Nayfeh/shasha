@@ -67,7 +67,7 @@ internal fun VideoStream.heightOrResolution(): Int =
  * - Live: HLS, else the DASH manifest URL. Ended live (post-live DVR) and OTF: NPE's manifest creators.
  *
  * StreamMapper.checkPlayable applies the same rules when the stream is extracted, so its verdict
- * (e.g. on the diagnostics screen) is the one the player would reach.
+ * (e.g. when the policy looks a video up) is the one the player would reach.
  */
 @OptIn(UnstableApi::class)
 internal class PlaybackPlanner(private val decoders: VideoDecoderCheck) {

@@ -16,6 +16,8 @@ import java.util.concurrent.TimeUnit
  * - HTTP 429 becomes [ReCaptchaException], as NewPipeExtractor expects.
  * - HTTP 403 is remembered per thread so the caller can report "HTTP 403" instead of the
  *   vague parsing error the extractor usually raises afterwards.
+ * - A caller can watch, and reshape, the "browse" answers the extractor receives during one blocking call
+ *   ([browseTaps], see [BrowseTaps]): how a channel's section is read in the order the viewer chose.
  */
 internal class NewPipeDownloader(
     baseClient: OkHttpClient,
@@ -34,6 +36,9 @@ internal class NewPipeDownloader(
         .build()
 
     private val blockedStatus = ThreadLocal<Int?>()
+
+    /** What callers watch the "browse" answers with; see [BrowseTaps]. */
+    val browseTaps = BrowseTaps()
 
     /** Starts a new trace on the current thread. Call before a blocking extractor operation. */
     fun beginTrace() = blockedStatus.remove()
@@ -70,7 +75,7 @@ internal class NewPipeDownloader(
                 response.code,
                 response.message,
                 response.headers.toMultimap(),
-                response.body.string(),
+                browseTaps.answered(request.url(), response.body.string()),
                 response.request.url.toString(),
             )
         }

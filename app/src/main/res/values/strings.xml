@@ -26,46 +26,9 @@
     <string name="error_explain_low_quality_only">لم يعطِ يوتيوب إلا جودة 360p أو أقل، وهذه علامة على تعطّل الاستخراج.</string>
     <string name="error_explain_network">تأكّد من اتصال الشاشة بالشبكة ثم حاول من جديد.</string>
     <string name="error_explain_extraction_broken">تعذّر فهم ردّ يوتيوب. غالباً غيّر يوتيوب شيئاً في موقعه.</string>
-    <string name="error_short_content_unavailable">غير متاح</string>
-    <string name="error_short_private">خاص</string>
-    <string name="error_short_age_restricted">مقيَّد بالعمر</string>
-    <string name="error_short_geo_restricted">محجوب في بلدك</string>
-    <string name="error_short_paid">مدفوع</string>
-    <string name="error_short_account_terminated">قناة مغلقة</string>
-    <string name="error_short_bot_check">تحقّق روبوت</string>
-    <string name="error_short_blocked_403">مرفوض 403</string>
-    <string name="error_short_rate_limited">طلبات كثيرة</string>
-    <string name="error_short_low_quality_only">360p فقط</string>
-    <string name="error_short_network">لا اتصال</string>
-    <string name="error_short_extraction_broken">تعطّل الاستخراج</string>
 
-    <!-- Updates placeholder -->
+    <!-- A child's notice where the updater would be (the updater's own texts are in strings_updates.xml). -->
     <string name="updates_current_version">الإصدار الحالي: %1$s · مكتبة الاستخراج %2$s</string>
-
-    <!-- Diagnostics (فيديوهات تجريبية) -->
-    <string name="diag_title">فيديوهات تجريبية</string>
-    <string name="diag_subtitle">افحص التشغيل عندما يتعطّل يوتيوب</string>
-    <string name="diag_recheck">إعادة الفحص</string>
-    <string name="diag_versions">مكتبة الاستخراج %1$s · التطبيق %2$s</string>
-    <string name="diag_case_normal">عادي</string>
-    <string name="diag_case_live">بث مباشر</string>
-    <string name="diag_case_kids">للأطفال</string>
-    <string name="diag_case_deleted">محذوف</string>
-    <string name="diag_case_sponsorblock">SponsorBlock</string>
-    <string name="diag_about_normal">فيديو عادي: يجب أن يعمل بجودة 1080p.</string>
-    <string name="diag_about_live">بث مباشر: إن انتهى هذا البث فظهور الخطأ متوقَّع.</string>
-    <string name="diag_about_kids">فيديو مصنّف «للأطفال»: أصعب حالة في يوتيوب حالياً.</string>
-    <string name="diag_about_deleted">فيديو محذوف: النتيجة الصحيحة هي شاشة الخطأ.</string>
-    <string name="diag_about_sponsorblock">فيه إعلان مموَّل معروف: يجب أن يُتخطّى وحده.</string>
-    <string name="diag_status_waiting">في الانتظار</string>
-    <string name="diag_status_checking">جارٍ الفحص…</string>
-    <string name="diag_status_ready">يعمل · حتى %1$sp</string>
-    <string name="diag_status_ready_plain">يعمل</string>
-    <string name="diag_status_ready_live">يعمل · بث مباشر</string>
-    <string name="diag_fact_best_quality">أعلى جودة %1$sp</string>
-    <string name="diag_fact_subtitles">ترجمات: %1$s</string>
-    <string name="diag_fact_elapsed">الفحص %1$s ث</string>
-    <string name="diag_fact_live">مباشر</string>
 
     <!-- Player -->
     <string name="player_loading">جارٍ تجهيز الفيديو…</string>
@@ -237,7 +200,20 @@
 
     <!-- Channel and playlist pages -->
     <string name="channel_loading">جارٍ جلب الفيديوهات…</string>
+    <string name="channel_loading_playlists">جارٍ جلب القوائم…</string>
     <string name="channel_no_videos">لا فيديوهات في هذه القناة.</string>
+    <string name="channel_section_error">تعذّر تحميل هذا القسم</string>
+    <string name="channel_no_shorts">لا فيديوهات قصيرة في هذه القناة.</string>
+    <string name="channel_no_live">لا بث مباشر في هذه القناة.</string>
+    <string name="channel_no_playlists">لا قوائم في هذه القناة.</string>
+    <!-- The sections of a channel's page, like YouTube's tabs, and the orders of the first three of them. -->
+    <string name="channel_tab_videos">الفيديوهات</string>
+    <string name="channel_tab_shorts">القصيرة</string>
+    <string name="channel_tab_live">البث المباشر</string>
+    <string name="channel_tab_playlists">القوائم</string>
+    <string name="channel_sort_latest">الأحدث</string>
+    <string name="channel_sort_popular">الأكثر مشاهدة</string>
+    <string name="channel_sort_oldest">الأقدم</string>
     <string name="channel_unsubscribe">إلغاء الاشتراك</string>
     <string name="channel_parental">الرقابة</string>
     <string name="playlist_label">قائمة تشغيل</string>
@@ -280,7 +256,6 @@
 
     <!-- Settings (SPEC §7). The hub's own strings are the hub_* section. -->
     <string name="settings_title">الإعدادات</string>
-    <string name="settings_diagnostics">تشخيص</string>
     <string name="settings_version">شاشة %1$s · مكتبة الاستخراج %2$s</string>
 
     <!-- Counted phrases (same order as above: ONE, TWO, FEW, MANY, OTHER) -->
@@ -638,6 +613,7 @@
     <string name="protection_guard_body_stopped">متوقفة. تبدأ حين يُفتح التطبيق من جديد.</string>
     <string name="protection_install_title">تثبيت التحديثات</string>
     <string name="protection_install_body">ليفتح «فحص التحديثات» مثبّت النظام بالإصدار الجديد.</string>
+    <string name="protection_install_body_unknown_sources">في أندرويد 7 وما قبله (مثل Fire OS 6) لا صلاحية لكل تطبيق، بل إعداد واحد للشاشة كلها: «مصادر غير معروفة» (Unknown sources). به يفتح «فحص التحديثات» مثبّت النظام.</string>
     <string name="protection_youtube_title">يوتيوب الرسمي</string>
     <string name="protection_youtube_body_enabled">زرّه في الريموت يفتحه في ملف الكبار (وفي ملف الطفل يغطّيه الحارس ويعيد «شاشة»). تعطيله اختياري:</string>
     <string name="protection_youtube_body_disabled">معطّل، فلا يفتحه زرّ الريموت.</string>
@@ -662,6 +638,7 @@
     <string name="protection_limits_outside">في ملف الكبار لا يتدخل الحارس إلا أثناء فيديو في الوضع الجاد أو عند انتهاء الوقت، ولا بعد الخروج من ملف طفل برمز الوالدين حتى يُختار ملف آخر: من يصل عندها إلى إعدادات الشاشة يستطيع إيقاف التطبيق أو مسح بياناته أو إزالته، أو سحب هاتين الصلاحيتين، أو إعادة يوتيوب.</string>
     <string name="protection_limits_force_stop">«فرض الإيقاف» من الإعدادات يوقف الحارس حتى يُفتح التطبيق من جديد، ولا تعيده إعادة تشغيل الشاشة.</string>
     <string name="protection_limits_keys">في ملف الطفل وفي الوضع الجاد لا يُمنع زر Home، ولا أزرار التطبيقات في الريموت، ولا الأوامر الصوتية، ولا البث من الجوال، ولا مصدر HDMI: يُغطّى ما يظهر وتعود «شاشة» خلال ثانية أو اثنتين.</string>
+    <string name="protection_limits_fire_tv">هذا جهاز Fire TV، وأمازون لا تدعم رسمياً أن يغطّي تطبيقٌ التطبيقاتِ الأخرى. جرّب الحارس مرة: ادخل ملف طفل واضغط زر Home. إن لم تعد «شاشة» وحدها فالحارس لا يعمل على هذا الجهاز، ويبقى القفل داخل التطبيق كما هو.</string>
     <string name="protection_limits_owner">منع ذلك كله يحتاج وضع «مالك الجهاز» (&#x2068;Device Owner&#x2069;)، وقد استُبعد عمداً: القفل ليس منيعاً.</string>
     <string name="protection_limits_pin_lockout">في ملف الطفل، وعند انتهاء الوقت وخارج أوقات المشاهدة، لا يُخرج من «شاشة» إلا رمز الوالدين (على الشاشة، أو تبديل الملف من صفحة الجوال بعدّادها المستقل). إن قُفل الرمز بعد محاولات خاطئة (من 5 دقائق حتى 4 ساعات، ولا تنهي إعادة التشغيل المهلة) أو نُسي، تبقى الشاشة كلها على «شاشة» حتى تنتهي المهلة أو المنع. المخرج: من الحاسوب الذي جهّزها، وتصحيح الأخطاء ما زال مفعّلاً، نفّذ &#x2068;%1$s&#x2069; (يتوقف الحارس حتى يُفتح التطبيق من جديد).</string>
 
@@ -819,8 +796,7 @@
     <string name="hub_remote">الخادم المحلي</string>
     <string name="hub_remote_summary">التحكم من الجوال: تشغيله، ورمز QR للاقتران، ورمز جديد</string>
     <string name="hub_data_summary">نسخة احتياطية لكل بيانات الشاشة، واشتراكاتك من Takeout</string>
-    <string name="hub_updates_summary">الإصدار المثبّت، وآخر إصدار على GitHub Releases</string>
-    <string name="hub_diagnostics_summary">ما يعينك حين يتعطّل يوتيوب: فيديوهات تجريبية، ومعلومات الشاشة، والإصدار والتراخيص</string>
+    <string name="hub_updates_summary">تحديث «شاشة» بضغطة واحدة، ومعلومات الإصدار والتراخيص</string>
     <string name="hub_about">حول</string>
     <string name="hub_about_summary">من صنع «شاشة»، وتطبيقاته الأخرى</string>
     <string name="hub_loading">جارٍ التحميل…</string>
@@ -892,31 +868,11 @@
     <!-- فحص التحديثات; %1$s of hub_build_line: the versionCode, %2$s: the extractor's version. -->
     <string name="hub_version">شاشة %1$s</string>
     <string name="hub_build_line">رقم البناء %1$s · مكتبة الاستخراج %2$s</string>
-    <string name="hub_updates_how">يقرأ آخر إصدار من GitHub Releases، وينزّله ويفتح مثبّت النظام: أندرويد لا يسمح بتحديث صامت.</string>
-    <string name="hub_updates_when">حين يتعطّل يوتيوب فالحل غالباً إصدار أحدث من مكتبة الاستخراج.</string>
-    <string name="hub_updates_adb">وبديلاً: ثبّت الإصدار الجديد بتشغيل المثبّت من جديد، كما في «دليل شاشة».</string>
+    <string name="hub_updates_how">يفحص «شاشة» هل يوجد إصدار أحدث، فإن وجده نزّله وثبّته وحده: يُغلق التطبيق لحظة ثم يُفتح من جديد.</string>
+    <string name="hub_updates_when">حين يتعطّل يوتيوب فجرّب التحديث أولاً: غالباً يكون فيه الإصلاح.</string>
 
-    <!-- تشخيص -->
-    <string name="hub_diag_videos_body">عادي، وبث مباشر، ومصنّف للأطفال، ومحذوف، وفيه إعلان يتخطاه SponsorBlock: تعرف في ثوانٍ ما الذي تعطّل</string>
-    <string name="hub_diag_facts">معلومات للتشخيص</string>
-    <!-- %1$s: maker and model, %2$s: the Android version, %3$s: the API level. -->
-    <string name="hub_fact_device">&#x2068;%1$s&#x2069; · أندرويد %2$s (API %3$s)</string>
-    <!-- Which voice recognizer this TV offers: the system's voice screen (what the search key and the microphone button
-         open first) and the in-app recognition service (the fallback). %1$s, %2$s: the package that provides it. -->
-    <string name="hub_fact_voice_both">التعرّف على الصوت: شاشة النظام &#x2068;%1$s&#x2069;، وبديلها داخل التطبيق &#x2068;%2$s&#x2069;</string>
-    <string name="hub_fact_voice_system">التعرّف على الصوت: شاشة النظام &#x2068;%1$s&#x2069; (ولا بديل داخل التطبيق)</string>
-    <string name="hub_fact_voice_service">التعرّف على الصوت: داخل التطبيق فقط &#x2068;%1$s&#x2069; (ولا شاشة نظام)</string>
-    <string name="hub_fact_voice_none">التعرّف على الصوت: غير متاح في هذا التلفاز، فاكتب ما تبحث عنه</string>
-    <string name="hub_fact_no_subscriptions">لا اشتراكات بعد</string>
-    <!-- %1$s: count_channels, e.g. «20 قناة»; %2$s: ago_*, e.g. «منذ 5 دقائق». -->
-    <string name="hub_fact_feed_never">الاشتراكات: %1$s · لم تُحدَّث بعد</string>
-    <string name="hub_fact_feed">الاشتراكات: %1$s · آخر تحديث %2$s</string>
-    <!-- %1$s: a number of channels (digits). The last error follows on its own line, as it is. -->
-    <string name="hub_fact_feed_failed">قنوات تعذّر تحديثها في آخر محاولة: %1$s</string>
-    <string name="hub_diag_hint">حين يتعطّل شيء: شغّل الفيديوهات التجريبية أولاً، ثم «فحص التحديثات». و«دليل شاشة» يشرح الباقي.</string>
-
-    <!-- تشخيص ← معلومات تقنية والتراخيص (كانت في «حول») -->
-    <string name="hub_diag_technical">معلومات تقنية والتراخيص</string>
+    <!-- فحص التحديثات ← معلومات تقنية والتراخيص (كانت في «حول»، ثم في «تشخيص») -->
+    <string name="hub_tech_title">معلومات تقنية والتراخيص</string>
     <string name="hub_tech_data_title">بيانات تخطي المقاطع</string>
     <string name="hub_tech_licenses">المكتبات ورخصها</string>
     <string name="hub_tech_ideas">أفكار من مشاريع مفتوحة المصدر، بشيفرة كُتبت من جديد</string>

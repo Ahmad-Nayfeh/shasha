@@ -76,7 +76,10 @@ import com.ahmadnayfeh.shasha.ui.theme.ShashaDimens
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
-/** [adult]: the adult profile's page, with the parental menu (add to a child's allowlist). */
+/**
+ * [adult]: the adult profile's page, with the parental menu (add to a child's allowlist). [ownerChannelId]: the channel whose
+ * page listed the playlist, when it came from there (see [PlaylistViewModel]).
+ */
 @Composable
 fun PlaylistRoute(
     playlistId: String,
@@ -84,8 +87,11 @@ fun PlaylistRoute(
     onPlay: (videoId: String, playlistId: String, index: Int) -> Unit,
     onBack: () -> Unit,
     onCheckUpdates: () -> Unit,
+    ownerChannelId: String? = null,
 ) {
-    val vm = containerViewModel("playlist:$playlistId") { PlaylistViewModel(playlistId, it.videoSource, it.watch, it.playQueues, it.policy.filter) }
+    val vm = containerViewModel("playlist:$playlistId:${ownerChannelId.orEmpty()}") {
+        PlaylistViewModel(playlistId, it.videoSource, it.watch, it.playQueues, it.policy.filter, ownerChannelId)
+    }
     val access by vm.access.collectAsStateWithLifecycle()
     val details by vm.details.collectAsStateWithLifecycle()
     val videos by vm.videos.collectAsStateWithLifecycle()

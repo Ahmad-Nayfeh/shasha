@@ -86,6 +86,13 @@ class ContentFilter private constructor(private val engine: PolicyEngine?, val p
     /**
      * The profile hides shorts and [video]'s duration is unknown (RSS): the shorts rule cannot judge it
      * yet ([PolicyEngine.needsDuration]). Lists that can learn durations leave such videos out until then.
+     *
+     * Decided, and kept: such a video is **never** shown. The parent's limit counts a regular upload of three minutes or
+     * less as a short, kids' channels are full of them, and the player looks a video up before it plays and refuses
+     * what it finds short, so a card for an unknown duration would be one the player then refuses. That is also why
+     * RSS (no durations) is not a way to fill a child's home when the Videos tab and the long-form playlist fail
+     * ([com.ahmadnayfeh.shasha.data.ChannelUploads]): its rows would all be left out here. Where the profile shows Shorts
+     * nothing needs a duration (this is false) and RSS is the last way.
      */
     fun needsDuration(video: VideoItem): Boolean {
         val e = engine ?: return false

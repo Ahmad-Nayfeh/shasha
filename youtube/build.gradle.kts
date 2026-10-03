@@ -8,7 +8,8 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        minSdk = 28
+        // 25: the TV app runs from Android 7.1 (Fire OS 6); the phone app (:mobile, 26) reuses this module too.
+        minSdk = 25
         consumerProguardFiles("consumer-rules.pro")
         buildConfigField("String", "EXTRACTOR_VERSION", "\"${libs.versions.newpipeExtractor.get()}\"")
     }

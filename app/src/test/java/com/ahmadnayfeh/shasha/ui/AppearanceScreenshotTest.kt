@@ -183,14 +183,14 @@ class AppearanceScreenshotTest {
         Hub(SettingsCategory.ABOUT)
     }
 
-    /** «Technical information and licenses» in English (it used to be on About): into the pane, DOWN onto the version card. */
+    /** «Check for updates» in English, with «Technical information and licenses» (it used to be on About) under it: into the pane, DOWN once. */
     @Test
     @Config(sdk = [35], qualifiers = TV_1080P_EN)
-    fun diagnosticsEnglish() = snap(
-        "settings_hub_diagnostics_en",
+    fun updatesEnglish() = snap(
+        "settings_hub_updates_en",
         language = AppLanguage.ENGLISH,
-        keys = intoPane(AppLanguage.ENGLISH) + List(2) { Key.DirectionDown },
-    ) { Hub(SettingsCategory.DIAGNOSTICS) }
+        keys = intoPane(AppLanguage.ENGLISH) + listOf(Key.DirectionDown),
+    ) { Hub(SettingsCategory.UPDATES) }
 
     /** DOWN through the developer's apps: their cards and QR codes come into view one by one. */
     @Test
