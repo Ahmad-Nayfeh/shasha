@@ -32,7 +32,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-/** The home screen when the feed sync fails (SPEC §1: shown, never an endless wait), with the remote. */
+/**
+ * The home screen, with the remote: when the feed sync fails (SPEC §1: shown, never an endless wait), and the home that a history
+ * alone makes (the suggestions, the Shorts and what was watched lately, with no channels).
+ */
 @OptIn(ExperimentalTestApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35], qualifiers = TV_1080P)
@@ -42,6 +45,10 @@ class HomeScreenTest {
 
     private var refreshes = 0
     private var updateChecks = 0
+    private val played = mutableListOf<String>()
+
+    /** The Shorts lists the shelves handed to the Shorts player, with the place of the Short chosen. */
+    private val shortsOpened = mutableListOf<Pair<List<String>, Int>>()
 
     private fun show(state: MutableState<HomeState>, sync: MutableState<HomeSync>) {
         compose.setContent {
@@ -54,10 +61,11 @@ class HomeScreenTest {
                     focus = remember { ContentFocus() },
                     extractorVersion = "v0.26.5",
                     onRefresh = { refreshes++ },
-                    onPlay = {},
+                    onPlay = { played += it.videoId },
                     onImport = {},
                     onSearch = {},
                     onCheckUpdates = { updateChecks++ },
+                    onPlayShorts = { shorts, index -> shortsOpened += shorts.map { it.videoId } to index },
                 )
             }
         }
@@ -99,5 +107,72 @@ class HomeScreenTest {
         sync.value = HomeSync(health = SyncHealth(20, 20, 0, NOW))
         compose.waitForIdle()
         compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("home_grid"))).assertExists()
+    }
+
+    private val synced = HomeSync(health = SyncHealth(20, 20, 0, NOW))
+
+    @Test
+    fun aHistoryAlone_isAHome_notTheWelcomePage() {
+        val state = mutableStateOf(HomeState(loaded = true, suggested = UiFixtures.suggested, recent = UiFixtures.videoUis.take(4)))
+        show(state, mutableStateOf(HomeSync(health = SyncHealth())))
+
+        compose.onNodeWithTag("home_welcome").assertDoesNotExist()
+        // The first shelf has the focus, and no channels means no sync status or refresh in the header.
+        compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("home_suggested"))).assertExists()
+        compose.onNodeWithTag("home_refresh").assertDoesNotExist()
+        compose.onNodeWithText("مختارة لك من مشاهداتك").assertIsDisplayed()
+    }
+
+    @Test
+    fun withNothingSuggestedYet_theWatchedVideosAreTheFirstShelf_andTheHeaderSaysSuggestionsComeSoon() {
+        val state = mutableStateOf(HomeState(loaded = true, recent = UiFixtures.videoUis.take(4), suggesting = true))
+        show(state, mutableStateOf(HomeSync(health = SyncHealth())))
+
+        compose.onNodeWithTag("home_suggesting").assertIsDisplayed()
+        compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("home_recent"))).assertExists()
+        press(Key.DirectionCenter)
+        assertThat(played).containsExactly(UiFixtures.videoUis[0].video.videoId)
+
+        // The suggestions arrive: the header stops saying so, and the focus stays where the viewer is.
+        state.value = state.value.copy(suggested = UiFixtures.suggested, suggesting = false)
+        compose.waitForIdle()
+        compose.onNodeWithTag("home_suggesting").assertDoesNotExist()
+        compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("home_recent"))).assertExists()
+    }
+
+    @Test
+    fun noHistoryAndNoChannels_isTheWelcomePage_withAFriendlyHint() {
+        show(mutableStateOf(HomeState(loaded = true)), mutableStateOf(HomeSync(health = SyncHealth())))
+
+        compose.onNodeWithTag("home_welcome").assertIsDisplayed()
+        compose.onNodeWithText("لنملأ الرئيسية معاً").assertIsDisplayed()
+        compose.onNodeWithTag("home_import").assertIsFocused()
+    }
+
+    @Test
+    fun aShortOfTheSuggestedShorts_opensTheShortsPlayer_overThatRow() {
+        val state = mutableStateOf(HomeState(loaded = true, suggestedShorts = UiFixtures.shorts, recent = UiFixtures.videoUis.take(3)))
+        show(state, mutableStateOf(HomeSync(health = SyncHealth())))
+
+        // The Shorts are the first shelf the screen has: the first Short has the focus. LEFT is the next one in the Arabic layout.
+        compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("home_suggested_shorts"))).assertExists()
+        press(Key.DirectionLeft)
+        press(Key.DirectionCenter)
+        assertThat(shortsOpened).containsExactly(UiFixtures.shorts.map { it.video.videoId } to 1)
+        assertThat(played).isEmpty()
+    }
+
+    @Test
+    fun theFeedsOwnShorts_openTheShortsPlayerToo_andTheVideosThePlayer() {
+        val state = mutableStateOf(HomeState(loaded = true, videos = UiFixtures.videoUis, subscriptionCount = 20, shorts = UiFixtures.shorts))
+        show(state, mutableStateOf(synced))
+
+        // The first video has the focus: OK plays it as before.
+        press(Key.DirectionCenter)
+        assertThat(played).containsExactly(UiFixtures.videoUis[0].video.videoId)
+        // DOWN to the Shorts row (it follows the grid's first line), OK: the Shorts player, over the feed's Shorts.
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        assertThat(shortsOpened).containsExactly(UiFixtures.shorts.map { it.video.videoId } to 0)
     }
 }

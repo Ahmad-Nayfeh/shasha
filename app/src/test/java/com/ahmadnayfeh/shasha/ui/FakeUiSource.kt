@@ -6,6 +6,7 @@ import com.ahmadnayfeh.shasha.youtube.PageKey
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistPage
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
+import com.ahmadnayfeh.shasha.youtube.ShortsPage
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
@@ -22,6 +23,10 @@ class FakeUiSource : VideoSource {
 
     val searches = CopyOnWriteArrayList<SearchCall>()
     var searchResult: (SearchCall) -> ItemsPage = { ItemsPage(emptyList(), null) }
+
+    /** The queries whose Shorts were asked for ([VideoSource.searchShorts]); [shortsResult] answers them. */
+    val shortsSearches = CopyOnWriteArrayList<String>()
+    var shortsResult: suspend (String) -> ShortsPage = { ShortsPage(emptyList(), null) }
 
     val playlistCalls = CopyOnWriteArrayList<PageKey?>()
     val playlistPages = HashMap<PageKey?, List<VideoItem>>()
@@ -40,6 +45,11 @@ class FakeUiSource : VideoSource {
         val call = SearchCall(query, filter, page)
         searches += call
         return searchResult(call)
+    }
+
+    override suspend fun searchShorts(query: String, page: PageKey?): ShortsPage {
+        shortsSearches += query
+        return shortsResult(query)
     }
 
     override suspend fun playlist(playlistId: String, page: PageKey?): PlaylistPage {

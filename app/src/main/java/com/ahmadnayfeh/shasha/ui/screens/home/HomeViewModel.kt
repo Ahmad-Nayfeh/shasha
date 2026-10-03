@@ -145,7 +145,7 @@ class HomeViewModel(
                 suggested = suggestedVideos.map { it.toUi() },
                 suggestedShorts = suggestedShorts.map { it.toUi() },
                 recent = recent,
-                suggesting = suggested.working && suggestedVideos.isEmpty() && suggestedShorts.isEmpty(),
+                suggesting = rules.showsSuggestions && suggested.working && suggestedVideos.isEmpty() && suggestedShorts.isEmpty(),
             )
         }
             .flowOn(Dispatchers.Default)

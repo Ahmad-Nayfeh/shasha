@@ -39,8 +39,9 @@ class HomeSuggestionsTest {
     private val playing = MutableStateFlow(false)
     private val asked = CopyOnWriteArrayList<String>()
 
-    /** Each watched video's suggestions: three of its own, the second shared with every other one. */
-    private fun relatedOf(seed: String) = listOf(video("${seed}_1", "UCa", null), video("shared", "UCa", null), video("${seed}_3", "UCa", null))
+    /** Each watched video's suggestions: three of its own, the second shared with every other one (each of another channel: one channel never fills the ranking). */
+    private fun relatedOf(seed: String) =
+        listOf(video("${seed}_1", "UC${seed}1", null), video("shared", "UCshared", null), video("${seed}_3", "UC${seed}3", null))
 
     private val source: VideoSource = object : VideoSource by FakeVideoSource() {
         override suspend fun related(videoId: String): List<VideoItem> {
@@ -77,13 +78,13 @@ class HomeSuggestionsTest {
         val kept = mapOf(
             "a" to HomeSuggestions.Kept(relatedOf("a"), now),
             "b" to HomeSuggestions.Kept(relatedOf("b"), now),
-            "c" to HomeSuggestions.Kept(listOf(video("a", "UCa", null), video("c_1", "UCa", null)), now),
+            "c" to HomeSuggestions.Kept(listOf(video("a", "UCa", null), video("c_1", "UCc1", null)), now),
         )
-        // a is watched now, c a week ago (half the weight), b two weeks ago (a quarter), and b_3 was watched too.
-        val history = listOf(watched("a"), watched("c", ageDays = 7), watched("b", ageDays = 14), watched("b_3", ageDays = 40))
+        // a is watched now, c a week ago (half the weight), b three weeks ago (an eighth), and b_3 was watched too.
+        val history = listOf(watched("a"), watched("c", ageDays = 7), watched("b", ageDays = 21), watched("b_3", ageDays = 40))
         val row = HomeSuggestions.rank(history, kept, emptyMap(), now).videos
-        // a's own first and its third come first: "shared" beside a and b adds up and ties with a_1; "a" (a seed) and b_3 (watched) never
-        // come back. Round-robin would have put b_1 second: the oldest viewing's first suggestion now comes last.
+        // a's first, then "shared" (beside a and, a little, beside b), then a's third and c's first; "a" (a seed) and b_3 (watched) never
+        // come back. Taking the lists in turns would have put b_1 second: the oldest viewing's first suggestion now comes last.
         assertThat(row.map { it.videoId }).containsExactly("a_1", "shared", "a_3", "c_1", "b_1").inOrder()
         assertThat(HomeSuggestions.rank(emptyList(), kept, emptyMap(), now).videos).isEmpty()
     }
@@ -91,8 +92,8 @@ class HomeSuggestionsTest {
     @Test
     fun theSeeds_areTheNewestTwelve_theRestOnlyKeepSuggestionsOut() {
         val history = (1..15).map { watched("w$it", ageDays = it) }
-        val kept = history.associate { it.videoId to HomeSuggestions.Kept(listOf(video("${it.videoId}_1", "UCa", null)), now) } +
-            ("w15" to HomeSuggestions.Kept(listOf(video("w14", "UCa", null), video("far_1", "UCa", null)), now))
+        val kept = history.associate { it.videoId to HomeSuggestions.Kept(listOf(video("${it.videoId}_1", "UC${it.videoId}", null)), now) } +
+            ("w15" to HomeSuggestions.Kept(listOf(video("w14", "UCw14", null), video("far_1", "UCfar", null)), now))
         val row = HomeSuggestions.rank(history, kept, emptyMap(), now).videos.map { it.videoId }
         assertThat(row).contains("w1_1")
         assertThat(row).contains("w12_1")
@@ -123,9 +124,9 @@ class HomeSuggestionsTest {
         val kept = mapOf("a" to HomeSuggestions.Kept(related, now))
         val channelShorts = mapOf("UCa" to HomeSuggestions.Kept(shortsOf("UCa"), now))
         val ranked = HomeSuggestions.rank(history, kept, channelShorts, now)
-        // The video row has no Short; the Shorts row has the one among the suggestions, the channel's, not the one already watched.
+        // The video row has no Short; the Shorts row has the one among the suggestions and the channel's, not the one already watched.
         assertThat(ranked.videos.map { it.videoId }).containsExactly("x_1")
-        assertThat(ranked.shorts.map { it.videoId }).containsExactly("UCa_s2", "x_short", "UCa_s3").inOrder()
+        assertThat(ranked.shorts.map { it.videoId }).containsExactly("UCa_s2", "UCa_s3", "x_short")
     }
 
     @Test
@@ -170,7 +171,7 @@ class HomeSuggestionsTest {
         assertThat(asked).isEmpty()
         assertThat(restarted.kept.value.getValue("a").videos).isEqualTo(relatedOf("a"))
         assertThat(HomeSuggestions.rank(listOf(watched("a"), watched("b")), restarted.kept.value, emptyMap(), now).videos.map { it.videoId })
-            .containsExactly("a_1", "shared", "b_1", "a_3", "b_3").inOrder()
+            .containsExactly("shared", "a_1", "b_1", "a_3", "b_3").inOrder()
     }
 
     @Test
@@ -330,7 +331,7 @@ class HomeSuggestionsTest {
         assertThat(withTimeout(5_000) { seen.first() }.videos).isEmpty()
         s.refresh(listOf("a"), shortsOf = listOf("UCa"))
         val ranked = withTimeout(5_000) { seen.first { it.videos.isNotEmpty() } }
-        assertThat(ranked.videos.map { it.videoId }).containsExactly("a_3", "shared", "a_1").inOrder().or(ranked.videos.map { it.videoId }.let { assertThat(it).containsExactly("a_1", "shared", "a_3").inOrder() })
+        assertThat(ranked.videos.map { it.videoId }).containsExactly("a_1", "shared", "a_3").inOrder()
         assertThat(ranked.shorts.map { it.videoId }).containsExactly("UCa_s1", "UCa_s2", "UCa_s3").inOrder()
         assertThat(ranked.working).isFalse()
 

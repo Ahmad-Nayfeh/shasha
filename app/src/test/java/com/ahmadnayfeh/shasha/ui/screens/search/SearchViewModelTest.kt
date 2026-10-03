@@ -17,6 +17,9 @@ import com.ahmadnayfeh.shasha.ui.UiFixtures
 import com.ahmadnayfeh.shasha.youtube.ItemsPage
 import com.ahmadnayfeh.shasha.youtube.PageKey
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
+import com.ahmadnayfeh.shasha.youtube.ShortsPage
+import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
+import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -134,5 +137,81 @@ class SearchViewModelTest {
         vm.toggleSubscription(channel)
         withTimeout(5_000) { vm.subscribed.first { channel.channelId !in it } }
         collector.cancel()
+    }
+
+    // ---- v1.4: the row of Shorts beside the results of a «الكل» search ------------------------------------------------
+
+    private fun shorts(vararg ids: String, channel: String = "UCshortsmaker00000000001") =
+        ids.map { id -> UiFixtures.short(0, "Short $id", "قناة", 30, 3_600_000L).copy(videoId = id, channelId = channel) }
+
+    @Test
+    fun aSearchOfEverything_hasAShortsRow_besideItsResults() {
+        source.shortsResult = { ShortsPage(shorts("sh000000001", "sh000000002", "sh000000001"), PageKey("more")) }
+        vm.submit("  الخط العربي ")
+        assertThat(source.shortsSearches).containsExactly("الخط العربي")
+        // No repeats, in the order YouTube gave them; the results themselves are untouched.
+        assertThat(vm.shorts.value.map { it.video.videoId }).containsExactly("sh000000001", "sh000000002").inOrder()
+        assertThat(vm.results.value.items).isNotEmpty()
+    }
+
+    @Test
+    fun theShortsRow_followsTheProfilesRules() {
+        source.shortsResult = { ShortsPage(shorts("sh000000001") + shorts("sh000000002", channel = "UCblocked0000000000000001"), null) }
+        vm.submit("x")
+        assertThat(vm.shorts.value.map { it.video.videoId }).containsExactly("sh000000001", "sh000000002").inOrder()
+
+        // A channel blocked while the row is on screen: its Short goes at once.
+        val blocked = Blocklist(channels = listOf(ListedChannel("UCblocked0000000000000001", "محظورة")))
+        rules.value = ContentFilter.of(engine, owner.copy(blocklist = blocked))
+        assertThat(vm.shorts.value.map { it.video.videoId }).containsExactly("sh000000001")
+
+        // Where the profile hides Shorts there is no row; before the profile is known, none either.
+        rules.value = ContentFilter.of(engine, owner.copy(hideShorts = true))
+        assertThat(vm.shorts.value).isEmpty()
+        rules.value = ContentFilter.NOTHING
+        assertThat(vm.shorts.value).isEmpty()
+    }
+
+    @Test
+    fun aProfileThatHidesShorts_isNotEvenAsked() {
+        rules.value = ContentFilter.of(engine, owner.copy(hideShorts = true))
+        source.shortsResult = { ShortsPage(shorts("sh000000001"), null) }
+        vm.submit("x")
+        assertThat(source.shortsSearches).isEmpty()
+        assertThat(vm.shorts.value).isEmpty()
+    }
+
+    @Test
+    fun theOtherFilters_nameWhatTheyWant_andHaveNoShortsRow() {
+        source.shortsResult = { ShortsPage(shorts("sh000000001"), null) }
+        vm.submit("x")
+        assertThat(vm.shorts.value).isNotEmpty()
+        vm.setFilter(SearchFilter.VIDEOS)
+        assertThat(vm.shorts.value).isEmpty()
+        assertThat(source.shortsSearches).hasSize(1)
+        // Back to «الكل»: the row is asked for again.
+        vm.setFilter(SearchFilter.ALL)
+        assertThat(source.shortsSearches).hasSize(2)
+        assertThat(vm.shorts.value).isNotEmpty()
+    }
+
+    @Test
+    fun aNewSearchDropsTheOldShorts_andACleared_oneHasNone() {
+        source.shortsResult = { q -> ShortsPage(shorts(if (q == "first") "sh000000001" else "sh000000002"), null) }
+        vm.submit("first")
+        assertThat(vm.shorts.value.map { it.video.videoId }).containsExactly("sh000000001")
+        vm.submit("second")
+        assertThat(vm.shorts.value.map { it.video.videoId }).containsExactly("sh000000002")
+        vm.clearResults()
+        assertThat(vm.shorts.value).isEmpty()
+    }
+
+    @Test
+    fun failingToGetShorts_leavesTheResultsAlone_noErrorScreen() {
+        source.shortsResult = { throw SourceException(SourceErrorKind.BLOCKED_403, "HttpStatus403", null, null) }
+        vm.submit("x")
+        assertThat(vm.shorts.value).isEmpty()
+        assertThat(vm.results.value.error).isNull()
+        assertThat(vm.results.value.items).isNotEmpty()
     }
 }

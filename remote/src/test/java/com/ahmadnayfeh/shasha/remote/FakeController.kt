@@ -25,6 +25,16 @@ class FakeController : RemoteController {
         RemoteItem(RemoteItemType.VIDEO, "abcdefghijk", "نتيجة", "قناة", null, 61),
         RemoteItem(RemoteItemType.CHANNEL, "UC1234567890123456789012", "قناة", null, null, null),
     )
+
+    /** The pages of the paged search by token (null: the first): the first brings a Short and a next, the second is the last. */
+    var searchPages: Map<String?, RemoteSearchPage> = mapOf(
+        null to RemoteSearchPage(
+            items = searchResults,
+            shorts = listOf(RemoteItem(RemoteItemType.VIDEO, "shortabcdef1", "مقطع قصير", "قناة", null, 30, isShort = true)),
+            next = "page-2",
+        ),
+        "page-2" to RemoteSearchPage(listOf(RemoteItem(RemoteItemType.VIDEO, "abcdefghij2", "نتيجة ثالثة", "قناة", null, 90)), next = null),
+    )
     var result = RemoteResult.ok("تم")
     var playResult = RemotePlayResult(
         true, "بانتظار القبول على الشاشة",
@@ -43,6 +53,7 @@ class FakeController : RemoteController {
 
     override suspend fun status() = record("status", status)
     override suspend fun search(query: String) = record("search($query)", searchResults)
+    override suspend fun searchPage(query: String, page: String?) = record("searchPage($query,$page)", searchPages[page] ?: RemoteSearchPage(emptyList()))
     override suspend fun playLink(url: String) = record("playLink($url)", playResult)
     override suspend fun control(cmd: PlaybackCommand) = record("control(${cmd.action},${cmd.seconds})", result)
     override suspend fun profiles() = record(

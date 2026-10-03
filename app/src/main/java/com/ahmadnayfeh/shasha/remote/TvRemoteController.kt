@@ -1,5 +1,6 @@
 package com.ahmadnayfeh.shasha.remote
 
+import android.util.Log
 import androidx.annotation.StringRes
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.backup.BackupException
@@ -8,6 +9,7 @@ import com.ahmadnayfeh.shasha.data.AddResult
 import com.ahmadnayfeh.shasha.data.PinResult
 import com.ahmadnayfeh.shasha.data.ProfileRepository
 import com.ahmadnayfeh.shasha.data.SubscriptionRepository
+import com.ahmadnayfeh.shasha.data.asSourceException
 import com.ahmadnayfeh.shasha.data.takeout.TakeoutException
 import com.ahmadnayfeh.shasha.lock.LockController
 import com.ahmadnayfeh.shasha.player.PlayQueue
@@ -34,7 +36,9 @@ import com.ahmadnayfeh.shasha.ui.navigation.Screen
 import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
 import com.ahmadnayfeh.shasha.ui.screens.settings.QuotaOptions
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.youtube.PageKey
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
+import com.ahmadnayfeh.shasha.youtube.SearchFilter
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.SourceItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
@@ -46,6 +50,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -162,6 +168,43 @@ class TvRemoteController(
     }
 
     /**
+     * One page of the phone page's search, which asks for the next one while the viewer scrolls (v1.4: the page used to show only
+     * the first, a fixed few). The first page also brings the row of Shorts, asked beside it: where it fails or is slow there is
+     * no row, never a failed search. The [page] token is the source's own (an opaque id this TV handed out): a stale one is an
+     * empty last page, never an error. A page the rules empty out (blocked channels) still says there is more: the page asks again.
+     */
+    override suspend fun searchPage(query: String, page: String?): RemoteSearchPage {
+        if (rules().features?.search != true) throw RemoteRejection(texts.get(R.string.remote_search_disabled))
+        val key = page?.let(::PageKey)
+        return coroutineScope {
+            val shorts = if (key == null && rules().showsShorts) async { shortsOf(query) } else null
+            val result = try {
+                withTimeoutOrNull(SEARCH_TIMEOUT_MS) { source.search(query, SearchFilter.ALL, key) }
+                    ?: throw RemoteRejection(texts.get(R.string.remote_timeout))
+            } catch (e: SourceException) {
+                throw RemoteRejection(texts.sourceError(e))
+            }
+            // The rules as they are now (a switch to a child profile meanwhile empties the page), videos before the Shorts of the row.
+            val rules = rules()
+            RemoteSearchPage(
+                items = rules.items(result.items).map { it.toRemoteItem() },
+                shorts = shorts?.await()?.let { found -> rules.videos(found).take(MAX_SHORTS).map { it.toRemoteItem() } }.orEmpty(),
+                next = result.next?.id,
+            )
+        }
+    }
+
+    /** The Shorts the search found, or none: an extra beside the results, so a failure or a long wait is no row, not an error. */
+    private suspend fun shortsOf(query: String): List<VideoItem> = try {
+        withTimeoutOrNull(SHORTS_TIMEOUT_MS) { source.searchShorts(query).shorts.distinctBy { it.videoId } }.orEmpty()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.w(TAG, "No Shorts for the phone's search: ${e.asSourceException().technicalName}")
+        emptyList()
+    }
+
+    /**
      * v1.1.1: a link is checked by the TV's rules first (a refused one never reaches the screen), then the TV asks
      * «طلب تشغيل من الجوال» over whatever plays ([PhonePlayRequests]): the answer is that waiting request, and only
      * «قبول» on the TV opens it ([openAccepted], checked again). A video accepted there needs no «تأكيد» from the phone
@@ -192,7 +235,7 @@ class TvRemoteController(
         val ready = display.prepare(profileId)
         if (ready != ShowResult.SHOWN) return RemotePlayResult.refused(texts.show(ready))
         val request = playRequests.submit(profileId, title, texts.get(R.string.remote_play_waiting, title)) {
-            withTimeoutOrNull(PLAY_TIMEOUT_MS) { openAccepted(link, profileId) } ?: error(R.string.remote_timeout)
+            withTimeoutOrNull(PLAY_TIMEOUT_MS) { openAccepted(link, profileId, isShortsLink = SHORTS_LINK.containsMatchIn(url)) } ?: error(R.string.remote_timeout)
         }
         return RemotePlayResult(ok = true, message = request.message, request = request)
     }
@@ -205,12 +248,12 @@ class TvRemoteController(
     }
 
     /** «قبول» on the TV: the link is checked again (the TV may have changed meanwhile), then opened. */
-    private suspend fun openAccepted(link: YouTubeLink, profileId: String): RemoteResult {
+    private suspend fun openAccepted(link: YouTubeLink, profileId: String, isShortsLink: Boolean): RemoteResult {
         // A video locked meanwhile (the TV started one) stays the only thing on screen.
         if (lock.current() != null) return RemoteResult.error(texts.deny(DenyReason.LOCKED))
         return try {
             when (link) {
-                is YouTubeLink.Video -> playVideo(link, profileId)
+                is YouTubeLink.Video -> playVideo(link, profileId, isShortsLink)
                 is YouTubeLink.Playlist -> playPlaylist(link.id, profileId)
                 is YouTubeLink.Channel -> openChannel(link, profileId)
             }
@@ -229,15 +272,20 @@ class TvRemoteController(
      * Accepted on the TV: checked again, then opened. A shared link's start time (`t=`) is where the video starts; the
      * phone that sent it is there, so its player asks no «تأكيد» ([Screen.Player.phoneApproved]).
      */
-    private suspend fun playVideo(link: YouTubeLink.Video, profileId: String): RemoteResult {
+    private suspend fun playVideo(link: YouTubeLink.Video, profileId: String, isShortsLink: Boolean): RemoteResult {
         val allowed = when (val check = gate.checkLink(link)) {
             is PlayCheck.Denied -> return RemoteResult.error(texts.deny(check.reason))
             is PlayCheck.Allowed -> check
         }
-        // The player checks again with the link's rule (fromLink): the video's own channel, never its `list=`.
-        val destination = Screen.Player(
-            link.id, playlistId = link.playlistId, fromLink = true, startSeconds = link.startSeconds?.takeIf { it > 0 }, phoneApproved = true,
-        )
+        // The player checks again with the link's rule (fromLink): the video's own channel, never its `list=`. A Short's link (the
+        // phone's row of Shorts sends them) opens the Shorts player, alone: the phone's row is not on the TV to flip through.
+        val destination = if (isShortsLink) {
+            Screen.Shorts(link.id, queue = null, fromLink = true, phoneApproved = true)
+        } else {
+            Screen.Player(
+                link.id, playlistId = link.playlistId, fromLink = true, startSeconds = link.startSeconds?.takeIf { it > 0 }, phoneApproved = true,
+            )
+        }
         val shown = display.show(destination, profileId)
         if (shown != ShowResult.SHOWN) return RemoteResult.error(texts.show(shown))
         val title = allowed.video?.title ?: allowed.stream?.video?.title
@@ -649,6 +697,7 @@ class TvRemoteController(
             thumbnailUrl = Thumbnails.video(videoId, Thumbnails.Size.SMALL),
             durationSeconds = durationSeconds,
             isLive = isLive,
+            isShort = isShortForm,
         )
         is ChannelItem -> RemoteItem(
             type = RemoteItemType.CHANNEL,
@@ -673,6 +722,16 @@ class TvRemoteController(
         const val MAIN_TIMEOUT_MS = 2_000L
         const val PROFILE_TIMEOUT_MS = 10_000L
         const val SEARCH_TIMEOUT_MS = 30_000L
+
+        /** The Shorts beside a search are an extra: a few seconds, then the page goes without them. */
+        const val SHORTS_TIMEOUT_MS = 8_000L
+
+        /** The phone page's row of Shorts: YouTube's first page of them is about 25. */
+        const val MAX_SHORTS = 24
+        const val TAG = "TvRemoteController"
+
+        /** A link to a Short (`youtube.com/shorts/<id>`, as the phone's row of Shorts sends it): the Shorts player's. */
+        val SHORTS_LINK = Regex("(?i)youtube\\.com/shorts/")
 
         /** Extraction (a few seconds), bringing the app up and opening the player. */
         const val PLAY_TIMEOUT_MS = 45_000L

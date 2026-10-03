@@ -129,6 +129,40 @@ class SuggestionsScreenshotTest {
         Shell(Tab.HOME) { Home() }
     }
 
+    /**
+     * The home a history alone makes (nothing subscribed): the ranking's two rows, the videos and the Shorts, and the history's
+     * newest under them; the suggested videos are not Shorts (they have their own row).
+     */
+    private val historyHome = HomeState(
+        loaded = true,
+        suggested = UiFixtures.suggested.filterNot { it.video.isShortForm },
+        suggestedShorts = UiFixtures.shorts,
+        recent = UiFixtures.history,
+    )
+    private val noChannels = HomeSync(health = SyncHealth())
+
+    @Composable
+    private fun HomeOf(state: HomeState, sync: HomeSync, watched: Map<String, Float> = this.watched) =
+        HomeScreen(state, stateOf(watched), sync, NOW, remember { ContentFocus() }, "v0.26.5", onRefresh = {}, onPlay = {}, onImport = {}, onSearch = {}, onCheckUpdates = {})
+
+    @Test
+    fun homeFromTheHistory() = snap("home_history") {
+        // No channels, a history: «مقترحة لك» first (it has the focus), the suggested Shorts under it.
+        Shell(Tab.HOME) { HomeOf(historyHome, noChannels) }
+    }
+
+    @Test
+    fun homeFromTheHistory_watchedRecently() = snap("home_history_recent", keys = listOf(Key.DirectionDown, Key.DirectionDown)) {
+        // DOWN twice: past the suggested Shorts, to «شاهدتَها مؤخراً» (the history's newest, with when each was watched).
+        Shell(Tab.HOME) { HomeOf(historyHome, noChannels, watched = UiFixtures.historyWatched) }
+    }
+
+    @Test
+    fun homeWhileTheSuggestionsComeIn() = snap("home_suggesting") {
+        // The first start with a history: nothing is suggested yet, the header says they are coming, the history's newest is there.
+        Shell(Tab.HOME) { HomeOf(HomeState(loaded = true, recent = UiFixtures.history, suggesting = true), noChannels, watched = UiFixtures.historyWatched) }
+    }
+
     @Test
     fun shortsBadge() = snap("search_results_shorts", keys = listOf(Key.DirectionDown, Key.DirectionDown)) {
         // Where Shorts show, a Short is a tile like the others, with the «Shorts» badge.
@@ -153,6 +187,27 @@ class SuggestionsScreenshotTest {
                 focus = remember { ContentFocus() },
                 extractorVersion = "v0.26.5",
                 callbacks = SearchCallbacks({}, {}, {}, {}, {}, {}, {}, {}),
+            )
+        }
+    }
+
+    @Test
+    fun searchShortsRow() = snap("search_results_shorts_row", keys = listOf(Key.DirectionDown, Key.DirectionDown)) {
+        // v1.4: a «الكل» search where Shorts show: after the results' first line, a row of the Shorts the query found (portrait tiles).
+        // A search made by voice puts the focus on the first result; DOWN from it reaches the Shorts.
+        Shell(Tab.SEARCH) {
+            SearchScreen(
+                query = "الخط العربي",
+                filter = SearchFilter.ALL,
+                results = PagedState(items = UiFixtures.searchResults, loadingFirst = false),
+                shorts = UiFixtures.shorts,
+                subscribed = stateOf(UiFixtures.subscribedIds),
+                watched = stateOf(mapOf(UiFixtures.shorts[1].video.videoId to 0.5f)),
+                nowMs = NOW,
+                focus = remember { ContentFocus() },
+                extractorVersion = "v0.26.5",
+                callbacks = SearchCallbacks({}, {}, {}, {}, {}, {}, {}, {}),
+                searches = 1,
             )
         }
     }

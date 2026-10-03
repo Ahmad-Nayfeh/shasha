@@ -21,6 +21,15 @@ interface RemoteController {
     suspend fun search(query: String): List<RemoteItem>
 
     /**
+     * The same search, page by page ([page]: the token the last answer's [RemoteSearchPage.next] gave, null for the first): the page
+     * keeps asking for more while the viewer scrolls, for as long as YouTube has more. The first page also carries the row of Shorts
+     * ([RemoteSearchPage.shorts]) where the profile shows Shorts. Same rules as [search]. The default is one page and no more, for a
+     * controller that cannot page.
+     */
+    suspend fun searchPage(query: String, page: String?): RemoteSearchPage =
+        if (page == null) RemoteSearchPage(search(query)) else RemoteSearchPage(emptyList())
+
+    /**
      * Any YouTube link (video, playlist, channel), already trimmed. Must pass the PolicyEngine first: a refused link
      * never reaches the TV's screen. An allowed one never opens by itself (v1.1.1): the TV asks «قبول» / «رفض» and the
      * answer carries the waiting [RemotePlayResult.request]; how it ends shows in [RemoteStatus.playRequest].

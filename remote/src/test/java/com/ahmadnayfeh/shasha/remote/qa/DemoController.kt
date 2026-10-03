@@ -17,6 +17,7 @@ import com.ahmadnayfeh.shasha.remote.RemoteNowPlaying
 import com.ahmadnayfeh.shasha.remote.RemoteProfile
 import com.ahmadnayfeh.shasha.remote.RemoteProfileKind
 import com.ahmadnayfeh.shasha.remote.RemoteRejection
+import com.ahmadnayfeh.shasha.remote.RemoteSearchPage
 import com.ahmadnayfeh.shasha.remote.RemoteResult
 import com.ahmadnayfeh.shasha.remote.RemoteSessionState
 import com.ahmadnayfeh.shasha.remote.RemoteStatus
@@ -214,12 +215,37 @@ internal class DemoController(
 
     override suspend fun search(query: String): List<RemoteItem> = locked("search($query)") {
         if (current.kind != RemoteProfileKind.ADULT) throw RemoteRejection("البحث غير متاح في ملف الطفل.")
+        return@locked firstResults()
+    }
+
+    private fun firstResults(): List<RemoteItem> {
         val videos = catalog.map { RemoteItem(RemoteItemType.VIDEO, it.id, it.title, it.channel, it.thumb, it.duration, it.live) }
-        return@locked listOf(
+        return listOf(
             RemoteItem(RemoteItemType.CHANNEL, "UCdocs00000000000000000a", "عالم الوثائقيات", "1.2 مليون مشترك", DemoArt.avatar("#2EC4B6", "#0B6E99"), null),
         ) + videos.take(4) +
             RemoteItem(RemoteItemType.PLAYLIST, "PLspaceSeries0001", "سلسلة الفضاء الكاملة", "علوم بالعربي · 12 فيديو", DemoArt.space, null) +
             videos.drop(4)
+    }
+
+    /** v1.4: three pages (the first is [search]'s, with a row of Shorts), then the end; the page's tokens are "demo-2" and "demo-3". */
+    override suspend fun searchPage(query: String, page: String?): RemoteSearchPage = locked("searchPage($query,$page)") {
+        if (current.kind != RemoteProfileKind.ADULT) throw RemoteRejection("البحث غير متاح في ملف الطفل.")
+        fun more(n: Int) = (1..6).map { i ->
+            val base = catalog[(i + n) % catalog.size]
+            RemoteItem(RemoteItemType.VIDEO, "pg${n}v${i.toString().padStart(7, '0')}", base.title + " (" + n + "." + i + ")", base.channel, base.thumb, base.duration)
+        }
+        return@locked when (page) {
+            null -> RemoteSearchPage(
+                items = firstResults(),
+                shorts = catalog.take(6).mapIndexed { i, v ->
+                    RemoteItem(RemoteItemType.VIDEO, "sh${i}ort${i.toString().padStart(6, '0')}", v.title, v.channel, v.thumb, 20L + i * 7, isShort = true)
+                },
+                next = "demo-2",
+            )
+            "demo-2" -> RemoteSearchPage(more(2), next = "demo-3")
+            "demo-3" -> RemoteSearchPage(more(3).take(4), next = null)
+            else -> RemoteSearchPage(emptyList())
+        }
     }
 
     override suspend fun playLink(url: String): RemotePlayResult = locked("playLink($url)") {

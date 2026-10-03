@@ -250,6 +250,23 @@ a.btn{text-decoration:none}
 .res .rx span{display:block;font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .res.sent::after{content:"";position:absolute;inset:0;border-radius:16px;box-shadow:0 0 0 2px var(--accent) inset;animation:flash 1.1s var(--ease) forwards}
 .sk{background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:8px}
+/* v1.4: the Shorts the search found (a row that scrolls sideways, portrait cards) and what stands under the results (more, wait, retry, end) */
+.shelf{margin:6px 0 4px;animation:fade .3s var(--ease) both}
+.shelf-h{display:flex;align-items:baseline;gap:8px;margin:0 2px 8px}
+.shelf-h b{font-size:15px;font-weight:800}
+.shelf-h span{font-size:12px;color:var(--muted)}
+.shelf-row{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;padding:2px 2px 8px;margin-inline:-2px;scrollbar-width:none}
+.shelf-row::-webkit-scrollbar{display:none}
+.scard{position:relative;flex:none;width:106px;text-align:start;scroll-snap-align:start;transition:opacity .2s}
+.scard .st{position:relative;display:block;width:100%;aspect-ratio:9/16;border-radius:12px;overflow:hidden;background:var(--surface-3)}
+.scard .st img{width:100%;height:100%;object-fit:cover}
+.scard .dur{position:absolute;inset-block-end:4px;inset-inline-start:4px;font-size:11px;font-weight:800;padding:1px 5px;border-radius:5px;background:rgba(0,0,0,.78);direction:ltr}
+.scard b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:6px;font-size:12.5px;line-height:1.4}
+.scard.off{opacity:.55}
+.scard.sent .st::after{content:"";position:absolute;inset:0;border-radius:12px;box-shadow:0 0 0 2px var(--accent) inset;animation:flash 1.1s var(--ease) forwards}
+.more{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+.more:empty{display:none}
+.more .res{pointer-events:none}
 
 /* ---------- profiles ---------- */
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
@@ -704,6 +721,8 @@ details.card[open] .chev{transform:rotate(180deg)}
     const id = encodeURIComponent(it.id);
     if (it.type === 'channel') return 'https://www.youtube.com/channel/' + id;
     if (it.type === 'playlist') return 'https://www.youtube.com/playlist?list=' + id;
+    // A Short opens in the TV's Shorts player (its /shorts/ link), not in the ordinary one.
+    if (it.isShort) return 'https://www.youtube.com/shorts/' + id;
     return 'https://www.youtube.com/watch?v=' + id;
   }
   function normalizeLink(text) {
@@ -1448,6 +1467,9 @@ details.card[open] .chev{transform:rotate(180deg)}
 
   // ---------- search ----------
   let searchSeq = 0;
+  // The search on screen (v1.4: page by page, as long as YouTube has more): its query, the token of the page that follows (null:
+  // no more), what is already shown (a page repeats some of the one before), and the footer under the results.
+  let SR = null;
   function renderSearchState() {
     const st = S.status;
     const can = !st || st.canSearch;
@@ -1456,42 +1478,120 @@ details.card[open] .chev{transform:rotate(180deg)}
     const why = can ? blockedNow() : null;
     $('#search-why').hidden = !why;
     if (why) $('#search-why-t').textContent = why;
-    $$('#results .res').forEach(r => { r.classList.toggle('off', !!why); r.setAttribute('aria-disabled', String(!!why)); });
+    $$('#results .res, #results .scard').forEach(r => { r.classList.toggle('off', !!why); r.setAttribute('aria-disabled', String(!!why)); });
   }
+  const skeletonRows = n => Array.from({ length: n }, () => h('div', { class: 'res' }, h('span', { class: 'rt sk' }),
+    h('span', { class: 'rx' }, h('div', { class: 'sk', style: 'height:14px;width:90%' }), h('div', { class: 'sk', style: 'height:12px;width:50%;margin-top:8px' }))));
   $('#search-form').addEventListener('submit', async e => {
     e.preventDefault();
     const q = $('#search-q').value.trim(), box = $('#results');
     if (!q) { $('#search-q').focus(); return; }
     $('#search-q').blur();
     const seq = ++searchSeq;
-    box.replaceChildren(...Array.from({ length: 5 }, () => h('div', { class: 'res' }, h('span', { class: 'rt sk' }),
-      h('span', { class: 'rx' }, h('div', { class: 'sk', style: 'height:14px;width:90%' }), h('div', { class: 'sk', style: 'height:12px;width:50%;margin-top:8px' })))));
+    SR = null;
+    if (moreWatch) moreWatch.disconnect();
+    box.replaceChildren(...skeletonRows(5));
     try {
-      const items = await api('/api/search', { json: { q } });
-      if (seq === searchSeq) renderResults(items, q);
+      const page = await api('/api/search/page', { json: { q } });
+      if (seq === searchSeq) startResults(page, q);
     } catch (err) {
       if (seq === searchSeq) box.replaceChildren(h('div', { class: 'card lock-card' }, h('div', { class: 'big' }, ic('alert')), h('b', { text: 'تعذّر البحث' }), h('p', { class: 'lead', text: isoQuotes(err.message) })));
     }
   });
-  function renderResults(items, q) {
+  function startResults(page, q) {
     const box = $('#results');
-    if (!items.length) { box.replaceChildren(h('div', { class: 'empty-line', text: 'لا نتائج عن ' + quote(q) + '. جرّب كلمات أخرى.' })); return; }
-    box.replaceChildren(...items.map((it, i) => {
-      const thumb = h('span', { class: 'rt' }, img(it.thumbnailUrl));
-      if (it.type === 'video' && it.isLive) thumb.append(h('span', { class: 'dur live', text: 'مباشر' }));
-      else if (it.type === 'video' && it.durationSeconds) thumb.append(h('span', { class: 'dur', text: fmtTime(it.durationSeconds) }));
-      const kind = it.type === 'channel' ? 'قناة' : it.type === 'playlist' ? 'قائمة تشغيل' : null;
-      const row = h('button', { class: 'res ' + it.type, type: 'button', style: 'animation-delay:' + Math.min(i, 10) * 30 + 'ms', 'aria-label': 'افتح على الشاشة: ' + it.title },
-        thumb, h('span', { class: 'rx' }, h('b', { dir: 'auto', text: it.title }), h('span', { dir: 'auto', text: [kind, it.subtitle].filter(Boolean).join(' · ') })));
-      row.addEventListener('click', async () => {
-        const why = blockedNow();
-        if (why) { toast(why, 'err'); return; }
-        const r = await play(itemUrl(it), row);
-        if (r && r.ok) { row.classList.remove('sent'); void row.offsetWidth; row.classList.add('sent'); }
-      });
-      return row;
-    }));
+    const items = page.items || [], shorts = page.shorts || [];
+    if (!items.length && !shorts.length && !page.next) {
+      box.replaceChildren(h('div', { class: 'empty-line', text: 'لا نتائج عن ' + quote(q) + '. جرّب كلمات أخرى.' }));
+      return;
+    }
+    SR = { q, next: page.next || null, seen: new Set(), count: 0, loading: false, failed: null, footer: h('div', { class: 'more' }) };
+    box.replaceChildren(SR.footer);
+    addResults(items);
+    if (shorts.length) addShorts(shorts);
+    updateFooter();
     renderSearchState();
+  }
+  // A result's row: a tap sends it to the TV (the TV asks «قبول» first).
+  function resultRow(it, i) {
+    const thumb = h('span', { class: 'rt' }, img(it.thumbnailUrl));
+    if (it.type === 'video' && it.isLive) thumb.append(h('span', { class: 'dur live', text: 'مباشر' }));
+    else if (it.type === 'video' && it.durationSeconds) thumb.append(h('span', { class: 'dur', text: fmtTime(it.durationSeconds) }));
+    const kind = it.type === 'channel' ? 'قناة' : it.type === 'playlist' ? 'قائمة تشغيل' : null;
+    const row = h('button', { class: 'res ' + it.type, type: 'button', style: 'animation-delay:' + Math.min(i, 10) * 30 + 'ms', 'aria-label': 'افتح على الشاشة: ' + it.title },
+      thumb, h('span', { class: 'rx' }, h('b', { dir: 'auto', text: it.title }), h('span', { dir: 'auto', text: [kind, it.subtitle].filter(Boolean).join(' · ') })));
+    row.addEventListener('click', () => sendResult(it, row));
+    return row;
+  }
+  async function sendResult(it, el) {
+    const why = blockedNow();
+    if (why) { toast(why, 'err'); return; }
+    const r = await play(itemUrl(it), el);
+    if (r && r.ok) { el.classList.remove('sent'); void el.offsetWidth; el.classList.add('sent'); }
+  }
+  // What a page brings, without what is already there: placed above the footer, after the rows that came before.
+  function addResults(items) {
+    const fresh = items.filter(it => { const k = it.type + ':' + it.id; if (SR.seen.has(k)) return false; SR.seen.add(k); return true; });
+    SR.footer.before(...fresh.map((it, i) => resultRow(it, i)));
+    SR.count += fresh.length;
+  }
+  // The row of Shorts: after the first few results (the best ones stay on top), as the TV's search puts it.
+  function addShorts(shorts) {
+    const fresh = shorts.filter(it => { const k = 'video:' + it.id; if (SR.seen.has(k)) return false; SR.seen.add(k); return true; });
+    if (!fresh.length) return;
+    const cards = fresh.map(it => {
+      const thumb = h('span', { class: 'st' }, img(it.thumbnailUrl));
+      if (it.durationSeconds) thumb.append(h('span', { class: 'dur', text: fmtTime(it.durationSeconds) }));
+      const card = h('button', { class: 'scard', type: 'button', 'aria-label': 'افتح على الشاشة: ' + it.title }, thumb, h('b', { dir: 'auto', text: it.title }));
+      card.addEventListener('click', () => sendResult(it, card));
+      return card;
+    });
+    const shelf = h('div', { class: 'shelf', id: 'search-shorts' },
+      h('div', { class: 'shelf-h' }, h('b', { text: iso('Shorts') }), h('span', { text: 'عن بحثك' })),
+      h('div', { class: 'shelf-row' }, cards));
+    const rows = $$('#results .res');
+    (rows[4] || SR.footer).before(shelf);
+  }
+  // Under the results: «عرض المزيد» while YouTube has more (it also loads by itself when it comes into view), the wait, the
+  // reason a page failed with «أعد المحاولة», or the end.
+  function updateFooter() {
+    const s = SR;
+    if (!s) return;
+    if (s.loading) s.footer.replaceChildren(...skeletonRows(2));
+    else if (s.failed) s.footer.replaceChildren(h('p', { class: 'lead', text: isoQuotes(s.failed) }), h('button', { class: 'btn sm', type: 'button', text: 'أعد المحاولة', onclick: loadMore }));
+    else if (s.next) s.footer.replaceChildren(h('button', { class: 'btn sm', type: 'button', text: 'عرض المزيد', onclick: loadMore }));
+    else s.footer.replaceChildren(s.count ? h('div', { class: 'empty-line', text: 'هذه كل النتائج.' }) : '');
+    watchFooter();
+  }
+  // Coming into view asks for the next page; when the page that arrives leaves the footer in view, the observer says so again.
+  const moreWatch = window.IntersectionObserver
+    ? new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) loadMore(); }, { rootMargin: '0px 0px 480px 0px' })
+    : null;
+  function watchFooter() {
+    if (!moreWatch) return;
+    moreWatch.disconnect();
+    if (SR && SR.next && !SR.loading && !SR.failed) moreWatch.observe(SR.footer);
+  }
+  async function loadMore() {
+    const s = SR;
+    if (!s || !s.next || s.loading) return;
+    s.loading = true;
+    s.failed = null;
+    updateFooter();
+    try {
+      const page = await api('/api/search/page', { json: { q: s.q, page: s.next } });
+      if (SR !== s) return;
+      s.next = page.next || null;
+      s.loading = false;
+      addResults(page.items || []);
+      renderSearchState();
+    } catch (err) {
+      if (SR !== s) return;
+      s.loading = false;
+      // A page the TV stopped (no pairing, moving to a new port) says nothing here: the page's own screens do.
+      s.failed = err.code === 'stopped' ? null : (err.message || OFFLINE);
+    }
+    updateFooter();
   }
 
   // ---------- profiles ----------

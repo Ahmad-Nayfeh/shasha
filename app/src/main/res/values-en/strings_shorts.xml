@@ -14,7 +14,7 @@
     <string name="shorts_locked">Serious Mode: finish this clip first</string>
     <string name="shorts_loading">Getting the clip ready…</string>
 
-    <string name="home_subtitle_history">Suggestions from what you watched last</string>
+    <string name="home_subtitle_history">Picked for you from what you watched</string>
     <string name="home_suggesting">Getting suggestions ready…</string>
     <string name="home_shorts_suggested_title">Suggested Shorts</string>
     <string name="home_shorts_suggested_subtitle">From channels you watched lately</string>

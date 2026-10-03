@@ -20,7 +20,7 @@
     <string name="shorts_loading">جارٍ تجهيز المقطع…</string>
 
     <!-- The home: what a home without channels is made of (the suggestions' two rows and the history's newest), and its header. -->
-    <string name="home_subtitle_history">مقترحات من آخر ما شاهدته</string>
+    <string name="home_subtitle_history">مختارة لك من مشاهداتك</string>
     <string name="home_suggesting">نجهّز لك مقترحات…</string>
     <string name="home_shorts_suggested_title">&#x2068;Shorts&#x2069; مقترحة</string>
     <string name="home_shorts_suggested_subtitle">من قنوات شاهدتها مؤخراً</string>

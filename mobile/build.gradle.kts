@@ -32,7 +32,7 @@ android {
         versionCode = ciEnv("SHASHA_VERSION_CODE")
             ?.let { it.toIntOrNull() ?: error("SHASHA_VERSION_CODE must be an integer, got '$it'") }
             ?: 1
-        versionName = "1.3.0"
+        versionName = "1.4.0"
         // The updater reads this repository's latest release. The repository is private, so it needs a read-only
         // token (CI's SHASHA_UPDATE_TOKEN); empty = the updater says that updates are unavailable in this build.
         buildConfigField("String", "UPDATE_REPO", javaString("Ahmad-Nayfeh/shasha"))
