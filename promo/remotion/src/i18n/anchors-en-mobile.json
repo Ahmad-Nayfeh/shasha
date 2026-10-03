@@ -1,0 +1,106 @@
+{
+ "_readme": [
+  "English anchors: per scene, the Arabic phrase a scene looks up (beatsFor(scene).at('…') / end('…'))",
+  "-> the English narration's phrase said at that moment (words of src/data/words*-en.json, case and punctuation ignored).",
+  "A value [phrase, n] picks the phrase's n-th occurrence (0-based); a key 'phrase#1' is the Arabic phrase's second occurrence.",
+  "Missing anchors fall back to the same relative moment of the scene (lib/timeline.ts). Check: node tools/check_i18n.mjs"
+ ],
+ "m01_intro": {
+  "جوالك": "phone",
+  "يوتيوب": "calm",
+  "إعلانات": "ads",
+  "تسجيل": "sign-in"
+ },
+ "m02_download": {
+  "ابدأ": "start",
+  "ملف التطبيق": "app file",
+  "غيت هب": "github",
+  "وافتحه": "open"
+ },
+ "m03_allow": {
+  "سيسألك": "will ask",
+  "هل تسمح": [
+   "allow",
+   0
+  ],
+  "اسمح له": [
+   "allow",
+   1
+  ],
+  "اضغط تثبيت": "tap",
+  "ولن": "will not"
+ },
+ "m05_search": {
+  "افتح": "open",
+  "واكتب": "type",
+  "تظهر": "videos",
+  "من غير": "with"
+ },
+ "m06_channel": {
+  "القناة": "channel",
+  "الفيديوهات": "videos",
+  "والقصيرة": "shorts",
+  "وقوائم": "playlists"
+ },
+ "m07_background": {
+  "والمشغل": "player",
+  "الخلفية": "background",
+  "يستمر": "sound",
+  "مطفأة": "off",
+  "وأنت": "you do"
+ },
+ "m08_pip": {
+  "وبلمسة": "tap",
+  "نافذة": "small",
+  "صورة داخل صورة": "picture in picture",
+  "فتتابعه": "so"
+ },
+ "m09_speed": {
+  "سرعة": "playback",
+  "أبطأ": "slower",
+  "أسرع": "faster"
+ },
+ "m10_sponsor": {
+  "وتتخطى": "skips",
+  "فقرات": "sponsor",
+  "وحدها": "by itself",
+  "الإعلانات": "ads",
+  "داخله": "inside"
+ },
+ "m11_downloads": {
+  "وللتنزيل": "downloads",
+  "الفيديو": "whole",
+  "الصوت": "audio",
+  "إنترنت": "internet",
+  "مكان": "anywhere"
+ },
+ "m12_subscriptions": {
+  "وتشترك": "subscribe",
+  "بضغطة": [
+   "one",
+   0
+  ],
+  "فتجد": "find",
+  "مكان": "one place"
+ },
+ "m13_history": {
+  "سجل": "history",
+  "شاهدته": "watched",
+  "فتكمل": "continue",
+  "توقفت": "stopped"
+ },
+ "m14_update": {
+  "صدر": "new",
+  "فاضغط": "press",
+  "زرا": "button",
+  "فيبدأ": "download",
+  "والتثبيت": "installation"
+ },
+ "m15_outro": {
+  "صنع": "made",
+  "بحب": "with",
+  "لعائلتي": "for",
+  "أحمد": "ahmad",
+  "نايفه": "nayfeh"
+ }
+}

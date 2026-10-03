@@ -16,7 +16,8 @@ import {
 import {INSTALL_LAPTOP, SideSteps, StepHeader} from '../components/Install';
 import {LaptopDesk} from '../components/InstallKit';
 import {tween} from '../lib/anim';
-import {KIT_DIR, KIT_FILES, KIT_ROW_H, MAC_INSTALLER} from '../lib/installer';
+import {KIT_DIR, KIT_FILES, KIT_ROW_H, MAC_INSTALLER, openingLines} from '../lib/installer';
+import {isEn, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // Step 5 (Mac, macOS 15 and later): double-click the Mac installer; when the Mac refuses («Not Opened» → Done), open
@@ -51,7 +52,7 @@ export const S18RunMac: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <StepHeader step={5} sub="شغّل المثبّت: ماك" />
+      <StepHeader step={5} sub={t('شغّل المثبّت: ماك')} />
       <LaptopDesk x={INSTALL_LAPTOP.x} y={INSTALL_LAPTOP.y} w={INSTALL_LAPTOP.w}>
         <Desktop os="mac" app={f >= tSettings ? 'System Settings' : 'Finder'}>
           <Window os="mac" x={70} y={60} w={1140} h={600} title={KIT_DIR}>
@@ -70,11 +71,7 @@ export const S18RunMac: React.FC<{scene: Scene}> = ({scene}) => {
           {con > 0 ? (
             <Window os="mac" x={160} y={100} w={960} h={560} title="Terminal" dark t={con}>
               <ConsoleView
-                lines={[
-                  {t: clickAnyway + 14, text: '  Shasha installer / مثبّت «شاشة»', kind: 'banner'},
-                  {t: clickAnyway + 18, text: '==> Checking adb ...', kind: 'say'},
-                  {t: clickAnyway + 20, text: 'التحقق من وجود adb ...', kind: 'ar'},
-                ]}
+                lines={openingLines([clickAnyway + 14, clickAnyway + 18, clickAnyway + 20])}
               />
             </Window>
           ) : null}
@@ -95,10 +92,10 @@ export const S18RunMac: React.FC<{scene: Scene}> = ({scene}) => {
       </LaptopDesk>
       <SideSteps
         items={[
-          {at: tDbl, label: 'انقر مرتين على مثبّت ماك', sub: MAC_INSTALLER},
-          {at: tRefuse, label: 'إن رفض ماك فتحه: إعدادات النظام', sub: 'System Settings'},
-          {at: tPriv, label: 'الخصوصية والأمان', sub: 'Privacy & Security'},
-          {at: tAnyway, label: '«فتح على أي حال»', sub: 'Open Anyway'},
+          {at: tDbl, label: t('انقر مرتين على مثبّت ماك'), sub: MAC_INSTALLER},
+          {at: tRefuse, label: t('إن رفض ماك فتحه: إعدادات النظام'), sub: isEn ? undefined : 'System Settings'}, // the English label is the TV's/Mac's own text
+          {at: tPriv, label: t('الخصوصية والأمان'), sub: isEn ? undefined : 'Privacy & Security'},
+          {at: tAnyway, label: t('«فتح على أي حال»'), sub: isEn ? undefined : 'Open Anyway'},
         ]}
       />
     </div>

@@ -1,14 +1,17 @@
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {brand, rgba} from '../brand';
-import {LogoMark, Wordmark, WORDMARK_RATIO} from '../components/Brand';
+import {HAS_WORDMARK, LogoMark, Wordmark, WORDMARK_RATIO} from '../components/Brand';
 import {Icon} from '../components/Icons';
 import {WordReveal} from '../components/ui';
 import {clamp, easeInOut, mix, sp, tween} from '../lib/anim';
+import {dir, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // End card (the TV video's s31 and the phone video's m15): the logo in the centre, dots floating gently;
 // «صُنع بحب لعائلتي» word by word on the voice, a heart, then the author's name; non-affiliation line; fade out.
+// English version: the brand mark alone, a little bigger and lower (there is no Latin wordmark, see HAS_WORDMARK);
+// «Made / with love / for my family» in three beats of the voice, the name in Latin letters.
 
 export const S16Outro: React.FC<{scene: Scene}> = ({scene}) => {
   const f = useCurrentFrame();
@@ -21,14 +24,14 @@ export const S16Outro: React.FC<{scene: Scene}> = ({scene}) => {
   };
   const wm = tween(f, 14, 22);
   const fadeOut = tween(f, D - 32, 30, easeInOut);
-  const markW = 230;
+  const markW = HAS_WORDMARK ? 230 : 260;
   const S = (markW / 751) * 1024;
   const cx = 960;
-  const cy = 330;
+  const cy = HAS_WORDMARK ? 330 : 400;
   const wmW = 280;
-  const lineTop = 520 + wmW * WORDMARK_RATIO + 24;
+  const lineTop = HAS_WORDMARK ? 520 + wmW * WORDMARK_RATIO + 24 : 560;
 
-  const words = ['صُنع', 'بحب', 'لعائلتي'];
+  const words = [t('صُنع'), t('بحب'), t('لعائلتي')];
   const starts = [b.at('صنع'), b.at('بحب'), b.at('لعائلتي')].map((x) => x - 3);
   const tName = b.at('أحمد') - 4;
   const heart = sp(f, starts[2] + 6, {damping: 12, stiffness: 120});
@@ -73,12 +76,12 @@ export const S16Outro: React.FC<{scene: Scene}> = ({scene}) => {
           fontSize: 76,
           fontWeight: 700,
           color: brand.primaryBright,
-          direction: 'rtl',
+          direction: dir,
           opacity: nameIn,
           transform: `translateY(${(1 - nameIn) * 18}px)`,
         }}
       >
-        احمد نايفه
+        {t('احمد نايفه')}
       </div>
       <div
         style={{
@@ -91,10 +94,10 @@ export const S16Outro: React.FC<{scene: Scene}> = ({scene}) => {
           fontWeight: 500,
           color: brand.muted,
           opacity: 0.8 * tween(f, b.at('نايفه') + 10, 20),
-          direction: 'rtl',
+          direction: dir,
         }}
       >
-        مشروع شخصي — غير تابع لـ YouTube أو Google
+        {t('مشروع شخصي — غير تابع لـ YouTube أو Google')}
       </div>
     </AbsoluteFill>
   );

@@ -1,6 +1,7 @@
 package com.ahmadnayfeh.shasha.ui.screens.player
 
 import android.os.SystemClock
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmadnayfeh.shasha.data.StreamRepository
@@ -18,6 +19,7 @@ import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
 import com.ahmadnayfeh.shasha.youtube.VideoItem
+import com.ahmadnayfeh.shasha.youtube.playback.DecoderRetry
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -46,10 +48,13 @@ data class NextVideo(val video: VideoItem, val index: Int)
 
 /**
  * A failure that means the video cannot play here (SPEC §4 lock: it ends, [PlaybackLocking.onUnavailable]):
- * whatever YouTube answered. Not [SourceErrorKind.NETWORK]: no network is the TV's side, it passes, and a
- * child can cause it; the lock stays and the video is tried again.
+ * whatever YouTube answered, or this TV's decoder could not play ([SourceErrorKind.DEVICE_DECODER], after its one safe
+ * retry: a child must not be held to a video that does not play). Not [SourceErrorKind.NETWORK]: no network is the TV's
+ * side, it passes, and a child can cause it; the lock stays and the video is tried again.
  */
 internal val SourceErrorKind.endsTheLock: Boolean get() = this != SourceErrorKind.NETWORK
+
+private const val TAG = "PlayerViewModel"
 
 /** Refusals that leave the lock as it is: the session's screens pause the video; "locked" is another video's lock. */
 private val KEEPS_THE_LOCK = setOf(DenyReason.TIME_UP, DenyReason.OUTSIDE_SCHEDULE, DenyReason.LOCKED)
@@ -61,7 +66,7 @@ fun interface PlayGate {
 }
 
 /**
- * v1.2 (owner decision): a video that would start in Serious Mode while nothing on the TV could end it early (the adult
+ * v1.1.1 (owner decision): a video that would start in Serious Mode while nothing on the TV could end it early (the adult
  * profile with its way out turned off) first waits for the parent's «تأكيد» on the phone
  * ([com.ahmadnayfeh.shasha.remote.PhoneConfirmations]).
  */
@@ -96,6 +101,10 @@ interface StartConfirmation {
  * less plays that file (the player shows a "360p" badge) instead of the error screen. Otherwise that is
  * [SourceErrorKind.LOW_QUALITY_ONLY], and the adult may still choose it for this visit ([playLowQuality]).
  *
+ * The TV's own decoder failing on the video ([SourceErrorKind.DEVICE_DECODER]) is not the error screen at once: the same
+ * stream plays again from where it stopped, once, with the safe plan ([safePlan]: H.264, small pictures); only the
+ * second failure is the error ([onPlaybackError]).
+ *
  * [suggestionsFor] («الفيديوهات المقترحة», null: none) is asked once the video is extracted, so it answers from that
  * same extraction (VideoSource.related): the player's «مقترحة» row and its end card. It applies the profile's rules.
  */
@@ -105,7 +114,7 @@ class PlayerViewModel(
     private val session: WatchSession? = null,
     private val nextInPlaylist: (suspend () -> NextVideo?)? = null,
     private val gate: PlayGate? = null,
-    /** v1.2: the phone's «تأكيد» before a start only the phone could end early (null: never asked, e.g. no lock). */
+    /** v1.1.1: the phone's «تأكيد» before a start only the phone could end early (null: never asked, e.g. no lock). */
     private val startConfirmation: StartConfirmation? = null,
     private val elapsedClock: () -> Long = SystemClock::elapsedRealtime,
     private val wallClock: () -> Long = System::currentTimeMillis,
@@ -131,10 +140,10 @@ class PlayerViewModel(
         /** The profile's rules say no ([reason]): nothing is played. */
         data class Denied(val reason: DenyReason) : Load
 
-        /** v1.2: allowed, but waiting for the parent's «تأكيد» on the phone before [title] starts ([StartConfirmation]). */
+        /** v1.1.1: allowed, but waiting for the parent's «تأكيد» on the phone before [title] starts ([StartConfirmation]). */
         data class AwaitingPhone(val title: String) : Load
 
-        /** v1.2: the phone said «رفض» or did not answer in time ([answer]): the video does not play. */
+        /** v1.1.1: the phone said «رفض» or did not answer in time ([answer]): the video does not play. */
         data class NotConfirmed(val answer: ConfirmAnswer) : Load
     }
 
@@ -181,6 +190,15 @@ class PlayerViewModel(
     /** A link's start, for the first extraction only (then playback goes on from where it is). */
     private var linkStartMs: Long? = startAtMs?.coerceAtLeast(0)
 
+    /** Once per video, a failure of the TV's decoder is answered with another try, safely ([onPlaybackError]). */
+    private val decoderRetry = DecoderRetry()
+
+    /**
+     * Whether the next player plays the safe plan (H.264, small pictures): this TV's decoder failed on this video. Read when
+     * a player is created, so it stays for the rest of the visit: after Home, and after «إعادة المحاولة» on the error screen.
+     */
+    val safePlan: Boolean get() = decoderRetry.safe
+
     /** This visit's start needed no «تأكيد» from the phone, or got it: later extractions (stale URLs, a retry) do not ask again. */
     private var startCleared = false
 
@@ -216,15 +234,21 @@ class PlayerViewModel(
 
     /**
      * Playback of [ready] failed at [at]. HTTP 403 on URLs that have been in use for a while gets one
-     * fresh extraction, continuing at [at]; anything else, or a 403 again soon after, is the error screen.
+     * fresh extraction, continuing at [at]; the TV's decoder failing ([SourceErrorKind.DEVICE_DECODER]) gets one more
+     * try of the same stream with the safe plan ([safePlan]), also continuing at [at], while the loader shows instead of
+     * the error screen; anything else, or either of those failing again, is the error screen.
      */
     fun onPlaybackError(ready: Load.Ready, error: SourceException, at: ResumeState) {
         if (_load.value !== ready) return // a player of an extraction that was already replaced
         resume = at
-        if (error.kind == SourceErrorKind.BLOCKED_403 && ready.freshness.refreshAfterRefusal(elapsedClock())) {
-            extract(fresh = true)
-        } else {
-            fail(error)
+        when {
+            error.kind == SourceErrorKind.BLOCKED_403 && ready.freshness.refreshAfterRefusal(elapsedClock()) -> extract(fresh = true)
+            // Its URLs are fine (the decoder, not YouTube, failed): the stream is not extracted again, if it is still fresh.
+            decoderRetry.retryAfter(error) -> {
+                Log.w(TAG, "The decoder failed on $videoId (${error.technicalName}): playing it again with the safe plan from ${at.positionMs} ms")
+                extract(fresh = false)
+            }
+            else -> fail(error)
         }
     }
 
@@ -411,7 +435,7 @@ class PlayerViewModel(
     }
 
     /**
-     * v1.2: true when this start may go on: no «تأكيد» is needed ([StartConfirmation.needed]; once per visit), or the
+     * v1.1.1: true when this start may go on: no «تأكيد» is needed ([StartConfirmation.needed]; once per visit), or the
      * phone gave it. Otherwise [Load.NotConfirmed] shows (the screen leaves) and nothing plays.
      */
     private suspend fun confirmStart(title: String): Boolean {
@@ -454,7 +478,7 @@ class PlayerViewModel(
                         ?: streams.stream(videoId, lowQualityAllowed)
                     null -> streams.stream(videoId, lowQualityAllowed)
                 }
-                // v1.2: nothing starts that only the phone could end early before the phone confirms it.
+                // v1.1.1: nothing starts that only the phone could end early before the phone confirms it.
                 if (!confirmStart(stream.video.title)) return@launch
                 savedPosition?.await()?.let { position ->
                     resumeLookedUp = true

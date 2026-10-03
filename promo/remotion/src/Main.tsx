@@ -8,12 +8,13 @@ import {clamp, easeInOut, tween} from './lib/anim';
 import {IpNote} from './components/Install';
 import {IP_NOTE_LAND} from './scenes/S16FindIp';
 import {beatsFor, Scene, sceneById, scenes, timeline} from './lib/timeline';
+import {dir, flowSign, isEn} from './lib/lang';
 import {NO_CAPTIONS, sceneComponent} from './scenes';
 
 loadFonts();
 
 export type MainProps = {
-  /** burned-in Arabic captions (default on) */
+  /** burned-in captions (default on) */
   captions?: boolean;
   /** soft synthesized music bed under the voice, if public/audio/music_bed.wav exists (default on) */
   music?: boolean;
@@ -54,8 +55,8 @@ export const SceneWrap: React.FC<{scene: Scene; first: boolean; last: boolean; s
     <AbsoluteFill
       style={{
         opacity: fin * (1 - fout),
-        transform: `translateX(${(slideIn ? (1 - fin) * -12 : 0) + (slideOut ? fout * 12 : 0)}px)`,
-        direction: 'rtl',
+        transform: `translateX(${flowSign * ((slideIn ? (1 - fin) * -12 : 0) + (slideOut ? fout * 12 : 0))}px)`,
+        direction: dir,
         fontFamily: brand.font,
         color: brand.text,
       }}
@@ -73,8 +74,11 @@ const hasFile = (name: string) => {
   }
 };
 
+/** Narration and music folder of the TV video: public/audio, or public/audio-en for the English version. */
+const AUDIO = isEn ? 'audio-en' : 'audio';
+
 export const Main: React.FC<MainProps> = ({captions = true, music = true, grain = true}) => {
-  const withMusic = music && hasFile('audio/music_bed.wav');
+  const withMusic = music && hasFile(`${AUDIO}/music_bed.wav`);
   return (
     <AbsoluteFill style={{backgroundColor: brand.bg}}>
       <Background />
@@ -102,14 +106,16 @@ export const Main: React.FC<MainProps> = ({captions = true, music = true, grain 
             ))
         : null}
       {grain ? <Grain /> : null}
-      <Audio src={staticFile('audio/narration_full.wav')} />
-      {withMusic ? <Audio src={staticFile('audio/music_bed.wav')} /> : null}
+      <Audio src={staticFile(`${AUDIO}/narration_full.wav`)} />
+      {withMusic ? <Audio src={staticFile(`${AUDIO}/music_bed.wav`)} /> : null}
     </AbsoluteFill>
   );
 };
 
-// The TV's IP, noted in step 4 (s23), stays pinned in the top-left corner through step 5 (s24-s26: one element,
-// so it does not flicker in the cross-fades) and glows while it is typed into the installer.
+// The TV's IP, noted in step 4 (s23), stays pinned in the top-left corner (top-right in the English version, where the
+// step header is on the left) through step 5 (s24-s26: one element, so it does not flicker in the cross-fades) and
+// glows while it is typed into the installer. Its two anchors, 'أرقاما' and 'اكتب العنوان', are mapped for English in
+// i18n/anchors-en-install.json (s23_find_ip: "numbers", s26_type_ip: "Type the address").
 const PersistentIpNote: React.FC = () => {
   const s16 = sceneById('s23_find_ip');
   const s19 = sceneById('s26_type_ip');

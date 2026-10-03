@@ -7,6 +7,7 @@ import {PinDotsOverlay} from '../components/Overlays';
 import {TV} from '../components/TvStep';
 import {Screen, TvFrame} from '../components/Tv';
 import {clamp, easeOut, mix, tween} from '../lib/anim';
+import {t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // Step 8 (TV): first start of Shasha — parent PIN, your profile, the child's profile (daily minutes, allowed
@@ -47,10 +48,10 @@ export const S23FirstStart: React.FC<{scene: Scene}> = ({scene}) => {
       </TvFrame>
       <SideSteps
         items={[
-          {at: tPin, label: 'رمز الوالدين', sub: '4–8 digits', icon: 'lock'},
-          {at: tYours, label: 'ملفك (ملف الكبار)', icon: 'user'},
-          {at: tChild, label: 'ملف الطفل: دقائق وساعات', icon: 'hourglass'},
-          {at: tChannels, label: 'القنوات المسموحة', icon: 'list'},
+          {at: tPin, label: t('رمز الوالدين'), sub: '4–8 digits', icon: 'lock'},
+          {at: tYours, label: t('ملفك (ملف الكبار)'), icon: 'user'},
+          {at: tChild, label: t('ملف الطفل: دقائق وساعات'), icon: 'hourglass'},
+          {at: tChannels, label: t('القنوات المسموحة'), icon: 'list'},
         ]}
       />
     </div>

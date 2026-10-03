@@ -2,7 +2,9 @@ import React from 'react';
 import {AbsoluteFill, Img, staticFile} from 'remotion';
 import {brand, rgba} from '../brand';
 import {clamp, mix} from '../lib/anim';
+import {dir, t} from '../lib/lang';
 import {focusRect, Rect, screenInfo, screenSrc} from '../lib/screens';
+import {HAS_WORDMARK, LogoMark} from './Brand';
 import {Placeholder} from './Placeholder';
 import {ScreenPatch} from './Patches';
 import {FocusRing} from './ui';
@@ -266,13 +268,20 @@ export const Screen: React.FC<{name: string; opacity?: number; style?: React.CSS
 /**
  * The guard's cover, drawn from its source (app/.../lock/GuardOverlay.kt coverView(): plain Android views, so no
  * screenshot test can capture it): brand background, the splash lockup (300x96 dp), a 56x4 dp teal bar and one
- * calm line (26 sp) — at the TV's 2x density.
+ * calm line (26 sp) — at the TV's 2x density. English version: the brand mark alone (the lockup is the Arabic
+ * wordmark, see HAS_WORDMARK) and the app's English line.
  */
 export const GuardCover: React.FC = () => (
   <div style={{position: 'absolute', inset: 0, background: '#0B0F14', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
-    <Img src={staticFile('branding/logo-lockup.svg')} style={{width: 600, height: 192, objectFit: 'contain'}} />
+    {HAS_WORDMARK ? (
+      <Img src={staticFile('branding/logo-lockup.svg')} style={{width: 600, height: 192, objectFit: 'contain'}} />
+    ) : (
+      <div style={{position: 'relative', width: 600, height: 192}}>
+        <LogoMark size={246} style={{position: 'absolute', left: 300 - 123, top: 96 - 123}} />
+      </div>
+    )}
     <div style={{width: 112, height: 8, borderRadius: 4, background: '#2EC4B6', marginTop: 56}} />
-    <div style={{marginTop: 44, fontFamily: brand.font, fontWeight: 500, fontSize: 52, color: '#EAF0F6', direction: 'rtl'}}>لحظة… نعود إلى «شاشة»</div>
+    <div style={{marginTop: 44, fontFamily: brand.font, fontWeight: 500, fontSize: 52, color: '#EAF0F6', direction: dir}}>{t('لحظة… نعود إلى «شاشة»')}</div>
   </div>
 );
 

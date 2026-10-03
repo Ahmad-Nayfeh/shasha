@@ -1,5 +1,6 @@
 package com.ahmadnayfeh.shasha.mobile.ui.watch
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -12,11 +13,13 @@ import com.ahmadnayfeh.shasha.mobile.common.UiError
 import com.ahmadnayfeh.shasha.mobile.data.FeedRepository
 import com.ahmadnayfeh.shasha.mobile.data.LibraryRepository
 import com.ahmadnayfeh.shasha.mobile.data.SubscriptionRepository
+import com.ahmadnayfeh.shasha.mobile.data.logLine
 import com.ahmadnayfeh.shasha.mobile.download.DownloadManager
 import com.ahmadnayfeh.shasha.mobile.player.PlayerController
 import com.ahmadnayfeh.shasha.mobile.player.PlayerPhase
 import com.ahmadnayfeh.shasha.mobile.player.PlayerUiState
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.youtube.StreamDetails
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
 import kotlinx.coroutines.CancellationException
@@ -28,11 +31,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** What the player screen is told to do once. */
@@ -83,9 +88,11 @@ class WatchViewModel(
     override val playlistId: String?,
     val downloadId: Long?,
     startMs: Long?,
+    /** The player's state that the screen follows: the controller's own (a test passes one of its own). */
+    playerState: StateFlow<PlayerUiState> = controller.state,
 ) : ViewModel(), WatchDetailsSource {
 
-    val player: StateFlow<PlayerUiState> = controller.state
+    val player: StateFlow<PlayerUiState> = playerState
 
     private val _related = MutableStateFlow<Loadable<List<VideoItem>>>(Loadable.Loading)
 
@@ -124,6 +131,10 @@ class WatchViewModel(
         // The channel and the suggestions are looked up once the extraction has said whose video this is.
         viewModelScope.launch {
             player.map { it.video?.channelId }.filter { it != null }.distinctUntilChanged().collect { id -> loadChannel(id!!) }
+        }
+        // The video's own page, once the extraction has read it, says who uploaded it and shows the uploader's picture.
+        viewModelScope.launch {
+            player.map { it.details }.filterNotNull().distinctUntilChanged().collect { details -> onStreamDetails(details) }
         }
         // A playlist goes on by itself.
         viewModelScope.launch {
@@ -179,13 +190,39 @@ class WatchViewModel(
         channelRequested = true
         viewModelScope.launch {
             try {
-                _channel.value = source.channel(id).channel
+                val page = source.channel(id).channel
+                // The video's own page may have given the picture first: YouTube's page for the channel keeps it if it has none.
+                _channel.update { known -> page.copy(avatarUrl = page.avatarUrl ?: known?.avatarUrl) }
+                subscriptions.updateDetails(page)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                Log.w(TAG, "$id: the channel's page failed: ${e.logLine()}")
                 channelRequested = false // asked again when the viewer taps subscribe
             }
         }
+    }
+
+    /**
+     * What the video's own page says about its channel needs no request of its own, so it is there also where YouTube's page for
+     * the channel cannot be read (a network that answers that with an error): the channel row shows the picture, and a
+     * subscription to the channel that is stored without one gets it (and a changed name) now. Cheap and silent: one UPDATE
+     * ([SubscriptionRepository.updateDetails]), a no-op for a channel that is not followed.
+     */
+    internal suspend fun onStreamDetails(details: StreamDetails) {
+        // The player is the app's one: while a newer screen (this video's channel, then another video) has it, its state is not this video's.
+        if (details.video.videoId != videoId) return
+        val uploader = details.uploader() ?: return
+        if (uploader.avatarUrl != null) {
+            _channel.update { known ->
+                when {
+                    known == null -> uploader
+                    known.avatarUrl == null -> known.copy(avatarUrl = uploader.avatarUrl)
+                    else -> known
+                }
+            }
+        }
+        subscriptions.updateDetails(uploader)
     }
 
     private suspend fun playNext() {
@@ -208,15 +245,27 @@ class WatchViewModel(
                 subscriptions.unsubscribe(channelId)
                 return@launch
             }
-            val item = _channel.value ?: try {
-                source.channel(channelId).channel.also { _channel.value = it }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                ChannelItem(channelId = channelId, name = video.channelName.orEmpty(), avatarUrl = null, subscriberCount = null)
-            }
-            subscriptions.subscribe(item)
+            subscriptions.subscribe(channelToSubscribe(channelId, video))
             feed.refreshChannel(channelId)
+        }
+    }
+
+    /**
+     * The channel as the subscription stores it. With a picture known (the video's own page gave it, or YouTube's page for the
+     * channel did) that is all there is to it: no request, so tapping «Subscribe» does not wait for a page that may fail. Without
+     * one, YouTube's page for the channel is asked for; if that fails too, the subscription is saved with what the video says
+     * and gets its picture the next time a page of the channel loads ([SubscriptionRepository.updateDetails]).
+     */
+    private suspend fun channelToSubscribe(channelId: String, video: VideoItem): ChannelItem {
+        val known = _channel.value?.takeIf { it.channelId == channelId }
+        if (known?.avatarUrl != null) return known
+        return try {
+            source.channel(channelId).channel.also { page -> _channel.update { page.copy(avatarUrl = page.avatarUrl ?: it?.avatarUrl) } }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "$channelId: the channel's page failed: ${e.logLine()}")
+            known ?: ChannelItem(channelId = channelId, name = video.channelName.orEmpty(), avatarUrl = null, subscriberCount = null)
         }
     }
 
@@ -232,9 +281,15 @@ class WatchViewModel(
     }
 
     companion object {
+        private const val TAG = "WatchViewModel"
+
         /** The player is idle (stopped by a screen that went away) or holds a different video than [videoId]. */
         internal fun playerNeedsReclaiming(current: PlayerUiState, videoId: String): Boolean =
             current.phase == PlayerPhase.IDLE || current.video?.videoId != videoId
+
+        /** The channel that uploaded the video, as its own page names it: the id, the name and the picture (no subscriber count). */
+        internal fun StreamDetails.uploader(): ChannelItem? =
+            video.channelId?.let { id -> ChannelItem(channelId = id, name = video.channelName.orEmpty(), avatarUrl = uploaderAvatarUrl, subscriberCount = null) }
 
         fun factory(container: AppContainer, videoId: String, playlistId: String?, downloadId: Long?, startMs: Long?) = viewModelFactory {
             initializer {

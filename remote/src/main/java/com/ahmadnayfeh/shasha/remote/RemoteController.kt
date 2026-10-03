@@ -22,7 +22,7 @@ interface RemoteController {
 
     /**
      * Any YouTube link (video, playlist, channel), already trimmed. Must pass the PolicyEngine first: a refused link
-     * never reaches the TV's screen. An allowed one never opens by itself (v1.2): the TV asks «قبول» / «رفض» and the
+     * never reaches the TV's screen. An allowed one never opens by itself (v1.1.1): the TV asks «قبول» / «رفض» and the
      * answer carries the waiting [RemotePlayResult.request]; how it ends shows in [RemoteStatus.playRequest].
      */
     suspend fun playLink(url: String): RemotePlayResult
@@ -59,7 +59,7 @@ interface RemoteController {
     suspend fun unlockVideo(): RemoteResult
 
     /**
-     * v1.2: the parent's «تأكيد» ([approve] true: the video starts) or «رفض» (it does not) for [RemoteStatus.confirmation]
+     * v1.1.1: the parent's «تأكيد» ([approve] true: the video starts) or «رفض» (it does not) for [RemoteStatus.confirmation]
      * [id]; refused ([RemoteResult.error]) when that confirmation no longer waits.
      */
     suspend fun answerConfirmation(id: String, approve: Boolean): RemoteResult

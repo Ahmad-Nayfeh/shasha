@@ -121,8 +121,8 @@
         <item>%1$s attempts</item>
     </string-array>
 
-    <string name="remote_port">Server port</string>
-    <string name="remote_port_body">1024 to 65535. After a change the server restarts on it, so scan the pairing code again</string>
+    <string name="remote_port">Connection port</string>
+    <string name="remote_port_body">Change it only if the phone remote won\'t start because another app uses this number: pick one from 1024 to 65535, then scan the QR code again</string>
     <string name="remote_port_hint">Port number</string>
     <string name="remote_port_invalid">The port is a number from 1024 to 65535.</string>
 

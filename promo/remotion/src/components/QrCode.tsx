@@ -1,5 +1,6 @@
 import React from 'react';
 import qr from '../data/qr.json';
+import {isEn} from '../lib/lang';
 
 // Real QR code (segno, version 4-M) of the pairing URL (lib/demo.ts PAIR_URL, port 8765) — generated into data/qr.json.
 const rows: string[] = (qr as {rows: string[]}).rows;
@@ -10,8 +11,8 @@ const pathFor = (reveal: number) => {
   for (let y = 0; y < N; y++) {
     for (let x = 0; x < N; x++) {
       if (rows[y][x] !== '1') continue;
-      // diagonal sweep from the top-right corner (RTL start)
-      const order = ((N - 1 - x) + y) / (2 * (N - 1));
+      // diagonal sweep from the top-right corner (RTL start); from the top-left corner in English
+      const order = ((isEn ? x : N - 1 - x) + y) / (2 * (N - 1));
       if (order > reveal) continue;
       d += `M${x} ${y}h1v1h-1z`;
     }

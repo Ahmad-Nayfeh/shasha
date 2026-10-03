@@ -7,6 +7,7 @@ import com.ahmadnayfeh.shasha.mobile.FakeVideoSource
 import com.ahmadnayfeh.shasha.mobile.channel
 import com.ahmadnayfeh.shasha.mobile.failure
 import com.ahmadnayfeh.shasha.mobile.video
+import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +69,114 @@ class RepositoriesTest {
 
         assertThat(subscriptions.isSubscribed("UC1").first()).isFalse()
         assertThat(db.feed().observe(10).first().map { it.videoId }).containsExactly("b")
+    }
+
+    // --- what a page that loaded says about a followed channel ---------------------------------------------------
+
+    private val picture = "https://yt3.ggpht.com/ytc/AIdro_kXyz=s176-c-k-c0x00ffffff-no-rj"
+
+    @Test
+    fun aSubscriptionSavedWithoutAPictureGetsItFromALaterPage() = runBlocking<Unit> {
+        subscriptions.subscribe(ChannelItem("UC1", "Name", avatarUrl = null, subscriberCount = null))
+        assertThat(subscriptions.find("UC1")!!.avatarUrl).isNull()
+
+        subscriptions.updateDetails(ChannelItem("UC1", "Name", picture, subscriberCount = 5))
+
+        val stored = db.subscriptions().get("UC1")!!
+        assertThat(stored.avatarUrl).isEqualTo(picture)
+        assertThat(stored.name).isEqualTo("Name")
+        assertThat(stored.subscribedAt).isEqualTo(NOW_MS) // only the name and the picture are touched
+        // The lists that show the subscriptions read it from there.
+        assertThat(subscriptions.subscriptions.first().single().avatarUrl).isEqualTo(picture)
+    }
+
+    @Test
+    fun aChangedNameAndPictureReplaceTheStoredOnes() = runBlocking<Unit> {
+        subscriptions.subscribe(ChannelItem("UC1", "Old name", "https://yt3.ggpht.com/old", subscriberCount = null))
+
+        subscriptions.updateDetails(ChannelItem("UC1", "  New name ", picture, subscriberCount = null))
+
+        val stored = db.subscriptions().get("UC1")!!
+        assertThat(stored.name).isEqualTo("New name")
+        assertThat(stored.avatarUrl).isEqualTo(picture)
+    }
+
+    @Test
+    fun aPageWithoutAPictureKeepsTheStoredOneButItsNameStillCounts() = runBlocking<Unit> {
+        subscriptions.subscribe(ChannelItem("UC1", "Old name", picture, subscriberCount = null))
+
+        subscriptions.updateDetails(ChannelItem("UC1", "New name", avatarUrl = null, subscriberCount = null))
+
+        val stored = db.subscriptions().get("UC1")!!
+        assertThat(stored.name).isEqualTo("New name")
+        assertThat(stored.avatarUrl).isEqualTo(picture)
+    }
+
+    @Test
+    fun aPageThatSaysWhatIsStoredWritesNothing() = runBlocking<Unit> {
+        subscriptions.subscribe(ChannelItem("UC1", "Name", picture, subscriberCount = null))
+
+        assertThat(db.subscriptions().updateDetails("UC1", "Name", picture)).isEqualTo(0)
+        assertThat(db.subscriptions().updateDetails("UC1", "Name", null)).isEqualTo(0) // no picture: nothing to change
+        // Something that differs does write, once.
+        assertThat(db.subscriptions().updateDetails("UC1", "Name", "https://yt3.ggpht.com/other")).isEqualTo(1)
+        assertThat(db.subscriptions().updateDetails("UC1", "Name", "https://yt3.ggpht.com/other")).isEqualTo(0)
+    }
+
+    @Test
+    fun aPictureIsFilledInWhereTheStoredOneIsMissingEvenWithTheSameName() = runBlocking<Unit> {
+        subscriptions.subscribe(ChannelItem("UC1", "Name", avatarUrl = null, subscriberCount = null))
+
+        // NULL is not equal to anything in SQL: the missing picture must still count as a difference.
+        assertThat(db.subscriptions().updateDetails("UC1", "Name", picture)).isEqualTo(1)
+    }
+
+    @Test
+    fun aChannelThatIsNotFollowedIsNotStoredByAPage() = runBlocking<Unit> {
+        subscriptions.updateDetails(ChannelItem("UC9", "Stranger", picture, subscriberCount = 1))
+
+        assertThat(db.subscriptions().updateDetails("UC9", "Stranger", picture)).isEqualTo(0)
+        assertThat(subscriptions.subscriptions.first()).isEmpty()
+        assertThat(subscriptions.find("UC9")).isNull()
+    }
+
+    @Test
+    fun aChannelUnsubscribedWhileItsPageLoadedIsNotBroughtBack() = runBlocking<Unit> {
+        subscriptions.subscribe(ChannelItem("UC1", "Name", avatarUrl = null, subscriberCount = null))
+        subscriptions.unsubscribe("UC1")
+
+        subscriptions.updateDetails(ChannelItem("UC1", "Name", picture, subscriberCount = null))
+
+        assertThat(subscriptions.subscriptions.first()).isEmpty()
+    }
+
+    @Test
+    fun aBlankNameChangesNothing() = runBlocking<Unit> {
+        subscriptions.subscribe(ChannelItem("UC1", "Name", avatarUrl = null, subscriberCount = null))
+
+        subscriptions.updateDetails(ChannelItem("UC1", "   ", picture, subscriberCount = null))
+
+        val stored = db.subscriptions().get("UC1")!!
+        assertThat(stored.name).isEqualTo("Name")
+        assertThat(stored.avatarUrl).isNull()
+    }
+
+    @Test
+    fun aChannelWhoseNameIsNotKnownIsStoredUnderItsIdUntilAPageSaysBetter() = runBlocking<Unit> {
+        subscriptions.subscribe(ChannelItem("UC1", "", avatarUrl = null, subscriberCount = null))
+        assertThat(db.subscriptions().get("UC1")!!.name).isEqualTo("UC1")
+
+        subscriptions.updateDetails(ChannelItem("UC1", "The real name", picture, subscriberCount = null))
+
+        assertThat(db.subscriptions().get("UC1")!!.name).isEqualTo("The real name")
+    }
+
+    @Test
+    fun aFollowedChannelIsFoundByItsIdWithWhatIsStoredOfIt() = runBlocking<Unit> {
+        subscriptions.subscribe(ChannelItem("UC1", "Name", picture, subscriberCount = 10))
+
+        assertThat(subscriptions.find("UC1")).isEqualTo(ChannelItem("UC1", "Name", picture, subscriberCount = null))
+        assertThat(subscriptions.find("UC2")).isNull()
     }
 
     // --- the feed ------------------------------------------------------------------------------------------------

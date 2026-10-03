@@ -82,6 +82,9 @@ class PolicyGateTest {
         }
         gate = PolicyGate(engine, active, profiles, session, locks, pin, lookup, scope)
         active.awaitProfile()
+        // The gate's filter follows the loaded profile on the scope's thread: wait for it too, or a test that reads
+        // gate.filter.value at once may still see the empty filter of before the load (seen on a loaded machine).
+        withTimeout(TIMEOUT_MS) { gate.filter.first { it.profile != null } }
         Unit
     }
 
@@ -95,12 +98,12 @@ class PolicyGateTest {
     private suspend fun enterChild() {
         if (!pin.isSet()) pin.setup(PIN)
         assertThat(gate.switchProfile(child.id, pin = null)).isEqualTo(SwitchResult.Switched)
-        withTimeout(5_000) { gate.filter.first { it.profile?.id == child.id } }
+        withTimeout(TIMEOUT_MS) { gate.filter.first { it.profile?.id == child.id } }
     }
 
     private suspend fun useAdult(change: (Profile) -> Profile) {
         val edited = profiles.update(adult.id, change)!!
-        withTimeout(5_000) { gate.filter.first { it.profile == edited } }
+        withTimeout(TIMEOUT_MS) { gate.filter.first { it.profile == edited } }
     }
 
     // ---- Links (SPEC acceptance: a channel outside the allowlist never plays, even through a link) -------
@@ -237,7 +240,7 @@ class PolicyGateTest {
 
         clock.set("2026-09-28T22:30")
         assertThat(gate.checkPlay(allowed.videoId, PlayOrigin.Navigation, allowed)).isEqualTo(PlayCheck.Denied(DenyReason.OUTSIDE_SCHEDULE))
-        assertThat(withTimeout(5_000) { gate.lockState.first { it.session is SessionState.OutsideSchedule } }.playbackLocked).isFalse()
+        assertThat(withTimeout(TIMEOUT_MS) { gate.lockState.first { it.session is SessionState.OutsideSchedule } }.playbackLocked).isFalse()
     }
 
     @Test
@@ -245,17 +248,17 @@ class PolicyGateTest {
         val letOut = MutableStateFlow(false)
         val guarded = PolicyGate(engine, active, profiles, session, locks, pin, VideoLookup { error("unused") }, scope, childLetOut = letOut)
         // The adult, nothing locked, no limit: the TV is free.
-        val adultState = withTimeout(5_000) { guarded.lockState.first { !it.childProfile } }
+        val adultState = withTimeout(TIMEOUT_MS) { guarded.lockState.first { !it.childProfile } }
         assertThat(engine.guardShouldEnforce(adultState)).isFalse()
 
         enterChild()
-        val inside = withTimeout(5_000) { guarded.lockState.first { it.childProfile } }
+        val inside = withTimeout(TIMEOUT_MS) { guarded.lockState.first { it.childProfile } }
         assertThat(inside.playbackLocked).isFalse()
         assertThat(engine.guardShouldEnforce(inside)).isTrue()
 
         // «خروج» with the parent PIN (RootViewModel sets the flag): the guard lets go while the picker is up.
         letOut.value = true
-        assertThat(engine.guardShouldEnforce(withTimeout(5_000) { guarded.lockState.first { !it.childProfile } })).isFalse()
+        assertThat(engine.guardShouldEnforce(withTimeout(TIMEOUT_MS) { guarded.lockState.first { !it.childProfile } })).isFalse()
     }
 
     @Test
@@ -275,7 +278,7 @@ class PolicyGateTest {
         assertThat(gate.checkPlay(locked.videoId, PlayOrigin.Link)).isInstanceOf(PlayCheck.Allowed::class.java)
         extracted[other.videoId] = other
         assertThat(gate.checkPlay(other.videoId, PlayOrigin.Link)).isEqualTo(PlayCheck.Denied(DenyReason.LOCKED))
-        assertThat(withTimeout(5_000) { gate.lockState.first { it.playbackLocked } }.playbackLocked).isTrue()
+        assertThat(withTimeout(TIMEOUT_MS) { gate.lockState.first { it.playbackLocked } }.playbackLocked).isTrue()
         assertThat(engine.guardShouldEnforce(gate.lockState.value)).isTrue()
     }
 
@@ -308,7 +311,7 @@ class PolicyGateTest {
 
         assertThat(gate.switchNeedsPin(child)).isFalse()
         assertThat(gate.switchProfile(child.id, pin = null)).isEqualTo(SwitchResult.Switched)
-        withTimeout(5_000) { gate.profile.first { it?.id == child.id } }
+        withTimeout(TIMEOUT_MS) { gate.profile.first { it?.id == child.id } }
 
         // Out of the child profile only with the PIN, whether to the adult or to another child.
         assertThat(gate.switchNeedsPin(adult)).isTrue()
@@ -363,5 +366,8 @@ class PolicyGateTest {
 
     private companion object {
         const val PIN = "2468"
+
+        /** Generous: the gate's flows run on another thread, and CI machines can be slow. */
+        const val TIMEOUT_MS = 30_000L
     }
 }

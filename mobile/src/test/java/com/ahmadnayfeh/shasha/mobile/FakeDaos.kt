@@ -28,6 +28,7 @@ class FakeSubscriptionDao : SubscriptionDao {
     val rows = MutableStateFlow<List<SubscriptionEntity>>(emptyList())
     override fun observeAll(): Flow<List<SubscriptionEntity>> = rows.map { list -> list.sortedBy { it.name.lowercase() } }
     override suspend fun all(): List<SubscriptionEntity> = rows.value
+    override suspend fun get(channelId: String): SubscriptionEntity? = rows.value.firstOrNull { it.channelId == channelId }
     override fun observeIsSubscribed(channelId: String): Flow<Boolean> = rows.map { list -> list.any { it.channelId == channelId } }
     override suspend fun upsert(subscription: SubscriptionEntity) {
         rows.value = rows.value.filterNot { it.channelId == subscription.channelId } + subscription
@@ -35,6 +36,20 @@ class FakeSubscriptionDao : SubscriptionDao {
 
     override suspend fun delete(channelId: String) {
         rows.value = rows.value.filterNot { it.channelId == channelId }
+    }
+
+    /** The UPDATE of the real DAO: only a followed channel, only when something would change; a null picture keeps the stored one. */
+    override suspend fun updateDetails(channelId: String, name: String, avatarUrl: String?): Int {
+        var changed = 0
+        rows.value = rows.value.map { row ->
+            if (row.channelId == channelId && (row.name != name || (avatarUrl != null && row.avatarUrl != avatarUrl))) {
+                changed++
+                row.copy(name = name, avatarUrl = avatarUrl ?: row.avatarUrl)
+            } else {
+                row
+            }
+        }
+        return changed
     }
 }
 

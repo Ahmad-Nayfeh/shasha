@@ -334,13 +334,13 @@ class AppContainer(context: Context) {
     val phoneProfileChoices: PhoneProfileChoices = PhoneProfileChoices()
 
     /**
-     * v1.2: videos that only the phone could end early wait here for the parent's «تأكيد» on the phone (the player
+     * v1.1.1: videos that only the phone could end early wait here for the parent's «تأكيد» on the phone (the player
      * asks; the phone answers through [remote]).
      */
     val phoneConfirmations: PhoneConfirmations = PhoneConfirmations()
 
     /**
-     * v1.2: links from the phone wait here for «قبول» on the TV (the profile's screens show the question); one allowed
+     * v1.1.1: links from the phone wait here for «قبول» on the TV (the profile's screens show the question); one allowed
      * for a profile the TV has left, or waiting when a video gets locked, is dropped (the phone reads why).
      */
     val playRequests: PhonePlayRequests by lazy {
@@ -351,7 +351,7 @@ class AppContainer(context: Context) {
         }
     }
 
-    /** v1.2: whether a phone is paired and whether one is there now (its page polled in the last minute). */
+    /** v1.1.1: whether a phone is paired and whether one is there now (its page polled in the last minute). */
     val phoneReach: PhoneReach by lazy { TvPhoneReach(remoteSettings, remote) }
 
     /**

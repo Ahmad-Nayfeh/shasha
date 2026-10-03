@@ -72,7 +72,7 @@ import kotlinx.serialization.json.JsonElement
  * profile on the TV meanwhile gets nothing. Writes are never cut short ([whole]): a server that stops (the
  * TV's address changed) or a phone that goes away loses the answer, never half a restore.
  *
- * v1.2 (owner decisions): a link never opens by itself. Once the rules allowed it, the TV asks «قبول» / «رفض» over
+ * v1.1.1 (owner decisions): a link never opens by itself. Once the rules allowed it, the TV asks «قبول» / «رفض» over
  * whatever plays ([playRequests]); only «قبول» opens it, checked again. And a video that only the phone could end early
  * waits for the parent's «تأكيد» ([confirmations], answered here with [answerConfirmation]).
  */
@@ -105,9 +105,9 @@ class TvRemoteController(
     private val movingTo: () -> Int? = { null },
     /** v1.1: entering the adult profile asks for the parent PIN (on the TV too, after a switch from the phone). */
     private val adultEntryPin: () -> Boolean = { true },
-    /** v1.2: videos waiting for the parent's «تأكيد» on the phone (asked by the player). */
+    /** v1.1.1: videos waiting for the parent's «تأكيد» on the phone (asked by the player). */
     private val confirmations: PhoneConfirmations = PhoneConfirmations(),
-    /** v1.2: links waiting on the TV for «قبول». */
+    /** v1.1.1: links waiting on the TV for «قبول». */
     private val playRequests: PhonePlayRequests = PhonePlayRequests(CoroutineScope(SupervisorJob() + Dispatchers.Default), texts),
 ) : RemoteController {
 
@@ -162,7 +162,7 @@ class TvRemoteController(
     }
 
     /**
-     * v1.2: a link is checked by the TV's rules first (a refused one never reaches the screen), then the TV asks
+     * v1.1.1: a link is checked by the TV's rules first (a refused one never reaches the screen), then the TV asks
      * «طلب تشغيل من الجوال» over whatever plays ([PhonePlayRequests]): the answer is that waiting request, and only
      * «قبول» on the TV opens it ([openAccepted], checked again). A video accepted there needs no «تأكيد» from the phone
      * on top (the phone that sent it is there): its player is marked [Screen.Player.phoneApproved].
@@ -463,7 +463,7 @@ class TvRemoteController(
         )
     }
 
-    /** v1.2: the parent's «تأكيد» (the video starts on the TV) or «رفض» for the video waiting there. */
+    /** v1.1.1: the parent's «تأكيد» (the video starts on the TV) or «رفض» for the video waiting there. */
     override suspend fun answerConfirmation(id: String, approve: Boolean): RemoteResult {
         val answered = confirmations.answer(id, approve) ?: return error(R.string.remote_confirm_gone)
         return RemoteResult.ok(texts.get(if (approve) R.string.remote_confirm_done else R.string.remote_confirm_refused, answered.title))

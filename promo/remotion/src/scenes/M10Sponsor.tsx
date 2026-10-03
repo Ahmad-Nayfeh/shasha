@@ -4,6 +4,7 @@ import {brand} from '../brand';
 import {PlayerPage} from '../components/MobileScreens';
 import {Callout, MobileHeader, PhoneStage, SidePill} from '../components/MobileStage';
 import {easeInOut, keys, tween} from '../lib/anim';
+import {digits, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // m10 — sponsor segments: the green stretch on the seek bar is a paid promotion inside the video; the player jumps
@@ -27,13 +28,13 @@ export const M10Sponsor: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <MobileHeader kicker="المشغّل" index="٤ / ٤" title="تخطي فقرات الرعاية" />
+      <MobileHeader kicker={t('المشغّل')} index={digits('4 / 4')} title={t('تخطي فقرات الرعاية')} />
       <PhoneStage f={f} from={-60} glow={brand.primary}>
         <PlayerPage time={time} sponsor={SEG} sponsorHi={hi} toast={toast} controls={1} />
       </PhoneStage>
 
-      <Callout f={f} at={tSkip - 2} icon="skip" title="يتخطاها وحده" sub="فقرات الرعاية" top={300} />
-      <SidePill f={f} at={tAds - 6} icon="tag" label="إعلان داخل الفيديو" top={470} crossAt={tInside + 6} size={36} />
+      <Callout f={f} at={tSkip - 2} icon="skip" title={t('يتخطاها وحده')} sub={t('فقرات الرعاية')} top={300} />
+      <SidePill f={f} at={tAds - 6} icon="tag" label={t('إعلان داخل الفيديو')} top={470} crossAt={tInside + 6} size={36} />
     </div>
   );
 };

@@ -8,6 +8,7 @@
     <!-- Unified error screen -->
     <string name="error_title_youtube">YouTube changed something. Update the app.</string>
     <string name="error_title_network">No internet connection</string>
+    <string name="error_title_device_decoder">This TV couldn\'t play this video</string>
     <string name="error_detail_name">Error name</string>
     <string name="error_detail_extractor">Library version</string>
     <string name="error_explain_content_unavailable">This video isn\'t available: it may have been deleted or hidden by its owner.</string>
@@ -22,9 +23,10 @@
     <string name="error_explain_low_quality_only">YouTube only gave 360p or lower, a sign that extraction is broken.</string>
     <string name="error_explain_network">Make sure the TV is connected to the network, then try again.</string>
     <string name="error_explain_extraction_broken">YouTube\'s answer couldn\'t be understood. YouTube most likely changed something on its site.</string>
+    <string name="error_explain_device_decoder">Try another video. If it keeps happening, restart the TV.</string>
 
     <!-- A child's notice where the updater would be (the updater's own texts are in strings_updates.xml). -->
-    <string name="updates_current_version">Current version: %1$s · extraction library %2$s</string>
+    <string name="updates_current_version">Current version: %1$s</string>
 
     <!-- Player -->
     <string name="player_loading">Getting the video ready…</string>
@@ -245,7 +247,7 @@
 
     <!-- Settings (SPEC §7). The hub's own strings are the hub_* section. -->
     <string name="settings_title">Settings</string>
-    <string name="settings_version">Shasha %1$s · extraction library %2$s</string>
+    <string name="settings_version">Shasha %1$s</string>
 
     <string-array name="count_minutes">
         <item>1 minute</item>
@@ -650,6 +652,7 @@
     <string name="remote_search_disabled">Search isn\'t available in a kid\'s profile.</string>
     <string name="remote_youtube_changed">YouTube changed something. Update the app. %1$s</string>
     <string name="remote_offline">The TV isn\'t connected to the internet right now.</string>
+    <string name="remote_device_decoder">The TV couldn\'t play this video. Try another one; if it keeps happening, restart the TV.</string>
     <string name="remote_profile_not_found">This profile doesn\'t exist.</string>
     <string name="remote_profile_current">“&#x2068;%1$s&#x2069;” is the profile open right now.</string>
     <string name="remote_profile_switched">The TV is now on “&#x2068;%1$s&#x2069;”.</string>
@@ -760,12 +763,13 @@
     <string name="hub_sponsorblock">SponsorBlock categories</string>
     <string name="hub_quality">Default quality</string>
     <string name="hub_quality_summary">The highest quality the player reaches by itself, stepping down automatically when the network slows</string>
-    <string name="hub_remote">Local server</string>
-    <string name="hub_remote_summary">The phone remote: turning it on, the pairing QR code and a new code</string>
+    <string name="hub_remote">Phone remote</string>
+    <string name="hub_remote_summary">Pair your phone with a QR code to use it as a remote</string>
     <string name="hub_data_summary">A backup of all the TV\'s data, and your subscriptions from Takeout</string>
-    <string name="hub_updates_summary">Update Shasha with one press, plus version and license information</string>
+    <string name="hub_updates_summary">Update Shasha with one press</string>
     <string name="hub_about">About</string>
     <string name="hub_about_summary">Who made Shasha, and the developer\'s other apps</string>
+    <string name="about_licences">Licenses</string>
     <string name="hub_loading">Loading…</string>
 
     <!-- A parental pane before the parent PIN. -->
@@ -818,12 +822,11 @@
     <string name="hub_protection_open_body">What\'s missing and the command that grants it, the measured return speed, and what the protection can\'t stop</string>
     <string name="hub_protection_last_return">Last return to Shasha after Home: %1$s s</string>
     <!-- الخادم المحلي -->
-    <string name="hub_remote_switch">Run the server</string>
-    <string name="hub_remote_switch_body">Starts by itself with the TV, and listens on the home network only</string>
-    <string name="hub_remote_pairing">Pairing QR code</string>
-    <string name="hub_remote_pairing_body">Scan it with your phone\'s camera. From there you can make a new code, which stops every paired phone.</string>
-    <string name="hub_remote_address">Running at &#x2068;%1$s&#x2069;</string>
-    <string name="hub_remote_note">Every request from the phone needs the pairing code, and its parent section also needs the parent PIN.</string>
+    <string name="hub_remote_switch">Allow the phone remote</string>
+    <string name="hub_remote_switch_body">On your home network only, and it starts with the TV</string>
+    <string name="hub_remote_pairing">Pair a phone (QR code)</string>
+    <string name="hub_remote_pairing_body">Open your phone\'s camera and scan the code. From there you can also unpair every phone.</string>
+    <string name="hub_remote_note">Only a phone that scanned the code can control the TV, and the parents\' section on the phone asks for the parent PIN.</string>
 
     <!-- الاستيراد والتصدير -->
     <string name="hub_data_backup">Backup</string>
@@ -832,12 +835,10 @@
 
     <!-- فحص التحديثات -->
     <string name="hub_version">Shasha %1$s</string>
-    <string name="hub_build_line">Build %1$s · extraction library %2$s</string>
     <string name="hub_updates_how">Shasha checks whether a newer version is out and, if there is one, downloads and installs it by itself: the app closes for a moment, then opens again.</string>
     <string name="hub_updates_when">When YouTube stops working, try updating first: the fix is usually in the newer version.</string>
 
     <!-- Check for updates → technical information and licenses (it used to be on About, then under Diagnostics) -->
-    <string name="hub_tech_title">Technical information and licenses</string>
     <string name="hub_tech_data_title">Segment skip data</string>
     <string name="hub_tech_licenses">Libraries and their licenses</string>
     <string name="hub_tech_ideas">Ideas from open-source projects, with code written anew</string>

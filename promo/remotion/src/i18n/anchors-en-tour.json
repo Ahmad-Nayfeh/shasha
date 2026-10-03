@@ -1,0 +1,152 @@
+{
+ "_readme": [
+  "English anchors: per scene, the Arabic phrase a scene looks up (beatsFor(scene).at('…') / end('…'))",
+  "-> the English narration's phrase said at that moment (words of src/data/words*-en.json, case and punctuation ignored).",
+  "A value [phrase, n] picks the phrase's n-th occurrence (0-based); a key 'phrase#1' is the Arabic phrase's second occurrence.",
+  "Missing anchors fall back to the same relative moment of the scene (lib/timeline.ts). Check: node tools/check_i18n.mjs"
+ ],
+ "s01_intro": {
+  "يوتيوب": "YouTube",
+  "بلا إعلانات": "No ads",
+  "إعلانات": "ads",
+  "وبلا حاجة": "and no need",
+  "تسجيل الدخول": "sign in",
+  "ومعه": "And it comes",
+  "ملفات خاصة": "own profiles",
+  "ووقت محدد": "daily time limit",
+  "وريموت": "and a remote"
+ },
+ "s02_why": {
+  "فكرتها": "The idea",
+  "مشاهدة": "viewing",
+  "هادئة": "calm",
+  "ومقصودة": "deliberate",
+  "تشاهد": "You watch",
+  "ما اخترته": "what you chose",
+  "ثم تغلق": "then turn",
+  "راضيا": "feeling good",
+  "لا أن تضيع": "instead of losing",
+  "لم تبحث": "never looked"
+ },
+ "s03_home": {
+  "تفتح": "You open",
+  "القنوات التي": "channels you",
+  "والأحدث": "newest",
+  "لا شيء": "Nothing",
+  "ولا شيء": [
+   "nothing",
+   1
+  ]
+ },
+ "s04_profiles": {
+  "يحميه": "protected",
+  "أما ملف الطفل": "A child's profile",
+  "القنوات التي": "channels you",
+  "ولا يخرج": "only be left",
+  "برمز الوالدين": "parents code"
+ },
+ "s05_time": {
+  "حصة يومية": "daily limit",
+  "وساعات": "allowed viewing hours",
+  "بخمس دقائق": "Five minutes",
+  "تنبيه هادئ": "gentle reminder",
+  "شاشة «انتهى": "Time is up",
+  "ولا تفتح": "which opens"
+ },
+ "s06_serious": {
+  "الوضع الجاد": "Serious mode",
+  "ولكل من": "Children",
+  "والكبار": "adults",
+  "فالطفل": "A child leaves",
+  "والكبير": "An adult",
+  "بضغطة": "a long press",
+  "مطولة": "long",
+  "ثم عبارة": "then a sentence"
+ },
+ "s07_guard": {
+  "زر الرئيسية": "Home button",
+  "يغطي": "covers",
+  "الحارس": "Guard",
+  "ويعيد": "brings"
+ },
+ "s08_suggest": {
+  "المقترحة": "Suggested",
+  "شورتس": "Shorts",
+  "إظهارها": "shown",
+  "إخفاءها": "hidden",
+  "لكل ملف": "each profile",
+  "طفلك": "child's screen",
+  "ما تحب": "what you like"
+ },
+ "s09_channel": {
+  "وصفحة": "Every channel page",
+  "الفيديوهات": "videos",
+  "والقصيرة": "Shorts",
+  "والبث": "live streams",
+  "وقوائم": "and playlists",
+  "وتختار": "you choose",
+  "الأحدث": "newest first",
+  "الأكثر": "most viewed",
+  "الأقدم": "oldest"
+ },
+ "s10_search": {
+  "البحث": "search",
+  "زر الميكروفون": "microphone button",
+  "وقل": "and say",
+  "بالعربية": "in Arabic",
+  "بالإنجليزية": "in English",
+  "فتظهر": "results appear"
+ },
+ "s12_phone": {
+  "امسح": "scan",
+  "لتبحث": "to search",
+  "وتتحكم": "to control",
+  "وترسل": "and to send",
+  "وفي قسم الأب": "the Parent section",
+  "برمز الوالدين": "the parents code",
+  "تضيف وقتا": "add time",
+  "وتدير": "manage"
+ },
+ "s13_accept": {
+  "أرسل": "sends",
+  "سألك": "asks you",
+  "قبول": "Accept",
+  "رفض": "Decline",
+  "ويستمر": "carries on"
+ },
+ "s15_updates": {
+  "صدر": "released",
+  "فاضغط": "press",
+  "زرا واحدا": "one button",
+  "فيبدأ": "and the download",
+  "والتثبيت": "installation",
+  "بلا كمبيوتر": "No computer",
+  "وبلا إعادة": "and no reinstalling"
+ },
+ "s16_tvs": {
+  "جوجل": "Google",
+  "أندرويد": "Android",
+  "أمازون": "Amazon"
+ },
+ "s17_stick": {
+  "سامسونج": "Samsung",
+  "إل جي": "L G",
+  "فتكفيك": "is enough",
+  "بمنفذ": "into the",
+  "وتعمل": "runs",
+  "بكل": "all its features"
+ },
+ "s30_phone_app": {
+  "ولجوالك": "And there is",
+  "تطبيق": "Shasha app",
+  "وله": "with its own",
+  "يشرحه": "explains it"
+ },
+ "s31_outro": {
+  "صنع": "Made",
+  "بحب": "with love",
+  "لعائلتي": "for my family",
+  "أحمد": "Ahmad",
+  "نايفه": "Nayfeh"
+ }
+}

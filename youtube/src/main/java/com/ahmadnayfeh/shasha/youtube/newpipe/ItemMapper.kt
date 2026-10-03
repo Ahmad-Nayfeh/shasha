@@ -56,6 +56,7 @@ internal object ItemMapper {
             isShortForm = item.isShortFormContent || isShortsUrl(url),
             url = url,
             publishedAtIsApproximate = !exactDates,
+            snippet = item.shortDescription?.takeIf { it.isNotBlank() },
         )
     }
 
@@ -79,6 +80,7 @@ internal object ItemMapper {
             name = item.name.orEmpty(),
             avatarUrl = bestImage(item.thumbnails, AVATAR_WIDTH),
             subscriberCount = item.subscriberCount.nonNegativeOrNull(),
+            snippet = item.description?.takeIf { it.isNotBlank() },
         )
     }
 

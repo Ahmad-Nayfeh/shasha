@@ -4,6 +4,7 @@ import {brand} from '../brand';
 import {Callout, MobileHeader, PhoneStage, TapAt} from '../components/MobileStage';
 import {BrowserPage, InstallPrompt, UnknownSourceDialog, UnknownSourcesPage} from '../components/MobileSystem';
 import {easeInOut, sp, tween} from '../lib/anim';
+import {digits, isEn, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // m03 — the first install from this source: the phone asks (allow installs from this source once), the switch goes
@@ -29,7 +30,7 @@ export const M03Allow: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <MobileHeader kicker="تثبيت التطبيق" index="٢ / ٢" title="اسمح لمرة واحدة" />
+      <MobileHeader kicker={t('تثبيت التطبيق')} index={digits('2 / 2')} title={t('اسمح لمرة واحدة')} />
       <PhoneStage f={f} from={-60} glow={brand.primary}>
         <BrowserPage scroll={150} hiAsset={0} snack={1} />
         <div style={{position: 'absolute', inset: 0}}>
@@ -41,14 +42,14 @@ export const M03Allow: React.FC<{scene: Scene}> = ({scene}) => {
         <div style={{position: 'absolute', inset: 0, opacity: prompt}}>
           <InstallPrompt state={done > 0.5 ? 'done' : installing > 0.5 ? 'installing' : 'ask'} tapInstall={Math.max(0, 1 - Math.abs(f - tapInstall) / 8)} />
         </div>
-        <TapAt f={f} at={tapSettings} x={290} y={438} />
-        <TapAt f={f} at={tAllow + 14} x={338} y={176} />
+        <TapAt f={f} at={tapSettings} x={290} y={isEn ? 487 : 438} />
+        <TapAt f={f} at={tAllow + 14} x={isEn ? 328 : 338} y={isEn ? 231 : 176} />
         <TapAt f={f} at={tapInstall} x={320} y={776} />
       </PhoneStage>
 
-      <Callout f={f} at={tQ - 4} icon="unlock" title="السماح بالتثبيت" sub="من هذا المصدر" top={300} />
-      <Callout f={f} at={tPress - 6} icon="apk" title="ثم «تثبيت»" top={470} />
-      <Callout f={f} at={tNever - 4} icon="check" title="مرة واحدة فقط" sub="ولن يسألك مرة أخرى" top={640} />
+      <Callout f={f} at={tQ - 4} icon="unlock" title={t('السماح بالتثبيت')} sub={t('من هذا المصدر')} top={300} />
+      <Callout f={f} at={tPress - 6} icon="apk" title={t('ثم «تثبيت»')} top={470} />
+      <Callout f={f} at={tNever - 4} icon="check" title={t('مرة واحدة فقط')} sub={t('ولن يسألك مرة أخرى')} top={640} />
     </div>
   );
 };

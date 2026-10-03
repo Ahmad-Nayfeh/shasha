@@ -36,4 +36,7 @@ enum class SourceErrorKind {
 
     /** Parsing or unknown extractor failure. */
     EXTRACTION_BROKEN,
+
+    /** This device's video decoder failed to start or to decode the picture: not YouTube's fault, and no update helps. */
+    DEVICE_DECODER,
 }

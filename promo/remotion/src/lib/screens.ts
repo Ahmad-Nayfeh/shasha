@@ -2,8 +2,14 @@
 // public/screens/ (copied from the repo by ./sync-screens.sh, see "source"), plus focus-highlight rectangles
 // (in the capture's own px when "units" is "px", else relative 0..1) and optional patches.
 // When the file is not in public/ yet, components render a labelled placeholder instead.
+//
+// English version (./lang.ts): ../screens-en.json has the same shape for the screens captured in the app's English
+// interface (files in public/screens-en/, with their own focus rectangles and patches: the layout is mirrored and
+// the words have other widths). A screen with no English capture yet keeps its Arabic entry, file and rectangles.
 import {getStaticFiles, staticFile} from 'remotion';
 import manifest from '../screens.json';
+import manifestEn from '../screens-en.json';
+import {isEn} from './lang';
 
 export type Rect = [number, number, number, number]; // x, y, w, h (relative, top-left origin)
 export type PatchOp = {
@@ -23,19 +29,8 @@ export type ScreenInfo = {
   patches?: Record<string, PatchOp[] | string>;
 };
 
-const screens = (manifest as unknown as {screens: Record<string, ScreenInfo>}).screens;
-
-export const screenInfo = (name: string): ScreenInfo => {
-  const s = screens[name];
-  if (!s) throw new Error('screens.json has no screen named ' + name);
-  return s;
-};
-
-/** Native pixel size of a capture (what "px" rects are measured in). */
-export const captureSize = (name: string): [number, number] => {
-  const s = screenInfo(name);
-  return s.size ?? (s.device === 'phone' ? [390, 844] : [1920, 1080]);
-};
+const screensAr = (manifest as unknown as {screens: Record<string, ScreenInfo>}).screens;
+const screensEn = ((manifestEn as unknown as {screens?: Record<string, ScreenInfo>}).screens ?? {}) as Record<string, ScreenInfo>;
 
 let available: Set<string> | null = null;
 const availableFiles = () => {
@@ -49,14 +44,36 @@ const availableFiles = () => {
   return available;
 };
 
+/** The English entry of a screen, when this is the English version and its capture is in public/screens-en/. */
+const englishEntry = (name: string): ScreenInfo | null => {
+  if (!isEn) return null;
+  const s = screensEn[name];
+  return s && availableFiles().has('screens-en/' + s.file) ? s : null;
+};
+
+export const screenInfo = (name: string): ScreenInfo => {
+  const s = englishEntry(name) ?? screensAr[name];
+  if (!s) throw new Error('screens.json has no screen named ' + name);
+  return s;
+};
+
+/** Native pixel size of a capture (what "px" rects are measured in). */
+export const captureSize = (name: string): [number, number] => {
+  const s = screenInfo(name);
+  return s.size ?? (s.device === 'phone' ? [390, 844] : [1920, 1080]);
+};
+
 /** URL of the screenshot, or null when the file does not exist yet. */
 export const screenSrc = (name: string): string | null => {
-  const info = screenInfo(name);
-  const rel = 'screens/' + info.file;
+  const en = englishEntry(name);
+  const rel = en ? 'screens-en/' + en.file : 'screens/' + screenInfo(name).file;
   return availableFiles().has(rel) ? staticFile(rel) : null;
 };
 
 export const hasScreen = (name: string) => screenSrc(name) !== null;
+
+/** True when this screen is drawn from its English capture (English version, capture present). */
+export const isEnglishScreen = (name: string) => englishEntry(name) !== null;
 
 const toRel = (name: string, r: Rect): Rect => {
   const s = screenInfo(name);

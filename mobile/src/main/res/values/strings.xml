@@ -71,6 +71,7 @@
     <string name="error_rate_limited">Too many requests. Wait a little and try again.</string>
     <string name="error_low_quality">Only a very low quality was found for this video.</string>
     <string name="error_broken">Reading YouTube failed. The app may need an update.</string>
+    <string name="error_device_decoder">This device could not play this video. Try another one; if it keeps happening, restart the device.</string>
     <string name="error_generic">Something went wrong.</string>
 
     <!-- Home -->
@@ -97,6 +98,7 @@
     <string name="channel_no_videos">No videos</string>
     <string name="channel_no_shorts">No shorts</string>
     <string name="channel_no_playlists">No playlists</string>
+    <string name="channel_playlists_unavailable">Playlists can\'t be shown right now.</string>
     <string name="playlist_empty">This playlist is empty</string>
     <string name="playlist_play_all">Play all</string>
 
@@ -239,7 +241,7 @@
 
     <!-- About -->
     <string name="about_title">About</string>
-    <string name="about_version">Version %1$s (%2$s)</string>
+    <string name="about_version">Version %1$s</string>
     <string name="about_developer_caption">Developer</string>
     <string name="about_developer_name">Ahmad Nayfeh</string>
     <string name="about_made_with_love">Made with love for my family</string>

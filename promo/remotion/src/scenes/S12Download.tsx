@@ -4,6 +4,7 @@ import {Browser, ContextMenu, Desktop, FileManager, Pointer, RepoFilePage, RepoP
 import {INSTALL_LAPTOP, SideSteps, StepHeader} from '../components/Install';
 import {camMix, LaptopDesk} from '../components/InstallKit';
 import {tween} from '../lib/anim';
+import {t} from '../lib/lang';
 import {KIT_DATE, KIT_DIR, KIT_TAG, KIT_ZIP, KIT_ZIP_SIZE, REPO_PATH} from '../lib/installer';
 import {beatsFor, Scene} from '../lib/timeline';
 
@@ -127,10 +128,10 @@ export const S12Download: React.FC<{scene: Scene}> = ({scene}) => {
       </LaptopDesk>
       <SideSteps
         items={[
-          {at: tFile, label: 'اضغط الملف', sub: KIT_ZIP},
-          {at: tBtn, label: 'ثم زر التنزيل ⬇', icon: 'download'},
-          {at: tWin, label: 'ويندوز: زر أيمن ← «Extract All»', icon: 'box'},
-          {at: tMac, label: 'ماك: نقرتان على الملف', icon: 'box'},
+          {at: tFile, label: t('اضغط الملف'), sub: KIT_ZIP},
+          {at: tBtn, label: t('ثم زر التنزيل ⬇'), icon: 'download'},
+          {at: tWin, label: t('ويندوز: زر أيمن ← «Extract All»'), icon: 'box'},
+          {at: tMac, label: t('ماك: نقرتان على الملف'), icon: 'box'},
         ]}
         size={27}
       />

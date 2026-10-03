@@ -1,13 +1,14 @@
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
-import {arDigits, brand, rgba} from '../brand';
+import {brand, rgba} from '../brand';
 import {Icon} from '../components/Icons';
 import {Remote} from '../components/Remote';
 import {HoldRingOverlay, PhraseOverlay} from '../components/Overlays';
 import {fr, Screen, TvFrame} from '../components/Tv';
-import {Card, Chip, FocusRing, FocusKey, Header} from '../components/ui';
+import {atEnd, atStart, Card, Chip, featureTv, FocusRing, FocusKey, Header, mx, stepOf} from '../components/ui';
 import {clamp, sp, tween} from '../lib/anim';
 import {FEATURE_TV} from '../lib/layout';
+import {dir, flowSign, isEn, t} from '../lib/lang';
 import {focusRects} from '../lib/screens';
 import {beatsFor, Scene} from '../lib/timeline';
 
@@ -16,16 +17,18 @@ import {beatsFor, Scene} from '../lib/timeline';
 // PIN); in adult mode leaving early needs a 10-second hold and then typing a phrase shown on screen (logged in
 // the stats). All on the real captures: the hold ring counts down and the phrase gets typed key by key.
 
-const TV = FEATURE_TV;
-const PHRASE = 'الصبر مفتاح الفرج'; // the capture's phrase
+const TV = featureTv();
+// the capture's phrase: Arabic in the English version too (the app's exit phrases and their keyboard are Arabic only)
+const PHRASE = t('الصبر مفتاح الفرج');
 const PRE = 8; // «الصبر مف» is already typed in the capture
-const HOP = 8; // frames per key
+const HOP = isEn ? 5 : 8; // frames per key (the English voice is shorter: the nine keys still fit in the scene)
 
 export const S07Lock: React.FC<{scene: Scene}> = ({scene}) => {
   const f = useCurrentFrame();
   const b = beatsFor(scene);
   const tSerious = b.at('الوضع الجاد');
   const tToggles = b.at('ولكل من');
+  const tAdults = b.at('والكبار'); // «and adults»: the second switch
   const tBack = b.at('فالطفل');
   const tAdult = b.at('والكبير');
   const tHold = b.at('بضغطة');
@@ -64,9 +67,9 @@ export const S07Lock: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="حماية الأطفال" index="٣ / ٥" title="الوضع الجاد" />
+      <Header kicker={t('حماية الأطفال')} index={stepOf(3, 5)} title={t('الوضع الجاد')} />
 
-      <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)} shakeX={shake} glowColor={adultIn > 0.5 ? brand.primary : brand.kids}>
+      <TvFrame x={TV.x + (1 - tvIn) * -60 * flowSign} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)} shakeX={shake} glowColor={adultIn > 0.5 ? brand.primary : brand.kids}>
         <Screen name="kids_video" />
         <Screen name="serious_settings" opacity={settingsIn} />
         <Screen name="kids_player_locked" opacity={promptIn} />
@@ -79,29 +82,29 @@ export const S07Lock: React.FC<{scene: Scene}> = ({scene}) => {
           <Screen name="lock_phrase" />
           <PhraseOverlay phrase={PHRASE} typed={n} blink={Math.floor(f / 8) % 2 === 0} />
         </div>
-        <FocusRing track={[{f: tToggles + 4, rect: fr('serious_settings', 'kidsToggle'), r: 34}, {f: tToggles + 34, rect: fr('serious_settings', 'adultToggle'), r: 34}]} until={tBack - 8} width={5} />
+        <FocusRing track={[{f: tToggles + 4, rect: fr('serious_settings', 'kidsToggle'), r: 34}, {f: isEn ? tAdults - 2 : tToggles + 34, rect: fr('serious_settings', 'adultToggle'), r: 34}]} until={tBack - 8} width={5} />
         <FocusRing track={[{f: deny + 8, rect: fr('kids_player_locked', 'lockHint'), r: 26}]} until={tAdult} color={brand.amber} width={5} />
         <FocusRing track={keyTrack} until={scene.duration_frames + 20} width={5} presses={keyPresses} glide={{frames: 4}} />
       </TvFrame>
 
-      {/* mode tags, top-left of the TV */}
-      <div style={{position: 'absolute', left: TV.x, top: TV.y - 74}}>
-        <div style={{position: 'absolute', left: 0, top: 0, opacity: seriousChip}}>
-          <Chip icon="lock" label="الوضع الجاد" tone="teal" size={24} />
+      {/* mode tags, top-left of the TV (top-right in English) */}
+      <div style={{position: 'absolute', ...atEnd(FEATURE_TV.x), top: TV.y - 74}}>
+        <div style={{position: 'absolute', ...atEnd(0), top: 0, opacity: seriousChip}}>
+          <Chip icon="lock" label={t('الوضع الجاد')} tone="teal" size={24} />
         </div>
-        <div style={{position: 'absolute', left: 0, top: 0, opacity: kidTag}}>
-          <Chip icon="star" label="وضع الطفل" tone="kids" size={24} />
+        <div style={{position: 'absolute', ...atEnd(0), top: 0, opacity: kidTag}}>
+          <Chip icon="star" label={t('وضع الطفل')} tone="kids" size={24} />
         </div>
-        <div style={{position: 'absolute', left: 0, top: 0, opacity: adultTag}}>
-          <Chip icon="user" label="وضع الكبار" tone="teal" size={24} />
+        <div style={{position: 'absolute', ...atEnd(0), top: 0, opacity: adultTag}}>
+          <Chip icon="user" label={t('وضع الكبار')} tone="teal" size={24} />
         </div>
       </div>
 
       <Remote
-        x={1600}
+        x={mx(1600, 150 * 0.95)}
         y={300}
         scale={0.95}
-        rotate={-8}
+        rotate={-8 * flowSign}
         opacity={clamp(tvIn) * (1 - tween(f, tType - 8, 12))}
         denies={[{btn: 'back', f: deny}]}
         holds={[{btn: 'back', from: holdFrom, to: holdTo}]}
@@ -110,32 +113,32 @@ export const S07Lock: React.FC<{scene: Scene}> = ({scene}) => {
       <div
         style={{
           position: 'absolute',
-          right: 330,
+          ...atStart(330),
           top: 600,
           opacity: tween(f, deny, 10) * (1 - tween(f, tAdult - 6, 10)),
-          transform: `translateX(${(1 - tween(f, deny, 10)) * -20}px)`,
+          transform: `translateX(${(1 - tween(f, deny, 10)) * -20 * flowSign}px)`,
         }}
       >
-        <Chip icon="back" label="لا يعمل" tone="amber" size={26} />
+        <Chip icon="back" label={t('لا يعمل')} tone="amber" size={26} />
       </div>
 
       {/* 10-second hold counter */}
       <div
         style={{
           position: 'absolute',
-          right: 400,
+          ...atStart(400),
           top: 330,
           opacity: clamp(holdCardIn * 1.4) * (1 - holdCardOut),
-          transform: `translateX(${(1 - holdCardIn) * -30}px)`,
+          transform: `translateX(${(1 - holdCardIn) * -30 * flowSign}px)`,
         }}
       >
         <Card style={{width: 250, padding: '26px 20px 24px', boxSizing: 'border-box', textAlign: 'center'}} tone="teal" glow={holdP}>
           <div style={{width: 76, height: 76, margin: '0 auto', borderRadius: 999, background: rgba(brand.primary, 0.14), display: 'grid', placeItems: 'center'}}>
             <Icon name={holdP >= 1 ? 'check' : 'back'} size={42} color={brand.primaryBright} stroke={2.4} />
           </div>
-          <div style={{fontSize: 30, fontWeight: 700, marginTop: 14}}>ضغط مطوّل</div>
-          <div style={{fontSize: 26, color: brand.muted, marginTop: 2}}>١٠ ثوانٍ</div>
-          <div style={{height: 8, borderRadius: 4, background: 'rgba(234,240,246,0.1)', marginTop: 16, overflow: 'hidden', direction: 'rtl'}}>
+          <div style={{fontSize: 30, fontWeight: 700, marginTop: 14}}>{t('ضغط مطوّل')}</div>
+          <div style={{fontSize: 26, color: brand.muted, marginTop: 2}}>{t('١٠ ثوانٍ')}</div>
+          <div style={{height: 8, borderRadius: 4, background: 'rgba(234,240,246,0.1)', marginTop: 16, overflow: 'hidden', direction: dir}}>
             <div style={{width: `${holdP * 100}%`, height: '100%', background: brand.primary, borderRadius: 4}} />
           </div>
         </Card>
@@ -145,10 +148,10 @@ export const S07Lock: React.FC<{scene: Scene}> = ({scene}) => {
       <div
         style={{
           position: 'absolute',
-          right: 90,
+          ...atStart(90),
           top: 290,
           opacity: clamp(typeCardIn * 1.4),
-          transform: `translateX(${(1 - typeCardIn) * -40}px)`,
+          transform: `translateX(${(1 - typeCardIn) * -40 * flowSign}px)`,
         }}
       >
         <Card style={{width: 480, padding: '32px 36px', boxSizing: 'border-box'}}>
@@ -157,16 +160,16 @@ export const S07Lock: React.FC<{scene: Scene}> = ({scene}) => {
               <Icon name="keyboard" size={36} color={brand.primary} stroke={2.2} />
             </div>
             <div>
-              <div style={{fontSize: 24, color: brand.muted}}>الخطوة الأخيرة</div>
-              <div style={{fontSize: 34, fontWeight: 700}}>اكتب الجملة الظاهرة</div>
+              <div style={{fontSize: 24, color: brand.muted}}>{t('الخطوة الأخيرة')}</div>
+              <div style={{fontSize: 34, fontWeight: 700}}>{t('اكتب الجملة الظاهرة')}</div>
             </div>
           </div>
-          <div style={{height: 8, borderRadius: 4, background: 'rgba(234,240,246,0.1)', marginTop: 24, overflow: 'hidden', direction: 'rtl'}}>
+          <div style={{height: 8, borderRadius: 4, background: 'rgba(234,240,246,0.1)', marginTop: 24, overflow: 'hidden', direction: dir}}>
             <div style={{width: `${((n - PRE) / (PHRASE.length - PRE)) * 100}%`, height: '100%', background: brand.primary, borderRadius: 4}} />
           </div>
           <div style={{display: 'flex', alignItems: 'center', gap: 12, marginTop: 22, fontSize: 24, color: brand.muted}}>
             <Icon name="barChart" size={28} color={brand.muted} />
-            يُسجَّل في الإحصائيات
+            {t('يُسجَّل في الإحصائيات')}
           </div>
         </Card>
       </div>

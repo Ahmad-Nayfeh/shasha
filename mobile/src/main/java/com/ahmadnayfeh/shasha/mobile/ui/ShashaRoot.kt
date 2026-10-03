@@ -82,6 +82,7 @@ import com.ahmadnayfeh.shasha.mobile.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.mobile.ui.theme.isDark
 import com.ahmadnayfeh.shasha.mobile.ui.update.UpdateScreen
 import com.ahmadnayfeh.shasha.mobile.ui.watch.WatchScreen
+import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -144,6 +145,11 @@ fun ShashaRoot(container: AppContainer) {
             }
         }
 
+        /** The channel's page with the name and picture the opener knows: it shows them when YouTube's own page for the channel cannot be read. */
+        fun openChannelPage(channel: ChannelItem) {
+            navController.navigate(ChannelRoute.of(channel))
+        }
+
         val actions = remember(container) {
             object : VideoActions {
                 override fun toggleWatchLater(video: VideoItem) {
@@ -164,8 +170,8 @@ fun ShashaRoot(container: AppContainer) {
                     runCatching { context.startActivity(Intent.createChooser(send, null)) }
                 }
 
-                override fun openChannel(channelId: String) {
-                    navController.navigate(ChannelRoute(channelId))
+                override fun openChannel(channel: ChannelItem) {
+                    openChannelPage(channel)
                 }
             }
         }
@@ -211,7 +217,7 @@ fun ShashaRoot(container: AppContainer) {
                         HomeScreen(
                             container,
                             onOpenVideo = { openVideo(it) },
-                            onOpenChannel = { navController.navigate(ChannelRoute(it)) },
+                            onOpenChannel = { openChannelPage(it) },
                             onSearch = { openTab(SearchRoute()) },
                         )
                     }
@@ -220,7 +226,7 @@ fun ShashaRoot(container: AppContainer) {
                             container,
                             initialQuery = entry.toRoute<SearchRoute>().query,
                             onOpenVideo = { openVideo(it) },
-                            onOpenChannel = { navController.navigate(ChannelRoute(it)) },
+                            onOpenChannel = { openChannelPage(it) },
                             onOpenPlaylist = { navController.navigate(PlaylistRoute(it)) },
                         )
                     }
@@ -239,7 +245,7 @@ fun ShashaRoot(container: AppContainer) {
                     composable<ChannelRoute> { entry ->
                         ChannelScreen(
                             container,
-                            channelId = entry.toRoute<ChannelRoute>().channelId,
+                            route = entry.toRoute<ChannelRoute>(),
                             onBack = { navController.popBackStack() },
                             onOpenVideo = { openVideo(it) },
                             onOpenPlaylist = { navController.navigate(PlaylistRoute(it)) },
@@ -259,7 +265,7 @@ fun ShashaRoot(container: AppContainer) {
                             route = entry.toRoute<WatchRoute>(),
                             onBack = { navController.popBackStack() },
                             onOpenVideo = { video, playlistId -> openVideo(video, playlistId, replace = true) },
-                            onOpenChannel = { navController.navigate(ChannelRoute(it)) },
+                            onOpenChannel = { openChannelPage(it) },
                         )
                     }
                     composable<HistoryRoute> { HistoryScreen(container, onBack = { navController.popBackStack() }, onOpenVideo = { openVideo(it) }) }
@@ -268,7 +274,7 @@ fun ShashaRoot(container: AppContainer) {
                         SubscriptionsScreen(
                             container,
                             onBack = { navController.popBackStack() },
-                            onOpenChannel = { navController.navigate(ChannelRoute(it)) },
+                            onOpenChannel = { openChannelPage(it) },
                             onSearch = { openTab(SearchRoute()) },
                         )
                     }

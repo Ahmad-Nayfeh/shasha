@@ -2,7 +2,6 @@ package com.ahmadnayfeh.shasha.mobile.ui.channel
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,13 +13,16 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,6 +32,7 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,7 +58,6 @@ import com.ahmadnayfeh.shasha.mobile.common.Formatters
 import com.ahmadnayfeh.shasha.mobile.common.Loadable
 import com.ahmadnayfeh.shasha.mobile.ui.components.Avatar
 import com.ahmadnayfeh.shasha.mobile.ui.components.DurationBadge
-import com.ahmadnayfeh.shasha.mobile.ui.components.EmptyState
 import com.ahmadnayfeh.shasha.mobile.ui.components.ErrorState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LoadingBox
 import com.ahmadnayfeh.shasha.mobile.ui.components.OnNearEnd
@@ -62,20 +65,27 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.PagedFooter
 import com.ahmadnayfeh.shasha.mobile.ui.components.PlaylistListItem
 import com.ahmadnayfeh.shasha.mobile.ui.components.Thumbnail
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
-import com.ahmadnayfeh.shasha.youtube.ChannelDetails
+import com.ahmadnayfeh.shasha.mobile.ui.nav.ChannelRoute
+import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 
+/**
+ * A channel's page. It is not replaced by an error screen where YouTube refuses a part: that shows quietly where it would have
+ * been (the header made of what is known with a small «Try again», the videos' «Try again» in the list, the Playlists tab's
+ * note), and the rest of the page, the subscribe button included, keeps working ([ChannelViewModel]). Only a channel the content
+ * filter refuses ([ChannelHeader.Refused]) is "not available" for the whole page.
+ */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ChannelScreen(
     container: AppContainer,
-    channelId: String,
+    route: ChannelRoute,
     onBack: () -> Unit,
     onOpenVideo: (VideoItem) -> Unit,
     onOpenPlaylist: (String) -> Unit,
 ) {
-    val vm: ChannelViewModel = viewModel(key = "channel:$channelId", factory = ChannelViewModel.factory(container, channelId))
-    val details by vm.details.collectAsStateWithLifecycle()
+    val vm: ChannelViewModel = viewModel(key = "channel:${route.channelId}", factory = ChannelViewModel.factory(container, route.channelId, route.known()))
+    val header by vm.header.collectAsStateWithLifecycle()
     val subscribed by vm.subscribed.collectAsStateWithLifecycle()
     val videos by vm.videoState.collectAsStateWithLifecycle()
     val playlists by vm.playlistState.collectAsStateWithLifecycle()
@@ -96,7 +106,7 @@ fun ChannelScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text((details as? Loadable.Loaded)?.value?.channel?.name.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = { Text((header as? ChannelHeader.Ready)?.channel?.name.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
@@ -106,11 +116,12 @@ fun ChannelScreen(
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
-            when (val loaded = details) {
-                Loadable.Loading -> LoadingBox()
-                is Loadable.Failed -> ErrorState(loaded.error, onRetry = vm::loadDetails)
-                is Loadable.Loaded -> LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 16.dp)) {
-                    item(key = "header") { Header(loaded.value, subscribed, onToggle = vm::toggleSubscribe) }
+            when (val top = header) {
+                ChannelHeader.Loading -> LoadingBox()
+                // Held back by the content filter: "not available", with nothing to try again.
+                is ChannelHeader.Refused -> ErrorState(top.error, onRetry = null)
+                is ChannelHeader.Ready -> LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 16.dp)) {
+                    item(key = "header") { Header(top, subscribed, onToggle = vm::toggleSubscribe, onRetry = vm::retryHeader) }
                     stickyHeader(key = "tabs") {
                         PrimaryTabRow(selectedTabIndex = tab, containerColor = MaterialTheme.colorScheme.surface) {
                             listOf(R.string.tab_videos, R.string.tab_shorts, R.string.tab_playlists).forEachIndexed { index, label ->
@@ -125,18 +136,20 @@ fun ChannelScreen(
                                 if (videos.started && videos.items.isEmpty() && videos.error == null) {
                                     Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Text(stringResource(R.string.channel_no_videos)) }
                                 } else {
-                                    PagedFooter(videos.loading, videos.error, onRetry = vm::loadMoreVideos)
+                                    PagedFooter(videos.loading, videos.error, onRetry = vm::retry)
                                 }
                             }
                         }
-                        1 -> shortsTab(shorts, onOpenVideo, vm::loadShorts)
+                        1 -> shortsTab(shorts, onOpenVideo, retry = { vm.loadShorts(force = true) })
                         else -> {
                             items(playlists.items, key = { "p:${it.playlistId}" }) { playlist -> PlaylistListItem(playlist, onClick = { onOpenPlaylist(playlist.playlistId) }) }
                             item(key = "playlists-footer") {
-                                if (playlists.started && playlists.items.isEmpty() && playlists.error == null) {
-                                    Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Text(stringResource(R.string.channel_no_playlists)) }
-                                } else {
-                                    PagedFooter(playlists.loading, playlists.error, onRetry = vm::loadMorePlaylists)
+                                when {
+                                    playlists.started && playlists.items.isEmpty() && playlists.error == null ->
+                                        Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Text(stringResource(R.string.channel_no_playlists)) }
+                                    // No other way to the playlists exists: the tab says so without claiming the channel has none.
+                                    playlists.started && playlists.items.isEmpty() -> UnavailableNote(stringResource(R.string.channel_playlists_unavailable), vm::loadMorePlaylists)
+                                    else -> PagedFooter(playlists.loading, playlists.error, onRetry = vm::loadMorePlaylists)
                                 }
                             }
                         }
@@ -147,26 +160,43 @@ fun ChannelScreen(
     }
 }
 
+/** What the screen that opened the page passed about the channel, if anything. */
+private fun ChannelRoute.known(): ChannelItem? =
+    if (name == null && avatarUrl == null) null else ChannelItem(channelId, name.orEmpty(), avatarUrl, subscriberCount = null)
+
 @Composable
-private fun Header(details: ChannelDetails, subscribed: Boolean, onToggle: () -> Unit) {
+private fun Header(header: ChannelHeader.Ready, subscribed: Boolean, onToggle: () -> Unit, onRetry: () -> Unit) {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
+    val channel = header.channel
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Avatar(details.channel.avatarUrl, size = 72)
+            Avatar(channel.avatarUrl, size = 72, name = channel.name)
             Column(Modifier.weight(1f).padding(horizontal = 16.dp)) {
-                Text(details.channel.name, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                details.channel.subscriberCount?.let {
+                Text(channel.name, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                channel.subscriberCount?.let {
                     Text(Formatters.subscribers(context, it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            // Made of what is known, not of YouTube's page for the channel: a small way to ask for the page again, and no more.
+            if (!header.complete) {
+                Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    if (header.refreshing) {
+                        CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+                    } else {
+                        IconButton(onClick = onRetry) {
+                            Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.action_retry), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                 }
             }
         }
         if (subscribed) {
             OutlinedButton(onClick = onToggle, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) { Text(stringResource(R.string.action_unsubscribe)) }
         } else {
-            Button(onClick = onToggle, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) { Text(stringResource(R.string.action_subscribe)) }
+            Button(onClick = onToggle, enabled = header.canSubscribe, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) { Text(stringResource(R.string.action_subscribe)) }
         }
-        details.description?.let { description ->
+        header.description?.let { description ->
             Text(
                 description,
                 modifier = Modifier.padding(top = 12.dp).animateContentSize().clickable { expanded = !expanded },
@@ -186,8 +216,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.shortsTab(
     retry: () -> Unit,
 ) {
     when (shorts) {
-        Loadable.Loading -> item(key = "shorts-loading") { Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { androidx.compose.material3.CircularProgressIndicator() } }
-        is Loadable.Failed -> item(key = "shorts-error") { ErrorStateInline(shorts, retry) }
+        Loadable.Loading -> item(key = "shorts-loading") { Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+        is Loadable.Failed -> item(key = "shorts-error") { PagedFooter(loading = false, error = shorts.error, onRetry = retry) }
         is Loadable.Loaded -> if (shorts.value.isEmpty()) {
             item(key = "shorts-empty") { Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Text(stringResource(R.string.channel_no_shorts)) } }
         } else {
@@ -209,7 +239,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.shortsTab(
     }
 }
 
+/** A quiet note in a list that could not be read, with «Try again»: for a part that has no other way to be read. */
 @Composable
-private fun ErrorStateInline(failed: Loadable.Failed, retry: () -> Unit) {
-    Box(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) { ErrorState(failed.error, onRetry = retry, modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)) }
+private fun UnavailableNote(text: String, onRetry: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        TextButton(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
+    }
 }

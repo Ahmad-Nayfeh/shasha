@@ -27,7 +27,7 @@ class PhonePlayRequest internal constructor(
 )
 
 /**
- * v1.2 (owner decision): a link sent from the phone never plays by itself. Once the TV's rules allowed it, it waits here
+ * v1.1.1 (owner decision): a link sent from the phone never plays by itself. Once the TV's rules allowed it, it waits here
  * ([pending]: the TV shows «طلب تشغيل من الجوال» over whatever plays, which goes on untouched) for «قبول» ([accept]: it
  * opens then) or «رفض» ([reject]), at most [timeoutMs] (then it is rejected by itself). One at a time: a newer link
  * replaces the one waiting. The phones follow it through their status ([latest]), which keeps its outcome a while.

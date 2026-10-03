@@ -3,12 +3,15 @@ import {useCurrentFrame} from 'remotion';
 import {brand, rgba} from '../brand';
 import {LivingRoom, ROOM_TV} from '../components/LivingRoom';
 import {Camera, camAt} from '../components/Tv';
-import {CheckBadge, WordReveal} from '../components/ui';
+import {atEnd, atStart, CheckBadge, mx, WordReveal} from '../components/ui';
 import {clamp, easeIn, easeInOut, easeOut, mix, sp, tween} from '../lib/anim';
+import {dir, isEn, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // s02 — why: calm, intentional watching. Night living room; headline word by word; the chosen video;
 // the TV switched off, satisfied; a brief dim contrast of endless scrolling that stops.
+// English version: the whole room is mirrored (the TV on the right, where a left-to-right eye ends), and so is the home
+// grid on the TV's screen; the headline reads «Calm, deliberate viewing» (the words keep the order of the voice).
 
 const THUMB = ['#1E5A63', '#3C3163', '#6B4721', '#1F3F66', '#2F5433', '#5E2748'];
 
@@ -24,11 +27,11 @@ const MiniGrid: React.FC<{f: number; lift: number; pick: number; expand: number}
   const chosen = {r: 0, c: 1};
   return (
     <div style={{position: 'absolute', inset: 0, background: 'radial-gradient(90% 90% at 70% 0%, #121A24, #0A0E13 70%)'}}>
-      <div style={{position: 'absolute', right: 34, top: 18, width: 90, height: 12, borderRadius: 6, background: 'rgba(234,240,246,0.2)'}} />
+      <div style={{position: 'absolute', ...atStart(34), top: 18, width: 90, height: 12, borderRadius: 6, background: 'rgba(234,240,246,0.2)'}} />
       {[0, 1].map((r) =>
         [0, 1, 2].map((c) => {
           const isC = r === chosen.r && c === chosen.c;
-          const x = x0 - c * (cw + gx);
+          const x = isEn ? 34 + c * (cw + gx) : x0 - c * (cw + gx);
           const y = y0 + r * (ch + gy);
           const dim = isC ? 1 : mix(0.7, 0.3, pick);
           const s = isC ? 1 + 0.1 * lift : 1;
@@ -76,6 +79,7 @@ export const S02Why: React.FC<{scene: Scene}> = ({scene}) => {
   const tChose = b.at('ما اخترته');
   const tOff = b.at('ثم تغلق');
   const tSat = b.at('راضيا');
+  const tIdea = b.at('فكرتها') - 2;
   const tWaste = b.at('لا أن تضيع');
   const tStop = b.at('لم تبحث');
 
@@ -85,9 +89,9 @@ export const S02Why: React.FC<{scene: Scene}> = ({scene}) => {
     [
       {f: 0, s: 1, cx: 960, cy: 540},
       {f: tWatch - 10, s: 1, cx: 960, cy: 540},
-      {f: tWatch + 30, s: 1.55, cx: 640, cy: 600},
-      {f: tWaste - 6, s: 1.55, cx: 640, cy: 600},
-      {f: scene.duration_frames, s: 1.4, cx: 700, cy: 590},
+      {f: tWatch + 30, s: 1.55, cx: mx(640), cy: 600},
+      {f: tWaste - 6, s: 1.55, cx: mx(640), cy: 600},
+      {f: scene.duration_frames, s: 1.4, cx: mx(700), cy: 590},
     ],
     easeInOut,
   );
@@ -108,7 +112,9 @@ export const S02Why: React.FC<{scene: Scene}> = ({scene}) => {
   const scrollBase = (tStop - (tWaste - 4)) * 22;
   const scroll = f < tStop ? (f - (tWaste - 4)) * 22 : scrollBase + (1 - Math.pow(1 - clamp(stop), 2)) * 60;
 
-  const headline = ['مشاهدة', 'هادئة', 'ومقصودة'];
+  // the headline words, in the order they are said (Arabic: viewing, calm, deliberate; English: calm, deliberate, viewing)
+  const headline = isEn ? [t('هادئة'), t('ومقصودة'), t('مشاهدة')] : [t('مشاهدة'), t('هادئة'), t('ومقصودة')];
+  const headlineAt = isEn ? [b.at('هادئة'), b.at('ومقصودة'), b.at('مشاهدة')] : [b.at('مشاهدة'), b.at('هادئة'), b.at('ومقصودة')];
   return (
     <div style={{position: 'absolute', inset: 0}}>
       <Camera s={cam.s} cx={cam.cx} cy={cam.cy}>
@@ -138,18 +144,18 @@ export const S02Why: React.FC<{scene: Scene}> = ({scene}) => {
             fontSize: 30,
             fontWeight: 600,
             color: brand.primary,
-            opacity: tween(f, b.at('فكرتها') - 2, 14),
-            transform: `translateY(${(1 - tween(f, b.at('فكرتها') - 2, 14)) * 10}px)`,
+            opacity: tween(f, tIdea, 14),
+            transform: `translateY(${(1 - tween(f, tIdea, 14)) * 10}px)`,
             marginBottom: 8,
           }}
         >
-          الفكرة
+          {t('الفكرة')}
         </div>
         <WordReveal
           words={headline}
-          starts={[b.at('مشاهدة') - 2, b.at('هادئة') - 2, b.at('ومقصودة') - 2]}
+          starts={headlineAt.map((x) => x - 2)}
           style={{fontSize: 92, fontWeight: 600, color: brand.text, lineHeight: 1.25}}
-          wordStyle={(i) => (i === 2 ? {color: brand.primaryBright} : {})}
+          wordStyle={(i) => (i === (isEn ? 1 : 2) ? {color: brand.primaryBright} : {})}
         />
       </div>
 
@@ -158,7 +164,7 @@ export const S02Why: React.FC<{scene: Scene}> = ({scene}) => {
         <div
           style={{
             position: 'absolute',
-            left: 1440,
+            ...atEnd(1440),
             top: 250,
             width: 330,
             height: 640,
@@ -172,7 +178,7 @@ export const S02Why: React.FC<{scene: Scene}> = ({scene}) => {
           {Array.from({length: 14}).map((_, i) => {
             const y = ((i * 128 - scroll) % (14 * 128) + 14 * 128) % (14 * 128) - 128;
             return (
-              <div key={i} style={{position: 'absolute', left: 20, top: y, width: 290, height: 112, display: 'flex', gap: 14, direction: 'rtl'}}>
+              <div key={i} style={{position: 'absolute', left: 20, top: y, width: 290, height: 112, display: 'flex', gap: 14, direction: dir}}>
                 <div style={{width: 176, height: 99, borderRadius: 10, background: `linear-gradient(135deg, #3A4452, #202833)`}} />
                 <div style={{flex: 1, display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 8}}>
                   <div style={{height: 12, borderRadius: 6, background: '#3A4452'}} />
@@ -184,7 +190,7 @@ export const S02Why: React.FC<{scene: Scene}> = ({scene}) => {
         </div>
       ) : null}
       {wIn > 0 && wOut < 1 ? (
-        <div style={{position: 'absolute', left: 1560, top: 168, opacity: wIn * (1 - wOut) * 0.75}}>
+        <div style={{position: 'absolute', ...atEnd(1560), top: 168, opacity: wIn * (1 - wOut) * 0.75}}>
           <svg width={90} height={90} viewBox="0 0 90 90">
             <circle cx={45} cy={45} r={38} fill="none" stroke={brand.muted} strokeWidth={4} />
             <line

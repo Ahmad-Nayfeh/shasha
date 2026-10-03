@@ -60,7 +60,8 @@ import com.ahmadnayfeh.shasha.youtube.SourceException
  * or from playback, ends here: nothing fails silently.
  *
  * Initial focus is on "رجوع" so an accidental OK press does not start anything. [moreActions] sit
- * between the two buttons (e.g. «إلغاء الاشتراك» on the page of a subscribed channel that is gone).
+ * between the two buttons (e.g. «إلغاء الاشتراك» on the page of a subscribed channel that is gone). The last button,
+ * «فحص التحديثات», is missing where an update cannot help ([ErrorTexts.offersUpdateCheck]: the TV's own decoder failed).
  */
 @Composable
 fun ErrorScreen(
@@ -81,7 +82,7 @@ fun ErrorScreen(
             modifier = Modifier.focusRequester(backFocus).testTag("error_back"),
         )
         moreActions()
-        CheckUpdatesButton(onCheckUpdates)
+        if (ErrorTexts.offersUpdateCheck(error.kind)) CheckUpdatesButton(onCheckUpdates)
     }
 }
 

@@ -22,6 +22,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.schabi.newpipe.extractor.MediaFormat
 import org.schabi.newpipe.extractor.stream.AudioTrackType
+import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamType
 
 @RunWith(RobolectricTestRunner::class)
@@ -332,6 +333,121 @@ class PlaybackPlannerTest {
 
         val e = assertThrows(SourceException::class.java) { planner().plan(info(type = StreamType.LIVE_STREAM), 1080, null) }
         assertThat(e.technicalName).isEqualTo("NoLiveManifest")
+    }
+
+    // --- vertical pictures on a TV, the safe plan, and what a decoder failed on --------------------------------
+
+    private fun PlaybackPlanner.videoIds(info: StreamInfo, maxHeight: Int = 1080, limits: PlanLimits = PlanLimits()) =
+        manifestOf(plan(info, maxHeight, null, limits = limits).parts.single()).representationIds(C.TRACK_TYPE_VIDEO)
+
+    private val shorts get() = info(videoOnly = PlaybackFixtures.portraitLadder())
+
+    @Test
+    fun theTvCapsVerticalPicturesAt720WhateverTheQualitySetting() {
+        // A 9:16 picture is 607 px wide on a 1080p TV: 720x1280 is plenty, and the weak decoders fail on 1080x1920.
+        val tv = PlanLimits(maxPortraitShortSide = 720)
+        for (maxHeight in listOf(0, 2160, 1440, 1080)) {
+            assertThat(planner().videoIds(shorts, maxHeight, tv)).containsExactly("v136", "v247", "v135", "v244", "v134", "v160")
+        }
+    }
+
+    @Test
+    fun aLowerQualitySettingStillWinsOverTheVerticalCap() {
+        val tv = PlanLimits(maxPortraitShortSide = 720)
+        assertThat(planner().videoIds(shorts, maxHeight = 480, limits = tv)).containsExactly("v135", "v244", "v134", "v160")
+    }
+
+    @Test
+    fun theVerticalCapLeavesLandscapeVideosAlone() {
+        val tv = PlanLimits(maxPortraitShortSide = 720)
+        assertThat(planner().videoIds(info(), maxHeight = 1080, limits = tv)).containsExactly("v137", "v248", "v136", "v247", "v135", "v244", "v160")
+    }
+
+    @Test
+    fun aVerticalVideoWithNothingUnderTheCapStillPlaysItsLowestQuality() {
+        val onlyBig = info(videoOnly = listOf(videoOnly(271, "vp9", 1440, 2560), videoOnly(137, "avc1.640028", 1080, 1920)))
+        assertThat(planner().videoIds(onlyBig, 1080, PlanLimits(maxPortraitShortSide = 720))).containsExactly("v137")
+    }
+
+    @Test
+    fun thePhoneAsksForNoVerticalCapAndKeepsTheFullLadder() {
+        assertThat(planner().videoIds(shorts, maxHeight = 1080)).containsExactly("v137", "v248", "v136", "v247", "v135", "v244", "v134", "v160")
+        assertThat(planner().videoIds(shorts, maxHeight = 0)).containsAtLeast("v313", "v271", "v137")
+    }
+
+    @Test
+    fun aSquarePictureIsNotVertical() {
+        val square = info(videoOnly = listOf(videoOnly(137, "avc1.640028", 1080, 1080), videoOnly(135, "avc1.4d401e", 480, 480)))
+        assertThat(planner().videoIds(square, 1080, PlanLimits(maxPortraitShortSide = 720))).containsExactly("v137", "v135")
+    }
+
+    @Test
+    fun theSafePlanIsH264OnlyAndSmall() {
+        val safe = PlanLimits(safe = true)
+        // Vertical: short side ≤ 480.
+        assertThat(planner().videoIds(shorts, 1080, safe)).containsExactly("v135", "v134", "v160")
+        // Horizontal: short side ≤ 720 (H.264 only: no VP9, no AV1).
+        val ladder = PlaybackFixtures.standardLadder() + videoOnly(399, "av01.0.08M.08", 1920, 1080)
+        assertThat(planner().videoIds(info(videoOnly = ladder), 1080, safe)).containsExactly("v136", "v135", "v160")
+        // The TV's own vertical cap is above it and changes nothing.
+        assertThat(planner().videoIds(shorts, 1080, PlanLimits(maxPortraitShortSide = 720, safe = true))).containsExactly("v135", "v134", "v160")
+    }
+
+    @Test
+    fun theSafePlanNeverRaisesTheQualityCap() {
+        assertThat(planner().videoIds(info(), maxHeight = 360, limits = PlanLimits(safe = true))).containsExactly("v160")
+        assertThat(planner().videoIds(shorts, maxHeight = 360, limits = PlanLimits(safe = true))).containsExactly("v134", "v160")
+    }
+
+    @Test
+    fun theSafePlanUsesWhatIsThereWhenTheVideoHasNoH264() {
+        val vp9Only = info(videoOnly = listOf(videoOnly(248, "vp9", 1920, 1080), videoOnly(247, "vp9", 1280, 720), videoOnly(244, "vp9", 854, 480)))
+        assertThat(planner().videoIds(vp9Only, 1080, PlanLimits(safe = true))).containsExactly("v247", "v244")
+    }
+
+    @Test
+    fun whatADecoderFailedOnIsLeftOutOfEveryLaterPlan() {
+        val failures = DecoderFailures()
+        val planner = PlaybackPlanner(allHardware, failures)
+        assertThat(planner.videoIds(shorts)).containsExactly("v137", "v248", "v136", "v247", "v135", "v244", "v134", "v160")
+
+        // H.264 failed on a 720x1280 picture: that and everything bigger in H.264 is out; its smaller pictures and VP9 stay.
+        failures.record("avc1.4d401f", 720, 1280)
+        assertThat(planner.videoIds(shorts)).containsExactly("v248", "v247", "v135", "v244", "v134", "v160")
+        // Another video, the same TV: the failure is remembered.
+        val another = info(videoOnly = listOf(videoOnly(137, "avc1.640028", 1080, 1920), videoOnly(136, "avc1.4d401f", 720, 1280), videoOnly(135, "avc1.4d401e", 480, 854)))
+        assertThat(planner.videoIds(another)).containsExactly("v135")
+    }
+
+    @Test
+    fun aFailureOnlyConcernsItsCodecAndOrientation() {
+        val failures = DecoderFailures()
+        val planner = PlaybackPlanner(allHardware, failures)
+        failures.record("avc1.4d401f", 720, 1280)
+        // Landscape H.264 is not held back by a vertical failure.
+        assertThat(planner.videoIds(info())).containsExactly("v137", "v248", "v136", "v247", "v135", "v244", "v160")
+        // And VP9 and the pictures under the failing size are still offered for a vertical video (above).
+        failures.record("vp09.00.40.08", 1080, 1920)
+        assertThat(planner.videoIds(shorts)).containsExactly("v247", "v135", "v244", "v134", "v160")
+    }
+
+    @Test
+    fun theSafePlanComesAfterTheFailureAndStaysBelowIt() {
+        val failures = DecoderFailures()
+        val planner = PlaybackPlanner(allHardware, failures)
+        // The retry's own picture (480x854) failed too: the next safe plan goes lower.
+        failures.record("avc1.4d401e", 480, 854)
+        assertThat(planner.videoIds(shorts, 1080, PlanLimits(safe = true))).containsExactly("v134", "v160")
+    }
+
+    @Test
+    fun whenEveryPictureFailedTheFailuresAreNotHeldAgainstTheVideo() {
+        val failures = DecoderFailures()
+        val planner = PlaybackPlanner(allHardware, failures)
+        failures.record("avc1.4d400c", 144, 256)
+        failures.record("vp9", 144, 256)
+        // Nothing is left to try, and giving up is worse than trying: the plan is the one without the memory.
+        assertThat(planner.videoIds(shorts)).containsExactly("v137", "v248", "v136", "v247", "v135", "v244", "v134", "v160")
     }
 
     @Test

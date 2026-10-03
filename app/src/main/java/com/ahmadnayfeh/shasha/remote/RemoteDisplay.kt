@@ -49,7 +49,7 @@ fun interface RemoteDisplay {
     suspend fun show(destination: Screen, profileId: String): ShowResult
 
     /**
-     * v1.2: the TV is ready to ask about a link allowed for [profileId] («طلب تشغيل من الجوال»): in front (brought there
+     * v1.1.1: the TV is ready to ask about a link allowed for [profileId] («طلب تشغيل من الجوال»): in front (brought there
      * when it is not), [profileId]'s screens up. Nothing opens. [ShowResult.SHOWN] when it is.
      */
     suspend fun prepare(profileId: String): ShowResult = ShowResult.SHOWN

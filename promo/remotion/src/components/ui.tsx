@@ -1,7 +1,9 @@
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
-import {brand, rgba} from '../brand';
+import {arDigits, brand, rgba} from '../brand';
 import {clamp, easeInOut, easeOut, mix, sp, tween} from '../lib/anim';
+import {FEATURE_TV} from '../lib/layout';
+import {dir, endSide, flowSign, isEn, startSide} from '../lib/lang';
 import {Icon, IconName} from './Icons';
 
 export type Tone = 'teal' | 'amber' | 'kids' | 'error' | 'neutral';
@@ -10,7 +12,24 @@ export const toneColor = (t: Tone) =>
 
 const abs = (s: React.CSSProperties): React.CSSProperties => ({position: 'absolute', ...s});
 
-/** Icon + label pill. `t` = entrance progress (0..1); enters from the left (RTL "forward"). */
+// --- the English layout --------------------------------------------------------------------------------------
+// The scenes are laid out for Arabic (right to left: reading starts at the right edge of the stage). The English version
+// is the same layout mirrored about the stage's vertical axis: a block that sits `x` px from the right edge in Arabic
+// sits `x` px from the left edge in English, a slide that goes one way goes the other. Every helper returns what the
+// Arabic scene used before, so the Arabic render does not change.
+export const STAGE_W = 1920;
+/** `right: x` in Arabic, `left: x` in English: a block `x` px from the edge where reading starts. */
+export const atStart = (x: number): React.CSSProperties => ({[startSide]: x});
+/** `left: x` in Arabic, `right: x` in English: a block `x` px from the edge where reading ends. */
+export const atEnd = (x: number): React.CSSProperties => ({[endSide]: x});
+/** Left edge of the block [x, x + w] of the Arabic layout, mirrored about the stage's vertical axis in English. */
+export const mx = (x: number, w = 0): number => (isEn ? STAGE_W - x - w : x);
+/** The feature tour's TV (screen rect, stage px), on the side where the layout puts it: the left in Arabic, the right in English. */
+export const featureTv = (w: number = FEATURE_TV.w) => ({x: mx(FEATURE_TV.x, w), y: FEATURE_TV.y, w});
+/** "1 / 5", the step counter of a section header (Arabic-Indic digits in Arabic, Western in English). */
+export const stepOf = (n: number, total: number) => `${arDigits(n)} / ${arDigits(total)}`;
+
+/** Icon + label pill. `t` = entrance progress (0..1); enters from the left in Arabic (RTL "forward"), from the right in English. */
 export const Chip: React.FC<{
   icon?: IconName;
   label: React.ReactNode;
@@ -27,13 +46,13 @@ export const Chip: React.FC<{
   return (
     <div
       style={{
-        direction: 'rtl',
+        direction: dir,
         display: 'inline-flex',
         alignItems: 'center',
         gap: size * 0.42,
         height: sub ? h * 1.32 : h,
         padding: `0 ${size * 0.8}px 0 ${size * 0.8}px`,
-        paddingRight: icon ? size * 0.34 : size * 0.8,
+        [isEn ? 'paddingLeft' : 'paddingRight']: icon ? size * 0.34 : size * 0.8,
         borderRadius: 999,
         background: `linear-gradient(180deg, ${rgba('#1A222D', 0.96)}, ${rgba('#131920', 0.96)})`,
         border: `1.5px solid ${rgba(c, 0.38)}`,
@@ -41,7 +60,7 @@ export const Chip: React.FC<{
         fontFamily: brand.font,
         color: brand.text,
         opacity: clamp(t * 1.4) * (1 - dim * 0.7),
-        transform: `translateX(${(1 - t) * -46}px) scale(${mix(0.94, 1, t)})`,
+        transform: `translateX(${(1 - t) * -46 * flowSign}px) scale(${mix(0.94, 1, t)})`,
         whiteSpace: 'nowrap',
         ...style,
       }}
@@ -63,13 +82,13 @@ export const Chip: React.FC<{
       ) : null}
       <div style={{display: 'flex', flexDirection: 'column', lineHeight: 1.2}}>
         <span style={{fontSize: size, fontWeight: 600, fontFamily: mono ? brand.mono : brand.font}}>{label}</span>
-        {sub ? <span style={{fontSize: size * 0.62, color: brand.muted, fontFamily: brand.mono, direction: 'ltr', textAlign: 'right'}}>{sub}</span> : null}
+        {sub ? <span style={{fontSize: size * 0.62, color: brand.muted, fontFamily: brand.mono, direction: 'ltr', textAlign: isEn ? 'left' : 'right'}}>{sub}</span> : null}
       </div>
     </div>
   );
 };
 
-/** Amber strike drawn across its box (progress 0..1 over ~8 frames). */
+/** Amber strike drawn across its box (progress 0..1 over ~8 frames), from the reading start (right in Arabic, left in English). */
 export const Strike: React.FC<{p: number; color?: string; width?: number}> = ({p, color = brand.amber, width = 7}) => (
   <svg
     style={abs({left: -6, top: -6, width: 'calc(100% + 12px)', height: 'calc(100% + 12px)', overflow: 'visible', pointerEvents: 'none'})}
@@ -77,9 +96,9 @@ export const Strike: React.FC<{p: number; color?: string; width?: number}> = ({p
     preserveAspectRatio="none"
   >
     <line
-      x1={100}
+      x1={isEn ? 0 : 100}
       y1={30}
-      x2={mix(100, 0, p)}
+      x2={mix(isEn ? 0 : 100, isEn ? 100 : 0, p)}
       y2={mix(30, 70, p)}
       stroke={color}
       strokeWidth={width}
@@ -109,7 +128,7 @@ export const CrossedOut: React.FC<{
         position: 'relative',
         display: 'inline-block',
         opacity: clamp(inT * 1.3) * (1 - gone),
-        transform: `translateX(${(1 - inT) * -30}px)`,
+        transform: `translateX(${(1 - inT) * -30 * flowSign}px)`,
         ...style,
       }}
     >
@@ -206,7 +225,7 @@ export const WordReveal: React.FC<{
 }> = ({words, starts, style, wordStyle, dur = 16, blur = true}) => {
   const f = useCurrentFrame();
   return (
-    <div style={{direction: 'rtl', fontFamily: brand.font, ...style}}>
+    <div style={{direction: dir, fontFamily: brand.font, ...style}}>
       {words.map((w, i) => {
         const t = tween(f, starts[i] ?? starts[starts.length - 1], dur, easeOut);
         return (
@@ -230,7 +249,7 @@ export const WordReveal: React.FC<{
   );
 };
 
-/** Scene header: small kicker + title at the top right (RTL start). */
+/** Scene header: small kicker + title at the top right in Arabic (the reading start), at the top left in English. */
 export const Header: React.FC<{kicker?: string; title: string; from?: number; index?: string; out?: number}> = ({
   kicker,
   title,
@@ -246,12 +265,12 @@ export const Header: React.FC<{kicker?: string; title: string; from?: number; in
     <div
       style={abs({
         top: 58,
-        right: 96,
-        direction: 'rtl',
+        ...atStart(96),
+        direction: dir,
         fontFamily: brand.font,
         color: brand.text,
         opacity: 1 - gone,
-        textAlign: 'right',
+        textAlign: isEn ? 'left' : 'right',
       })}
     >
       {kicker ? (
@@ -264,7 +283,7 @@ export const Header: React.FC<{kicker?: string; title: string; from?: number; in
             fontWeight: 600,
             color: brand.primary,
             opacity: a,
-            transform: `translateX(${(1 - a) * -20}px)`,
+            transform: `translateX(${(1 - a) * -20 * flowSign}px)`,
             letterSpacing: 0,
           }}
         >
@@ -306,7 +325,7 @@ export const Card: React.FC<{style?: React.CSSProperties; children?: React.React
         boxShadow: `0 30px 70px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.04)${
           c && glow ? `, 0 0 ${40 * glow}px ${rgba(c, 0.25 * glow)}` : ''
         }`,
-        direction: 'rtl',
+        direction: dir,
         fontFamily: brand.font,
         color: brand.text,
         ...style,

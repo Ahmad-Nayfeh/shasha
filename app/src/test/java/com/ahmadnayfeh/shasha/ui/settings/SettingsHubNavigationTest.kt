@@ -346,39 +346,47 @@ class SettingsHubNavigationTest {
         press(Key.DirectionDown) // الدليل والفيديو
         press(Key.DirectionDown) // حول
         press(Key.DirectionLeft)
-        // The developer first, then his other apps one card each: nothing else (the version, the extractor,
-        // SponsorBlock's attribution and the licences are at the bottom of فحص التحديثات).
+        // The developer first, then his other apps one card each, then one closed row «التراخيص».
         focused("about_developer")
         listOf("shadra", "silah", "masarif", "khatwa").forEach { app ->
             press(Key.DirectionDown)
             focused("about_app_$app")
         }
         press(Key.DirectionDown)
-        focused("about_app_khatwa") // the last card of the pane
+        focused("about_licences")
+        press(Key.DirectionDown)
+        focused("about_licences") // the last row of the pane while it is closed
         listOf("about_version", "about_sponsorblock", "license_NewPipeExtractor", "tech_sponsorblock", "hub_version").forEach {
             assertThat(exists(it)).isFalse()
         }
-        assertThat(calls).containsExactly("updates")
-    }
-
-    @Test
-    fun theUpdatesPane_hasOneButton_thenTheTechnicalInfoAndEveryLicence() {
-        show()
-        goTo(SettingsCategory.UPDATES)
-        press(Key.DirectionLeft)
-        // One button (the version above it is plain text), then «معلومات تقنية والتراخيص»: SponsorBlock's attribution,
-        // then the libraries and the projects whose ideas the app follows, one row each, in the order of the list.
-        focused("hub_check_updates")
-        assertThat(exists("hub_version")).isTrue()
+        // OK opens it: SponsorBlock's attribution, then the libraries and the projects whose ideas the app follows,
+        // one row each, in the order of the list.
+        press(Key.DirectionCenter)
         press(Key.DirectionDown)
         focused("tech_sponsorblock")
+        assertThat(exists("sponsorblock_attribution")).isTrue()
         (Licenses.libraries + Licenses.ideas).forEach { entry ->
             press(Key.DirectionDown)
             focused("license_${entry.name}")
         }
         press(Key.DirectionDown)
         focused("license_tv-app-lock") // the last row of the pane
-        assertThat(exists("sponsorblock_attribution")).isTrue()
+        assertThat(calls).containsExactly("updates")
+    }
+
+    @Test
+    fun theUpdatesPane_hasOneButton_andNothingTechnical() {
+        show()
+        goTo(SettingsCategory.UPDATES)
+        press(Key.DirectionLeft)
+        // One button (the version above it is plain text), and nothing under it to read: the licences are in «حول».
+        focused("hub_check_updates")
+        assertThat(exists("hub_version")).isTrue()
+        press(Key.DirectionDown)
+        focused("hub_check_updates")
+        listOf("tech_sponsorblock", "license_NewPipeExtractor", "sponsorblock_attribution").forEach {
+            assertThat(exists(it)).isFalse()
+        }
     }
 
     @Test

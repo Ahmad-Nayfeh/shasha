@@ -3,10 +3,11 @@ package com.ahmadnayfeh.shasha.ui.settings.remote
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.ahmadnayfeh.shasha.PromoEnglish
+import com.ahmadnayfeh.shasha.PromoEnglish.en
+import com.ahmadnayfeh.shasha.PromoEnglish.pick
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.backup.BackupFile
 import com.ahmadnayfeh.shasha.policy.Profile
@@ -16,7 +17,6 @@ import com.ahmadnayfeh.shasha.ui.screens.setup.SetupScreen
 import com.ahmadnayfeh.shasha.ui.screens.setup.SetupStep
 import com.ahmadnayfeh.shasha.ui.settings.backup.BackupScreen
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
-import com.github.takahirom.roborazzi.captureRoboImage
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -34,16 +34,17 @@ import java.io.File
 @Config(sdk = [35], qualifiers = TV_1080P)
 class RemoteScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     private fun snap(name: String, content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true) {
-                ShashaTheme { content() }
+                ShashaTheme(language = PromoEnglish.language()) { content() }
             }
         }
         compose.waitForIdle()
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     private val running = PairingUi(
@@ -51,7 +52,8 @@ class RemoteScreenshotTest {
         status = PairingStatus.RUNNING,
         url = "http://192.168.1.23:8765/?t=$TOKEN",
         address = "192.168.1.23:8765",
-        serviceName = "شاشة",
+        // The name the TV shows on the network is the app's own; the English video writes it in Latin letters.
+        serviceName = pick("شاشة", "Shasha"),
     )
 
     @Test
@@ -85,7 +87,7 @@ class RemoteScreenshotTest {
         SetupScreen(
             SetupStep.PHONE,
             busy = false,
-            ownerName = "أحمد",
+            ownerName = en("أحمد"),
             ownerAvatar = Profile.DEFAULT_ADULT_AVATAR,
             onStart = {},
             onPin = {},

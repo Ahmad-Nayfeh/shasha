@@ -7,6 +7,7 @@ import com.ahmadnayfeh.shasha.data.db.SubscriptionEntity
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
+import com.ahmadnayfeh.shasha.youtube.safety.ExplicitFilter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
@@ -72,7 +73,12 @@ class FeedRepository(
     /** True while [syncAll] runs (for a quiet "updating" hint on the home screen). */
     val isSyncing: StateFlow<Boolean> = syncing.asStateFlow()
 
-    fun observeHome(limit: Int = HOME_LIMIT): Flow<List<FeedItemEntity>> = feedDao.observeHome(limit)
+    /**
+     * Without what the built-in filter holds back: the source no longer hands such uploads out ([VideoSource] is filtered), but a
+     * feed synced before that, or by an older version, still holds rows the screens must not show.
+     */
+    fun observeHome(limit: Int = HOME_LIMIT): Flow<List<FeedItemEntity>> =
+        feedDao.observeHome(limit).map { rows -> rows.filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) } }
 
     /** How each channel's last sync went: for the home screen's status and its sync errors. */
     fun observeSyncHealth(): Flow<SyncHealth> = subscriptionDao.observeSyncCounts().map { it.toHealth() }

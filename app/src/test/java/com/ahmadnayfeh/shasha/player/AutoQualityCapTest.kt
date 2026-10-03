@@ -29,12 +29,13 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35], qualifiers = "w1920dp-h1080dp-land-television-xhdpi")
 class AutoQualityCapTest {
     /** The video sizes (width to height) ExoPlayer may adapt between for a group of [sizes]. */
-    private fun selectableSizes(sizes: List<Pair<Int, Int>>, capped: Boolean = true): List<Pair<Int, Int>> {
+    private fun selectableSizes(sizes: List<Pair<Int, Int>>, capped: Boolean = true, safe: Boolean = false): List<Pair<Int, Int>> {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val selector = DefaultTrackSelector(context)
         // Like ExoPlayer: parameters set by the app become active when the selector invalidates.
         selector.init({ params -> selector.onParametersActivated(params) }, DefaultBandwidthMeter.Builder(context).build())
         if (capped) selector.setParameters(selector.parameters.withAutoQualityCap())
+        if (safe) selector.setParameters(selector.parameters.withSafeQualityCap())
 
         val formats = sizes.mapIndexed { i, (w, h) ->
             Format.Builder()
@@ -77,6 +78,29 @@ class AutoQualityCapTest {
     fun withoutTheCapA4kTvWouldAdaptUpTo2160p() {
         val sizes = selectableSizes(listOf(3840 to 2160, 1920 to 1080, 1280 to 720), capped = false)
         assertThat(sizes).contains(3840 to 2160)
+    }
+
+    /**
+     * The safe retry after a decoder failure also holds the ladders that the factory does not cut (HLS: a video with no
+     * adaptive streams, a live stream) to the safe plan's size, in either orientation: the orientation is not known before
+     * the tracks are.
+     */
+    @Test
+    fun theSafePlanHoldsAnHlsLadderToItsSmallestPicture_inEitherOrientation() {
+        val landscape = selectableSizes(listOf(3840 to 2160, 1920 to 1080, 1280 to 720, 854 to 480, 640 to 360), safe = true)
+        assertThat(landscape).containsExactly(854 to 480, 640 to 360)
+        val vertical = selectableSizes(listOf(2160 to 3840, 1080 to 1920, 720 to 1280, 480 to 854, 360 to 640), safe = true)
+        assertThat(vertical).containsExactly(480 to 854, 360 to 640)
+    }
+
+    @Test
+    fun theSafePlanPrefersH264_andNeverRaisesTheQualitySettingsCap() {
+        val params = DefaultTrackSelector.Parameters.DEFAULT.withSafeQualityCap()
+        assertThat(params.preferredVideoMimeTypes).containsExactly(MimeTypes.VIDEO_H264)
+        assertThat(params.viewportWidth to params.viewportHeight).isEqualTo(854 to 480)
+        // A lower setting than the safe plan's stays lower.
+        val low = DefaultTrackSelector.Parameters.DEFAULT.withSafeQualityCap(maxQuality = 360)
+        assertThat(low.viewportWidth to low.viewportHeight).isEqualTo(640 to 360)
     }
 
     @Test

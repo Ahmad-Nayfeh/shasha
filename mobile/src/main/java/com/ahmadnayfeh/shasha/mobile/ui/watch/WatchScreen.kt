@@ -89,6 +89,7 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.LocalVideoActions
 import com.ahmadnayfeh.shasha.mobile.ui.components.PagedFooter
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
 import com.ahmadnayfeh.shasha.mobile.ui.nav.WatchRoute
+import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import kotlin.math.roundToInt
 
@@ -104,7 +105,7 @@ fun WatchScreen(
     onBack: () -> Unit,
     /** Opens another video in place of this one (a related video, the next in the playlist). */
     onOpenVideo: (VideoItem, String?) -> Unit,
-    onOpenChannel: (String) -> Unit,
+    onOpenChannel: (ChannelItem) -> Unit,
 ) {
     val vm: WatchViewModel = viewModel(
         key = "watch:${route.videoId}:${route.downloadId}:${route.playlistId}",
@@ -198,7 +199,7 @@ internal fun WatchContent(
     onEnterPictureInPicture: (() -> Unit)?,
     onVideoBounds: (Rect) -> Unit,
     onOpenVideo: (VideoItem) -> Unit,
-    onOpenChannel: (String) -> Unit,
+    onOpenChannel: (ChannelItem) -> Unit,
 ) {
     var showSettings by remember { mutableStateOf(false) }
     val playerModifier = when {
@@ -286,7 +287,7 @@ private fun Details(
     vm: WatchDetailsSource,
     state: PlayerUiState,
     onOpenVideo: (VideoItem) -> Unit,
-    onOpenChannel: (String) -> Unit,
+    onOpenChannel: (ChannelItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -350,13 +351,16 @@ private fun Details(
             val channelId = video.channelId
             if (channelId != null && !state.isOffline) {
                 item(key = "channel") {
+                    val channelName = video.channelName ?: channel?.name.orEmpty()
                     Row(
-                        Modifier.fillMaxWidth().clickable { onOpenChannel(channelId) }.padding(horizontal = 16.dp, vertical = 12.dp),
+                        // The channel's page opens with what is known of it here: it shows that if YouTube's own page for the channel cannot be read.
+                        Modifier.fillMaxWidth().clickable { onOpenChannel(ChannelItem(channelId, channelName, channel?.avatarUrl, channel?.subscriberCount)) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Avatar(channel?.avatarUrl, size = 40)
+                        Avatar(channel?.avatarUrl, size = 40, name = channelName)
                         Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                            Text(video.channelName ?: channel?.name.orEmpty(), style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(channelName, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             channel?.subscriberCount?.let {
                                 Text(Formatters.subscribers(context, it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }

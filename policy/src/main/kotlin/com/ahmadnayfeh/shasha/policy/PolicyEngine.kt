@@ -219,7 +219,7 @@ class PolicyEngine(
     }
 
     /**
-     * v1.2 (owner decision): a video that would start locked in [profile] ([lockFor]) while nothing on the TV can end
+     * v1.1.1 (owner decision): a video that would start locked in [profile] ([lockFor]) while nothing on the TV can end
      * it early ([tvWayOut] null: the adult profile with its escape turned off) must first be confirmed from the
      * parent's phone. The phone is then the only way out, so a phone must be there before the video starts. A
      * child never needs it (the parent PIN on the TV ends a child's lock).

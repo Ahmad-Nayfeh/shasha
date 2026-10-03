@@ -4,23 +4,25 @@ import {brand, rgba} from '../brand';
 import {Icon, IconName} from '../components/Icons';
 import {ScreenPatch} from '../components/Patches';
 import {fr, Screen, TvFrame} from '../components/Tv';
-import {Chip, CrossedOut, FocusRing, Header} from '../components/ui';
+import {atEnd, atStart, Chip, CrossedOut, featureTv, FocusRing, Header, mx} from '../components/ui';
 import {clamp, easeInOut, easeOut, mix, sp, tween} from '../lib/anim';
-import {FEATURE_TV, rectToStage} from '../lib/layout';
+import {rectToStage} from '../lib/layout';
+import {dir, flowSign, isEn, t} from '../lib/lang';
 import {focusRect} from '../lib/screens';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // s03 — home: the newest videos of the channels you chose (no account), newest first; nothing is forced on you
 // (no autoplay chain, no endless feed).
 
-const TV = FEATURE_TV;
-// the channels of the capture's first row (right → left), so each RSS dot lands on its own card
-const CHANNELS: Array<[string, string, string]> = [
-  ['ع', 'عالم الطبيعة', '#4A525C'],
-  ['S', 'Space Lab', '#6B2748'],
-  ['ق', 'قناة القرآن الكريم', '#6B4721'],
-  ['م', 'مطبخ سلمى', '#26386B'],
-];
+const TV = featureTv();
+// the channels of the capture's first row (right → left in Arabic, left → right in English), so each RSS dot lands on
+// its own card; the avatar's letter is the first letter of the name in the language of the render
+const CHANNELS = [
+  [t('عالم الطبيعة'), '#4A525C'],
+  ['Space Lab', '#6B2748'],
+  [t('قناة القرآن الكريم'), '#6B4721'],
+  [t('مطبخ سلمى'), '#26386B'],
+] as Array<[string, string]>;
 
 export const S03Home: React.FC<{scene: Scene}> = ({scene}) => {
   const f = useCurrentFrame();
@@ -35,16 +37,16 @@ export const S03Home: React.FC<{scene: Scene}> = ({scene}) => {
   const reveal = tween(f, tOpen + 4, 34, easeOut); // home rows settle top → bottom
   const fCard = tNewest + 40;
 
-  const avX = 1742;
+  const avX = mx(1742);
   const avY = (i: number) => 330 + i * 118;
   const row1 = rectToStage(TV, focusRect('home_adult', 'row1'));
   const channelsOut = tween(f, tNone1 - 14, 14);
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="جولة في «شاشة»" title="الرئيسية" />
+      <Header kicker={t('جولة في «شاشة»')} title={t('الرئيسية')} />
 
-      <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)}>
+      <TvFrame x={TV.x + (1 - tvIn) * -60 * flowSign} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)}>
         <div
           style={{
             position: 'absolute',
@@ -74,24 +76,25 @@ export const S03Home: React.FC<{scene: Scene}> = ({scene}) => {
 
       {/* channels → RSS → home */}
       <div style={{opacity: 1 - channelsOut}}>
-        <div style={{position: 'absolute', right: 90, top: 244, fontSize: 26, fontWeight: 600, color: brand.muted, opacity: tween(f, tChannels - 6, 14)}}>
-          قنواتك
+        <div style={{position: 'absolute', ...atStart(90), top: 244, fontSize: 26, fontWeight: 600, color: brand.muted, opacity: tween(f, tChannels - 6, 14)}}>
+          {t('قنواتك')}
         </div>
-        {CHANNELS.map(([l, name, c], i) => {
-          const t = sp(f, tChannels - 6 + i * 5, {damping: 20});
+        {CHANNELS.map(([name, c], i) => {
+          const l = [...name][0];
+          const k = sp(f, tChannels - 6 + i * 5, {damping: 20});
           return (
             <div
               key={name}
               style={{
                 position: 'absolute',
-                right: 90,
+                ...atStart(90),
                 top: avY(i),
                 display: 'flex',
                 alignItems: 'center',
                 gap: 20,
-                direction: 'rtl',
-                opacity: clamp(t * 1.4),
-                transform: `translateX(${(1 - t) * -30}px)`,
+                direction: dir,
+                opacity: clamp(k * 1.4),
+                transform: `translateX(${(1 - k) * -30 * flowSign}px)`,
               }}
             >
               <div
@@ -113,7 +116,7 @@ export const S03Home: React.FC<{scene: Scene}> = ({scene}) => {
                 <div
                   style={{
                     position: 'absolute',
-                    left: -6,
+                    ...atEnd(-6),
                     bottom: -6,
                     width: 38,
                     height: 38,
@@ -136,18 +139,18 @@ export const S03Home: React.FC<{scene: Scene}> = ({scene}) => {
           {CHANNELS.map((_, i) =>
             [0, 1, 2].map((k) => {
               const start = tNewest + i * 5 + k * 7;
-              const t = tween(f, start, 30, easeInOut);
-              if (t <= 0 || t >= 1) return null;
-              const x0 = avX - 30;
+              const u = tween(f, start, 30, easeInOut);
+              if (u <= 0 || u >= 1) return null;
+              const x0 = isEn ? avX + 30 : avX - 30;
               const y0 = avY(i) + 42;
-              const x1 = row1[0] + row1[2] * (0.88 - i * 0.24);
+              const x1 = row1[0] + row1[2] * (isEn ? 0.12 + i * 0.24 : 0.88 - i * 0.24);
               const y1 = row1[1] + row1[3] * 0.5;
               const cx = mix(x0, x1, 0.5);
               const cy = Math.min(y0, y1) - 120;
-              const x = (1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * cx + t * t * x1;
-              const y = (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * cy + t * t * y1;
+              const x = (1 - u) * (1 - u) * x0 + 2 * (1 - u) * u * cx + u * u * x1;
+              const y = (1 - u) * (1 - u) * y0 + 2 * (1 - u) * u * cy + u * u * y1;
               return (
-                <g key={`${i}${k}`} opacity={Math.sin(t * Math.PI)}>
+                <g key={`${i}${k}`} opacity={Math.sin(u * Math.PI)}>
                   <circle cx={x} cy={y} r={12} fill={rgba(brand.primary, 0.25)} />
                   <circle cx={x} cy={y} r={6} fill={brand.primaryBright} />
                 </g>
@@ -155,18 +158,18 @@ export const S03Home: React.FC<{scene: Scene}> = ({scene}) => {
             }),
           )}
         </svg>
-        <div style={{position: 'absolute', right: 90, top: 820, display: 'flex', gap: 18, direction: 'rtl'}}>
-          <Chip icon="clock" label="الأحدث أولاً" size={26} t={sp(f, tNewest + 6, {damping: 20})} />
-          <Chip icon="userSlash" label="بلا حساب" size={26} t={sp(f, tChannels + 30, {damping: 20})} />
+        <div style={{position: 'absolute', ...atStart(90), top: 820, display: 'flex', gap: 18, direction: dir}}>
+          <Chip icon="clock" label={t('الأحدث أولاً')} size={26} t={sp(f, tNewest + 6, {damping: 20})} />
+          <Chip icon="userSlash" label={t('بلا حساب')} size={26} t={sp(f, tChannels + 30, {damping: 20})} />
         </div>
       </div>
 
       {/* what is NOT forced on you, crossed out — in the right column after the channels */}
-      <div style={{position: 'absolute', right: 90, top: 330, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 30, direction: 'rtl'}}>
+      <div style={{position: 'absolute', ...atStart(90), top: 330, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 30, direction: dir}}>
         {(
           [
-            ['تشغيل تلقائي لا ينتهي', tNone1 - 2, tNone1 + 18, 'play'],
-            ['تمرير بلا نهاية', tNone2 - 2, tNone2 + 18, 'flame'],
+            [t('تشغيل تلقائي لا ينتهي'), tNone1 - 2, tNone1 + 18, 'play'],
+            [t('تمرير بلا نهاية'), tNone2 - 2, tNone2 + 18, 'flame'],
           ] as Array<[string, number, number, IconName]>
         ).map(([label, from, strike, icon]) => (
           <CrossedOut key={label} from={from} strikeAt={strike}>

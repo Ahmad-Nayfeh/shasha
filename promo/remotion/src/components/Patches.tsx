@@ -1,7 +1,7 @@
 import React from 'react';
 import {Img} from 'remotion';
 import {brand} from '../brand';
-import {captureSize, PatchOp, screenPatch, screenSrc} from '../lib/screens';
+import {captureSize, isEnglishScreen, PatchOp, screenPatch, screenSrc} from '../lib/screens';
 import {Icon, IconName} from './Icons';
 import {QrCode} from './QrCode';
 
@@ -26,7 +26,7 @@ const levels = (from: string, to: string) => {
 const num = (v: unknown, d = 0) => (typeof v === 'number' ? v : d);
 const str = (v: unknown, d = '') => (typeof v === 'string' ? v : d);
 
-const Op: React.FC<{op: PatchOp; src: string | null; W: number; H: number; id: string}> = ({op, src, W, H, id}) => {
+const Op: React.FC<{op: PatchOp; src: string | null; W: number; H: number; id: string; ltr?: boolean}> = ({op, src, W, H, id, ltr}) => {
   const x = num(op.x);
   const y = num(op.y);
   const w = num(op.w);
@@ -120,7 +120,7 @@ const Op: React.FC<{op: PatchOp; src: string | null; W: number; H: number; id: s
             fontSize: num(op.size, 32),
             fontWeight: num(op.weight, 500),
             color: str(op.color, brand.text),
-            direction: 'rtl',
+            direction: ltr ? 'ltr' : 'rtl', // the English capture's patches carry English text
             whiteSpace: 'nowrap',
             lineHeight: 1,
           }}
@@ -161,10 +161,11 @@ export const ScreenPatch: React.FC<{name: string; patch: string; opacity?: numbe
   if (!src || !ops.length || opacity <= 0) return null;
   const [W, H] = captureSize(name);
   const k = (width ?? W) / W;
+  const ltr = isEnglishScreen(name);
   return (
     <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `scale(${k})`, transformOrigin: '0 0', opacity, pointerEvents: 'none'}}>
       {ops.map((op, i) => (
-        <Op key={i} op={op} src={src} W={W} H={H} id={`${name}-${patch}-${i}`} />
+        <Op key={i} op={op} src={src} W={W} H={H} id={`${name}-${patch}-${i}`} ltr={ltr} />
       ))}
     </div>
   );

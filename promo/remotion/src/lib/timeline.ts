@@ -1,9 +1,22 @@
 // Timing model. Everything is derived from ../data/timeline.json (scene windows + sentence cues, generated
 // from the real narration) and ../data/words.json (word timings from tools/align_words.py). Nothing is
 // hard-coded in frames: scenes ask for beats by the *spoken* words (cue.text_tts).
-import timelineJson from '../data/timeline.json';
-import wordsJson from '../data/words.json';
-import wordsMobileJson from '../data/words-mobile.json';
+// The English version (./lang.ts) reads timeline-en.json and words*-en.json instead; the scenes still ask for their
+// beats in Arabic, and ../i18n/anchors-en.json gives the English phrase spoken at the same moment.
+import timelineArJson from '../data/timeline.json';
+import timelineEnJson from '../data/timeline-en.json';
+import wordsArJson from '../data/words.json';
+import wordsMobileArJson from '../data/words-mobile.json';
+import wordsEnJson from '../data/words-en.json';
+import wordsMobileEnJson from '../data/words-mobile-en.json';
+import anchorsEnInstall from '../i18n/anchors-en-install.json';
+import anchorsEnMobile from '../i18n/anchors-en-mobile.json';
+import anchorsEnTour from '../i18n/anchors-en-tour.json';
+import {isEn} from './lang';
+
+const timelineJson = isEn ? timelineEnJson : timelineArJson;
+const wordsJson = isEn ? wordsEnJson : wordsArJson;
+const wordsMobileJson = isEn ? wordsMobileEnJson : wordsMobileArJson;
 
 export const FPS = 30;
 
@@ -101,26 +114,68 @@ export type Beats = {
   duration: number;
 };
 
+const findPhrase = (scene: Scene, ws: Word[], phrase: string, occurrence: number) => {
+  const nw = ws.map((x) => normWord(x.w));
+  const toks = phrase.split(/\s+/).map(normWord).filter(Boolean);
+  let count = 0;
+  for (let i = 0; i + toks.length <= nw.length; i++) {
+    if (toks.every((t, k) => nw[i + k] === t)) {
+      if (count === occurrence) return {i, n: toks.length};
+      count++;
+    }
+  }
+  throw new Error(`beat "${phrase}" not found in ${scene.id}`);
+};
+
+// --- English anchors -------------------------------------------------------------------------------------
+// ../i18n/anchors-en-*.json: {sceneId: {arabicPhrase: englishPhrase | [englishPhrase, occurrence]}}. A key
+// "phrase#1" is the Arabic phrase's second occurrence. An anchor with no English yet falls back to the same relative
+// moment of the scene's voice (the scripts say the same things in the same order), with a warning:
+// tools/check_i18n.mjs lists them.
+type AnchorMap = Record<string, Record<string, string | [string, number]>>;
+const ANCHORS = {...anchorsEnTour, ...anchorsEnInstall, ...anchorsEnMobile} as unknown as AnchorMap;
+const arScenes = (timelineArJson as unknown as Timeline).scenes;
+const arWords = {...(wordsArJson as unknown as WordsFile), ...(wordsMobileArJson as unknown as WordsFile)};
+const warnedAnchors = new Set<string>();
+
+const englishAnchor = (scene: Scene, phrase: string, occurrence: number): [string, number] | null => {
+  const m = ANCHORS[scene.id]?.[`${phrase}#${occurrence}`] ?? (occurrence === 0 ? ANCHORS[scene.id]?.[phrase] : undefined);
+  if (m === undefined) return null;
+  return Array.isArray(m) ? m : [m, 0];
+};
+
+/** The moment (seconds from scene start) of an Arabic phrase, carried over to the English voice of the scene. */
+const relativeFallback = (scene: Scene, phrase: string, occurrence: number, which: 'start' | 'end'): number => {
+  const key = scene.id + '|' + phrase;
+  if (!warnedAnchors.has(key)) {
+    warnedAnchors.add(key);
+    console.warn(`[i18n] no English anchor for «${phrase}» in ${scene.id}: using the same relative moment`);
+  }
+  const ar = arScenes.find((x) => x.id === scene.id);
+  const aw = arWords[scene.id]?.words;
+  if (!ar || !aw) return scene.voice_offset_s;
+  const {i, n} = findPhrase(ar, aw, phrase, occurrence);
+  const tAr = which === 'start' ? aw[i].s : aw[i + n - 1].e;
+  const rel = (tAr - ar.voice_offset_s) / Math.max(0.1, ar.audio_duration_s);
+  return scene.voice_offset_s + rel * scene.audio_duration_s;
+};
+
 export const beatsFor = (scene: Scene): Beats => {
   const ws = sceneWords(scene);
-  const nw = ws.map((x) => normWord(x.w));
-  const find = (phrase: string, occurrence = 0) => {
-    const toks = phrase.split(/\s+/).map(normWord).filter(Boolean);
-    let count = 0;
-    for (let i = 0; i + toks.length <= nw.length; i++) {
-      if (toks.every((t, k) => nw[i + k] === t)) {
-        if (count === occurrence) return {i, n: toks.length};
-        count++;
-      }
+  const locate = (p: string, o: number, which: 'start' | 'end'): number => {
+    let phrase = p;
+    let occurrence = o;
+    if (isEn) {
+      const en = englishAnchor(scene, p, o);
+      if (!en) return Math.round(relativeFallback(scene, p, o, which) * FPS);
+      [phrase, occurrence] = en;
     }
-    throw new Error(`beat "${phrase}" not found in ${scene.id}`);
+    const {i, n} = findPhrase(scene, ws, phrase, occurrence);
+    return Math.round((which === 'start' ? ws[i].s : ws[i + n - 1].e) * FPS);
   };
   return {
-    at: (p, o = 0) => Math.round(ws[find(p, o).i].s * FPS),
-    end: (p, o = 0) => {
-      const {i, n} = find(p, o);
-      return Math.round(ws[i + n - 1].e * FPS);
-    },
+    at: (p, o = 0) => locate(p, o, 'start'),
+    end: (p, o = 0) => locate(p, o, 'end'),
     cue: (i) => ({from: scene.cues[i].start_frame, to: scene.cues[i].end_frame}),
     voice: scene.voice_offset_frames,
     duration: scene.duration_frames,

@@ -1,14 +1,15 @@
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
-import {LogoMark, Wordmark, WORDMARK_RATIO} from '../components/Brand';
+import {HAS_WORDMARK, LogoMark, Wordmark, WORDMARK_RATIO} from '../components/Brand';
 import {HomePage} from '../components/MobileScreens';
 import {PhoneStage, SidePill} from '../components/MobileStage';
 import {clamp, easeInOut, easeOut, mix, sp, tween} from '../lib/anim';
+import {isEn, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 import {brand} from '../brand';
 
 // m01 — logo reveal, then the phone with the app's home feed; «يوتيوب هادئ» as a pill, the ads and the sign-in
-// crossed out as they are named.
+// crossed out as they are named. The logo parks top-right in Arabic, top-left in English.
 
 export const M01Intro: React.FC<{scene: Scene}> = ({scene}) => {
   const f = useCurrentFrame();
@@ -18,7 +19,7 @@ export const M01Intro: React.FC<{scene: Scene}> = ({scene}) => {
   const tAds = b.at('إعلانات');
   const tLogin = b.at('تسجيل');
 
-  // logo reveal (as the TV video's intro), then it parks top-right
+  // logo reveal (as the TV video's intro), then it parks top-right (top-left in English)
   const screenIn = sp(f, 4, {damping: 18, stiffness: 90});
   const tri = tween(f, 22, 26, easeOut);
   const dot = (start: number) => {
@@ -31,23 +32,25 @@ export const M01Intro: React.FC<{scene: Scene}> = ({scene}) => {
   const float = Math.sin(f / 19) * 3 * (1 - park);
   const markW = mix(300, 62, park);
   const S = (markW / 751) * 1024;
-  const cx = mix(960, 1792, park);
-  const cy = mix(446, 104, park);
+  const cx = mix(960, isEn ? 1920 - 1792 : 1792, park);
+  // with no wordmark below it (English), the mark is centred on the stage (its screen sits 139 box units under the mark's centre)
+  const cy = mix(HAS_WORDMARK ? 446 : 540 + (139 * ((300 / 751) * 1024)) / 1024, 104, park);
   const wmW = mix(340, 122, park);
   const wmH = wmW * WORDMARK_RATIO;
-  const wmCx = mix(960, cx - markW / 2 - 20 - wmW / 2, park);
+  const wmCx = mix(960, isEn ? cx + markW / 2 + 20 + wmW / 2 : cx - markW / 2 - 20 - wmW / 2, park);
   const wmCy = mix(700, cy - 6, park);
 
-  const scroll = tween(f, tPhone + 30, 260, easeInOut) * 300;
+  // the English scene is shorter: the feed scrolls a little faster, to show as much of it
+  const scroll = tween(f, tPhone + 30, isEn ? 130 : 260, easeInOut) * 300;
   return (
     <div style={{position: 'absolute', inset: 0}}>
       <PhoneStage f={f} from={tPhone - 8} glow={brand.primary}>
         <HomePage scroll={scroll} />
       </PhoneStage>
 
-      <SidePill f={f} at={tYt} icon="moon" label="يوتيوب هادئ" top={330} />
-      <SidePill f={f} at={tAds - 8} icon="tag" label="إعلانات" top={460} crossAt={tAds + 6} />
-      <SidePill f={f} at={tLogin - 8} icon="user" label="تسجيل الدخول" top={590} crossAt={tLogin + 12} />
+      <SidePill f={f} at={tYt} icon="moon" label={t('يوتيوب هادئ')} top={330} />
+      <SidePill f={f} at={tAds - 8} icon="tag" label={t('إعلانات')} top={460} crossAt={tAds + 6} />
+      <SidePill f={f} at={tLogin - 8} icon="user" label={t('تسجيل الدخول')} top={590} crossAt={tLogin + 12} />
 
       <div style={{position: 'absolute', left: cx - 512 * (S / 1024), top: cy - 651 * (S / 1024), width: S, height: S, transform: `translateY(${float}px)`}}>
         <LogoMark

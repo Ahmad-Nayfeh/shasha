@@ -49,7 +49,7 @@ import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import kotlinx.coroutines.delay
 
-/** What the «أكّد من الجوال» prompt reads while it waits (v1.2): it changes by itself, so it is read again and again. */
+/** What the «أكّد من الجوال» prompt reads while it waits (v1.1.1): it changes by itself, so it is read again and again. */
 interface PhoneWait {
     /** Seconds before the TV stops waiting for the phone (0 when nothing waits). */
     fun secondsLeft(): Int
@@ -71,7 +71,7 @@ internal fun PhoneConfirmPrompt(title: String, wait: PhoneWait, onCancel: () -> 
 }
 
 /**
- * v1.2: the video would start in Serious Mode while only the phone could end it early (the adult's way out on the TV is
+ * v1.1.1: the video would start in Serious Mode while only the phone could end it early (the adult's way out on the TV is
  * off), so it waits for the parent's «تأكيد» on the phone. A calm card over the dark player, nothing plays: the
  * question, the video's title, a waiting indicator with the time left, and «إلغاء» (it has the focus). With no phone
  * there ([phoneConnected] false: none paired, or none polled in the last minute) it says how to get one, with

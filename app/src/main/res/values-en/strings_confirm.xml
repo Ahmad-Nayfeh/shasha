@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- v1.2: Serious Mode is two switches, one per kind of profile (both on by default). -->
+    <!-- v1.1.1: Serious Mode is two switches, one per kind of profile (both on by default). -->
     <string name="serious_children">Serious Mode for kids\' profiles</string>
     <string name="serious_children_body">A kid\'s video plays to the end, unless the parent PIN ends it (on the TV or the phone).</string>
     <string name="serious_children_off_note">Off for kids\' profiles: Back leaves any video there.</string>
@@ -10,7 +10,7 @@
     <string name="serious_escape_needs_phone">No phone is paired, so the on-screen way out stays on: without it nothing could end an adult\'s video early. Pair a phone in Settings → Phone remote first.</string>
     <string name="serious_escape_off_note">The on-screen way out is off: every adult video must first be confirmed from the phone.</string>
 
-    <!-- v1.2: a video that only the phone could end early waits for Confirm on the phone before it starts. -->
+    <!-- v1.1.1: a video that only the phone could end early waits for Confirm on the phone before it starts. -->
     <string name="confirm_phone_title">To play this video in Serious Mode, confirm from the phone</string>
     <string name="confirm_phone_body">Open Shasha\'s page on your phone and tap Confirm. The on-screen way out is off, so only the parent section on the phone can end this video early.</string>
     <string name="confirm_phone_waiting">Waiting for the phone: cancelled in %1$s</string>
@@ -20,7 +20,7 @@
     <string name="confirm_refused">The phone declined this video.</string>
     <string name="confirm_timed_out">The phone did not confirm within 2 minutes, so the video did not play.</string>
 
-    <!-- v1.2: a link from the phone waits on the TV for Accept; what plays now goes on meanwhile. -->
+    <!-- v1.1.1: a link from the phone waits on the TV for Accept; what plays now goes on meanwhile. -->
     <string name="cast_request_label">Play request from the phone:</string>
     <string name="cast_request_body">What is on now keeps playing until you accept.</string>
     <string name="cast_accept">Accept</string>

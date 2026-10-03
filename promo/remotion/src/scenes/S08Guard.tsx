@@ -1,21 +1,21 @@
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
-import {brand, rgba} from '../brand';
+import {arDigits, brand, rgba} from '../brand';
 import {Icon, IconName} from '../components/Icons';
 import {Launcher} from '../components/Launcher';
 import {Remote} from '../components/Remote';
 import {Screen, TvFrame} from '../components/Tv';
-import {Chip, Header} from '../components/ui';
+import {atStart, Chip, featureTv, Header, mx, stepOf} from '../components/ui';
 import {clamp, easeInOut, easeOut, mix, sp, tween} from '../lib/anim';
-import {FEATURE_TV} from '../lib/layout';
+import {flowSign, isEn, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // s08 — the guard: Home pressed during a lock → the launcher appears → the guard covers it → back to Shasha.
 
-const TV = FEATURE_TV;
+const TV = featureTv();
 
-const Step: React.FC<{n: string; icon: IconName; label: string; on: number; t: number; color: string}> = ({n, icon, label, on, t, color}) => (
-  <div style={{display: 'flex', alignItems: 'center', gap: 22, opacity: clamp(t * 1.4) * mix(0.45, 1, on), transform: `translateX(${(1 - t) * -30}px)`}}>
+const Step: React.FC<{n: string; icon: IconName; label: string; on: number; t: number; color: string}> = ({n, icon, label, on, t: k, color}) => (
+  <div style={{display: 'flex', alignItems: 'center', gap: 22, opacity: clamp(k * 1.4) * mix(0.45, 1, on), transform: `translateX(${(1 - k) * -30 * flowSign}px)`}}>
     <div
       style={{
         width: 84,
@@ -32,7 +32,7 @@ const Step: React.FC<{n: string; icon: IconName; label: string; on: number; t: n
     </div>
     <div>
       <div style={{fontSize: 22, color: brand.muted, fontWeight: 600}}>{n}</div>
-      <div style={{fontSize: 32, fontWeight: 600, color: brand.text}}>{label}</div>
+      <div style={{fontSize: isEn ? 30 : 32, fontWeight: 600, color: brand.text}}>{label}</div>
     </div>
   </div>
 );
@@ -60,9 +60,9 @@ export const S08Guard: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="حماية الأطفال" index="٤ / ٥" title="الحارس" />
+      <Header kicker={t('حماية الأطفال')} index={stepOf(4, 5)} title={t('الحارس')} />
 
-      <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)} glowColor={brand.kids}>
+      <TvFrame x={TV.x + (1 - tvIn) * -60 * flowSign} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)} glowColor={brand.kids}>
         <Screen name="kids_video" />
         {/* another app (the launcher) slides up over it */}
         {launcher > 0 && back < 1 ? (
@@ -71,16 +71,16 @@ export const S08Guard: React.FC<{scene: Scene}> = ({scene}) => {
           </div>
         ) : null}
         <Screen name="guard_overlay" opacity={guardIn * (1 - back)} />
-        {/* shield sweep */}
+        {/* shield sweep (right → left in Arabic, left → right in English) */}
         {sweep > 0 && sweep < 1 ? (
           <div
             style={{
               position: 'absolute',
               top: 0,
               bottom: 0,
-              left: mix(1920, -700, sweep),
+              left: isEn ? mix(-700, 1920, sweep) : mix(1920, -700, sweep),
               width: 700,
-              background: `linear-gradient(90deg, transparent, ${rgba(brand.primary, 0.5)} 60%, ${rgba(brand.primary, 0.85)})`,
+              background: `linear-gradient(${isEn ? 270 : 90}deg, transparent, ${rgba(brand.primary, 0.5)} 60%, ${rgba(brand.primary, 0.85)})`,
               display: 'grid',
               placeItems: 'center',
             }}
@@ -92,15 +92,15 @@ export const S08Guard: React.FC<{scene: Scene}> = ({scene}) => {
         <div style={{position: 'absolute', inset: 0, boxShadow: `inset 0 0 0 10px ${brand.primary}`, opacity: Math.sin(clamp((f - tBack - 6) / 24) * Math.PI) * 0.8}} />
       </TvFrame>
 
-      <Remote x={1600} y={300} scale={0.95} rotate={-8} opacity={clamp(tvIn) * (1 - remoteOut)} presses={[{btn: 'home', f: press, color: brand.amber}]} />
+      <Remote x={mx(1600, 150 * 0.95)} y={300} scale={0.95} rotate={-8 * flowSign} opacity={clamp(tvIn) * (1 - remoteOut)} presses={[{btn: 'home', f: press, color: brand.amber}]} />
 
-      <div style={{position: 'absolute', right: 90, top: 300, display: 'flex', flexDirection: 'column', gap: 38, opacity: 1 - 0}}>
-        <Step n="١" icon="home" label="ضغط زر Home" on={on1 * (1 - on2 * 0.6)} t={stepsIn(0) * remoteOut} color={brand.amber} />
-        <Step n="٢" icon="shieldCheck" label="الحارس يغطي التطبيق الآخر" on={on2 * (1 - on3 * 0.6)} t={stepsIn(1) * remoteOut} color={brand.primary} />
-        <Step n="٣" icon="tv" label="العودة إلى «شاشة»" on={on3} t={stepsIn(2) * remoteOut} color={brand.primary} />
+      <div style={{position: 'absolute', ...atStart(90), top: 300, display: 'flex', flexDirection: 'column', gap: 38, opacity: 1 - 0}}>
+        <Step n={arDigits(1)} icon="home" label={t('ضغط زر Home')} on={on1 * (1 - on2 * 0.6)} t={stepsIn(0) * remoteOut} color={brand.amber} />
+        <Step n={arDigits(2)} icon="shieldCheck" label={t('الحارس يغطي التطبيق الآخر')} on={on2 * (1 - on3 * 0.6)} t={stepsIn(1) * remoteOut} color={brand.primary} />
+        <Step n={arDigits(3)} icon="tv" label={t('العودة إلى «شاشة»')} on={on3} t={stepsIn(2) * remoteOut} color={brand.primary} />
       </div>
-      <div style={{position: 'absolute', right: 90, top: 740}}>
-        <Chip icon="warning" label="أفضل جهد — يعتمد على صلاحيات ADB" tone="amber" size={24} t={sp(f, tBack + 10, {damping: 20})} />
+      <div style={{position: 'absolute', ...atStart(90), top: 740}}>
+        <Chip icon="warning" label={t('أفضل جهد — يعتمد على صلاحيات ADB')} tone="amber" size={24} t={sp(f, tBack + 10, {damping: 20})} />
       </div>
     </div>
   );

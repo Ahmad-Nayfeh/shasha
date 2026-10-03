@@ -5,15 +5,16 @@ import {Icon, IconName} from '../components/Icons';
 import {Remote} from '../components/Remote';
 import {PinDotsOverlay} from '../components/Overlays';
 import {fr, Screen, TvFrame} from '../components/Tv';
-import {Card, FocusRing, Header} from '../components/ui';
+import {atEnd, atStart, Card, featureTv, FocusRing, Header, mx, stepOf} from '../components/ui';
 import {clamp, easeInOut, mix, sp, tween} from '../lib/anim';
 import {FEATURE_TV, tvH} from '../lib/layout';
+import {dir, flowSign, isEn, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // s04 — profiles: the adult profile is protected by a PIN; the child profile only shows the channels you
 // allowed, and leaving it needs the parents' PIN.
 
-const TV = FEATURE_TV;
+const TV = featureTv();
 
 const PinDots: React.FC<{filled: number; c?: string}> = ({filled, c = brand.primary}) => (
   <div style={{display: 'flex', gap: 22, direction: 'ltr'}}>
@@ -36,15 +37,15 @@ const PinDots: React.FC<{filled: number; c?: string}> = ({filled, c = brand.prim
   </div>
 );
 
-const NoTile: React.FC<{icon: IconName; label: string; t: number; lock?: boolean}> = ({icon, label, t, lock}) => (
+const NoTile: React.FC<{icon: IconName; label: string; t: number; lock?: boolean}> = ({icon, label, t: k, lock}) => (
   <div
     style={{
       display: 'flex',
       alignItems: 'center',
       gap: 24,
-      opacity: clamp(t * 1.4),
-      transform: `translateX(${(1 - t) * -40}px) scale(${mix(0.9, 1, t)})`,
-      direction: 'rtl',
+      opacity: clamp(k * 1.4),
+      transform: `translateX(${(1 - k) * -40 * flowSign}px) scale(${mix(0.9, 1, k)})`,
+      direction: dir,
     }}
   >
     <div
@@ -59,11 +60,11 @@ const NoTile: React.FC<{icon: IconName; label: string; t: number; lock?: boolean
         placeItems: 'center',
       }}
     >
-      <Icon name={icon} size={54} color={brand.kids} stroke={2.2} />
+      <Icon name={icon} size={54} color={brand.kids} stroke={2.2} style={icon === 'exit' && isEn ? {transform: 'scaleX(-1)'} : undefined} />
       <div
         style={{
           position: 'absolute',
-          left: -12,
+          ...atEnd(-12),
           top: -12,
           width: 42,
           height: 42,
@@ -72,7 +73,7 @@ const NoTile: React.FC<{icon: IconName; label: string; t: number; lock?: boolean
           display: 'grid',
           placeItems: 'center',
           boxShadow: '0 6px 16px rgba(0,0,0,0.4)',
-          transform: `scale(${clamp(t * 1.2)})`,
+          transform: `scale(${clamp(k * 1.2)})`,
         }}
       >
         <Icon name={lock ? 'lock' : 'x'} size={26} color="#2B1A00" stroke={3} />
@@ -109,19 +110,21 @@ export const S05Profiles: React.FC<{scene: Scene}> = ({scene}) => {
   const intr = tween(f, tChosen + 12, 26, easeInOut);
   const bounce = tween(f, tChosen + 38, 16, easeInOut);
   const intrOut = tween(f, tChosen + 50, 16);
-  const wallX = TV.x + TV.w + 30;
+  // the wall stands at the TV's side that faces the column, the card comes from the column's side (Arabic coordinates,
+  // mirrored in English by atEnd)
+  const wallX = FEATURE_TV.x + FEATURE_TV.w + 30;
   const cardX = mix(1500, wallX + 8, intr) + bounce * 70;
   const wallFlash = Math.max(0, Math.sin(clamp((f - (tChosen + 36)) / 22) * Math.PI));
 
   // what the child's home (kids_home capture) shows: two playlists + a channel from the allow-list
-  const channels = ['تعلم الحروف مع أرنوب', 'تجارب علمية للصغار', 'حكايات قبل النوم'];
+  const channels = [t('تعلم الحروف مع أرنوب'), t('تجارب علمية للصغار'), t('حكايات قبل النوم')];
   return (
     <div style={{position: 'absolute', inset: 0}}>
       <AbsoluteFill style={{background: `radial-gradient(60% 60% at 35% 45%, ${rgba(brand.kids, 0.06)}, transparent 70%)`, opacity: warm}} />
-      <Header kicker="حماية الأطفال" index="١ / ٥" title="الملفات: كبار وأطفال" />
+      <Header kicker={t('حماية الأطفال')} index={stepOf(1, 5)} title={t('الملفات: كبار وأطفال')} />
 
       <TvFrame
-        x={TV.x + (1 - tvIn) * -60}
+        x={TV.x + (1 - tvIn) * -60 * flowSign}
         y={TV.y}
         w={TV.w}
         opacity={clamp(tvIn * 1.4)}
@@ -135,17 +138,17 @@ export const S05Profiles: React.FC<{scene: Scene}> = ({scene}) => {
         </div>
         <Screen name="kids_home" opacity={kidsIn} />
         <FocusRing track={[{f: 10, rect: fr('profile_picker', 'adult'), r: 150}]} presses={[fPress]} until={fPress + 8} width={6} />
-        {/* kids-yellow wash sweeping right → left */}
+        {/* kids-yellow wash sweeping right → left (left → right in English) */}
         {wash > 0 && wash < 1 ? (
           <div
             style={{
               position: 'absolute',
               top: -100,
               bottom: -100,
-              left: mix(1920, -900, wash),
+              left: isEn ? mix(-900, 1920, wash) : mix(1920, -900, wash),
               width: 900,
               background: `linear-gradient(90deg, transparent, ${rgba(brand.kids, 0.35)} 50%, transparent)`,
-              transform: 'skewX(-12deg)',
+              transform: isEn ? 'skewX(12deg)' : 'skewX(-12deg)',
             }}
           />
         ) : null}
@@ -155,7 +158,7 @@ export const S05Profiles: React.FC<{scene: Scene}> = ({scene}) => {
       <div
         style={{
           position: 'absolute',
-          left: wallX - 3,
+          ...atEnd(wallX - 3),
           top: TV.y + 40,
           width: 6,
           height: tvH(TV.w) - 80,
@@ -169,7 +172,7 @@ export const S05Profiles: React.FC<{scene: Scene}> = ({scene}) => {
         <div
           style={{
             position: 'absolute',
-            left: cardX,
+            ...atEnd(cardX),
             top: TV.y + 250,
             opacity: clamp(intr * 3) * (1 - intrOut),
             display: 'flex',
@@ -180,32 +183,32 @@ export const S05Profiles: React.FC<{scene: Scene}> = ({scene}) => {
             background: '#1A2029',
             border: '1.5px solid rgba(234,240,246,0.12)',
             filter: 'grayscale(1)',
-            direction: 'rtl',
+            direction: dir,
           }}
         >
           <div style={{width: 120, height: 68, borderRadius: 12, background: 'linear-gradient(135deg, #3A4452, #202833)'}} />
-          <div style={{fontSize: 26, fontWeight: 600, color: brand.muted}}>قناة غير مسموحة</div>
+          <div style={{fontSize: 26, fontWeight: 600, color: brand.muted}}>{t('قناة غير مسموحة')}</div>
         </div>
       ) : null}
 
-      <Remote x={1600} y={340} scale={0.9} rotate={-8} opacity={clamp(tvIn) * (1 - tween(f, fPress + 4, 12))} presses={[{btn: 'ok', f: fPress}]} />
+      <Remote x={mx(1600, 150 * 0.9)} y={340} scale={0.9} rotate={-8 * flowSign} opacity={clamp(tvIn) * (1 - tween(f, fPress + 4, 12))} presses={[{btn: 'ok', f: fPress}]} />
 
       {/* PIN card */}
       <div
         style={{
           position: 'absolute',
-          right: 90,
+          ...atStart(90),
           top: 330,
           opacity: clamp(pinCardIn * 1.4) * (1 - pinCardOut),
-          transform: `translateX(${(1 - pinCardIn) * -40}px)`,
+          transform: `translateX(${(1 - pinCardIn) * -40 * flowSign}px)`,
         }}
       >
         <Card style={{width: 460, padding: '36px 40px', boxSizing: 'border-box'}} tone="teal" glow={filled >= 4 ? 1 : 0}>
           <div style={{display: 'flex', alignItems: 'center', gap: 18}}>
             <Icon name={filled >= 4 ? 'unlock' : 'lock'} size={48} color={brand.primary} stroke={2.2} />
-            <div style={{fontSize: 36, fontWeight: 700}}>ملف الكبار</div>
+            <div style={{fontSize: 36, fontWeight: 700}}>{t('ملف الكبار')}</div>
           </div>
-          <div style={{fontSize: 28, color: brand.muted, margin: '14px 0 26px'}}>يحميه رمز سري (PIN)</div>
+          <div style={{fontSize: 28, color: brand.muted, margin: '14px 0 26px'}}>{t('يحميه رمز سري (PIN)')}</div>
           <PinDots filled={filled} />
         </Card>
       </div>
@@ -214,26 +217,26 @@ export const S05Profiles: React.FC<{scene: Scene}> = ({scene}) => {
       <div
         style={{
           position: 'absolute',
-          right: 90,
+          ...atStart(90),
           top: 300,
           opacity: clamp(allowIn * 1.4) * (1 - allowOut),
-          transform: `translateX(${(1 - allowIn) * -40}px)`,
+          transform: `translateX(${(1 - allowIn) * -40 * flowSign}px)`,
         }}
       >
-        <Card style={{width: 460, padding: '32px 36px', boxSizing: 'border-box'}} tone="kids">
+        <Card style={{width: isEn ? 500 : 460, padding: '32px 36px', boxSizing: 'border-box'}} tone="kids">
           <div style={{display: 'flex', alignItems: 'center', gap: 16}}>
             <Icon name="star" size={44} color={brand.kids} stroke={2.2} />
-            <div style={{fontSize: 34, fontWeight: 700}}>قائمة الطفل</div>
+            <div style={{fontSize: 34, fontWeight: 700}}>{t('قائمة الطفل')}</div>
           </div>
-          <div style={{fontSize: 26, color: brand.muted, margin: '10px 0 18px'}}>فقط ما اخترته أنت</div>
+          <div style={{fontSize: 26, color: brand.muted, margin: '10px 0 18px'}}>{t('فقط ما اخترته أنت')}</div>
           {channels.map((c, i) => {
-            const t = sp(f, tChosen - 4 + i * 6, {damping: 20});
+            const k = sp(f, tChosen - 4 + i * 6, {damping: 20});
             return (
-              <div key={c} style={{display: 'flex', alignItems: 'center', gap: 16, height: 70, opacity: clamp(t * 1.4), transform: `translateX(${(1 - t) * -24}px)`}}>
+              <div key={c} style={{display: 'flex', alignItems: 'center', gap: 16, minHeight: 70, opacity: clamp(k * 1.4), transform: `translateX(${(1 - k) * -24 * flowSign}px)`}}>
                 <div style={{width: 46, height: 46, borderRadius: 999, background: rgba(brand.kids, 0.16), display: 'grid', placeItems: 'center'}}>
                   <Icon name="check" size={28} color={brand.kids} stroke={3} />
                 </div>
-                <div style={{fontSize: 30, fontWeight: 600}}>{c}</div>
+                <div style={{fontSize: 30, fontWeight: 600, lineHeight: isEn ? 1.2 : undefined}}>{c}</div>
               </div>
             );
           })}
@@ -241,8 +244,8 @@ export const S05Profiles: React.FC<{scene: Scene}> = ({scene}) => {
       </div>
 
       {/* no exit without the parents' PIN */}
-      <div style={{position: 'absolute', right: 90, top: 290, display: 'flex', flexDirection: 'column', gap: 34}}>
-        <NoTile icon="exit" label="لا خروج إلا برمز الوالدين" t={sp(f, tExit - 6, {damping: 18})} lock={f > tCode} />
+      <div style={{position: 'absolute', ...atStart(90), top: 290, display: 'flex', flexDirection: 'column', gap: 34}}>
+        <NoTile icon="exit" label={t('لا خروج إلا برمز الوالدين')} t={sp(f, tExit - 6, {damping: 18})} lock={f > tCode} />
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ normalised to about -28 LUFS integrated. Writes public/audio/music_bed.wav (48 k
 
   ../.venv/bin/python tools/make_music.py
   ../.venv/bin/python tools/make_music.py --mobile    (the phone video: timeline-mobile.json, audio-mobile/ -> public/audio-mobile/music_bed.wav)
+  ... --en / --mobile --en                             (the English version: timeline*-en.json, audio*-en/ -> public/audio*-en/)
 """
 import json
 import subprocess
@@ -23,8 +24,10 @@ V = RM.parent
 FFMPEG = str(V / 'bin/ffmpeg')
 SR = 48000
 MOBILE = '--mobile' in sys.argv
-AUDIO = 'audio-mobile' if MOBILE else 'audio'
-tl = json.loads((V / ('timeline-mobile.json' if MOBILE else 'timeline.json')).read_text())
+EN = '--en' in sys.argv   # the English version: timeline-en.json, audio-en/ -> public/audio-en/music_bed.wav
+SFX = '-en' if EN else ''
+AUDIO = ('audio-mobile' if MOBILE else 'audio') + SFX
+tl = json.loads((V / (f'timeline-mobile{SFX}.json' if MOBILE else f'timeline{SFX}.json')).read_text())
 DUR = tl['total_duration_s']
 N = int(DUR * SR)
 t = np.arange(N) / SR

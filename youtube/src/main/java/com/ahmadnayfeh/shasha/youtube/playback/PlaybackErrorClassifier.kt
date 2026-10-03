@@ -8,6 +8,7 @@ import androidx.media3.datasource.HttpDataSource
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind.BLOCKED_403
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind.CONTENT_UNAVAILABLE
+import com.ahmadnayfeh.shasha.youtube.SourceErrorKind.DEVICE_DECODER
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind.EXTRACTION_BROKEN
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind.NETWORK
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind.RATE_LIMITED
@@ -26,13 +27,14 @@ import javax.net.ssl.SSLException
 /**
  * Maps a failure during playback (usually a Media3 PlaybackException) to one [SourceException].
  * The whole cause chain is inspected; the most specific finding wins: an HTTP status from YouTube,
- * then a connectivity problem, and anything else means the stream data or manifests are not what
- * the player expected (EXTRACTION_BROKEN).
+ * then a connectivity problem, then a failure of this device's own decoder (DEVICE_DECODER: the
+ * picture is what YouTube sent, the device could not decode it), and anything else means the stream
+ * data or manifests are not what the player expected (EXTRACTION_BROKEN).
  */
 @OptIn(UnstableApi::class)
 internal object PlaybackErrorClassifier {
 
-    private val priority = listOf(BLOCKED_403, RATE_LIMITED, CONTENT_UNAVAILABLE, NETWORK, EXTRACTION_BROKEN)
+    private val priority = listOf(BLOCKED_403, RATE_LIMITED, CONTENT_UNAVAILABLE, NETWORK, DEVICE_DECODER, EXTRACTION_BROKEN)
 
     fun classify(error: Throwable): SourceException {
         var best: Pair<SourceErrorKind, Throwable>? = null
@@ -61,6 +63,14 @@ internal object PlaybackErrorClassifier {
             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT,
             -> NETWORK
+            // The device's decoder, not YouTube: it could not start, query, or decode what it was given.
+            PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+            PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED,
+            PlaybackException.ERROR_CODE_DECODING_FAILED,
+            PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES,
+            PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
+            PlaybackException.ERROR_CODE_DECODING_RESOURCES_RECLAIMED,
+            -> DEVICE_DECODER
             else -> null
         }
         t is IOException && t.javaClass == IOException::class.java -> NETWORK

@@ -2,6 +2,7 @@ package com.ahmadnayfeh.shasha.mobile.ui.components
 
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
+import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 /** What the menu of a video offers; the root screen provides the implementation ([LocalVideoActions]). */
@@ -13,14 +14,15 @@ interface VideoActions {
 
     fun share(video: VideoItem)
 
-    fun openChannel(channelId: String)
+    /** Opens the page of [channel]: the video's own channel, with the name the video gave (its page shows it until it has more). */
+    fun openChannel(channel: ChannelItem)
 }
 
 private object NoVideoActions : VideoActions {
     override fun toggleWatchLater(video: VideoItem) = Unit
     override fun download(video: VideoItem) = Unit
     override fun share(video: VideoItem) = Unit
-    override fun openChannel(channelId: String) = Unit
+    override fun openChannel(channel: ChannelItem) = Unit
 }
 
 val LocalVideoActions = staticCompositionLocalOf<VideoActions> { NoVideoActions }

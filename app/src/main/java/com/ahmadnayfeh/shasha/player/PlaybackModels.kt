@@ -79,6 +79,13 @@ data class ResumeState(
  */
 const val MAX_AUTO_HEIGHT = 1080
 
+/**
+ * The most a vertical picture needs on the TV, whatever Settings → «الجودة الافتراضية» says: a 9:16 picture is 607 px wide on
+ * a 1080p screen, so 720x1280 is already sharper than the screen shows, and the decoders of weak TV SoCs fail on the biggest
+ * vertical ones (a Short at "1080p" is 1080x1920). The phone app has no such cap: a phone shows vertical video natively.
+ */
+const val MAX_PORTRAIT_SHORT_SIDE = 720
+
 /** Fixed qualities the menu may offer, best first; only those up to the quality cap ([qualityOptions]). */
 val QUALITY_LADDER = listOf(2160, 1440, 1080, 720, 480, 360)
 

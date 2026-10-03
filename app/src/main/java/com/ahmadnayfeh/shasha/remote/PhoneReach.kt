@@ -3,7 +3,7 @@ package com.ahmadnayfeh.shasha.remote
 import kotlinx.coroutines.flow.first
 
 /**
- * Whether the parent's phone can answer the TV (v1.2). A video that only the phone could end early waits for the phone's
+ * Whether the parent's phone can answer the TV (v1.1.1). A video that only the phone could end early waits for the phone's
  * «تأكيد» ([PhoneConfirmations]), and the adult's way out on the TV may only be turned off while a phone is paired.
  */
 interface PhoneReach {

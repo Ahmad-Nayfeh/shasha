@@ -1,9 +1,11 @@
 package com.ahmadnayfeh.shasha.player
 
 import android.content.Context
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
@@ -14,12 +16,15 @@ import androidx.media3.common.VideoSize
 import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.ExoPlaybackException
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.ahmadnayfeh.shasha.data.asSourceException
+import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
+import com.ahmadnayfeh.shasha.youtube.playback.SafePlan
 import com.ahmadnayfeh.shasha.youtube.playback.YouTubeMediaSourceFactory
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,7 +40,13 @@ import kotlinx.coroutines.flow.update
  * [MAX_AUTO_HEIGHT] by default; the cap is applied inside the generated DASH manifest by the YouTube module,
  * on the short side so vertical videos are not cut down), and ExoPlayer adapts between them ("Auto"). Live
  * manifests come from YouTube uncapped, so the track selector applies the same cap ([withAutoQualityCap]). A
- * fixed quality is a TrackSelectionOverride on the same source, so switching does not reload the video.
+ * fixed quality is a TrackSelectionOverride on the same source, so switching does not reload the video. A vertical
+ * picture never goes above [MAX_PORTRAIT_SHORT_SIDE] here, whatever the quality: the decoders of weak TVs fail on the
+ * biggest ones.
+ *
+ * When this TV's decoder fails on the video, [onError] hears it as DEVICE_DECODER after the picture that failed has
+ * been remembered for every video that follows ([YouTubeMediaSourceFactory.recordDecoderFailure]); what to do about it
+ * is the caller's (one more try with a new controller made [safe]: H.264 and small pictures).
  *
  * [onJump] hears every jump of the position (a seek from anywhere: the controls, the phone, a replay, the
  * adult's «تراجع عن التخطي»), from where to where: what was skipped was not played ([PlayedMeter], SPEC §4).
@@ -50,6 +61,7 @@ class PlaybackController(
     private val stream: StreamDetails,
     private val maxQuality: Int = MAX_AUTO_HEIGHT,
     seekStepMs: Long = SEEK_STEP_MS,
+    private val safe: Boolean = false,
     private val onJump: (fromMs: Long, toMs: Long) -> Unit = { _, _ -> },
     private val onAutoSkip: (fromMs: Long, toMs: Long) -> Unit = onJump,
     private val onError: (SourceException) -> Unit,
@@ -67,7 +79,13 @@ class PlaybackController(
         .setSeekBackIncrementMs(seekStepMs)
         .setSeekForwardIncrementMs(seekStepMs)
         .build()
-        .apply { trackSelectionParameters = trackSelectionParameters.withAutoQualityCap(maxQuality) }
+        .apply {
+            trackSelectionParameters = if (safe) {
+                trackSelectionParameters.withSafeQualityCap(maxQuality)
+            } else {
+                trackSelectionParameters.withAutoQualityCap(maxQuality)
+            }
+        }
 
     private val _state = MutableStateFlow(
         PlayerUiState(
@@ -148,7 +166,25 @@ class PlaybackController(
                 player.prepare()
                 return
             }
-            onError(factory.classifyPlaybackError(error))
+            val classified = factory.classifyPlaybackError(error)
+            if (classified.kind == SourceErrorKind.DEVICE_DECODER) rememberFailedPicture(error, classified)
+            onError(classified)
+        }
+    }
+
+    /**
+     * Before anyone decides what to do about it: the picture this TV's decoder failed on is left out of every plan from now
+     * on (this video's retry, and the Shorts that follow). A bonus, not a duty: whatever goes wrong here must not swallow the
+     * error, or the screen would stay black.
+     */
+    private fun rememberFailedPicture(error: PlaybackException, classified: SourceException) {
+        try {
+            val playing = player.videoFormat
+            val failedOn = (error as? ExoPlaybackException)?.rendererFormat ?: playing
+            Log.w(TAG, "The decoder failed (${classified.technicalName}) on $failedOn${if (safe) " in the safe plan" else ""}", error)
+            factory.recordDecoderFailure(error, playing)
+        } catch (e: RuntimeException) {
+            Log.w(TAG, "Could not remember the picture the decoder failed on", e)
         }
     }
 
@@ -269,7 +305,7 @@ class PlaybackController(
 
     private fun load(subtitleLanguage: String?, startPositionMs: Long) {
         try {
-            val source = factory.create(stream, maxQuality, subtitleLanguage)
+            val source = factory.create(stream, maxQuality, subtitleLanguage, maxPortraitShortSide = MAX_PORTRAIT_SHORT_SIDE, safe = safe)
             sourceSubtitle = subtitleLanguage
             player.setMediaSource(source, startPositionMs)
             setTextEnabled(subtitleLanguage != null)
@@ -344,5 +380,18 @@ internal fun TrackSelectionParameters.withAutoQualityCap(maxQuality: Int = MAX_A
         .setViewportSize(viewportWidth(maxQuality), maxQuality, /* viewportOrientationMayChange= */ true)
         .build()
 
+/**
+ * The safe plan ([SafePlan]) for what the factory does not cut: an HLS ladder (a video with no adaptive streams, a live
+ * stream) is chosen by the track selector alone. H.264 first, and no picture above the safe plan's vertical limit: the
+ * orientation is not known before the tracks are, and the lower of its two limits is the safe one.
+ */
+internal fun TrackSelectionParameters.withSafeQualityCap(maxQuality: Int = MAX_AUTO_HEIGHT): TrackSelectionParameters =
+    withAutoQualityCap(minOf(maxQuality, SafePlan.MAX_PORTRAIT_SHORT_SIDE))
+        .buildUpon()
+        .setPreferredVideoMimeType(MimeTypes.VIDEO_H264)
+        .build()
+
 /** The 16:9 width of a quality (rounded like YouTube's own sizes: 480p is 854 wide, 1080p 1920). */
 internal fun viewportWidth(height: Int): Int = (height * 16 + 8) / 9
+
+private const val TAG = "PlaybackController"

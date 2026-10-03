@@ -51,7 +51,7 @@ enum class PhraseMode {
  */
 @Immutable
 data class Behavior(
-    // «الوضع الجاد» (SPEC §4's lock), v1.2: one switch for the children's profiles, one for the adult's (owner decision:
+    // «الوضع الجاد» (SPEC §4's lock), v1.1.1: one switch for the children's profiles, one for the adult's (owner decision:
     // independent, both on by default; v1.1's single switch becomes both, see BehaviorSettings).
     val seriousModeChildren: Boolean = true,
     val seriousModeAdult: Boolean = true,
@@ -254,7 +254,7 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
 
     init {
         scope.launch {
-            // v1.2: a file written by v1.1 has one «الوضع الجاد»; its value becomes both switches, once. Reading it
+            // v1.1.1: a file written by v1.1 has one «الوضع الجاد»; its value becomes both switches, once. Reading it
             // ([decode]) gives the same answer meanwhile, so a failing disk here changes nothing on screen.
             try {
                 store.edit(::migrateSeriousMode)
@@ -301,7 +301,7 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
     suspend fun setAdultEscape(on: Boolean) = put(BehaviorKeys.ADULT_ESCAPE, on)
 
     /**
-     * The TV's «السماح للكبير بالخروج قبل النهاية» (v1.2): turning it OFF needs a paired phone ([phonePaired]), since the
+     * The TV's «السماح للكبير بالخروج قبل النهاية» (v1.1.1): turning it OFF needs a paired phone ([phonePaired]), since the
      * phone's parent section is then the only way to end an adult's video early (and every adult video waits for its
      * «تأكيد»). False, nothing stored, when there is none. Turning it on always works.
      */
@@ -490,7 +490,7 @@ class BehaviorSettings(private val store: DataStore<Preferences>, scope: Corouti
 
         /**
          * v1.1 kept one «الوضع الجاد» for every profile ([BehaviorKeys.LEGACY_SERIOUS_MODE]): its value becomes both
-         * switches (a switch already set keeps its own value), and the old key goes. Nothing to do in a v1.2 file.
+         * switches (a switch already set keeps its own value), and the old key goes. Nothing to do in a v1.1.1 file.
          */
         internal fun migrateSeriousMode(prefs: MutablePreferences) {
             val legacy = prefs[BehaviorKeys.LEGACY_SERIOUS_MODE] ?: return

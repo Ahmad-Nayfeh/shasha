@@ -95,7 +95,7 @@ class RemoteRuntime(
 
     val server = RemoteServer(controller, pinFailures) { token }.apply {
         onError = { Log.w(TAG, "Remote request failed", it) }
-        // v1.2: a phone with the token is paired (once per token on disk: a restart remembers it).
+        // v1.1.1: a phone with the token is paired (once per token on disk: a restart remembers it).
         presence.onSeen = {
             if (!pairedNoted) {
                 pairedNoted = true
@@ -113,7 +113,7 @@ class RemoteRuntime(
         }
     }
 
-    /** When a paired phone last reached the server: its page polls every 2 s while it is open (v1.2). */
+    /** When a paired phone last reached the server: its page polls every 2 s while it is open (v1.1.1). */
     val presence: PhonePresence get() = server.presence
 
     private val _state = MutableStateFlow<RemoteState>(RemoteState.Stopped)

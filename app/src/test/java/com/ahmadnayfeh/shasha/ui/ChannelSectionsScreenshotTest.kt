@@ -7,7 +7,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -17,6 +16,7 @@ import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import com.ahmadnayfeh.shasha.Fixtures
+import com.ahmadnayfeh.shasha.PromoEnglish
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.ui.UiFixtures.NOW
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
@@ -29,7 +29,6 @@ import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.youtube.ChannelSort
 import com.ahmadnayfeh.shasha.youtube.ChannelTab
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
-import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -47,13 +46,14 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = TV_1080P)
 class ChannelSectionsScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     private fun snap(name: String, keys: List<Key> = emptyList(), content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         val pictures = AsyncImagePreviewHandler { request -> UiFixtures.fakeThumbnail(request.data.toString()).asImage() }
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true, LocalAsyncImagePreviewHandler provides pictures) {
-                ShashaTheme { content() }
+                ShashaTheme(language = PromoEnglish.language()) { content() }
             }
         }
         compose.waitForIdle()
@@ -61,7 +61,7 @@ class ChannelSectionsScreenshotTest {
             compose.onRoot().performKeyInput { pressKey(key) }
             compose.waitForIdle()
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     @Composable

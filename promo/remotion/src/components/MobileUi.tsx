@@ -1,11 +1,14 @@
 import React from 'react';
 import {brand, rgba} from '../brand';
+import {digits, dir, endSide, isEn, startSide, t} from '../lib/lang';
 import {LogoMark} from './Brand';
 import {Icon, IconName} from './Icons';
 
 // Building blocks of the phone app's mock screens (the phone video draws the app itself: Remotion components in the
-// app's own palette and Arabic labels from mobile/src/main/res/values-ar/strings.xml, not screenshots). Everything
-// is laid out in phone space: 390 x 844 CSS px, right-to-left, IBM Plex Sans Arabic.
+// app's own palette and labels from mobile/src/main/res/values-ar/strings.xml (Arabic) and values/strings.xml
+// (English), not screenshots). Everything is laid out in phone space: 390 x 844 CSS px, IBM Plex Sans Arabic.
+// The Arabic screens run right-to-left; the English ones are mirrored to left-to-right like the real app in an
+// English phone: `dir` is the direction, `startSide` / `endSide` the CSS sides where a line starts / ends.
 
 export const MW = 390;
 export const MH = 844;
@@ -26,14 +29,17 @@ export const C = {
   error: '#FF6B6B',
 };
 
+/** Style of an arrow that points "back": the drawn arrow points right (→), so the English screens flip it (←). */
+export const BACK_FLIP: React.CSSProperties | undefined = isEn ? {transform: 'scaleX(-1)'} : undefined;
+
 /** The full-screen root of an app screen. */
 export const Screen390: React.FC<{children?: React.ReactNode; bg?: string; style?: React.CSSProperties}> = ({children, bg = C.bg, style}) => (
-  <div style={{position: 'absolute', left: 0, top: 0, width: MW, height: MH, background: bg, overflow: 'hidden', isolation: 'isolate', direction: 'rtl', fontFamily: brand.font, color: C.text, ...style}}>
+  <div style={{position: 'absolute', left: 0, top: 0, width: MW, height: MH, background: bg, overflow: 'hidden', isolation: 'isolate', direction: dir, fontFamily: brand.font, color: C.text, ...style}}>
     {children}
   </div>
 );
 
-export const StatusBar: React.FC<{dark?: boolean; time?: string}> = ({dark = true, time = '٩:٤١'}) => {
+export const StatusBar: React.FC<{dark?: boolean; time?: string}> = ({dark = true, time = digits('9:41')}) => {
   const c = dark ? '#EAF0F6' : '#14202B';
   return (
     <div style={{position: 'absolute', left: 0, top: 0, width: MW, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 26px', direction: 'ltr', fontSize: 15, fontWeight: 600, color: c, zIndex: 20}}>
@@ -66,12 +72,12 @@ export const Thumb: React.FC<{i: number; w: number; h: number; dur?: string; liv
   <div style={{position: 'relative', width: w, height: h, borderRadius: radius, background: thumbBg(i), overflow: 'hidden', flex: 'none', ...style}}>
     {children}
     {dur ? (
-      <div style={{position: 'absolute', left: 6, bottom: 6, padding: '1px 6px', borderRadius: 6, background: 'rgba(0,0,0,0.72)', fontSize: Math.max(11, h * 0.09), fontWeight: 600, direction: 'ltr'}}>{dur}</div>
+      <div style={{position: 'absolute', [endSide]: 6, bottom: 6, padding: '1px 6px', borderRadius: 6, background: 'rgba(0,0,0,0.72)', fontSize: Math.max(11, h * 0.09), fontWeight: 600, direction: 'ltr'}}>{dur}</div>
     ) : null}
     {live ? (
-      <div style={{position: 'absolute', right: 6, bottom: 6, padding: '1px 8px', borderRadius: 6, background: '#FF5C5C', fontSize: 11, fontWeight: 700, color: '#fff'}}>مباشر</div>
+      <div style={{position: 'absolute', [startSide]: 6, bottom: 6, padding: '1px 8px', borderRadius: 6, background: '#FF5C5C', fontSize: 11, fontWeight: 700, color: '#fff'}}>{t('مباشر')}</div>
     ) : null}
-    {progress !== undefined ? <div style={{position: 'absolute', right: 0, bottom: 0, height: 3, width: `${progress * 100}%`, background: '#FF5C5C'}} /> : null}
+    {progress !== undefined ? <div style={{position: 'absolute', [startSide]: 0, bottom: 0, height: 3, width: `${progress * 100}%`, background: '#FF5C5C'}} /> : null}
   </div>
 );
 
@@ -81,13 +87,37 @@ export const Avatar: React.FC<{letter: string; hue?: number; size?: number}> = (
   </div>
 );
 
+/**
+ * The avatar letter of a channel: the Arabic video's own choice (`letter`), or, in the English one, the first letter of
+ * the channel's English name (`name`, already through t()).
+ */
+export const initial = (name: string, letter: string) => (isEn ? name.charAt(0).toUpperCase() : letter);
+
+// The fictional channels of the test data (the same names as the TV video's captures).
+export const CHANNEL = {
+  nature: t('عالم الطبيعة'),
+  calligraphy: t('فنون الخط'),
+  kitchen: t('مطبخ سلمى'),
+  space: t('مختبر الفضاء'),
+  ocean: t('عالم البحار'),
+  stories: t('قصص قبل النوم'),
+};
+export const LETTER = {
+  nature: initial(CHANNEL.nature, t('ع')),
+  calligraphy: initial(CHANNEL.calligraphy, t('ف')),
+  kitchen: initial(CHANNEL.kitchen, t('م')),
+  space: initial(CHANNEL.space, t('ف')),
+  ocean: initial(CHANNEL.ocean, t('ب')),
+  stories: initial(CHANNEL.stories, t('ق')),
+};
+
 export const SAMPLE = [
-  {title: 'رحلة إلى أعماق المحيط: كائنات لم ترها من قبل', channel: 'عالم الطبيعة', meta: '٢٫١ مليون مشاهدة · منذ ساعتين', dur: '12:34', hue: 212, letter: 'ع'},
-  {title: 'أسرار الخط العربي: الثلث والديواني وكيف تبدأ', channel: 'فنون الخط', meta: '٨٥ ألف مشاهدة · منذ ٣ أيام', dur: '14:20', hue: 330, letter: 'ف'},
-  {title: 'وصفة الكنافة النابلسية في البيت خطوة بخطوة', channel: 'مطبخ سلمى', meta: '٣٤٠ ألف مشاهدة · منذ يوم', dur: '9:47', hue: 22, letter: 'م'},
-  {title: 'كيف تعمل الصواريخ؟ دليل مصوّر', channel: 'مختبر الفضاء', meta: '١٫٢ مليون مشاهدة · منذ ٥ ساعات', dur: '18:02', hue: 262, letter: 'ف'},
-  {title: 'قنديل البحر الذي لا يموت', channel: 'عالم البحار', meta: '٩٢٠ ألف مشاهدة · منذ يومين', dur: '8:15', hue: 190, letter: 'ب'},
-  {title: 'حقائق مذهلة عن الثقوب السوداء', channel: 'مختبر الفضاء', meta: '١٫٨ مليون مشاهدة · منذ أسبوع', dur: '22:20', hue: 38, letter: 'ف'},
+  {title: t('رحلة إلى أعماق المحيط: كائنات لم ترها من قبل'), channel: CHANNEL.nature, meta: t('٢٫١ مليون مشاهدة · منذ ساعتين'), dur: '12:34', hue: 212, letter: LETTER.nature},
+  {title: t('أسرار الخط العربي: الثلث والديواني وكيف تبدأ'), channel: CHANNEL.calligraphy, meta: t('٨٥ ألف مشاهدة · منذ ٣ أيام'), dur: '14:20', hue: 330, letter: LETTER.calligraphy},
+  {title: t('وصفة الكنافة النابلسية في البيت خطوة بخطوة'), channel: CHANNEL.kitchen, meta: t('٣٤٠ ألف مشاهدة · منذ يوم'), dur: '9:47', hue: 22, letter: LETTER.kitchen},
+  {title: t('كيف تعمل الصواريخ؟ دليل مصوّر'), channel: CHANNEL.space, meta: t('١٫٢ مليون مشاهدة · منذ ٥ ساعات'), dur: '18:02', hue: 262, letter: LETTER.space},
+  {title: t('قنديل البحر الذي لا يموت'), channel: CHANNEL.ocean, meta: t('٩٢٠ ألف مشاهدة · منذ يومين'), dur: '8:15', hue: 190, letter: LETTER.ocean},
+  {title: t('حقائق مذهلة عن الثقوب السوداء'), channel: CHANNEL.space, meta: t('١٫٨ مليون مشاهدة · منذ أسبوع'), dur: '22:20', hue: 38, letter: LETTER.space},
 ];
 
 export const NavItem: React.FC<{icon: IconName; label: string; on?: boolean}> = ({icon, label, on}) => (
@@ -101,16 +131,16 @@ export const NavItem: React.FC<{icon: IconName; label: string; on?: boolean}> = 
 
 export const BottomNav: React.FC<{active: 'home' | 'search' | 'library' | 'settings'}> = ({active}) => (
   <div style={{position: 'absolute', left: 0, bottom: 0, width: MW, height: 76, background: C.surface, borderTop: `1px solid ${C.outline}`, display: 'flex', justifyContent: 'space-around', alignItems: 'center', paddingTop: 2, zIndex: 10}}>
-    <NavItem icon="home" label="الرئيسية" on={active === 'home'} />
-    <NavItem icon="search" label="بحث" on={active === 'search'} />
-    <NavItem icon="layers" label="مكتبتي" on={active === 'library'} />
-    <NavItem icon="sliders" label="الإعدادات" on={active === 'settings'} />
+    <NavItem icon="home" label={t('الرئيسية')} on={active === 'home'} />
+    <NavItem icon="search" label={t('بحث')} on={active === 'search'} />
+    <NavItem icon="layers" label={t('مكتبتي')} on={active === 'library'} />
+    <NavItem icon="sliders" label={t('الإعدادات')} on={active === 'settings'} />
   </div>
 );
 
 export const TopBar: React.FC<{title: React.ReactNode; back?: boolean; actions?: IconName[]; logo?: boolean}> = ({title, back, actions = [], logo}) => (
   <div style={{position: 'absolute', left: 0, top: 34, width: MW, height: 56, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10, zIndex: 8}}>
-    {back ? <Icon name="arrowRight" size={26} color={C.text} stroke={2.2} /> : null}
+    {back ? <Icon name="arrowRight" size={26} color={C.text} stroke={2.2} style={BACK_FLIP} /> : null}
     {logo ? <LogoMark size={44} /> : null}
     <div style={{flex: 1, fontSize: 22, fontWeight: 700}}>{title}</div>
     {actions.map((a) => (
@@ -128,7 +158,8 @@ export const Chip390: React.FC<{label: string; on?: boolean; icon?: IconName}> =
 
 export const Toggle390: React.FC<{p: number}> = ({p}) => (
   <div style={{position: 'relative', width: 52, height: 30, borderRadius: 15, flex: 'none', background: `rgba(46,196,182,${0.15 + 0.85 * p})`, boxShadow: `inset 0 0 0 2px rgba(${p > 0.5 ? '46,196,182' : '98,114,134'},1)`}}>
-    <div style={{position: 'absolute', top: 5, left: 27 - 22 * p, width: 20, height: 20, borderRadius: 999, background: p > 0.5 ? C.onPrimary : C.faint}} />
+    {/* "on" is the end of the track in the reading direction: left in Arabic, right in English */}
+    <div style={{position: 'absolute', top: 5, left: isEn ? 5 + 22 * p : 27 - 22 * p, width: 20, height: 20, borderRadius: 999, background: p > 0.5 ? C.onPrimary : C.faint}} />
   </div>
 );
 
@@ -143,6 +174,9 @@ export const Row390: React.FC<{icon?: IconName; title: string; sub?: string; tra
   </div>
 );
 
+// English titles are longer than the Arabic ones: two lines at most, then an ellipsis.
+const CLAMP2: React.CSSProperties | null = isEn ? {display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'} : null;
+
 /** A video row: thumbnail + title + channel · meta. */
 export const VideoRow: React.FC<{i: number; w?: number; progress?: number; trailing?: React.ReactNode; opacity?: number; shift?: number; hi?: number}> = ({i, w = 134, progress, trailing, opacity = 1, shift = 0, hi = 0}) => {
   const v = SAMPLE[i % SAMPLE.length];
@@ -150,7 +184,7 @@ export const VideoRow: React.FC<{i: number; w?: number; progress?: number; trail
     <div style={{display: 'flex', gap: 12, padding: '8px 14px', opacity, transform: `translateY(${shift}px)`, background: hi ? rgba(C.primary, 0.1 * hi) : 'transparent'}}>
       <Thumb i={i} w={w} h={w * 0.5625} dur={v.dur} progress={progress} radius={10} />
       <div style={{flex: 1, minWidth: 0}}>
-        <div style={{fontSize: 14.5, fontWeight: 600, lineHeight: 1.4, maxHeight: 41, overflow: 'hidden'}}>{v.title}</div>
+        <div style={{fontSize: 14.5, fontWeight: 600, lineHeight: 1.4, maxHeight: 41, overflow: 'hidden', ...CLAMP2}}>{v.title}</div>
         <div style={{fontSize: 12.5, color: C.muted, marginTop: 4}}>{v.channel}</div>
         <div style={{fontSize: 12, color: C.faint, marginTop: 1}}>{v.meta}</div>
       </div>
@@ -179,7 +213,7 @@ export const VideoCard: React.FC<{i: number; opacity?: number; shift?: number}> 
 };
 
 export const Btn390: React.FC<{label: string; icon?: IconName; tone?: 'primary' | 'tonal' | 'text'; w?: number; glow?: number}> = ({label, icon, tone = 'primary', w, glow = 0}) => (
-  <div style={{display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 46, width: w, padding: '0 22px', borderRadius: 23, fontSize: 16, fontWeight: 700, whiteSpace: 'nowrap', background: tone === 'primary' ? C.primary : tone === 'tonal' ? C.higher : 'transparent', color: tone === 'primary' ? C.onPrimary : tone === 'tonal' ? C.text : C.primaryBright, boxShadow: glow ? `0 0 ${26 * glow}px ${rgba(C.primary, 0.6 * glow)}` : undefined}}>
+    <div style={{display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, height: 46, width: w, padding: '0 22px', borderRadius: 23, fontSize: 16, fontWeight: 700, whiteSpace: 'nowrap', background: tone === 'primary' ? C.primary : tone === 'tonal' ? C.higher : 'transparent', color: tone === 'primary' ? C.onPrimary : tone === 'tonal' ? C.text : C.primaryBright, boxShadow: glow ? `0 0 ${26 * glow}px ${rgba(C.primary, 0.6 * glow)}` : undefined}}>
       {icon ? <Icon name={icon} size={20} color={tone === 'primary' ? C.onPrimary : C.text} stroke={2.4} /> : null}
       {label}
     </div>

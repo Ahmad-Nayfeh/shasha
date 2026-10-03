@@ -32,6 +32,7 @@ import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.lock.ProtectionStatus
 import com.ahmadnayfeh.shasha.lock.ReturnTime
 import com.ahmadnayfeh.shasha.lock.YouTubeAppState
+import com.ahmadnayfeh.shasha.remote.RemoteSettings
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
 import com.ahmadnayfeh.shasha.ui.components.ShashaButton
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
@@ -166,8 +167,10 @@ private fun StatusLine(title: String, value: String, level: Level) {
 }
 
 /**
- * «الخادم المحلي» (SPEC §5, §7): on/off and the pairing screen (the QR code, a new token), both behind the
- * parent PIN like before: pairing a phone hands it the TV.
+ * «التحكم من الجوال» (SPEC §5, §7): on/off and the pairing screen (the QR code, a new token), both behind the
+ * parent PIN like before: pairing a phone hands it the TV. In plain words only: the address is on the pairing screen
+ * under its QR code, and the port shows only when it matters, when the server could not start (another app holds
+ * the port) or the port was changed before ([PortRow]).
  */
 @Composable
 internal fun RemotePane(state: SettingsHubState, actions: SettingsHubActions, first: FocusRequester) {
@@ -190,11 +193,8 @@ internal fun RemotePane(state: SettingsHubState, actions: SettingsHubActions, fi
             body = stringResource(R.string.hub_remote_pairing_body),
             locked = !state.unlocked,
         )
-        PortRow(state, actions)
-        val address = remote?.address
-        if (address != null) {
-            InfoLine(RemoteIcons.Wifi, stringResource(R.string.hub_remote_address, address), tint = LocalAccent.current.bright, textColor = ShashaColors.Text)
-        }
+        val port = state.remotePort
+        if (remote?.status == PairingStatus.FAILED || (port != null && port != RemoteSettings.DEFAULT_PORT)) PortRow(state, actions)
         InfoLine(ShashaIcons.Lock, stringResource(R.string.hub_remote_note))
     }
 }
@@ -239,9 +239,9 @@ internal fun DataPane(state: SettingsHubState, actions: SettingsHubActions, firs
 }
 
 /**
- * «فحص التحديثات» (SPEC §6): the installed version, one button, and at the bottom «معلومات تقنية والتراخيص»
- * ([TechnicalInfo]). The button opens the updater ([SettingsHubActions.openUpdates], ui/screens/updates), which checks
- * at once and, when a newer version is out, downloads and installs it by itself.
+ * «فحص التحديثات» (SPEC §6): the installed version and one button, nothing technical (owner decision: the licences
+ * are one closed row at the bottom of «حول», [AboutPane]). The button opens the updater ([SettingsHubActions.openUpdates],
+ * ui/screens/updates), which checks at once and, when a newer version is out, downloads and installs it by itself.
  */
 @Composable
 internal fun UpdatesPane(state: SettingsHubState, actions: SettingsHubActions, first: FocusRequester) {
@@ -260,25 +260,16 @@ internal fun UpdatesPane(state: SettingsHubState, actions: SettingsHubActions, f
         // the focus, and the pivot scrolling would carry it from under the bottom fade to under the top one.
         InfoLine(ShashaIcons.Info, stringResource(R.string.hub_updates_how))
         InfoLine(ShashaIcons.Build, stringResource(R.string.hub_updates_when))
-        Spacer(Modifier.height(6.dp))
-        TechnicalInfo()
     }
 }
 
-/** The logo, the version and its build number, and the extractor's version. */
+/** The logo and the version, as people say it (no build number, no library versions). */
 @Composable
 internal fun VersionBlock(versions: AppVersions, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth().testTag("hub_version"), verticalAlignment = Alignment.CenterVertically) {
         Image(painterResource(R.drawable.splash_logo), contentDescription = null, modifier = Modifier.size(56.dp))
         Spacer(Modifier.width(16.dp))
-        Column {
-            Text(stringResource(R.string.hub_version, versions.name), style = MaterialTheme.typography.headlineSmall)
-            Text(
-                stringResource(R.string.hub_build_line, versions.code.toString(), versions.extractor),
-                style = MaterialTheme.typography.bodyMedium,
-                color = ShashaColors.Muted,
-            )
-        }
+        Text(stringResource(R.string.hub_version, versions.name), style = MaterialTheme.typography.headlineSmall)
     }
 }
 

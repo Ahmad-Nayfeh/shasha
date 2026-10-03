@@ -53,7 +53,7 @@ import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import kotlinx.coroutines.delay
 
 /**
- * v1.2 (owner decision): a link the phone sent never plays by itself. Once the rules allowed it, it waits here
+ * v1.1.1 (owner decision): a link the phone sent never plays by itself. Once the rules allowed it, it waits here
  * ([PhonePlayRequests.pending]) for «قبول» or «رفض»: a calm card at the bottom of the screen, over whatever is on it
  * (a video goes on playing, nothing is dimmed or left). Focus starts on «قبول»; BACK is «رفض»; after 30 s it is rejected
  * by itself. Only the screens of the profile the rules allowed it for ([profileId]) ask.

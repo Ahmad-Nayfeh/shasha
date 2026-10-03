@@ -4,6 +4,7 @@ import {StepHeader, NoteChip} from '../components/Install';
 import {Press} from '../components/Remote';
 import {Crumbs, PressCounter, sx, sy, TvStepStage} from '../components/TvStep';
 import {easeInOut, keys, sp, tween} from '../lib/anim';
+import {t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 import {ABOUT_ROW, P_ABOUT, P_SETTINGS, P_SYSTEM, SETTINGS_ROW, SYSTEM_ROW} from '../lib/tvPanels';
 
@@ -49,18 +50,18 @@ export const S14DevMode: React.FC<{scene: Scene}> = ({scene}) => {
       <TvStepStage panels={[P_SETTINGS, P_SYSTEM(false), P_ABOUT]} panel={panel} focus={focus} open={open} presses={presses} tvIn={tvIn} toast={toastText ? {text: toastText, opacity: 1} : null} />
       <Crumbs
         items={[
-          {ar: 'الإعدادات', en: 'Settings', at: tOpen},
-          {ar: 'النظام', en: 'System', at: okSystem},
-          {ar: 'حول', en: 'About', at: okAbout},
-          {ar: 'إصدار النظام', en: 'Android TV OS build', at: tDown + 8},
+          {ar: t('الإعدادات'), en: 'Settings', at: tOpen},
+          {ar: t('النظام'), en: 'System', at: okSystem},
+          {ar: t('حول'), en: 'About', at: okAbout},
+          {ar: t('إصدار النظام'), en: 'Android TV OS build', at: tDown + 8},
         ]}
       />
       {f >= tPress ? <PressCounter taps={taps} /> : null}
       <NoteChip x={sx(60)} y={sy(420)} t={devChip} icon="check" en="You are now a developer!">
-        أصبحت مطوّراً
+        {t('أصبحت مطوّراً')}
       </NoteChip>
       <NoteChip x={sx(60)} y={sy(420)} t={tween(f, tPress - 6, 10) * (1 - tween(f, taps[6], 6))} icon="arrowRight" size={24}>
-        اضغط الزر الأوسط (OK) سبع مرات
+        {t('اضغط الزر الأوسط (OK) سبع مرات')}
       </NoteChip>
     </div>
   );

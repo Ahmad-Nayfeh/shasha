@@ -31,6 +31,7 @@ import com.ahmadnayfeh.shasha.mobile.failure
 import com.ahmadnayfeh.shasha.mobile.playlist
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.mobile.testSettings
+import com.ahmadnayfeh.shasha.mobile.ui.channel.ChannelHeader
 import com.ahmadnayfeh.shasha.mobile.ui.channel.ChannelViewModel
 import com.ahmadnayfeh.shasha.mobile.ui.downloads.DownloadSheetViewModel
 import com.ahmadnayfeh.shasha.mobile.ui.downloads.DownloadsViewModel
@@ -89,23 +90,11 @@ class ChannelViewModelTest {
 
         val vm = viewModel()
 
-        val details = (vm.details.value as Loadable.Loaded).value
-        assertThat(details.channel.name).isEqualTo("Rick")
-        assertThat(details.description).isEqualTo("About the channel")
+        val header = vm.header.value as ChannelHeader.Ready
+        assertThat(header.complete).isTrue()
+        assertThat(header.channel.name).isEqualTo("Rick")
+        assertThat(header.description).isEqualTo("About the channel")
         assertThat(vm.videoState.value.items.map { it.videoId }).containsExactly("a", "b").inOrder()
-    }
-
-    @Test
-    fun aChannelThatCannotBeReadSaysSoAndLoadsAgain() = runTest(main.dispatcher) {
-        var fail = true
-        source.onChannel = { if (fail) throw failure(SourceErrorKind.CONTENT_UNAVAILABLE, "ContentNotAvailableException") else ChannelDetails(channel(it), null, null) }
-
-        val vm = viewModel()
-        assertThat((vm.details.value as Loadable.Failed).error.technicalName).isEqualTo("ContentNotAvailableException")
-
-        fail = false
-        vm.loadDetails()
-        assertThat(vm.details.value).isInstanceOf(Loadable.Loaded::class.java)
     }
 
     @Test
@@ -138,7 +127,8 @@ class ChannelViewModelTest {
     }
 
     @Test
-    fun subscribingBeforeTheDetailsHaveLoadedDoesNothing() = runTest(main.dispatcher) {
+    fun aChannelNothingIsKnownOfCannotBeSubscribedTo() = runTest(main.dispatcher) {
+        // Its page fails, there is no subscription, nothing was passed and no video names it: which channel it is, is not known.
         source.onChannel = { throw failure() }
         val vm = viewModel()
 

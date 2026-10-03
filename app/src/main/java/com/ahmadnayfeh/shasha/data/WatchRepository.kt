@@ -5,6 +5,7 @@ import com.ahmadnayfeh.shasha.data.db.ShashaDatabase
 import com.ahmadnayfeh.shasha.data.db.WatchLaterEntity
 import com.ahmadnayfeh.shasha.data.db.WatchProgressEntity
 import com.ahmadnayfeh.shasha.youtube.VideoItem
+import com.ahmadnayfeh.shasha.youtube.safety.ExplicitFilter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -73,9 +74,10 @@ class WatchRepository(
         )
     }
 
-    /** Newest first. */
+    /** Newest first, without what the built-in filter holds back (a video watched before it existed stays out of sight). */
     fun observeHistory(limit: Int = HISTORY_LIMIT): Flow<List<HistoryEntity>> =
         profile.id.flatMapLatest { historyDao.observe(it, limit) }
+            .map { rows -> rows.filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) } }
 
     suspend fun removeFromHistory(videoId: String) = historyDao.delete(profileId, videoId)
 
@@ -101,8 +103,10 @@ class WatchRepository(
 
     suspend fun removeFromWatchLater(videoId: String) = watchLaterDao.delete(profileId, videoId)
 
-    /** Most recently added first. */
-    fun observeWatchLater(): Flow<List<WatchLaterEntity>> = profile.id.flatMapLatest { watchLaterDao.observe(it) }
+    /** Most recently added first, without what the built-in filter holds back. */
+    fun observeWatchLater(): Flow<List<WatchLaterEntity>> =
+        profile.id.flatMapLatest { watchLaterDao.observe(it) }
+            .map { rows -> rows.filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) } }
 
     fun isSaved(videoId: String): Flow<Boolean> = profile.id.flatMapLatest { watchLaterDao.observeIsSaved(it, videoId) }
 

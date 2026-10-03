@@ -2,12 +2,13 @@ import React from 'react';
 import {useCurrentFrame} from 'remotion';
 import {brand, rgba} from '../brand';
 import {ShashaOnScreen, StickGlyph, TvGlyph} from '../components/Devices';
-import {CheckBadge, Header} from '../components/ui';
+import {atEnd, CheckBadge, Header, mx, stepOf} from '../components/ui';
 import {clamp, mix, sp, tween} from '../lib/anim';
+import {dir, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // s16 — which TVs: Google TV and Android TV sets of any maker, and Amazon Fire TV devices. Drawn devices, names as
-// plain text (no logos).
+// plain text (no logos). English version: the two cards swap places (Google TV first, on the left).
 
 const CARD_W = 640;
 const CARD_H = 560;
@@ -15,7 +16,7 @@ const TOP = 270;
 
 const DeviceCard: React.FC<{left: number; t: number; check: number; title: React.ReactNode; sub: string; children: React.ReactNode}> = ({
   left,
-  t,
+  t: k,
   check,
   title,
   sub,
@@ -32,9 +33,9 @@ const DeviceCard: React.FC<{left: number; t: number; check: number; title: React
       background: 'linear-gradient(180deg, #19212C 0%, #131920 100%)',
       border: `1.5px solid ${rgba(brand.primary, 0.4)}`,
       boxShadow: '0 40px 90px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
-      opacity: clamp(t * 1.4),
-      transform: `translateY(${(1 - t) * 40}px) scale(${mix(0.96, 1, t)})`,
-      direction: 'rtl',
+      opacity: clamp(k * 1.4),
+      transform: `translateY(${(1 - k) * 40}px) scale(${mix(0.96, 1, k)})`,
+      direction: dir,
       fontFamily: brand.font,
       color: brand.text,
       overflow: 'hidden',
@@ -45,7 +46,7 @@ const DeviceCard: React.FC<{left: number; t: number; check: number; title: React
       <div style={{fontSize: 44, fontWeight: 700, direction: 'ltr'}}>{title}</div>
       <div style={{fontSize: 27, color: brand.muted, marginTop: 14, direction: 'ltr'}}>{sub}</div>
     </div>
-    <div style={{position: 'absolute', left: 28, top: 28}}>
+    <div style={{position: 'absolute', ...atEnd(28), top: 28}}>
       <CheckBadge t={check} size={64} />
     </div>
   </div>
@@ -65,11 +66,11 @@ export const S16Tvs: React.FC<{scene: Scene}> = ({scene}) => {
   const android = tween(f, tAndroid - 2, 12);
   const float = (k: number) => Math.sin((f + k) / 26) * 4;
 
-  const leftA = 990;
-  const leftB = 290;
+  const leftA = mx(990, CARD_W);
+  const leftB = mx(290, CARD_W);
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="التحديث والأجهزة" index="٢ / ٣" title="على أي تلفاز؟" />
+      <Header kicker={t('التحديث والأجهزة')} index={stepOf(2, 3)} title={t('على أي تلفاز؟')} />
 
       <DeviceCard
         left={leftA}

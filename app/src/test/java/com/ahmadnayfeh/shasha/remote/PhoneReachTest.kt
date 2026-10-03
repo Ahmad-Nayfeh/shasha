@@ -53,7 +53,7 @@ class PhoneReachTest {
     private fun status(port: Int, token: String): Int {
         val conn = URI("http://127.0.0.1:$port/api/status").toURL().openConnection() as HttpURLConnection
         conn.connectTimeout = 5_000
-        conn.readTimeout = 10_000
+        conn.readTimeout = TIMEOUT_MS.toInt()
         conn.setRequestProperty("Authorization", "Bearer $token")
         conn.setRequestProperty("Connection", "close")
         return try {
@@ -76,7 +76,7 @@ class PhoneReachTest {
         assertThat(reach.isConnected()).isFalse()
 
         assertThat(status(port, env.remoteSettings.token())).isEqualTo(200)
-        withTimeout(10_000) { env.remoteSettings.phonePaired.first { it } }
+        withTimeout(TIMEOUT_MS) { env.remoteSettings.phonePaired.first { it } }
         assertThat(reach.isPaired()).isTrue()
         assertThat(reach.isConnected()).isTrue()
 
@@ -96,7 +96,7 @@ class PhoneReachTest {
             val newPort = (restarted.state.value as RemoteState.Running).port
             assertThat(status(newPort, fresh)).isEqualTo(200)
             assertThat(restarted.presence.seenWithin(PhoneReach.CONNECTED_MS)).isTrue()
-            withTimeout(10_000) { env.remoteSettings.phonePaired.first { it } }
+            withTimeout(TIMEOUT_MS) { env.remoteSettings.phonePaired.first { it } }
             assertThat(again.isConnected()).isTrue()
         } finally {
             restarted.stop()
@@ -130,5 +130,10 @@ class PhoneReachTest {
         override fun register(port: Int) = Unit
 
         override fun unregister() = Unit
+    }
+
+    private companion object {
+        /** Generous: the pairing is written to disk on another thread, and CI machines can be slow. */
+        const val TIMEOUT_MS = 30_000L
     }
 }

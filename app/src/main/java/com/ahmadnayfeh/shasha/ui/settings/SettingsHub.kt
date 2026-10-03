@@ -270,7 +270,7 @@ private fun CategoryList(
         Column(Modifier.padding(horizontal = 22.dp)) {
             Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall, maxLines = 1)
             Text(
-                stringResource(R.string.settings_version, state.versions.name, state.versions.extractor),
+                stringResource(R.string.settings_version, state.versions.name),
                 style = MaterialTheme.typography.labelMedium,
                 color = ShashaColors.Muted,
                 maxLines = 1,

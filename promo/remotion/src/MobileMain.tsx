@@ -4,6 +4,7 @@ import {brand} from './brand';
 import {Background, Grain} from './components/Background';
 import {Captions} from './components/Captions';
 import {loadFonts} from './fonts';
+import {isEn} from './lib/lang';
 import {mobileScenes, mobileTimeline} from './lib/timelineMobile';
 import {SceneWrap, XFADE} from './Main';
 import {NO_CAPTIONS, sceneComponent} from './scenes';
@@ -12,6 +13,8 @@ loadFonts();
 
 // The phone video: the same stage language as the TV video, with the phone in the middle. Scenes that all show
 // the phone dissolve into each other without sliding (the phone stays where it is); the end card slides in.
+// The English version (lib/lang.ts) is the same video mirrored: the scenes, the stage and the phone's screens read
+// left to right, with the English narration, captions and music (public/audio-mobile-en).
 
 export type MobileMainProps = {captions?: boolean; music?: boolean; grain?: boolean};
 
@@ -25,8 +28,11 @@ const hasFile = (name: string) => {
 
 const withPhone = (id: string) => id.startsWith('m') && id !== 'm15_outro';
 
+/** Narration and music folder of the phone video: public/audio-mobile, or public/audio-mobile-en in English. */
+const AUDIO = isEn ? 'audio-mobile-en' : 'audio-mobile';
+
 export const MobileMain: React.FC<MobileMainProps> = ({captions = true, music = true, grain = true}) => {
-  const withMusic = music && hasFile('audio-mobile/music_bed.wav');
+  const withMusic = music && hasFile(`${AUDIO}/music_bed.wav`);
   return (
     <AbsoluteFill style={{backgroundColor: brand.bg}}>
       <Background />
@@ -53,8 +59,8 @@ export const MobileMain: React.FC<MobileMainProps> = ({captions = true, music = 
             ))
         : null}
       {grain ? <Grain /> : null}
-      <Audio src={staticFile('audio-mobile/narration_full.wav')} />
-      {withMusic ? <Audio src={staticFile('audio-mobile/music_bed.wav')} /> : null}
+      <Audio src={staticFile(`${AUDIO}/narration_full.wav`)} />
+      {withMusic ? <Audio src={staticFile(`${AUDIO}/music_bed.wav`)} /> : null}
     </AbsoluteFill>
   );
 };

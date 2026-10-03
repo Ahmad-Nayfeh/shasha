@@ -2,15 +2,16 @@ import React from 'react';
 import {useCurrentFrame} from 'remotion';
 import {ListCard, ListRow} from '../components/ListCard';
 import {fr, Screen, TvFrame} from '../components/Tv';
-import {FocusRing, FocusKey, Header} from '../components/ui';
+import {featureTv, FocusRing, FocusKey, Header, stepOf} from '../components/ui';
 import {clamp, sp, tween} from '../lib/anim';
-import {FEATURE_TV} from '../lib/layout';
+import {flowSign, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // s09 — the channel page: sections (videos, Shorts, live, playlists) and the sort order (newest, most viewed,
-// oldest). The D-pad ring walks along the real chips; the two cards on the right light up in step with the voice.
+// oldest). The D-pad ring walks along the real chips; the two cards on the right (left in English) light up in step
+// with the voice. The English labels are the app's own (channel_tab_*, channel_sort_*).
 
-const TV = FEATURE_TV;
+const TV = featureTv();
 
 export const S09Channel: React.FC<{scene: Scene}> = ({scene}) => {
   const f = useCurrentFrame();
@@ -43,29 +44,29 @@ export const S09Channel: React.FC<{scene: Scene}> = ({scene}) => {
   const presses = [tShorts + 8, tLive + 8, tLists + 8, tMost + 8, tOld + 8];
 
   const sections: ListRow[] = [
-    {icon: 'play', label: 'الفيديوهات', at: tVid},
-    {icon: 'phone', label: 'القصيرة (Shorts)', at: tShorts},
-    {icon: 'wifi', label: 'البث المباشر', at: tLive},
-    {icon: 'list', label: 'قوائم التشغيل', at: tLists},
+    {icon: 'play', label: t('الفيديوهات'), at: tVid},
+    {icon: 'phone', label: t('القصيرة (Shorts)'), at: tShorts},
+    {icon: 'wifi', label: t('البث المباشر'), at: tLive},
+    {icon: 'list', label: t('قوائم التشغيل'), at: tLists},
   ];
   const sorts: ListRow[] = [
-    {icon: 'clock', label: 'الأحدث', at: tNew},
-    {icon: 'barChart', label: 'الأكثر مشاهدة', at: tMost},
-    {icon: 'calendar', label: 'الأقدم', at: tOld},
+    {icon: 'clock', label: t('الأحدث'), at: tNew},
+    {icon: 'barChart', label: t('الأكثر مشاهدة'), at: tMost},
+    {icon: 'calendar', label: t('الأقدم'), at: tOld},
   ];
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="المشاهدة" index="١ / ٣" title="صفحة القناة" />
+      <Header kicker={t('المشاهدة')} index={stepOf(1, 3)} title={t('صفحة القناة')} />
 
-      <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)}>
+      <TvFrame x={TV.x + (1 - tvIn) * -60 * flowSign} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)}>
         <Screen name="channel_videos" />
         <Screen name="channel_shorts" opacity={toShorts} />
         <FocusRing track={track} width={5} presses={presses} />
       </TvFrame>
 
-      <ListCard title="الأقسام" icon="layers" rows={sections} f={f} t={sp(f, tPage, {damping: 22})} top={214} />
-      <ListCard title="الترتيب" icon="sliders" rows={sorts} f={f} t={sp(f, tSort - 4, {damping: 22})} top={604} />
+      <ListCard title={t('الأقسام')} icon="layers" rows={sections} f={f} t={sp(f, tPage, {damping: 22})} top={214} />
+      <ListCard title={t('الترتيب')} icon="sliders" rows={sorts} f={f} t={sp(f, tSort - 4, {damping: 22})} top={604} />
 
     </div>
   );

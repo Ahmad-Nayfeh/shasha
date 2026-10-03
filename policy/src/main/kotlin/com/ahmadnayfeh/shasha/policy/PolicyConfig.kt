@@ -7,7 +7,7 @@ import kotlin.random.Random
  * through the provider it was built with, so a change applies at once. Every default is the behaviour the app
  * had before these were adjustable.
  *
- * @property seriousMode «الوضع الجاد» (SPEC §4's in-app lock), one switch per kind of profile (v1.2): a video that
+ * @property seriousMode «الوضع الجاد» (SPEC §4's in-app lock), one switch per kind of profile (v1.1.1): a video that
  *   starts cannot be left before it ends (the parent PIN for a child, the exit challenge for the adult). Off for a
  *   kind: no video of that kind of profile is ever locked, BACK leaves.
  * @property adultEscape the adult may leave a video early with [escapeHoldMillis] of long press and a phrase (only
@@ -44,7 +44,7 @@ data class PolicyConfig(
 }
 
 /**
- * «الوضع الجاد», one switch per kind of profile (v1.2, owner decision: the children's and the adult's are independent,
+ * «الوضع الجاد», one switch per kind of profile (v1.1.1, owner decision: the children's and the adult's are independent,
  * both on by default): [children] for every child profile («الوضع الجاد لملفات الأطفال»), [adult] for the adult
  * profiles («الوضع الجاد لملف الكبار»).
  */

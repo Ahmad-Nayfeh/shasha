@@ -7,6 +7,7 @@ Times are written relative to the scene start (seconds), i.e. voice_offset_s is 
 
   ../.venv/bin/python tools/align_words.py              -> src/data/words.json from ../audio/word_timings.json
   ../.venv/bin/python tools/align_words.py --mobile     -> src/data/words-mobile.json from ../audio-mobile/word_timings.json
+  ... --en / --mobile --en                               the English version: words-en.json / words-mobile-en.json
   ../.venv/bin/python tools/align_words.py --asr [small|medium]   (fallback: ASR alignment as in v1)
 By default the exact word times of the voice (edge-tts WordBoundary events, see tts/scripts/synth_narration.py)
 are used; the ASR alignment below is only the fallback when they are missing or stale.
@@ -21,9 +22,11 @@ RM = HERE.parent                      # remotion/
 V = RM.parent                         # video/
 size = next((a for a in sys.argv[1:] if not a.startswith('--')), 'small')
 MOBILE = '--mobile' in sys.argv       # the phone video: timeline-mobile.json + audio-mobile/ -> src/data/words-mobile.json
-TIMELINE = V / ('timeline-mobile.json' if MOBILE else 'timeline.json')
-WORD_TIMINGS = V / ('audio-mobile/word_timings.json' if MOBILE else 'audio/word_timings.json')
-WORDS_OUT = RM / ('src/data/words-mobile.json' if MOBILE else 'src/data/words.json')
+EN = '--en' in sys.argv               # the English version: timeline-en.json + audio-en/ -> src/data/words-en.json
+SFX = '-en' if EN else ''
+TIMELINE = V / (f'timeline-mobile{SFX}.json' if MOBILE else f'timeline{SFX}.json')
+WORD_TIMINGS = V / (f'audio-mobile{SFX}/word_timings.json' if MOBILE else f'audio{SFX}/word_timings.json')
+WORDS_OUT = RM / (f'src/data/words-mobile{SFX}.json' if MOBILE else f'src/data/words{SFX}.json')
 
 DIAC = re.compile(r'[ؐ-ًؚ-ٰٟۖ-ۭـ]')
 
@@ -113,7 +116,7 @@ def main():
     for sc in tl['scenes']:
         wav = V / sc['audio']
         tts_text = ' '.join(c['text_tts'] for c in sc['cues'])
-        segs, _ = model.transcribe(str(wav), language='ar', beam_size=5, word_timestamps=True,
+        segs, _ = model.transcribe(str(wav), language='en' if EN else 'ar', beam_size=5, word_timestamps=True,
                                    vad_filter=False, condition_on_previous_text=False, initial_prompt=tts_text)
         hw = [w for s in segs for w in (s.words or [])]
         # hyp chars with a time each (linear inside the word)

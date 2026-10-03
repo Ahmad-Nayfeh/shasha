@@ -4,7 +4,8 @@ import {ConsoleView, Desktop, FileManager, Pointer, SmartScreen, Window} from '.
 import {INSTALL_LAPTOP, SideSteps, StepHeader} from '../components/Install';
 import {LaptopDesk} from '../components/InstallKit';
 import {tween} from '../lib/anim';
-import {KIT_DIR, KIT_FILES, KIT_ROW_H, WIN_INSTALLER} from '../lib/installer';
+import {KIT_DIR, KIT_FILES, KIT_ROW_H, openingLines, WIN_INSTALLER} from '../lib/installer';
+import {isEn, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // Step 5 (Windows): double-click the Windows installer; SmartScreen → «More info» → «Run anyway».
@@ -30,7 +31,7 @@ export const S17RunWindows: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <StepHeader step={5} sub="شغّل المثبّت: ويندوز" />
+      <StepHeader step={5} sub={t('شغّل المثبّت: ويندوز')} />
       <LaptopDesk x={INSTALL_LAPTOP.x} y={INSTALL_LAPTOP.y} w={INSTALL_LAPTOP.w}>
         <Desktop os="win">
           <Window os="win" x={60} y={50} w={1160} h={640} title={KIT_DIR}>
@@ -44,11 +45,7 @@ export const S17RunWindows: React.FC<{scene: Scene}> = ({scene}) => {
           {con > 0 ? (
             <Window os="win" x={140} y={80} w={1000} h={600} title={WIN_INSTALLER} dark t={con}>
               <ConsoleView
-                lines={[
-                  {t: clickRun + 12, text: '  Shasha installer / مثبّت «شاشة»', kind: 'banner'},
-                  {t: clickRun + 16, text: '==> Checking adb ...', kind: 'say'},
-                  {t: clickRun + 18, text: 'التحقق من وجود adb ...', kind: 'ar'},
-                ]}
+                lines={openingLines([clickRun + 12, clickRun + 16, clickRun + 18])}
               />
             </Window>
           ) : null}
@@ -59,7 +56,9 @@ export const S17RunWindows: React.FC<{scene: Scene}> = ({scene}) => {
               {f: clickMore - 8, x: 330, y: rowY},
               {f: clickMore - 2, x: 260, y: 90 + 46 + 40 + 24 + 90 + 30},
               {f: clickRun - 8, x: 260, y: 270},
-              {f: clickRun - 2, x: 900, y: 90 + 560 - 40 - 24},
+              // «Run anyway» is centred at x ≈ 796 (the SmartScreen buttons: «Run anyway» 714–878, «Don't run» 894–1033); the Arabic
+              // version has always ended its pointer at x = 900, on the edge of «Don't run», and is kept as it is
+              {f: clickRun - 2, x: isEn ? 796 : 900, y: 90 + 560 - 40 - 24},
             ]}
             clicks={[dbl, dbl + 7, clickMore, clickRun]}
           />
@@ -67,9 +66,9 @@ export const S17RunWindows: React.FC<{scene: Scene}> = ({scene}) => {
       </LaptopDesk>
       <SideSteps
         items={[
-          {at: tDbl, label: 'انقر مرتين على مثبّت ويندوز', sub: WIN_INSTALLER},
-          {at: tMore, label: '«مزيد من المعلومات»', sub: 'More info'},
-          {at: tRun, label: '«تشغيل على أي حال»', sub: 'Run anyway'},
+          {at: tDbl, label: t('انقر مرتين على مثبّت ويندوز'), sub: WIN_INSTALLER},
+          {at: tMore, label: t('«مزيد من المعلومات»'), sub: isEn ? undefined : 'More info'}, // the English label is the button's own text
+          {at: tRun, label: t('«تشغيل على أي حال»'), sub: isEn ? undefined : 'Run anyway'},
         ]}
       />
     </div>
