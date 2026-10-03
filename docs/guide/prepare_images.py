@@ -1,8 +1,9 @@
 """Makes the small JPG copies of the screenshots that the guide uses (docs/guide/img/).
 
 The guides (guide.html, and en/guide.html as ../img/<name>.jpg) refer to img/<name>.jpg; <name> is the name of a real screenshot in
-app/src/test/screenshots (TV, 1920x1080) or remote/src/test/screenshots (phone page). Smaller JPG copies
-keep the PDF light. The install pictures are used as they are, from docs/images/install.
+app/src/test/screenshots (TV, 1920x1080), remote/src/test/screenshots (the phone page) or mobile/src/test/screenshots (the
+phone app, once it has them: Part 8 has marked spots waiting for them). Smaller JPG copies keep the PDF light. The install
+pictures are used as they are, from docs/images/install.
 
     python3 docs/guide/prepare_images.py      # needs Pillow (pip install Pillow)
 """
@@ -17,6 +18,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 SOURCES = [
     os.path.join(ROOT, "app", "src", "test", "screenshots"),
     os.path.join(ROOT, "remote", "src", "test", "screenshots"),
+    os.path.join(ROOT, "mobile", "src", "test", "screenshots"),
 ]
 OUT = os.path.join(HERE, "img")
 TV_WIDTH = 1280

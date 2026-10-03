@@ -533,7 +533,7 @@ ol.flow.two li { padding: 4mm 5mm 3.6mm; }
 .tvkind .bh p { margin: 0; font-size: 8.8pt; line-height: 1.55; color: var(--muted); }
 .tvkind ol.steps > li { font-size: 9.8pt; line-height: 1.62; padding-bottom: 1.8mm; }
 .tvkind ol.steps > li::before { width: 6mm; height: 6mm; line-height: 6mm; font-size: 8.4pt; }
-.tvkind ol.steps > li::after { right: 2.85mm; top: 7mm; }
+.tvkind ol.steps > li::after { display: none; }
 .tvkind ol.steps > li { padding-right: 9.5mm; }
 .tvkind .small { margin: 0.6mm 0 0; }
 
@@ -567,5 +567,4 @@ html[dir="ltr"] ol.steps > li { padding: 0 0 2.8mm 10.5mm; }
 html[dir="ltr"] ol.steps > li::before { right: auto; left: 0; }
 html[dir="ltr"] ol.steps > li::after { right: auto; left: 3.35mm; }
 html[dir="ltr"] .tvkind ol.steps > li { padding: 0 0 1.8mm 9.5mm; }
-html[dir="ltr"] .tvkind ol.steps > li::after { right: auto; left: 2.85mm; }
 html[dir="ltr"] .page.spread ol.steps > li:last-child { padding-bottom: 0; }
