@@ -112,17 +112,14 @@ class ShashaRootEnglishTest {
 
         compose.onNodeWithText("About").performScrollTo().performClick()
 
-        for (text in listOf(
-            "Ahmad Nayfeh",
-            "Made with love for my family",
-            "Shadra",
-            "Silah",
-            "Masarif",
-            "Khatwa",
-            "Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/.",
-            "NewPipeExtractor",
-            "GPL-3.0-or-later",
-        )) {
+        for (text in listOf("Ahmad Nayfeh", "Made with love for my family", "Shadra", "Silah", "Masarif", "Khatwa")) {
+            compose.onNodeWithText(text).performScrollTo().assertIsDisplayed()
+        }
+        // The licences are one closed row at the bottom (nothing technical in view) that opens on a tap.
+        val attribution = "Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/."
+        compose.onNodeWithText(attribution).assertDoesNotExist()
+        compose.onNodeWithText("Licences").performScrollTo().performClick()
+        for (text in listOf(attribution, "NewPipeExtractor", "GPL-3.0-or-later")) {
             compose.onNodeWithText(text).performScrollTo().assertIsDisplayed()
         }
     }

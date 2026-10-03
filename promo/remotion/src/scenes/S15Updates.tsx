@@ -5,16 +5,17 @@ import {Icon, IconName} from '../components/Icons';
 import {UpdateProgressOverlay} from '../components/Overlays';
 import {Remote} from '../components/Remote';
 import {fr, Screen, TvFrame} from '../components/Tv';
-import {Chip, CrossedOut, FocusRing, Header} from '../components/ui';
+import {atEnd, atStart, Chip, CrossedOut, featureTv, FocusRing, Header, mx, stepOf} from '../components/ui';
 import {clamp, easeInOut, sp, tween} from '../lib/anim';
 import {FEATURE_TV} from '../lib/layout';
+import {dir, flowSign, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // s15 — updates with one button: Settings → «فحص التحديثات», one press, and the app downloads and installs the new
 // version itself (real captures: the page with its big button, checking, downloading, installing). No computer, no
 // reinstalling.
 
-const TV = FEATURE_TV;
+const TV = featureTv();
 
 export const S15Updates: React.FC<{scene: Scene}> = ({scene}) => {
   const f = useCurrentFrame();
@@ -36,16 +37,16 @@ export const S15Updates: React.FC<{scene: Scene}> = ({scene}) => {
   const remoteIn = sp(f, tPress - 10, {damping: 22});
   const sideOut = tween(f, tStart - 4, 12); // the remote leaves before the crossed-out chips arrive
 
-  const crossed: Array<[string, number, IconName]> = [
-    ['كمبيوتر', tNoPc, 'terminal'],
-    ['إعادة تثبيت', tNoRe, 'refresh'],
+  const crossed: [string, number, IconName][] = [
+    [t('كمبيوتر'), tNoPc, 'terminal'],
+    [t('إعادة تثبيت'), tNoRe, 'refresh'],
   ];
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="التحديث والأجهزة" index="١ / ٣" title="التحديث بضغطة واحدة" />
+      <Header kicker={t('التحديث والأجهزة')} index={stepOf(1, 3)} title={t('التحديث بضغطة واحدة')} />
 
-      <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)}>
+      <TvFrame x={TV.x + (1 - tvIn) * -60 * flowSign} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)}>
         <Screen name="updates_hub" />
         <Screen name="updates_checking" opacity={checkIn} />
         <div style={{position: 'absolute', inset: 0, opacity: downIn * (1 - instIn)}}>
@@ -57,13 +58,13 @@ export const S15Updates: React.FC<{scene: Scene}> = ({scene}) => {
       </TvFrame>
 
       {/* the new version, then the one button */}
-      <div style={{position: 'absolute', left: TV.x, top: TV.y - 74, opacity: tween(f, tNew - 4, 14) * (1 - downIn), transform: `translateY(${(1 - tween(f, tNew - 4, 14)) * 10}px)`}}>
-        <Chip icon="download" label="إصدار جديد" tone="amber" size={24} />
+      <div style={{position: 'absolute', ...atEnd(FEATURE_TV.x), top: TV.y - 74, opacity: tween(f, tNew - 4, 14) * (1 - downIn), transform: `translateY(${(1 - tween(f, tNew - 4, 14)) * 10}px)`}}>
+        <Chip icon="download" label={t('إصدار جديد')} tone="amber" size={24} />
       </div>
-      <Remote x={1590} y={290} scale={0.95} rotate={-8} opacity={clamp(remoteIn * 1.5) * (1 - sideOut)} presses={[{btn: 'ok', f: press}]} />
+      <Remote x={mx(1590, 150 * 0.95)} y={290} scale={0.95} rotate={-8 * flowSign} opacity={clamp(remoteIn * 1.5) * (1 - sideOut)} presses={[{btn: 'ok', f: press}]} />
 
       {/* what you do not need */}
-      <div style={{position: 'absolute', right: 90, top: 330, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 30, direction: 'rtl'}}>
+      <div style={{position: 'absolute', ...atStart(90), top: 330, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 30, direction: dir}}>
         {crossed.map(([label, at, icon]) => (
           <CrossedOut key={label} from={at - 2} strikeAt={at + 16}>
             <div

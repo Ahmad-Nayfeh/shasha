@@ -51,7 +51,7 @@ class ActiveProfileTest {
     }
 
     private suspend fun ActiveProfile.loaded(id: String): Profile =
-        withTimeout(5_000) { profile.first { it?.id == id }!! }
+        withTimeout(TIMEOUT_MS) { profile.first { it?.id == id }!! }
 
     @Test
     fun firstStart_isTheOwner_createdOnTheSpot() = runBlocking<Unit> {
@@ -88,7 +88,7 @@ class ActiveProfileTest {
         val active = active(stores.open())
         active.switchTo("kid")
         repo.update("kid") { it.copy(allowlist = it.allowlist.withChannel(ListedChannel("UCnew", "جديدة"))) }
-        val edited = withTimeout(5_000) { active.profile.first { it?.allowlist?.hasChannel("UCnew") == true } }
+        val edited = withTimeout(TIMEOUT_MS) { active.profile.first { it?.allowlist?.hasChannel("UCnew") == true } }
         assertThat(edited!!.id).isEqualTo("kid")
     }
 
@@ -101,7 +101,9 @@ class ActiveProfileTest {
         assertThat(repo.delete("kid")).isEqualTo(DeleteProfileResult.Deleted)
 
         active.loaded(ADULT_PROFILE_ID)
-        assertThat(active.id.value).isEqualTo(ADULT_PROFILE_ID)
+        // The fallback sets the profile, then the id, on the follower's thread: wait for the id itself (reading
+        // id.value right after the profile arrived raced with it on a loaded machine).
+        withTimeout(TIMEOUT_MS) { active.id.first { it == ADULT_PROFILE_ID } }
         assertThat(active(stores.restart()).id.value).isEqualTo(ADULT_PROFILE_ID)
     }
 
@@ -112,7 +114,8 @@ class ActiveProfileTest {
         val active = active(stores.open())
         active.loaded(ADULT_PROFILE_ID)
         val watch = WatchRepository(db, active)
-        watch.addToHistory(video("adult-video", channelId(1), NOW_MS))
+        // A title of its own: "Video adult-video" (the helper's default) reads as the phrase the built-in content filter holds back.
+        watch.addToHistory(video("adult-video", channelId(1), NOW_MS, title = "Cooking show"))
         watch.addToWatchLater(video("adult-later", channelId(1), NOW_MS))
         watch.saveProgress("adult-video", 120_000, 600_000)
 
@@ -126,5 +129,10 @@ class ActiveProfileTest {
         active.switchTo(ADULT_PROFILE_ID)
         assertThat(watch.observeHistory().first().map { it.videoId }).containsExactly("adult-video")
         assertThat(watch.resumePositionMs("adult-video")).isEqualTo(120_000)
+    }
+
+    private companion object {
+        /** Generous: the profile follower runs on another thread, and CI machines can be slow. */
+        const val TIMEOUT_MS = 30_000L
     }
 }

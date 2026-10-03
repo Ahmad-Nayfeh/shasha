@@ -67,6 +67,7 @@ internal object StreamMapper {
             // plays at 360p is then marked (never silently).
             playback = PlaybackHandle(info, allowLowQuality = lowQualityHeight != null),
             lowQualityHeight = lowQualityHeight,
+            uploaderAvatarUrl = ItemMapper.avatar(info.uploaderAvatars),
         )
     }
 

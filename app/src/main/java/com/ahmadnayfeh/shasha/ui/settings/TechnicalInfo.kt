@@ -28,15 +28,12 @@ import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 
 /**
- * «معلومات تقنية والتراخيص», at the bottom of «فحص التحديثات» (it used to be on «حول», then under «تشخيص»): SponsorBlock's
- * attribution (CC BY-NC-SA 4.0, which its licence requires) and every library the APK carries with its licence
- * ([Licenses]). The version and the extractor's version are the pane's own first block ([VersionBlock]), not repeated
- * here. Compact: small rows with little between them. Every block takes the focus in turn, so the D-pad reads the
- * section from top to bottom.
+ * What «التراخيص» opens at the bottom of «حول» ([AboutPane]): SponsorBlock's attribution (CC BY-NC-SA 4.0, which its
+ * licence requires) and every library the APK carries with its licence ([Licenses]). Compact: small rows with little
+ * between them. Every block takes the focus in turn, so the D-pad reads the section from top to bottom.
  */
 @Composable
 internal fun TechnicalInfo() {
-    SectionLabel(stringResource(R.string.hub_tech_title), icon = SettingsIcons.Description)
     ReadingCard(Modifier.paneItem("tech_sponsorblock"), spacing = 4.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(ShashaIcons.SkipNext, contentDescription = null, tint = LocalAccent.current.bright, modifier = Modifier.size(20.dp))

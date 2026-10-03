@@ -2,7 +2,7 @@ package com.ahmadnayfeh.shasha.remote
 
 /**
  * When a paired phone last reached the server: any request that carried the pairing token (the page polls the status
- * every 2 s while it is open on a phone). The TV reads it to know whether a phone can answer now (v1.2: a video that
+ * every 2 s while it is open on a phone). The TV reads it to know whether a phone can answer now (v1.1.1: a video that
  * only the phone could end must first be confirmed from it). Memory only; [nowMillis] is monotonic.
  *
  * [onSeen] runs on the server's threads for every such request (the TV remembers that a phone paired with the token).

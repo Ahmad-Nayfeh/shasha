@@ -2,6 +2,7 @@ import React from 'react';
 import {Img} from 'remotion';
 import {brand, rgba} from '../brand';
 import {clamp, mix} from '../lib/anim';
+import {dir, isEn, startSide, t} from '../lib/lang';
 import {focusRect, screenSrc} from '../lib/screens';
 import {LogoMark, Wordmark} from './Brand';
 import {Icon, IconName} from './Icons';
@@ -12,6 +13,8 @@ import {PAIR_URL_SHORT} from '../lib/demo';
 // Generic phone mockup (screen = 390x844 CSS px, the :remote page's viewport) + vector versions of the
 // remote web page (mirrors remote/src/main/resources/web/index.html). When a real capture exists in
 // public/screens (phone_*.png, 1170x2532) it is shown instead of the vector page.
+// The real remote page is Arabic only, so its captures stay Arabic in the English version too; the vector pages (drawn
+// only when a capture is missing) go through t() and follow the language's direction.
 
 export const PW = 390;
 export const PH = 844;
@@ -81,7 +84,7 @@ export const pr = (name: string, key: string): [number, number, number, number] 
 };
 
 const abs = (s: React.CSSProperties): React.CSSProperties => ({position: 'absolute', ...s});
-const font: React.CSSProperties = {fontFamily: brand.font, direction: 'rtl', color: brand.text};
+const font: React.CSSProperties = {fontFamily: brand.font, direction: dir, color: brand.text};
 
 const StatusBar: React.FC<{dark?: boolean}> = () => (
   <div style={abs({left: 0, right: 0, top: 0, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', fontFamily: brand.font, fontSize: 15, fontWeight: 600, color: brand.text, direction: 'ltr'})}>
@@ -92,7 +95,7 @@ const StatusBar: React.FC<{dark?: boolean}> = () => (
   </div>
 );
 
-const TopBar: React.FC<{who?: string; kid?: boolean}> = ({who = 'الكبار', kid}) => (
+const TopBar: React.FC<{who?: string; kid?: boolean}> = ({who = t('الكبار'), kid}) => (
   <div style={abs({left: 0, right: 0, top: 44, height: 58, display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', borderBottom: '1px solid rgba(234,240,246,0.07)', ...font})}>
     <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
       <div style={{width: 30, height: 30, position: 'relative'}}>
@@ -123,12 +126,12 @@ const TopBar: React.FC<{who?: string; kid?: boolean}> = ({who = 'الكبار', 
 );
 
 const TabBar: React.FC<{active: number}> = ({active}) => {
-  const tabs: Array<[IconName, string]> = [
-    ['tv', 'الريموت'],
-    ['search', 'البحث'],
-    ['shield', 'الأب'],
-    ['sliders', 'المزيد'],
-  ];
+  const tabs = [
+    ['tv', t('الريموت')],
+    ['search', t('البحث')],
+    ['shield', t('الأب')],
+    ['sliders', t('المزيد')],
+  ] as Array<[IconName, string]>;
   return (
     <div style={abs({left: 0, right: 0, bottom: 0, height: 74, display: 'flex', background: 'rgba(11,15,20,0.92)', borderTop: '1px solid rgba(234,240,246,0.07)', ...font})}>
       {tabs.map(([ic, l], i) => (
@@ -151,7 +154,7 @@ const card = (s: React.CSSProperties): React.CSSProperties => abs({
 
 /** The remote page: now playing + search + send a link. */
 export const PhoneRemotePage: React.FC<{query?: string; typed?: number; results?: number; link?: number; playing?: boolean}> = ({
-  query = 'وثائقي المحيط',
+  query = t('وثائقي المحيط'),
   typed = 0,
   results = 0,
   link = 0,
@@ -170,8 +173,8 @@ export const PhoneRemotePage: React.FC<{query?: string; typed?: number; results?
         <div style={{display: 'flex', gap: 12}}>
           <div style={{width: 150, height: 84, borderRadius: 14, background: 'radial-gradient(70% 90% at 40% 40%, #1A6A6E, #0D3446 60%, #050B12)', flex: 'none'}} />
           <div style={{flex: 1}}>
-            <div style={{fontSize: 15, fontWeight: 800, lineHeight: 1.45}}>رحلة إلى أعماق المحيط: كائنات لم ترها من قبل</div>
-            <div style={{fontSize: 12.5, color: brand.muted, marginTop: 4}}>عالم الطبيعة</div>
+            <div style={{fontSize: 15, fontWeight: 800, lineHeight: 1.45}}>{t('رحلة إلى أعماق المحيط: كائنات لم ترها من قبل')}</div>
+            <div style={{fontSize: 12.5, color: brand.muted, marginTop: 4}}>{t('عالم الطبيعة')}</div>
           </div>
         </div>
         <div style={{height: 6, borderRadius: 6, background: 'rgba(234,240,246,0.1)', marginTop: 18, direction: 'ltr'}}>
@@ -196,7 +199,7 @@ export const PhoneRemotePage: React.FC<{query?: string; typed?: number; results?
         </div>
       </div>
       {/* search */}
-      <div style={abs({right: 20, top: sr[1] - 26, fontSize: 13, fontWeight: 700, color: brand.muted})}>بحث</div>
+      <div style={abs({[startSide]: 20, top: sr[1] - 26, fontSize: 13, fontWeight: 700, color: brand.muted})}>{t('بحث')}</div>
       <div
         style={abs({
           left: sr[0],
@@ -215,7 +218,7 @@ export const PhoneRemotePage: React.FC<{query?: string; typed?: number; results?
         })}
       >
         <Icon name="search" size={20} color={brand.faint} />
-        {typed > 0 ? <span>{query.slice(0, typed)}</span> : <span style={{color: brand.faint}}>ابحث في يوتيوب…</span>}
+        {typed > 0 ? <span>{query.slice(0, typed)}</span> : <span style={{color: brand.faint}}>{t('ابحث في يوتيوب…')}</span>}
         {typed > 0 && typed < query.length ? <span style={{width: 2, height: 20, background: brand.primary}} /> : null}
       </div>
       {/* results */}
@@ -236,13 +239,13 @@ export const PhoneRemotePage: React.FC<{query?: string; typed?: number; results?
         >
           <div style={{width: 112, height: 63, borderRadius: 10, background: i === 0 ? 'radial-gradient(70% 90% at 40% 40%, #1F5A70, #081620)' : 'radial-gradient(70% 90% at 40% 40%, #3C3163, #120E22)', flex: 'none'}} />
           <div style={{flex: 1}}>
-            <div style={{fontSize: 14, fontWeight: 700}}>{i === 0 ? 'وثائقي: أسرار أعماق المحيط' : 'المحيط الهادئ من الفضاء'}</div>
-            <div style={{fontSize: 12, color: brand.muted, marginTop: 3}}>{i === 0 ? 'عالم الطبيعة · 44:10' : 'رحلات هادئة · 18:02'}</div>
+            <div style={{fontSize: 14, fontWeight: 700}}>{i === 0 ? t('وثائقي: أسرار أعماق المحيط') : t('المحيط الهادئ من الفضاء')}</div>
+            <div style={{fontSize: 12, color: brand.muted, marginTop: 3}}>{i === 0 ? t('عالم الطبيعة · 44:10') : t('رحلات هادئة · 18:02')}</div>
           </div>
         </div>
       ))}
       {/* send a link */}
-      <div style={abs({right: 20, top: lk[1] - 26, fontSize: 13, fontWeight: 700, color: brand.muted})}>أرسل رابطاً إلى الشاشة</div>
+      <div style={abs({[startSide]: 20, top: lk[1] - 26, fontSize: 13, fontWeight: 700, color: brand.muted})}>{t('أرسل رابطاً إلى الشاشة')}</div>
       <div
         style={abs({
           left: lk[0],
@@ -265,7 +268,7 @@ export const PhoneRemotePage: React.FC<{query?: string; typed?: number; results?
         })}
       >
         {link > 0 ? 'https://youtu.be/dQw…' : ''}
-        {link <= 0 ? <span style={{fontFamily: brand.font, direction: 'rtl', width: '100%', textAlign: 'right'}}>الصق رابط يوتيوب</span> : null}
+        {link <= 0 ? <span style={{fontFamily: brand.font, direction: dir, width: '100%', textAlign: startSide}}>{t('الصق رابط يوتيوب')}</span> : null}
       </div>
       <div
         style={abs({
@@ -283,7 +286,7 @@ export const PhoneRemotePage: React.FC<{query?: string; typed?: number; results?
           boxShadow: `0 8px 22px ${rgba(brand.primary, 0.22)}`,
         })}
       >
-        شغّل
+        {t('شغّل')}
       </div>
       <TabBar active={0} />
     </div>
@@ -302,8 +305,8 @@ export const PhoneParentPinPage: React.FC<{filled?: number}> = ({filled = 0}) =>
         <div style={{width: 64, height: 64, borderRadius: 20, background: rgba(brand.amber, 0.13), display: 'grid', placeItems: 'center'}}>
           <Icon name="shield" size={36} color={brand.amber} />
         </div>
-        <div style={{fontSize: 22, fontWeight: 800, marginTop: 12}}>قسم الأب</div>
-        <div style={{fontSize: 14, color: brand.muted, marginTop: 4}}>أدخل رمز الأب (منفصل عن رمز التلفاز)</div>
+        <div style={{fontSize: 22, fontWeight: 800, marginTop: 12}}>{t('قسم الأب')}</div>
+        <div style={{fontSize: 14, color: brand.muted, marginTop: 4}}>{t('أدخل رمز الأب (منفصل عن رمز التلفاز)')}</div>
       </div>
       <div style={abs({left: d[0], top: d[1], width: d[2], height: d[3], display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 22, direction: 'ltr'})}>
         {[0, 1, 2, 3].map((i) => (
@@ -327,26 +330,26 @@ export const PhoneParentPage: React.FC<{minutes?: number; unlocked?: number; tog
   const p15 = pr('phone_parent', 'plus15');
   const ut = pr('phone_parent', 'unlockTimeUp');
   const cl = pr('phone_parent', 'childList');
-  const kids = ['قناة الحروف', 'حكايات قبل النوم', 'علوم للصغار'];
+  const kids = [t('قناة الحروف'), t('حكايات قبل النوم'), t('علوم للصغار')];
   return (
     <div style={abs({inset: 0, background: brand.bg, ...font})}>
       <StatusBar />
-      <TopBar who="الأب" />
+      <TopBar who={t('الأب')} />
       {/* quota */}
       <div style={card({left: 16, right: 16, top: 114, height: 180})} />
-      <div style={abs({right: 32, top: 130, display: 'flex', alignItems: 'center', gap: 10})}>
+      <div style={abs({[startSide]: 32, top: 130, display: 'flex', alignItems: 'center', gap: 10})}>
         <div style={{width: 34, height: 34, borderRadius: 11, background: rgba(brand.amber, 0.13), display: 'grid', placeItems: 'center'}}>
           <Icon name="hourglass" size={19} color={brand.amber} />
         </div>
-        <div style={{fontSize: 16.5, fontWeight: 800}}>حصة اليوم · الطفل</div>
+        <div style={{fontSize: 16.5, fontWeight: 800}}>{t('حصة اليوم · الطفل')}</div>
       </div>
-      <div style={abs({right: 32, top: 176, fontSize: 30, fontWeight: 800, color: brand.kids})}>{Math.round(minutes)} دقيقة</div>
-      <div style={abs({left: p15[0], top: p15[1], width: p15[2], height: p15[3], borderRadius: 15, background: brand.amber, color: brand.onAmber, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 15, fontWeight: 800})}><span style={{unicodeBidi: 'isolate', direction: 'ltr'}}>+15</span><span>دقيقة</span></div>
+      <div style={abs({[startSide]: 32, top: 176, fontSize: 30, fontWeight: 800, color: brand.kids})}>{t('{n} دقيقة', {n: Math.round(minutes)})}</div>
+      <div style={abs({left: p15[0], top: p15[1], width: p15[2], height: p15[3], borderRadius: 15, background: brand.amber, color: brand.onAmber, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 15, fontWeight: 800})}><span style={{unicodeBidi: 'isolate', direction: 'ltr'}}>+15</span><span>{isEn ? t('دقائق') : t('دقيقة')}</span></div>
       <div style={abs({left: 16 + 16, top: p15[1], width: p15[2] - 32, height: p15[3], borderRadius: 15, background: '#1E2632', display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 800})}><span style={{unicodeBidi: 'isolate', direction: 'ltr'}}>−15</span></div>
       {/* time up */}
       <div style={card({left: 16, right: 16, top: 306, height: 150, background: unlocked > 0.5 ? brand.surface : 'rgba(255,181,71,0.08)', border: `1px solid ${unlocked > 0.5 ? 'rgba(234,240,246,0.07)' : 'rgba(255,181,71,0.28)'}`})} />
-      <div style={abs({right: 32, top: 324, fontSize: 15, fontWeight: 800, color: unlocked > 0.5 ? brand.primary : '#FFD69B'})}>{unlocked > 0.5 ? 'تم فتح الشاشة' : 'انتهى الوقت على الشاشة'}</div>
-      <div style={abs({right: 32, top: 348, fontSize: 13, color: brand.muted})}>الطفل: انتهت حصة اليوم</div>
+      <div style={abs({[startSide]: 32, top: 324, fontSize: 15, fontWeight: 800, color: unlocked > 0.5 ? brand.primary : '#FFD69B'})}>{unlocked > 0.5 ? t('تم فتح الشاشة') : t('انتهى الوقت على الشاشة')}</div>
+      <div style={abs({[startSide]: 32, top: 348, fontSize: 13, color: brand.muted})}>{t('الطفل: انتهت حصة اليوم')}</div>
       <div
         style={abs({
           left: ut[0] + 16,
@@ -362,15 +365,15 @@ export const PhoneParentPage: React.FC<{minutes?: number; unlocked?: number; tog
           fontWeight: 800,
         })}
       >
-        {unlocked > 0.5 ? '✓ مفتوحة' : 'فتح انتهاء الوقت'}
+        {unlocked > 0.5 ? t('✓ مفتوحة') : t('فتح انتهاء الوقت')}
       </div>
       {/* child allow-list */}
       <div style={card({left: 16, right: 16, top: 470, height: 250})} />
-      <div style={abs({right: 32, top: 486, display: 'flex', alignItems: 'center', gap: 10})}>
+      <div style={abs({[startSide]: 32, top: 486, display: 'flex', alignItems: 'center', gap: 10})}>
         <div style={{width: 34, height: 34, borderRadius: 11, background: rgba(brand.kids, 0.13), display: 'grid', placeItems: 'center'}}>
           <Icon name="star" size={19} color={brand.kids} />
         </div>
-        <div style={{fontSize: 16.5, fontWeight: 800}}>قائمة الطفل</div>
+        <div style={{fontSize: 16.5, fontWeight: 800}}>{t('قائمة الطفل')}</div>
       </div>
       {kids.map((k, i) => {
         const on = i < 2 ? 1 : toggled;
@@ -383,7 +386,7 @@ export const PhoneParentPage: React.FC<{minutes?: number; unlocked?: number; tog
           </div>
         );
       })}
-      <div style={abs({left: cl[0] + 16, top: cl[1], width: cl[2] - 32, height: cl[3], borderRadius: 15, background: '#1E2632', display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 800})}>إدارة القائمة</div>
+      <div style={abs({left: cl[0] + 16, top: cl[1], width: cl[2] - 32, height: cl[3], borderRadius: 15, background: '#1E2632', display: 'grid', placeItems: 'center', fontSize: 15, fontWeight: 800})}>{t('إدارة القائمة')}</div>
       <TabBar active={2} />
     </div>
   );
@@ -397,9 +400,9 @@ export const PhoneTakeoutPage: React.FC<{drop?: number; progress?: number; done?
   return (
     <div style={abs({inset: 0, background: brand.bg, ...font})}>
       <StatusBar />
-      <TopBar who="الأب" />
-      <div style={abs({right: 20, top: 122, fontSize: 19, fontWeight: 800})}>استيراد الاشتراكات</div>
-      <div style={abs({right: 20, top: 150, fontSize: 13, color: brand.muted})}>ملف subscriptions.csv من Google Takeout</div>
+      <TopBar who={t('الأب')} />
+      <div style={abs({[startSide]: 20, top: 122, fontSize: 19, fontWeight: 800})}>{t('استيراد الاشتراكات')}</div>
+      <div style={abs({[startSide]: 20, top: 150, fontSize: 13, color: brand.muted})}>{t('ملف subscriptions.csv من Google Takeout')}</div>
       <div
         style={abs({
           left: dz[0],
@@ -423,9 +426,9 @@ export const PhoneTakeoutPage: React.FC<{drop?: number; progress?: number; done?
           </div>
           <div style={{fontSize: 13.5, fontFamily: brand.mono, color: brand.text, direction: 'ltr'}}>subscriptions.csv</div>
         </div>
-        {drop <= 0.05 ? <div style={{fontSize: 14, color: brand.muted}}>اختر الملف أو اسحبه هنا</div> : null}
+        {drop <= 0.05 ? <div style={{fontSize: 14, color: brand.muted}}>{t('اختر الملف أو اسحبه هنا')}</div> : null}
       </div>
-      <div style={abs({left: pg[0], top: pg[1] + 10, width: pg[2], height: 10, borderRadius: 6, background: 'rgba(234,240,246,0.1)', overflow: 'hidden', direction: 'rtl'})}>
+      <div style={abs({left: pg[0], top: pg[1] + 10, width: pg[2], height: 10, borderRadius: 6, background: 'rgba(234,240,246,0.1)', overflow: 'hidden', direction: dir})}>
         <div style={{width: `${progress * 100}%`, height: '100%', background: brand.primary, borderRadius: 6}} />
       </div>
       <div
@@ -446,7 +449,7 @@ export const PhoneTakeoutPage: React.FC<{drop?: number; progress?: number; done?
         })}
       >
         <Icon name="check" size={22} color={brand.primary} stroke={3} />
-        <span style={{fontSize: 15, fontWeight: 800, color: brand.primary}}>تم استيراد 42 قناة</span>
+        <span style={{fontSize: 15, fontWeight: 800, color: brand.primary}}>{t('تم استيراد 42 قناة')}</span>
       </div>
       <TabBar active={2} />
     </div>
@@ -508,7 +511,7 @@ export const PhoneCameraPage: React.FC<{scan: number; lock: number; f: number}> 
         <Icon name="link" size={22} color={brand.primary} />
         <span style={{fontFamily: brand.mono, fontSize: 13, color: '#BFEFEA', direction: 'ltr'}}>{PAIR_URL_SHORT}</span>
       </div>
-      <div style={abs({left: 0, right: 0, top: 70, textAlign: 'center', fontSize: 15, fontWeight: 700, color: '#fff'})}>وجّه الكاميرا إلى الرمز</div>
+      <div style={abs({left: 0, right: 0, top: 70, textAlign: 'center', fontSize: 15, fontWeight: 700, color: '#fff'})}>{t('وجّه الكاميرا إلى الرمز')}</div>
     </div>
   );
 };

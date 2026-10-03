@@ -2,11 +2,12 @@ import React from 'react';
 import {useCurrentFrame} from 'remotion';
 import {brand} from '../brand';
 import {tween, win} from '../lib/anim';
+import {dir} from '../lib/lang';
 import {captionChunks, Scene} from '../lib/timeline';
 
 /**
- * Burned-in Arabic captions: phrase-level chunks of the cue's display text, timed to the spoken words.
- * Sits on a soft surface pill at the bottom centre.
+ * Burned-in captions (Arabic, or English in the English version): phrase-level chunks of the cue's display text,
+ * timed to the spoken words. Sits on a soft surface pill at the bottom centre.
  */
 export const Captions: React.FC<{scene: Scene; bottom?: number}> = ({scene, bottom = 44}) => {
   const f = useCurrentFrame();
@@ -35,7 +36,7 @@ export const Captions: React.FC<{scene: Scene; bottom?: number}> = ({scene, bott
           >
             <div
               style={{
-                direction: 'rtl',
+                direction: dir,
                 fontFamily: brand.font,
                 fontWeight: 500,
                 fontSize: 38,

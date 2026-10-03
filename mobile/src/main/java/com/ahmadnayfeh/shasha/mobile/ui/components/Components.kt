@@ -52,7 +52,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -92,6 +96,7 @@ fun errorMessage(error: UiError): String = stringResource(
         SourceErrorKind.RATE_LIMITED -> R.string.error_rate_limited
         SourceErrorKind.LOW_QUALITY_ONLY -> R.string.error_low_quality
         SourceErrorKind.EXTRACTION_BROKEN -> R.string.error_broken
+        SourceErrorKind.DEVICE_DECODER -> R.string.error_device_decoder
         null -> R.string.error_generic
     },
 )
@@ -275,7 +280,7 @@ fun VideoMenuButton(video: VideoItem, modifier: Modifier = Modifier) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.menu_open_channel)) },
                     leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
-                    onClick = { open = false; actions.openChannel(channelId) },
+                    onClick = { open = false; actions.openChannel(ChannelItem(channelId, video.channelName.orEmpty(), avatarUrl = null, subscriberCount = null)) },
                 )
             }
         }
@@ -352,15 +357,39 @@ fun VideoListItem(
 
 // --- channels and playlists ----------------------------------------------------------------------------------------
 
+/**
+ * A channel's picture. Without one ([url] null: a subscription saved before its picture was known) the initial of [name]
+ * stands in for it, and a person icon where there is no name either.
+ */
 @Composable
-fun Avatar(url: String?, modifier: Modifier = Modifier, size: Int = 48) {
+fun Avatar(url: String?, modifier: Modifier = Modifier, size: Int = 48, name: String? = null) {
     Box(modifier.size(size.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh), contentAlignment = Alignment.Center) {
-        if (url != null) {
-            AsyncImage(model = url, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        } else {
-            Icon(Icons.Filled.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        val initial = if (url == null) initialOf(name) else null
+        when {
+            url != null -> AsyncImage(model = url, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            initial != null -> Text(
+                initial,
+                // Decorative, like the icon: the name is read beside it. Sized by the circle (dp), not by the reader's font scale.
+                modifier = Modifier.semantics { hideFromAccessibility() },
+                fontSize = with(LocalDensity.current) { (size * 0.42f).dp.toSp() },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+            )
+            else -> Icon(Icons.Filled.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+/** The first letter or digit of [name], in capitals ("أحمد" → "أ"); null for a name that has none (or none at all). */
+internal fun initialOf(name: String?): String? {
+    val text = name?.trim().orEmpty()
+    var index = 0
+    while (index < text.length) {
+        val codePoint = text.codePointAt(index)
+        if (Character.isLetterOrDigit(codePoint)) return String(Character.toChars(codePoint)).uppercase()
+        index += Character.charCount(codePoint)
+    }
+    return null
 }
 
 @Composable
@@ -370,7 +399,7 @@ fun ChannelListItem(channel: ChannelItem, onClick: () -> Unit, modifier: Modifie
         modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Avatar(channel.avatarUrl, size = 56)
+        Avatar(channel.avatarUrl, size = 56, name = channel.name)
         Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
             Text(channel.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             channel.subscriberCount?.let {

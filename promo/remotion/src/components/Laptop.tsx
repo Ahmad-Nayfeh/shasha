@@ -14,6 +14,9 @@ const ARABIC = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/;
  * shown as an LTR isolate so its own punctuation stays with it (the "?" after "debugging") while the quotes, brackets
  * and the sentence's final punctuation around it follow the Arabic (RTL) line.
  */
+// the punctuation that ends a Latin run: space ( [ « » " ' . … ، : ؛ (written as escapes)
+const RUN_TAIL = new RegExp('[\\s(\\[\\u00AB\\u00BB\\x22\\x27.\\u2026\\u060C:\\u061B]*$');
+
 export const isolateLatin = (text: string): React.ReactNode[] => {
   const out: React.ReactNode[] = [];
   let buf = '';
@@ -23,7 +26,7 @@ export const isolateLatin = (text: string): React.ReactNode[] => {
       let j = i;
       while (j < text.length && !ARABIC.test(text[j])) j++;
       const run = text.slice(i, j);
-      const tail = run.match(/[\s(\[«»"'.…،:؛]*$/)?.[0] ?? '';
+      const tail = run.match(RUN_TAIL)?.[0] ?? '';
       if (buf) out.push(buf);
       buf = tail;
       out.push(

@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
+import com.ahmadnayfeh.shasha.youtube.safety.ExplicitFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,14 +34,15 @@ interface RecentSearches {
  */
 class SearchHistory(private val store: DataStore<Preferences>) : RecentSearches {
 
+    /** Without what the built-in filter holds back: a search kept before it existed is not offered again. */
     override fun observe(profileId: String): Flow<List<String>> = store.data
         .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
-        .map { decode(it[key(profileId)]) }
+        .map { prefs -> decode(prefs[key(profileId)]).filterNot { ExplicitFilter.default.isExplicit(it) } }
         .distinctUntilChanged()
 
-    /** [query] becomes the newest; the same text typed differently (case, spaces) replaces the older one. */
+    /** [query] becomes the newest; the same text typed differently (case, spaces) replaces the older one. An explicit one is not kept. */
     override suspend fun add(profileId: String, query: String) {
-        val clean = normalize(query) ?: return
+        val clean = normalize(query)?.takeUnless { ExplicitFilter.default.isExplicit(it) } ?: return
         store.edit { prefs ->
             val list = decode(prefs[key(profileId)])
             prefs[key(profileId)] = encode((listOf(clean) + list.filterNot { it.equals(clean, ignoreCase = true) }).take(MAX))

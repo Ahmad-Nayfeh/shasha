@@ -748,9 +748,9 @@ details.card[open] .chev{transform:rotate(180deg)}
     parent: store.get('sessionStorage', 'shasha.parent'),
     P: { settings: null, details: null, block: null, subs: null, stats: null, allow: {}, allowSel: null, at: {} },
     lockUntil: Number(store.get('sessionStorage', 'shasha.lockUntil') || 0),
-    // v1.2: the link this page sent last, while the TV asks «قبول» or «رفض» ({id, state, set, open}).
+    // v1.1.1: the link this page sent last, while the TV asks «قبول» or «رفض» ({id, state, set, open}).
     watching: null,
-    // v1.2: the confirmation the sheet already opened for (it opens once by itself).
+    // v1.1.1: the confirmation the sheet already opened for (it opens once by itself).
     confirmShown: null,
   };
 
@@ -1285,7 +1285,7 @@ details.card[open] .chev{transform:rotate(180deg)}
       : st.timeLeftMinutes != null ? 'متبقٍ اليوم: ' + mins(st.timeLeftMinutes) : 'بلا حد يومي';
     $('#today-ico').className = 'ico' + (blocked ? ' red' : st.sessionState === 'WARNING' ? ' amber' : st.profileKind === 'CHILD' ? ' kid' : '');
   }
-  // A link never opens by itself on the TV (v1.2): the TV's rules first (a refusal shows here and the TV shows nothing),
+  // A link never opens by itself on the TV (v1.1.1): the TV's rules first (a refusal shows here and the TV shows nothing),
   // then «طلب تشغيل من الجوال» waits there for «قبول» or «رفض» (30 s). The sheet follows it live through the status.
   const REQ_STATE = {
     SENDING: ['state sending', 'tv', 'جارٍ الإرسال إلى الشاشة…'],
@@ -1401,7 +1401,7 @@ details.card[open] .chev{transform:rotate(180deg)}
     if (yes === true) autoSend(raw);
   }
 
-  // ---------- a video the TV starts only once the parent confirms it here (v1.2) ----------
+  // ---------- a video the TV starts only once the parent confirms it here (v1.1.1) ----------
   // In Serious Mode, when nothing on the TV can end the video early (the adult's escape is off), only this section can:
   // the TV waits for «تأكيد» before the video starts. A card on the screen tab, and once by itself as a sheet.
   const leftText = n => n >= 60 ? Math.floor(n / 60) + ':' + pad(n % 60) : n + ' ث';

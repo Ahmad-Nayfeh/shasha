@@ -20,7 +20,6 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -32,6 +31,8 @@ import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import com.ahmadnayfeh.shasha.Fixtures
+import com.ahmadnayfeh.shasha.PromoEnglish
+import com.ahmadnayfeh.shasha.PromoEnglish.en
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.data.SyncHealth
 import com.ahmadnayfeh.shasha.player.PlaybackProgress
@@ -56,7 +57,6 @@ import com.ahmadnayfeh.shasha.ui.screens.settings.ProfileEditScreen
 import com.ahmadnayfeh.shasha.ui.theme.KidsAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
-import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -75,13 +75,14 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = TV_1080P)
 class SuggestionsScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     private fun snap(name: String, keys: List<Key> = emptyList(), content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         val pictures = AsyncImagePreviewHandler { request -> UiFixtures.fakeThumbnail(request.data.toString()).asImage() }
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true, LocalAsyncImagePreviewHandler provides pictures) {
-                ShashaTheme { content() }
+                ShashaTheme(language = PromoEnglish.language()) { content() }
             }
         }
         compose.waitForIdle()
@@ -89,7 +90,7 @@ class SuggestionsScreenshotTest {
             compose.onRoot().performKeyInput { pressKey(key) }
             compose.waitForIdle()
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     @Composable
@@ -257,8 +258,8 @@ class SuggestionsScreenshotTest {
     fun profileSwitches() = snap("profile_edit_shorts", keys = List(5) { Key.DirectionDown }) {
         // The child's page, scrolled to «إظهار مقاطع Shorts» and «إظهار الفيديوهات المقترحة» (focused), each saying what
         // it does.
-        val sara = Profile.newChild("سارة", id = "sara", avatar = "rocket").copy(
-            allowlist = Allowlist(channels = listOf(ListedChannel("UCkids00000000000000000a1", "عالم الطبيعة"))),
+        val sara = Profile.newChild(en("سارة"), id = "sara", avatar = "rocket").copy(
+            allowlist = Allowlist(channels = listOf(ListedChannel("UCkids00000000000000000a1", en("عالم الطبيعة")))),
         )
         CompositionLocalProvider(LocalBringIntoViewSpec provides TvScrolling) {
             KidsAccent { ProfileEditScreen(sara, canDelete = true, onUpdate = {}, onOpenAllowlist = {}, onDelete = {}) }

@@ -2,11 +2,12 @@ import React from 'react';
 import {useCurrentFrame} from 'remotion';
 import {brand, rgba} from '../brand';
 import {Icon} from '../components/Icons';
-import {IpNote, NoteChip, StepHeader} from '../components/Install';
+import {IP_NOTE_HOME, IpNote, mirrorX, NoteChip, StepHeader} from '../components/Install';
 import {Press} from '../components/Remote';
 import {Crumbs, K, RowHalo, sx, sy, TV, TvStepStage} from '../components/TvStep';
 import {clamp, easeInOut, keys, mix, sp, tween} from '../lib/anim';
 import {TV_IP} from '../lib/demo';
+import {dir, flowSign, isEn, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 import {NETWORK_ROW, P_NETWORK, P_SETTINGS, P_WIFI, rowRect, SETTINGS_ROW, WIFI_ROW} from '../lib/tvPanels';
 
@@ -18,7 +19,7 @@ import {NETWORK_ROW, P_NETWORK, P_SETTINGS, P_WIFI, rowRect, SETTINGS_ROW, WIFI_
 export const IP_NOTE_LAND = 32; // frames after «أرقاما» when the note has landed (Main.tsx takes over)
 
 /** The «Ethernet» part of Network & Internet, redrawn small beside the TV (the wired case). */
-const EthernetCard: React.FC<{t: number; ring: number}> = ({t, ring}) => {
+const EthernetCard: React.FC<{p: number; ring: number}> = ({p, ring}) => {
   const tv = "'IBM Plex Sans Arabic', sans-serif";
   const row = (label: string, sub: string) => (
     <div style={{padding: '0 18px', marginTop: 14}}>
@@ -26,25 +27,26 @@ const EthernetCard: React.FC<{t: number; ring: number}> = ({t, ring}) => {
       <div style={{fontSize: 20, color: '#9AA0A6'}}>{sub}</div>
     </div>
   );
+  const under = t('العنوان تحت {label} مباشرة').split('{label}');
   return (
     <div
       style={{
         position: 'absolute',
-        left: 1352,
+        left: mirrorX(1352, 500),
         top: 250,
         width: 500,
-        opacity: clamp(t * 1.4),
-        transform: `translateX(${(1 - clamp(t)) * 50}px)`,
+        opacity: clamp(p * 1.4),
+        transform: `translateX(${flowSign * (1 - clamp(p)) * 50}px)`,
         fontFamily: brand.font,
       }}
     >
-      <div style={{display: 'flex', alignItems: 'center', gap: 14, direction: 'rtl', marginBottom: 16}}>
+      <div style={{display: 'flex', alignItems: 'center', gap: 14, direction: dir, marginBottom: 16}}>
         <div style={{width: 54, height: 54, borderRadius: 99, display: 'grid', placeItems: 'center', background: rgba(brand.primary, 0.16), border: `1.5px solid ${rgba(brand.primary, 0.5)}`}}>
           <Icon name="plug" size={30} color={brand.primary} stroke={2.2} />
         </div>
         <div style={{display: 'flex', flexDirection: 'column', lineHeight: 1.2}}>
-          <span style={{fontSize: 32, fontWeight: 700, color: brand.text}}>موصولة بسلك؟</span>
-          <span style={{fontSize: 21, fontWeight: 500, color: brand.muted, direction: 'ltr', textAlign: 'right'}}>Ethernet</span>
+          <span style={{fontSize: 32, fontWeight: 700, color: brand.text}}>{t('موصولة بسلك؟')}</span>
+          <span style={{fontSize: 21, fontWeight: 500, color: brand.muted, direction: 'ltr', textAlign: isEn ? 'left' : 'right'}}>Ethernet</span>
         </div>
       </div>
       <div
@@ -80,10 +82,12 @@ const EthernetCard: React.FC<{t: number; ring: number}> = ({t, ring}) => {
         {row('Proxy settings', 'None')}
         {row('IP settings', 'DHCP')}
       </div>
-      <div style={{direction: 'rtl', marginTop: 16, fontSize: 25, fontWeight: 600, color: brand.text, opacity: clamp(ring * 1.5), display: 'flex', alignItems: 'center', gap: 10}}>
+      <div style={{direction: dir, marginTop: 16, fontSize: 25, fontWeight: 600, color: brand.text, opacity: clamp(ring * 1.5), display: 'flex', alignItems: 'center', gap: 10}}>
         <span style={{color: brand.amber}}>↑</span>
         <span>
-          العنوان تحت <bdi>«Connected»</bdi> مباشرة
+          {under[0]}
+          <bdi>{isEn ? '“Connected”' : '«Connected»'}</bdi>
+          {under[1]}
         </span>
       </div>
     </div>
@@ -131,11 +135,11 @@ export const S16FindIp: React.FC<{scene: Scene}> = ({scene}) => {
 
   // the address flies from its row to the top-left corner
   const r = rowRect(WIFI_ROW.ip);
-  const fromX = TV.x + (r[0] + 30) * K;
+  const fromX = TV.x + (r[0] + (isEn ? r[2] - 30 : 30)) * K; // the card's anchored edge (left in Arabic, right in English) starts 30 px inside the row
   const fromY = TV.y + (r[1] + 30) * K;
   const fly = tween(f, tDigits + 6, 26, easeInOut);
-  const noteX = mix(fromX, 90, fly);
-  const noteY = mix(fromY, 56, fly) - Math.sin(fly * Math.PI) * 60;
+  const noteX = mix(fromX, IP_NOTE_HOME.x, fly);
+  const noteY = mix(fromY, IP_NOTE_HOME.y, fly) - Math.sin(fly * Math.PI) * 60;
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
@@ -145,19 +149,19 @@ export const S16FindIp: React.FC<{scene: Scene}> = ({scene}) => {
       </TvStepStage>
       <Crumbs
         items={[
-          {ar: 'الإعدادات', en: 'Settings', at: tSettings - 4},
-          {ar: 'الشبكة والإنترنت', en: 'Network & Internet', at: okNet},
-          {ar: 'شبكتك', en: 'HomeWiFi', at: okHome},
-          {ar: 'عنوان IP', en: 'IP address', at: downIp + 4},
+          {ar: t('الإعدادات'), en: 'Settings', at: tSettings - 4},
+          {ar: t('الشبكة والإنترنت'), en: 'Network & Internet', at: okNet},
+          {ar: t('شبكتك'), en: 'HomeWiFi', at: okHome},
+          {ar: t('عنوان IP'), en: 'IP address', at: downIp + 4},
         ]}
       />
       <NoteChip x={sx(60)} y={sy(236)} t={sp(f, tWifi - 2, {damping: 20})} icon="wifi" en="Wi-Fi">
-        على الواي فاي
+        {t('على الواي فاي')}
       </NoteChip>
       <NoteChip x={sx(60)} y={sy(392)} t={sp(f, tRec - 2, {damping: 20})} icon="pencil">
-        اكتبه على ورقة: أرقام بينها نقاط
+        {t('اكتبه على ورقة: أرقام بينها نقاط')}
       </NoteChip>
-      {card > 0.001 ? <EthernetCard t={card} ring={ring} /> : null}
+      {card > 0.001 ? <EthernetCard p={card} ring={ring} /> : null}
       {f >= tDigits + 6 && fly < 1 ? <IpNote x={noteX} y={noteY} t={clamp(fly * 1.2 + 0.2)} glow={1 - fly} /> : null}
     </div>
   );

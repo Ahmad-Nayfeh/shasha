@@ -19,7 +19,6 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -29,6 +28,9 @@ import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import com.ahmadnayfeh.shasha.Fixtures
+import com.ahmadnayfeh.shasha.PromoEnglish
+import com.ahmadnayfeh.shasha.PromoEnglish.en
+import com.ahmadnayfeh.shasha.PromoEnglish.pick
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.data.ImportResult
 import com.ahmadnayfeh.shasha.data.SyncHealth
@@ -56,6 +58,7 @@ import com.ahmadnayfeh.shasha.ui.screens.player.EndCard
 import com.ahmadnayfeh.shasha.ui.screens.player.PlaybackEnd
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerOsd
 import com.ahmadnayfeh.shasha.ui.screens.playlist.PlaylistScreen
+import com.ahmadnayfeh.shasha.ui.screens.search.SearchAssist
 import com.ahmadnayfeh.shasha.ui.screens.search.SearchCallbacks
 import com.ahmadnayfeh.shasha.ui.screens.search.SearchScreen
 import com.ahmadnayfeh.shasha.ui.screens.settings.ImportScreen
@@ -70,7 +73,6 @@ import com.ahmadnayfeh.shasha.youtube.ChannelSort
 import com.ahmadnayfeh.shasha.youtube.ChannelTab
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
-import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -87,14 +89,15 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = TV_1080P)
 class BrowseScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     @OptIn(ExperimentalCoilApi::class)
     private fun snap(name: String, keys: List<Key> = emptyList(), content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         val pictures = AsyncImagePreviewHandler { request -> UiFixtures.fakeThumbnail(request.data.toString()).asImage() }
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true, LocalAsyncImagePreviewHandler provides pictures) {
-                ShashaTheme { content() }
+                ShashaTheme(language = PromoEnglish.language()) { content() }
             }
         }
         compose.waitForIdle()
@@ -102,7 +105,7 @@ class BrowseScreenshotTest {
             compose.onRoot().performKeyInput { pressKey(key) }
             compose.waitForIdle()
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     @Composable
@@ -166,7 +169,7 @@ class BrowseScreenshotTest {
     fun searchResults() = snap("search_results", keys = listOf(Key.DirectionDown, Key.DirectionDown)) {
         Shell(Tab.SEARCH) {
             SearchScreen(
-                query = "الخط العربي",
+                query = en("الخط العربي"),
                 filter = SearchFilter.ALL,
                 results = PagedState(items = UiFixtures.searchResults, loadingFirst = false),
                 subscribed = stateOf(UiFixtures.subscribedIds),
@@ -175,6 +178,7 @@ class BrowseScreenshotTest {
                 focus = remember { ContentFocus() },
                 extractorVersion = "v0.26.5",
                 callbacks = SearchCallbacks({}, {}, {}, {}, {}, {}, {}, {}),
+                assist = SearchAssist(voiceLanguage = pick("ar-SA", "en-US")),
             )
         }
     }
@@ -328,13 +332,14 @@ class BrowseScreenshotTest {
         OverFakeVideo {
             PlayerOsd(
                 state = Fixtures.osd,
-                progress = { PlaybackProgress(positionMs = 757_000, bufferedMs = 820_000, durationMs = 1_510_000) },
+                // In English the chips are wider and the clock would touch «Watch later»: the same moment of a shorter video.
+                progress = { pick(PlaybackProgress(757_000, 820_000, 1_510_000), PlaybackProgress(157_000, 168_000, 310_000)) },
                 onAction = {},
                 onExit = {},
                 autoHideMs = NEVER,
                 savedForLater = true,
                 onToggleWatchLater = {},
-                resumedFromMs = 754_000,
+                resumedFromMs = pick(754_000L, 154_000L),
                 resumeHintMs = NEVER,
             )
         }

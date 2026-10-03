@@ -1,12 +1,15 @@
 import React from 'react';
 import {brand, rgba} from '../brand';
+import {isEn} from '../lib/lang';
 import {useSvgId} from './Brand';
 
 // Night living-room silhouette (s02, s16): TV on a low console at the left (RTL: where the eye ends),
 // sofa facing it at the right with a seated silhouette, floor lamp, window with the moon, a plant.
 // `tv` = screen brightness 0..1 (teal glow and rim light follow it); the screen content is passed in.
+// English version: the room is its own mirror image (the TV on the right, where a left-to-right eye ends).
 
-export const ROOM_TV = {x: 330, y: 468, w: 520, h: 292}; // screen rect in stage px
+const TV_AR = {x: 330, y: 468, w: 520, h: 292}; // screen rect in the drawing (Arabic layout)
+export const ROOM_TV = {...TV_AR, x: isEn ? 1920 - TV_AR.x - TV_AR.w : TV_AR.x}; // screen rect in stage px
 
 export const LivingRoom: React.FC<{
   tv?: number;
@@ -20,7 +23,7 @@ export const LivingRoom: React.FC<{
   const gGlow = useSvgId('gl');
   const gLamp = useSvgId('lp');
   const gSofa = useSvgId('sf');
-  const T = ROOM_TV;
+  const T = TV_AR; // the drawing is made for the Arabic layout and flipped for English
   const rim = rgba(brand.primary, 0.32 * tv);
   return (
     <div style={{position: 'absolute', inset: 0, opacity}}>
@@ -45,6 +48,7 @@ export const LivingRoom: React.FC<{
             <stop offset="1" stopColor="#0E141A" />
           </linearGradient>
         </defs>
+        <g transform={isEn ? 'translate(1920 0) scale(-1 1)' : undefined}>
         {/* window with moon (right wall) */}
         <g opacity={0.9}>
           <rect x={1540} y={300} width={250} height={250} rx={14} fill="#0D1522" stroke="#1B2533" strokeWidth={6} />
@@ -108,15 +112,16 @@ export const LivingRoom: React.FC<{
           <path d="M1712 480 L1804 480 L1784 410 L1732 410 Z" fill={lamp > 0.05 ? '#3A2C14' : '#161C23'} />
           <path d="M1716 480 L1800 480" stroke={rgba(brand.amber, 0.6 * lamp)} strokeWidth={3} />
         </g>
+        </g>
       </svg>
       {/* TV screen content (HTML so we can put real UI in it) */}
       <div
         style={{
           position: 'absolute',
-          left: T.x,
-          top: T.y,
-          width: T.w,
-          height: T.h,
+          left: ROOM_TV.x,
+          top: ROOM_TV.y,
+          width: ROOM_TV.w,
+          height: ROOM_TV.h,
           overflow: 'hidden',
           background: '#020304',
           borderRadius: 4,

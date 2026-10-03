@@ -15,6 +15,9 @@ interface SubscriptionDao {
     @Query("SELECT * FROM subscriptions")
     suspend fun all(): List<SubscriptionEntity>
 
+    @Query("SELECT * FROM subscriptions WHERE channelId = :channelId")
+    suspend fun get(channelId: String): SubscriptionEntity?
+
     @Query("SELECT EXISTS(SELECT 1 FROM subscriptions WHERE channelId = :channelId)")
     fun observeIsSubscribed(channelId: String): Flow<Boolean>
 
@@ -23,6 +26,18 @@ interface SubscriptionDao {
 
     @Query("DELETE FROM subscriptions WHERE channelId = :channelId")
     suspend fun delete(channelId: String)
+
+    /**
+     * What a loaded page of the channel says about it, for a channel that is followed: the new [name], and the new [avatarUrl]
+     * (null keeps the stored one). It is an UPDATE and not an upsert, so a channel that was unsubscribed meanwhile is not
+     * brought back; and it matches only a row that would change, so a page that says what is stored already writes nothing.
+     * Returns how many rows changed: 0 for a channel that is not followed and for a page that says what is stored.
+     */
+    @Query(
+        "UPDATE subscriptions SET name = :name, avatarUrl = COALESCE(:avatarUrl, avatarUrl) WHERE channelId = :channelId " +
+            "AND (name != :name OR (:avatarUrl IS NOT NULL AND avatarUrl IS NOT :avatarUrl))",
+    )
+    suspend fun updateDetails(channelId: String, name: String, avatarUrl: String?): Int
 }
 
 @Dao

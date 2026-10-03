@@ -1,14 +1,16 @@
 import React from 'react';
 import {rgba} from '../brand';
+import {digits, dir, isEn, startSide, t} from '../lib/lang';
 import {REPO_PATH} from '../lib/installer';
 import {LogoMark} from './Brand';
 import {Icon} from './Icons';
-import {C, MH, MW, Screen390, StatusBar, Thumb, thumbBg, Toggle390} from './MobileUi';
+import {BACK_FLIP, C, MH, MW, Screen390, StatusBar, Thumb, thumbBg, Toggle390} from './MobileUi';
 import {clamp} from '../lib/anim';
 
 // The parts of the phone around the app: the browser with the release page, Android's own dialogs for installing
 // from a new source, the launcher (home screen) with a picture-in-picture window, the switched-off screen. Drawn
-// in the system's neutral light/dark Material look, with no Google or maker branding.
+// in the system's neutral light/dark Material look, with no Google or maker branding. Right-to-left in the Arabic
+// video, left-to-right (the buttons of a dialog at its end, the primary one last) in the English one.
 
 export const MOBILE_APK = 'shasha-mobile-1.2.0-1065.apk';
 
@@ -32,7 +34,7 @@ export const BrowserPage: React.FC<{scroll?: number; hiAsset?: number; tap?: num
             <span style={{fontSize: 20, fontWeight: 700}}>v1.2.0-1065</span>
             <span style={{padding: '1px 10px', borderRadius: 99, border: `1px solid ${L.green}`, color: L.green, fontSize: 12.5, fontWeight: 600}}>Latest</span>
           </div>
-          <div style={{fontSize: 14, color: L.muted, marginTop: 8, direction: 'rtl', textAlign: 'right'}}>شاشة ١٫٢٫٠: تطبيق الجوال، وتحديث بضغطة واحدة.</div>
+          <div style={{fontSize: 14, color: L.muted, marginTop: 8, direction: dir, textAlign: startSide}}>{t('شاشة ١٫٢٫٠: تطبيق الجوال، وتحديث بضغطة واحدة.')}</div>
           <div style={{fontSize: 15, fontWeight: 700, margin: '18px 0 8px'}}>Assets</div>
           {[
             [MOBILE_APK, '4.02 MB', true],
@@ -51,21 +53,22 @@ export const BrowserPage: React.FC<{scroll?: number; hiAsset?: number; tap?: num
     {snack > 0 ? (
       <div style={{position: 'absolute', left: 12, right: 12, bottom: 24, height: 54, borderRadius: 12, background: '#2B3138', color: '#F1F3F5', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12, opacity: snack, transform: `translateY(${(1 - snack) * 24}px)`, fontSize: 15, fontWeight: 500}}>
         <Icon name="check" size={22} color="#7EE0A0" stroke={3} />
-        <span style={{flex: 1}}>اكتمل التنزيل</span>
-        <span style={{color: '#8AB4FF', fontWeight: 700}}>فتح</span>
+        <span style={{flex: 1}}>{t('اكتمل التنزيل')}</span>
+        <span style={{color: '#8AB4FF', fontWeight: 700}}>{t('فتح')}</span>
       </div>
     ) : null}
   </Screen390>
 );
 
 // ------------------------------------------------------------------------------------------------ install from a new source
-const SysDialog: React.FC<{t: number; title: string; body: string; actions: Array<[string, boolean?]>; hiAction?: number}> = ({t, title, body, actions, hiAction = -1}) => (
+// actions: [label, primary?]; in English the buttons sit at the dialog's end (right), the primary one last.
+const SysDialog: React.FC<{t: number; title: string; body: string; actions: Array<[string, boolean?]>; hiAction?: number}> = ({t: p, title, body, actions, hiAction = -1}) => (
   <>
-    <div style={{position: 'absolute', left: 0, top: 0, width: MW, height: MH, background: `rgba(0,0,0,${0.55 * t})`}} />
-    <div style={{position: 'absolute', left: 30, right: 30, top: 270, opacity: clamp(t * 1.5), transform: `scale(${0.94 + 0.06 * t})`, background: '#2A313A', borderRadius: 28, padding: '26px 24px 18px', direction: 'rtl', color: '#EAF0F6'}}>
+    <div style={{position: 'absolute', left: 0, top: 0, width: MW, height: MH, background: `rgba(0,0,0,${0.55 * p})`}} />
+    <div style={{position: 'absolute', left: 30, right: 30, top: 270, opacity: clamp(p * 1.5), transform: `scale(${0.94 + 0.06 * p})`, background: '#2A313A', borderRadius: 28, padding: '26px 24px 18px', direction: dir, color: '#EAF0F6'}}>
       <div style={{fontSize: 22, fontWeight: 700, lineHeight: 1.4}}>{title}</div>
       <div style={{fontSize: 16, color: '#C5CDD6', marginTop: 12, lineHeight: 1.65}}>{body}</div>
-      <div style={{display: 'flex', justifyContent: 'flex-start', gap: 10, marginTop: 22}}>
+      <div style={{display: 'flex', justifyContent: isEn ? 'flex-end' : 'flex-start', gap: 10, marginTop: 22}}>
         {actions.map(([a, strong], i) => (
           <div key={a} style={{padding: '10px 16px', borderRadius: 20, fontSize: 16, fontWeight: 700, color: strong ? '#9CD2FF' : '#C5CDD6', background: i === hiAction ? 'rgba(156,210,255,0.18)' : 'transparent'}}>
             {a}
@@ -77,8 +80,14 @@ const SysDialog: React.FC<{t: number; title: string; body: string; actions: Arra
 );
 
 /** "For your security your phone does not allow installing unknown apps from this source" over the browser. */
-export const UnknownSourceDialog: React.FC<{t: number; hi?: number}> = ({t, hi = 0}) => (
-  <SysDialog t={t} title="التثبيت غير مسموح" body="لأمانك، لا يسمح هاتفك بتثبيت تطبيقات غير معروفة من هذا المصدر." actions={[['الإعدادات', true], ['إلغاء']]} hiAction={hi > 0.5 ? 0 : -1} />
+export const UnknownSourceDialog: React.FC<{t: number; hi?: number}> = ({t: p, hi = 0}) => (
+  <SysDialog
+    t={p}
+    title={t('التثبيت غير مسموح')}
+    body={t('لأمانك، لا يسمح هاتفك بتثبيت تطبيقات غير معروفة من هذا المصدر.')}
+    actions={isEn ? [[t('إلغاء')], [t('الإعدادات'), true]] : [[t('الإعدادات'), true], [t('إلغاء')]]}
+    hiAction={hi > 0.5 ? (isEn ? 1 : 0) : -1}
+  />
 );
 
 /** The system page "Install unknown apps" with the switch for this source. p = switch state. */
@@ -86,59 +95,80 @@ export const UnknownSourcesPage: React.FC<{p: number; glow?: number}> = ({p, glo
   <Screen390 bg="#14181D">
     <StatusBar />
     <div style={{position: 'absolute', left: 0, top: 34, width: MW, height: 60, display: 'flex', alignItems: 'center', gap: 14, padding: '0 16px', fontSize: 21, fontWeight: 600}}>
-      <Icon name="arrowRight" size={26} color="#EAF0F6" stroke={2.2} />
-      تثبيت التطبيقات غير المعروفة
+      <Icon name="arrowRight" size={26} color="#EAF0F6" stroke={2.2} style={BACK_FLIP} />
+      {t('تثبيت التطبيقات غير المعروفة')}
     </div>
     <div style={{position: 'absolute', left: 0, top: 120, width: MW, padding: '0 18px'}}>
       <div style={{display: 'flex', alignItems: 'center', gap: 16, marginBottom: 26}}>
         <div style={{width: 54, height: 54, borderRadius: 14, background: '#2A313A', display: 'grid', placeItems: 'center'}}>
           <Icon name="link" size={28} color="#9CD2FF" stroke={2.1} />
         </div>
-        <div style={{fontSize: 19, fontWeight: 600}}>المتصفح</div>
+        <div style={{fontSize: 19, fontWeight: 600}}>{t('المتصفح')}</div>
       </div>
       <div style={{display: 'flex', alignItems: 'center', gap: 16, padding: '16px 18px', borderRadius: 24, background: glow ? `rgba(46,196,182,${0.1 + 0.1 * glow})` : '#1D232A', boxShadow: glow ? `0 0 0 ${2 * glow}px rgba(46,196,182,${0.55 * glow})` : undefined}}>
-        <div style={{flex: 1, fontSize: 18, fontWeight: 600}}>السماح من هذا المصدر</div>
+        <div style={{flex: 1, fontSize: 18, fontWeight: 600}}>{t('السماح من هذا المصدر')}</div>
         <Toggle390 p={p} />
       </div>
       <div style={{fontSize: 14, color: '#A8B2BD', lineHeight: 1.7, marginTop: 20}}>
-        قد يعرّض الهاتف وبياناتك للخطر عند تثبيت تطبيقات من مصادر غير معروفة. اسمح فقط لمصدر تثق به.
+        {t('قد يعرّض الهاتف وبياناتك للخطر عند تثبيت تطبيقات من مصادر غير معروفة. اسمح فقط لمصدر تثق به.')}
       </div>
     </div>
   </Screen390>
 );
 
-export const InstallPrompt: React.FC<{state: 'ask' | 'installing' | 'done'; tapInstall?: number; tapOpen?: number}> = ({state, tapInstall = 0, tapOpen = 0}) => (
-  <Screen390 bg="#14181D">
-    <StatusBar />
-    <div style={{position: 'absolute', left: 0, top: 150, width: MW, textAlign: 'center'}}>
-      <div style={{width: 96, height: 96, margin: '0 auto', borderRadius: 26, background: 'linear-gradient(135deg, #1E2632, #0B0F14)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,0.1)'}}>
-        <LogoMark size={86} />
-      </div>
-      <div style={{fontSize: 26, fontWeight: 700, marginTop: 22}}>شاشة</div>
-      <div style={{fontSize: 16.5, color: '#C5CDD6', marginTop: 14, padding: '0 36px', lineHeight: 1.7}}>
-        {state === 'ask' ? 'هل تريد تثبيت هذا التطبيق؟' : state === 'installing' ? 'جارٍ التثبيت…' : 'تم تثبيت التطبيق.'}
-      </div>
-      {state === 'installing' ? (
-        <div style={{margin: '26px 70px 0', height: 6, borderRadius: 3, background: '#2E3947', overflow: 'hidden'}}>
-          <div style={{height: '100%', width: '55%', background: '#9CD2FF', float: 'right'}} />
+/** The package installer. In English its buttons are Cancel · Install (and Done · Open) at the end, as on Android. */
+export const InstallPrompt: React.FC<{state: 'ask' | 'installing' | 'done'; tapInstall?: number; tapOpen?: number}> = ({state, tapInstall = 0, tapOpen = 0}) => {
+  const primary = (label: string, glow: number) => (
+    <div style={{padding: '14px 28px', borderRadius: 26, fontSize: 17, fontWeight: 700, background: '#9CD2FF', color: '#002C4D', boxShadow: glow ? `0 0 ${24 * glow}px rgba(156,210,255,0.7)` : undefined}}>{label}</div>
+  );
+  const plain = (label: string) => <div style={{padding: '14px 24px', borderRadius: 26, fontSize: 17, fontWeight: 700, color: '#9CD2FF'}}>{label}</div>;
+  return (
+    <Screen390 bg="#14181D">
+      <StatusBar />
+      <div style={{position: 'absolute', left: 0, top: 150, width: MW, textAlign: 'center'}}>
+        <div style={{width: 96, height: 96, margin: '0 auto', borderRadius: 26, background: 'linear-gradient(135deg, #1E2632, #0B0F14)', display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,0.1)'}}>
+          <LogoMark size={86} />
         </div>
-      ) : null}
-    </div>
-    <div style={{position: 'absolute', left: 22, right: 22, bottom: 40, display: 'flex', gap: 12, justifyContent: 'flex-start'}}>
-      {state === 'ask' ? (
-        <>
-          <div style={{padding: '14px 28px', borderRadius: 26, fontSize: 17, fontWeight: 700, background: '#9CD2FF', color: '#002C4D', boxShadow: tapInstall ? `0 0 ${24 * tapInstall}px rgba(156,210,255,0.7)` : undefined}}>تثبيت</div>
-          <div style={{padding: '14px 24px', borderRadius: 26, fontSize: 17, fontWeight: 700, color: '#9CD2FF'}}>إلغاء</div>
-        </>
-      ) : state === 'done' ? (
-        <>
-          <div style={{padding: '14px 28px', borderRadius: 26, fontSize: 17, fontWeight: 700, background: '#9CD2FF', color: '#002C4D', boxShadow: tapOpen ? `0 0 ${24 * tapOpen}px rgba(156,210,255,0.7)` : undefined}}>فتح</div>
-          <div style={{padding: '14px 24px', borderRadius: 26, fontSize: 17, fontWeight: 700, color: '#9CD2FF'}}>تم</div>
-        </>
-      ) : null}
-    </div>
-  </Screen390>
-);
+        <div style={{fontSize: 26, fontWeight: 700, marginTop: 22}}>{t('شاشة')}</div>
+        <div style={{fontSize: 16.5, color: '#C5CDD6', marginTop: 14, padding: '0 36px', lineHeight: 1.7}}>
+          {state === 'ask' ? t('هل تريد تثبيت هذا التطبيق؟') : state === 'installing' ? t('جارٍ التثبيت…') : t('تم تثبيت التطبيق.')}
+        </div>
+        {state === 'installing' ? (
+          <div style={{margin: '26px 70px 0', height: 6, borderRadius: 3, background: '#2E3947', overflow: 'hidden'}}>
+            <div style={{height: '100%', width: '55%', background: '#9CD2FF', float: startSide}} />
+          </div>
+        ) : null}
+      </div>
+      <div style={{position: 'absolute', left: 22, right: 22, bottom: 40, display: 'flex', gap: 12, justifyContent: isEn ? 'flex-end' : 'flex-start'}}>
+        {state === 'ask' ? (
+          isEn ? (
+            <>
+              {plain(t('إلغاء'))}
+              {primary(t('تثبيت'), tapInstall)}
+            </>
+          ) : (
+            <>
+              {primary(t('تثبيت'), tapInstall)}
+              {plain(t('إلغاء'))}
+            </>
+          )
+        ) : state === 'done' ? (
+          isEn ? (
+            <>
+              {plain(t('تم'))}
+              {primary(t('فتح'), tapOpen)}
+            </>
+          ) : (
+            <>
+              {primary(t('فتح'), tapOpen)}
+              {plain(t('تم'))}
+            </>
+          )
+        ) : null}
+      </div>
+    </Screen390>
+  );
+};
 
 // ------------------------------------------------------------------------------------------------ launcher, PiP, screen off
 /** A neutral home screen: wallpaper, plain app tiles, a dock. `children` = floating windows on top. */
@@ -146,8 +176,8 @@ export const LauncherPage: React.FC<{children?: React.ReactNode; notif?: number}
   <Screen390 bg="#0E1218">
     <div style={{position: 'absolute', inset: 0, background: 'radial-gradient(90% 60% at 30% 20%, #1D3550, #0E1218 70%)'}} />
     <StatusBar />
-    <div style={{position: 'absolute', left: 0, top: 150, width: MW, textAlign: 'center', fontSize: 64, fontWeight: 300}}>٩:٤١</div>
-    <div style={{position: 'absolute', left: 0, top: 232, width: MW, textAlign: 'center', fontSize: 16, color: '#B8C4D2'}}>السبت، ٣ أكتوبر</div>
+    <div style={{position: 'absolute', left: 0, top: 150, width: MW, textAlign: 'center', fontSize: 64, fontWeight: 300}}>{digits('9:41')}</div>
+    <div style={{position: 'absolute', left: 0, top: 232, width: MW, textAlign: 'center', fontSize: 16, color: '#B8C4D2'}}>{t('السبت، ٣ أكتوبر')}</div>
     <div style={{position: 'absolute', left: 28, right: 28, top: 330, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 28, justifyItems: 'center'}}>
       {['#3D6B8F', '#8F5B3D', '#5B8F4E', '#7A4E8F', '#8F7A3D', '#3D8F83', '#8F3D55', '#4E5B8F'].map((c, i) => (
         <div key={i} style={{width: 62, height: 62, borderRadius: 20, background: `linear-gradient(135deg, ${c}, ${rgba(c, 0.55)})`}} />
@@ -162,8 +192,8 @@ export const LauncherPage: React.FC<{children?: React.ReactNode; notif?: number}
       <div style={{position: 'absolute', left: 14, right: 14, top: 40, borderRadius: 26, background: 'rgba(30,38,50,0.97)', padding: '14px 16px', opacity: clamp(notif * 1.5), transform: `translateY(${(1 - notif) * -50}px)`, display: 'flex', alignItems: 'center', gap: 14, boxShadow: '0 20px 40px rgba(0,0,0,0.5)'}}>
         <Thumb i={0} w={64} h={64} radius={12} />
         <div style={{flex: 1}}>
-          <div style={{fontSize: 12.5, color: C.muted}}>شاشة · جارٍ التشغيل</div>
-          <div style={{fontSize: 15, fontWeight: 700, marginTop: 2, lineHeight: 1.35}}>رحلة إلى أعماق المحيط</div>
+          <div style={{fontSize: 12.5, color: C.muted}}>{t('شاشة · جارٍ التشغيل')}</div>
+          <div style={{fontSize: 15, fontWeight: 700, marginTop: 2, lineHeight: 1.35}}>{t('رحلة إلى أعماق المحيط')}</div>
         </div>
         <div style={{width: 44, height: 44, borderRadius: 999, background: C.primary, display: 'grid', placeItems: 'center'}}>
           <Icon name="pause" size={24} color={C.onPrimary} stroke={2.4} />
@@ -185,13 +215,13 @@ export const ScreenOff: React.FC = () => (
 export const NotesPage: React.FC<{scroll?: number}> = ({scroll = 0}) => (
   <Screen390 bg="#F4F1EA" style={{color: '#2B2620'}}>
     <StatusBar dark={false} />
-    <div style={{position: 'absolute', left: 0, top: 34, width: MW, height: 56, display: 'flex', alignItems: 'center', padding: '0 18px', fontSize: 22, fontWeight: 700}}>قائمة التسوق</div>
+    <div style={{position: 'absolute', left: 0, top: 34, width: MW, height: 56, display: 'flex', alignItems: 'center', padding: '0 18px', fontSize: 22, fontWeight: 700}}>{t('قائمة التسوق')}</div>
     <div style={{position: 'absolute', left: 0, top: 100, width: MW, overflow: 'hidden', bottom: 0}}>
       <div style={{transform: `translateY(${-scroll}px)`}}>
-        {['خبز', 'حليب', 'بيض', 'طماطم', 'زيتون', 'جبنة', 'تمر', 'شاي', 'أرز', 'عدس', 'ليمون', 'نعناع'].map((t, i) => (
-          <div key={t} style={{display: 'flex', alignItems: 'center', gap: 14, height: 64, padding: '0 22px', borderBottom: '1px solid #E4DFD3', fontSize: 19}}>
+        {[t('خبز'), t('حليب'), t('بيض'), t('طماطم'), t('زيتون'), t('جبنة'), t('تمر'), t('شاي'), t('أرز'), t('عدس'), t('ليمون'), t('نعناع')].map((s, i) => (
+          <div key={s} style={{display: 'flex', alignItems: 'center', gap: 14, height: 64, padding: '0 22px', borderBottom: '1px solid #E4DFD3', fontSize: 19}}>
             <div style={{width: 24, height: 24, borderRadius: 7, border: '2px solid #A59E8F', background: i % 3 === 0 ? '#8FB39A' : 'transparent'}} />
-            {t}
+            {s}
           </div>
         ))}
       </div>

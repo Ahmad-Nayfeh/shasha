@@ -6,15 +6,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import coil3.annotation.ExperimentalCoilApi
 import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
+import com.ahmadnayfeh.shasha.PromoEnglish
+import com.ahmadnayfeh.shasha.PromoEnglish.en
+import com.ahmadnayfeh.shasha.PromoEnglish.pick
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.TV_1080P_EN
 import com.ahmadnayfeh.shasha.data.AppLanguage
@@ -31,7 +32,6 @@ import com.ahmadnayfeh.shasha.ui.screens.search.SearchCallbacks
 import com.ahmadnayfeh.shasha.ui.screens.search.SearchScreen
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
-import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -44,7 +44,7 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = TV_1080P)
 class SearchVoiceScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     /**
      * [focus]: the tag of the element to show focused. Moving there with D-pad keys does not work here: the search box
@@ -52,10 +52,11 @@ class SearchVoiceScreenshotTest {
      */
     @OptIn(ExperimentalCoilApi::class)
     private fun snap(name: String, focus: String? = null, language: AppLanguage = AppLanguage.ARABIC, content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         val pictures = AsyncImagePreviewHandler { request -> UiFixtures.fakeThumbnail(request.data.toString()).asImage() }
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true, LocalAsyncImagePreviewHandler provides pictures) {
-                ShashaTheme(language = language) { MainShell(Tab.SEARCH, {}, remember { Tab.entries.associateWith { androidx.compose.ui.focus.FocusRequester() } }) { content() } }
+                ShashaTheme(language = PromoEnglish.language(language)) { MainShell(Tab.SEARCH, {}, remember { Tab.entries.associateWith { androidx.compose.ui.focus.FocusRequester() } }) { content() } }
             }
         }
         compose.waitForIdle()
@@ -63,7 +64,7 @@ class SearchVoiceScreenshotTest {
             compose.onNodeWithTag(it).performSemanticsAction(SemanticsActions.RequestFocus)
             compose.waitForIdle()
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     @Composable
@@ -78,10 +79,12 @@ class SearchVoiceScreenshotTest {
         extractorVersion = "v0.26.5",
         callbacks = SearchCallbacks({}, {}, {}, {}, {}, {}, {}, {}),
         text = text,
-        assist = assist,
+        // The English video speaks English to the microphone: «EN» beside it, not «ع».
+        assist = assist.copy(voiceLanguage = pick(assist.voiceLanguage, "en-US")),
     )
 
-    private val recent = listOf("وثائقي المحيط", "تعلم البرمجة", "Minecraft", "كبسة")
+    // In English the chips are wider: shorter searches, so that the four of them and «Clear» fit the line.
+    private val recent = pick(listOf("وثائقي المحيط", "تعلم البرمجة", "Minecraft", "كبسة"), listOf("ocean life", "coding", "Minecraft", "kapsa"))
 
     @Test
     fun idle() = snap("search_idle") {
@@ -102,7 +105,7 @@ class SearchVoiceScreenshotTest {
 
     @Test
     fun listening() = snap("search_listening") {
-        Search("", "", SearchAssist(voice = VoiceState.Listening(level = 0.6f, partial = "وثائقي عن أعماق", hearing = true)))
+        Search("", "", SearchAssist(voice = VoiceState.Listening(level = 0.6f, partial = en("وثائقي عن أعماق"), hearing = true)))
     }
 
     @Test

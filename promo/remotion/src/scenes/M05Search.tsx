@@ -4,11 +4,12 @@ import {brand} from '../brand';
 import {HomePage, SearchPage} from '../components/MobileScreens';
 import {Callout, MobileHeader, PhoneStage, SidePill, TapAt} from '../components/MobileStage';
 import {tween} from '../lib/anim';
+import {digits, isEn, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // m05 — search: open it, type, the results (videos, channels, playlists) without ads between them.
 
-const QUERY = 'الخط العربي';
+const QUERY = t('الخط العربي');
 
 export const M05Search: React.FC<{scene: Scene}> = ({scene}) => {
   const f = useCurrentFrame();
@@ -25,17 +26,17 @@ export const M05Search: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <MobileHeader kicker="المشاهدة" index="١ / ٢" title="البحث" />
+      <MobileHeader kicker={t('المشاهدة')} index={digits('1 / 2')} title={t('البحث')} />
       <PhoneStage f={f} from={-60} glow={brand.primary}>
         <HomePage scroll={120} />
         <div style={{position: 'absolute', inset: 0, opacity: toSearch}}>
           <SearchPage query={QUERY} typed={typed} results={results} cursor={typed < QUERY.length + 0.5 && Math.floor(f / 8) % 2 === 0} />
         </div>
-        <TapAt f={f} at={tapSearch} x={240} y={804} />
+        <TapAt f={f} at={tapSearch} x={isEn ? 150 : 240} y={804} />
       </PhoneStage>
 
-      <Callout f={f} at={tShow - 6} icon="search" title="فيديوهات وقنوات" sub="وقوائم تشغيل" top={300} />
-      <SidePill f={f} at={tNoAds - 6} icon="tag" label="إعلانات بينها" top={470} crossAt={tNoAds + 20} />
+      <Callout f={f} at={tShow - 6} icon="search" title={t('فيديوهات وقنوات')} sub={t('وقوائم تشغيل')} top={300} />
+      <SidePill f={f} at={tNoAds - 6} icon="tag" label={t('إعلانات بينها')} top={470} crossAt={tNoAds + 20} />
     </div>
   );
 };

@@ -32,6 +32,7 @@ import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorSegment
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
+import com.ahmadnayfeh.shasha.youtube.playback.DecoderRetry
 import com.ahmadnayfeh.shasha.youtube.playback.YouTubeMediaSourceFactory
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -91,6 +92,12 @@ class PlayerController(
     /** A 403 from googlevideo after the URLs expired is cured once by extracting again. */
     private var expiryRetried = false
 
+    /**
+     * This phone's decoder failing on a video is answered once with another try of the same video, with the safe plan
+     * (H.264, small pictures); the second failure is the error. One for each video.
+     */
+    private var decoderRetry = DecoderRetry()
+
     /** The default quality applies once per video, when its tracks are known. */
     private var defaultQualityApplied = false
     private var historyRecorded = false
@@ -144,7 +151,12 @@ class PlayerController(
                 .setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, false)
                 .build()
         }
-        if (!isReload) expiryRetried = false
+        if (!isReload) {
+            expiryRetried = false
+            // The same video again («Try again») keeps what its decoder failure taught: it plays the safe plan, and does not
+            // retry by itself a second time. Another video starts afresh.
+            if (_state.value.video?.videoId != videoId) decoderRetry = DecoderRetry()
+        }
         defaultQualityApplied = false
         historyRecorded = false
         backgroundDisabledVideo = false
@@ -161,7 +173,7 @@ class PlayerController(
                 if (settings().sponsorBlockEnabled) async { sponsorBlock.segments(videoId) } else null
             try {
                 val details = videoSource.stream(videoId, allowLowQuality = true)
-                val source = mediaSources.create(details, maxHeight = 0, subtitleLanguage = null)
+                val source = mediaSources.create(details, maxHeight = 0, subtitleLanguage = null, safe = decoderRetry.safe)
                 val video = details.video.fillFrom(item)
                 withArtwork(source, video)
                 val resume = startMs ?: library.resumePosition(videoId)
@@ -404,9 +416,23 @@ class PlayerController(
             }
             val classified = mediaSources.classifyPlaybackError(error)
             val state = _state.value
+            if (classified.kind == SourceErrorKind.DEVICE_DECODER && !state.isOffline) {
+                // The picture this phone's decoder failed on is left out of every plan from now on. A bonus: the retry below
+                // does not depend on it, and nothing here may swallow the error.
+                try {
+                    mediaSources.recordDecoderFailure(error, player.videoFormat)
+                } catch (_: RuntimeException) {
+                    // Not remembered; the next plan may offer the picture again.
+                }
+            }
             if (classified.kind == SourceErrorKind.BLOCKED_403 && !expiryRetried && !state.isOffline && state.video != null) {
                 // The stream's URLs expire after about six hours: extract again and go on from the same second.
                 expiryRetried = true
+                startLoad(state.video.videoId, state.video, player.currentPosition.takeIf { it > 0 }, isReload = true)
+                return
+            }
+            if (!state.isOffline && state.video != null && decoderRetry.retryAfter(classified)) {
+                // The decoder failed on the picture: the same video starts again, safely, from the same second.
                 startLoad(state.video.videoId, state.video, player.currentPosition.takeIf { it > 0 }, isReload = true)
                 return
             }

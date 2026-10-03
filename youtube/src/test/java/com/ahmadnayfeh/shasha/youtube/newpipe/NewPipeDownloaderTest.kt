@@ -58,6 +58,92 @@ class NewPipeDownloaderTest {
         assertThat(NewPipeDownloader.mergeCookies("a=1; b=2", "b=3")).isEqualTo("a=1; b=3")
     }
 
+    // ---- Restricted Mode: PREF=f2=8000000 on YouTube's hosts ----
+
+    private fun cookieOf(downloader: NewPipeDownloader, extractorCookie: String? = null): String? {
+        server.enqueue(MockResponse())
+        downloader.get(url(), extractorCookie?.let { mapOf("Cookie" to listOf(it)) })
+        return server.takeRequest().getHeader("Cookie")
+    }
+
+    @Test
+    fun youtubeRequestsAskForRestrictedMode() {
+        val downloader = NewPipeDownloader(OkHttpClient(), restrictedModeFor = { true })
+        assertThat(cookieOf(downloader)).isEqualTo("PREF=f2=8000000")
+    }
+
+    @Test
+    fun restrictedModeIsMergedWithOurCookiesAndTheExtractors() {
+        val downloader = NewPipeDownloader(OkHttpClient(), cookies = { "a=1; b=2" }, restrictedModeFor = { true })
+        assertThat(cookieOf(downloader, "SOCS=CAE; b=3")).isEqualTo("a=1; b=3; SOCS=CAE; PREF=f2=8000000")
+    }
+
+    @Test
+    fun aPrefCookieTheExtractorSendsKeepsItsOtherFields() {
+        val downloader = NewPipeDownloader(OkHttpClient(), restrictedModeFor = { true })
+        assertThat(cookieOf(downloader, "SOCS=CAE; PREF=hl=en&tz=UTC")).isEqualTo("SOCS=CAE; PREF=hl=en&tz=UTC&f2=8000000")
+        assertThat(cookieOf(downloader, "PREF=f2=8000000&hl=en")).isEqualTo("PREF=f2=8000000&hl=en")
+        assertThat(cookieOf(downloader, "PREF=f6=400&f2=40000000&hl=en")).isEqualTo("PREF=f6=400&f2=48000000&hl=en")
+    }
+
+    @Test
+    fun aPrefCookieOfOursIsCombinedToo() {
+        val downloader = NewPipeDownloader(OkHttpClient(), cookies = { "PREF=hl=ar" }, restrictedModeFor = { true })
+        assertThat(cookieOf(downloader)).isEqualTo("PREF=hl=ar&f2=8000000")
+    }
+
+    @Test
+    fun otherHostsAreLeftAlone() {
+        // The default asks YouTube's hosts only: this server is 127.0.0.1.
+        val downloader = NewPipeDownloader(OkHttpClient())
+        assertThat(cookieOf(downloader)).isNull()
+        assertThat(cookieOf(downloader, "SOCS=CAE")).isEqualTo("SOCS=CAE")
+    }
+
+    @Test
+    fun aHostTheFlagRefusesGetsNoRestrictedModeCookie() {
+        val downloader = NewPipeDownloader(OkHttpClient(), restrictedModeFor = { false })
+        assertThat(cookieOf(downloader, "SOCS=CAE")).isEqualTo("SOCS=CAE")
+    }
+
+    @Test
+    fun youtubeHosts() {
+        for (host in listOf("youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com", "suggestqueries-clients6.youtube.com")) {
+            assertThat(NewPipeDownloader.isYouTubeHost(host)).isTrue()
+        }
+        for (host in listOf("", "notyoutube.com", "youtube.com.evil.example", "evil-youtube.com", "youtu.be", "googlevideo.com", "rr1---sn-x.googlevideo.com", "127.0.0.1", "localhost")) {
+            assertThat(NewPipeDownloader.isYouTubeHost(host)).isFalse()
+        }
+    }
+
+    @Test
+    fun withRestrictedModeTable() {
+        val f = NewPipeDownloader.Companion::withRestrictedMode
+        assertThat(f(null)).isEqualTo("PREF=f2=8000000")
+        assertThat(f("")).isEqualTo("PREF=f2=8000000")
+        assertThat(f(" ; ")).isEqualTo("PREF=f2=8000000")
+        assertThat(f("SOCS=CAE")).isEqualTo("SOCS=CAE; PREF=f2=8000000")
+        assertThat(f("a=1; b=2")).isEqualTo("a=1; b=2; PREF=f2=8000000")
+        // An existing PREF: its fields stay, f2 gets the flag.
+        assertThat(f("PREF=hl=en")).isEqualTo("PREF=hl=en&f2=8000000")
+        assertThat(f("PREF=f2=8000000&hl=en")).isEqualTo("PREF=f2=8000000&hl=en")
+        assertThat(f("PREF=hl=en&f2=8000000")).isEqualTo("PREF=hl=en&f2=8000000")
+        assertThat(f("a=1; PREF=f2=400&tz=UTC; b=2")).isEqualTo("a=1; PREF=f2=8000400&tz=UTC; b=2")
+        assertThat(f("PREF=f2=a")).isEqualTo("PREF=f2=800000a")
+        assertThat(f("PREF=f2=FFFFFFF")).isEqualTo("PREF=f2=fffffff") // the flag is in there already
+        // Not a number: replaced. Empty value, empty PREF: filled.
+        assertThat(f("PREF=f2=zzz&hl=ar")).isEqualTo("PREF=f2=8000000&hl=ar")
+        assertThat(f("PREF=f2=")).isEqualTo("PREF=f2=8000000")
+        assertThat(f("PREF=")).isEqualTo("PREF=f2=8000000")
+        assertThat(f("PREF")).isEqualTo("PREF=f2=8000000")
+        // Only a cookie named PREF counts.
+        assertThat(f("XPREF=hl=en; PREFX=1")).isEqualTo("XPREF=hl=en; PREFX=1; PREF=f2=8000000")
+        // Whitespace and the order of the other cookies.
+        assertThat(f("  a=1 ;PREF=hl=en;  b=2 ")).isEqualTo("a=1; PREF=hl=en&f2=8000000; b=2")
+        // Applied twice, nothing changes.
+        assertThat(f(f("PREF=hl=en; a=1"))).isEqualTo(f("PREF=hl=en; a=1"))
+    }
+
     @Test
     fun http429BecomesReCaptcha() {
         val downloader = NewPipeDownloader(OkHttpClient())

@@ -1,4 +1,5 @@
 import React, {useId} from 'react';
+import {isEn} from '../lib/lang';
 import {
   MARK_DOT_R,
   MARK_DOTS,
@@ -78,7 +79,15 @@ export const LogoMark: React.FC<{
   );
 };
 
-/** Wordmark «شاشة» (outlined paths from logo-wordmark.svg). `width` in px. */
+/**
+ * Whether the wordmark is drawn. The brand's only wordmark is the Arabic «شاشة» (branding/ has no Latin lockup), so the
+ * English version shows the brand mark alone and adds no text: `Wordmark` draws nothing there, and scenes that centre
+ * or park a lockup leave the room for the wordmark out (HAS_WORDMARK). If a Latin wordmark is ever added to branding/,
+ * draw it in `Wordmark` for English and set this to true.
+ */
+export const HAS_WORDMARK = !isEn;
+
+/** Wordmark «شاشة» (outlined paths from logo-wordmark.svg). `width` in px. Nothing in the English version (HAS_WORDMARK). */
 export const Wordmark: React.FC<{width: number; opacity?: number; style?: React.CSSProperties; color?: string}> = ({
   width,
   opacity = 1,
@@ -87,6 +96,7 @@ export const Wordmark: React.FC<{width: number; opacity?: number; style?: React.
 }) => {
   const g = useSvgId('wa');
   const [, , vw, vh] = WORDMARK_VIEWBOX.split(' ').map(Number);
+  if (!HAS_WORDMARK) return null;
   return (
     <svg width={width} height={(width * vh) / vw} viewBox={WORDMARK_VIEWBOX} style={{opacity, overflow: 'visible', ...style}}>
       <defs>
@@ -107,8 +117,8 @@ export const WORDMARK_RATIO = (() => {
 })();
 
 /**
- * Horizontal lockup (mark on the right, wordmark on the left — as logo-lockup.svg).
- * `height` = height of the mark's screen in px.
+ * Horizontal lockup (mark on the right, wordmark on the left — as logo-lockup.svg); the mark alone in the English
+ * version (HAS_WORDMARK). `height` = height of the mark's screen in px.
  */
 export const Lockup: React.FC<{height: number; style?: React.CSSProperties; dotsFloat?: number}> = ({
   height,
@@ -120,7 +130,7 @@ export const Lockup: React.FC<{height: number; style?: React.CSSProperties; dots
   const markBox = 1024 * unit;
   const wmWidth = height * 2.0;
   return (
-    <div style={{display: 'flex', alignItems: 'flex-end', direction: 'rtl', gap: height * 0.26, ...style}}>
+    <div style={{display: 'flex', alignItems: 'flex-end', direction: HAS_WORDMARK ? 'rtl' : 'ltr', gap: height * 0.26, ...style}}>
       <div style={{width: 751 * unit, height: 800 * unit, position: 'relative', overflow: 'visible'}}>
         <LogoMark
           size={markBox}
@@ -128,7 +138,7 @@ export const Lockup: React.FC<{height: number; style?: React.CSSProperties; dots
           dots={[{dy: dotsFloat}, {dy: dotsFloat * 0.8}, {dy: dotsFloat * 1.2}]}
         />
       </div>
-      <Wordmark width={wmWidth} style={{marginBottom: -height * 0.12}} />
+      {HAS_WORDMARK ? <Wordmark width={wmWidth} style={{marginBottom: -height * 0.12}} /> : null}
     </div>
   );
 };

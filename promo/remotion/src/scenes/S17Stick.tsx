@@ -3,11 +3,14 @@ import {useCurrentFrame} from 'remotion';
 import {brand, rgba} from '../brand';
 import {StickGlyph, TvGlyph} from '../components/Devices';
 import {Screen} from '../components/Tv';
-import {CheckBadge, Chip, Header} from '../components/ui';
+import {CheckBadge, Chip, Header, stepOf} from '../components/ui';
 import {clamp, easeInOut, easeOut, mix, sp, tween} from '../lib/anim';
+import {flowSign, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // s17 — Samsung, LG and the others: a small Android TV stick on an HDMI port turns the TV into one «شاشة» runs on.
+// English version: the same layout (the makers on the left, the TV, then the stick arriving from the right and the
+// «all its features» line under the TV): it already reads in the order of the voice, left to right.
 
 const TV = {x: 560, y: 262, w: 820};
 const TVH = (TV.w * 9) / 16;
@@ -45,9 +48,9 @@ export const S17Stick: React.FC<{scene: Scene}> = ({scene}) => {
   const stickX = mix(PLUG.x + 520, PLUG.x, fly) + plugged * 0;
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="التحديث والأجهزة" index="٣ / ٣" title="Samsung وLG وغيرهما" />
+      <Header kicker={t('التحديث والأجهزة')} index={stepOf(3, 3)} title={t('Samsung وLG وغيرهما')} />
 
-      <div style={{opacity: clamp(tvIn * 1.4), transform: `translateX(${(1 - tvIn) * -50}px)`}}>
+      <div style={{opacity: clamp(tvIn * 1.4), transform: `translateX(${(1 - tvIn) * -50 * flowSign}px)`}}>
         <TvGlyph x={TV.x} y={TV.y} w={TV.w} glow={works > 0.4 ? brand.primary : '#6B8FD6'}>
           <Tiles />
           <div style={{position: 'absolute', left: 0, top: 0, width: 1920, height: 1080, transformOrigin: '0 0', transform: `scale(${TV.w / 1920})`, opacity: works}}>
@@ -73,7 +76,7 @@ export const S17Stick: React.FC<{scene: Scene}> = ({scene}) => {
         <CheckBadge t={check} size={72} />
       </div>
       <div style={{position: 'absolute', left: TV.x, width: TV.w, top: TV.y + TVH + 138, display: 'flex', justifyContent: 'center', opacity: tween(f, tAll - 4, 14), transform: `translateY(${(1 - tween(f, tAll - 4, 14)) * 12}px)`}}>
-        <Chip icon="check" label="«شاشة» بكل ميزاتها" size={34} t={1} />
+        <Chip icon="check" label={t('«شاشة» بكل ميزاتها')} size={34} t={1} />
       </div>
     </div>
   );

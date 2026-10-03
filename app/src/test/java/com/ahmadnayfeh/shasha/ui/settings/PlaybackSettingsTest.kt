@@ -31,7 +31,7 @@ class PlaybackSettingsTest {
 
     /** The value once the file has been read (the StateFlow starts at the default). */
     private fun PlaybackSettings.settled(expected: Int): Int = runBlocking {
-        withTimeout(5_000) { maxQuality.first { it == expected } }
+        withTimeout(TIMEOUT_MS) { maxQuality.first { it == expected } }
     }
 
     @Test
@@ -82,5 +82,10 @@ class PlaybackSettingsTest {
         // A backup made before the setting existed: back to the default.
         PlaybackSettings.backupSection(other).restore(emptyMap())
         assertThat(PlaybackSettings(other, scope).settled(1080)).isEqualTo(1080)
+    }
+
+    private companion object {
+        /** Generous: the file is read on another thread, and CI machines can be slow. */
+        const val TIMEOUT_MS = 30_000L
     }
 }

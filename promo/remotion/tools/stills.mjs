@@ -4,6 +4,7 @@
 //   node tools/stills.mjs <outDir> --comp=Mobile m05_search@120     (the phone video: scene ids m..)
 //   node tools/stills.mjs <outDir> --comp=ScreensDebug home:0 search:1 (another composition, absolute frames)
 //   --props='{"captions":false,"grain":false}'   input props;   --jpeg   JPEG (q95) instead of PNG
+//   --lang=en                                     the English version (input prop lang, see src/lib/lang.ts)
 import {bundle} from '@remotion/bundler';
 import {openBrowser, renderStill, selectComposition} from '@remotion/renderer';
 import fs from 'node:fs';
@@ -19,12 +20,14 @@ const compArg = rest.find((a) => a.startsWith('--comp='));
 const compId = compArg ? compArg.slice(7) : 'Main';
 const propsArg = rest.find((a) => a.startsWith('--props='));
 const jpegArg = rest.find((a) => a === '--jpeg');
+const en = rest.includes('--lang=en');
 const specs = rest.filter((a) => !a.startsWith('--'));
 if (!outDir || !specs.length) {
   console.error('usage: node tools/stills.mjs <outDir> name:frame|scene@rel ...');
   process.exit(2);
 }
-const timeline = JSON.parse(fs.readFileSync(path.join(root, compId === 'Mobile' ? 'src/data/timeline-mobile.json' : 'src/data/timeline.json'), 'utf8'));
+const timelineFile = (compId === 'Mobile' ? 'src/data/timeline-mobile' : 'src/data/timeline') + (en ? '-en' : '') + '.json';
+const timeline = JSON.parse(fs.readFileSync(path.join(root, timelineFile), 'utf8'));
 const jobs = specs.map((s) => {
   if (s.includes('@')) {
     const [id, rel] = s.split('@');
@@ -40,7 +43,7 @@ const t0 = Date.now();
 const serveUrl = await bundle({entryPoint: path.join(root, 'src/index.ts'), publicDir: path.join(root, 'public')});
 console.log(`bundled in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 const browser = await openBrowser('chrome', {browserExecutable, chromiumOptions: {}});
-const inputProps = propsArg ? JSON.parse(propsArg.slice(8)) : {};
+const inputProps = {...(propsArg ? JSON.parse(propsArg.slice(8)) : {}), ...(en ? {lang: 'en'} : {})};
 const composition = await selectComposition({serveUrl, id: compId, inputProps, puppeteerInstance: browser, browserExecutable});
 for (const j of jobs) {
   const t = Date.now();

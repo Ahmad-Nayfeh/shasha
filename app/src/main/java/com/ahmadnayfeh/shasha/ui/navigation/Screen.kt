@@ -27,7 +27,7 @@ sealed interface Screen {
      * [fromLink]: the video arrived as a link (the phone, another app); the policy then ignores any
      * playlist it names and asks for the video's own channel.
      * [startSeconds]: where a shared link asks the video to start (its `t=`), in place of the saved position.
-     * [phoneApproved] (v1.2): a request from the phone that was accepted on the TV; the phone that sent it is there,
+     * [phoneApproved] (v1.1.1): a request from the phone that was accepted on the TV; the phone that sent it is there,
      * so this video needs no «تأكيد» from the phone before it starts.
      */
     @Serializable

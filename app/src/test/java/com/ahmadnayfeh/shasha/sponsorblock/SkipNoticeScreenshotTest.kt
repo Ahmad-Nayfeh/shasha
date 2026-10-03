@@ -10,10 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.Fixtures
+import com.ahmadnayfeh.shasha.PromoEnglish
+import com.ahmadnayfeh.shasha.PromoEnglish.en
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.player.PlaybackProgress
 import com.ahmadnayfeh.shasha.ui.components.LocalTopClearance
@@ -21,7 +21,6 @@ import com.ahmadnayfeh.shasha.ui.components.TopClearance
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerOsd
 import com.ahmadnayfeh.shasha.ui.theme.KidsAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
-import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,21 +37,22 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = TV_1080P)
 class SkipNoticeScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     private fun snap(name: String, content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true, LocalTopClearance provides remember { TopClearance() }) {
-                ShashaTheme { content() }
+                ShashaTheme(language = PromoEnglish.language()) { content() }
             }
         }
         compose.waitForIdle()
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     @Test
     fun adultUndo() = snap("sponsor_skip_undo") {
-        OverVideo(controlsVisible = false, cue = "والآن نعود إلى رحلتنا في أعماق المحيط") {
+        OverVideo(controlsVisible = false, cue = en("والآن نعود إلى رحلتنا في أعماق المحيط")) {
             SkipNoticeHost(notice(undoable = true), highlighted = true, now = { SHOWN_AT + 1_500 })
         }
     }

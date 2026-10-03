@@ -16,6 +16,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.Fixtures
+import com.ahmadnayfeh.shasha.PromoEnglish
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.TV_1080P_EN
 import com.ahmadnayfeh.shasha.data.AppLanguage
@@ -40,6 +41,7 @@ class PhoneRequestsScreenshotTest {
     val compose = createComposeRule()
 
     private fun snap(name: String, language: AppLanguage = AppLanguage.ARABIC, content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true) {
                 ShashaTheme(language = language) { content() }

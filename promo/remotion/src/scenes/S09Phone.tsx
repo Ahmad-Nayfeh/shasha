@@ -14,19 +14,21 @@ import {
   Tap,
 } from '../components/Phone';
 import {fr, Screen, TvFrame} from '../components/Tv';
-import {Chip, FocusRing, Header} from '../components/ui';
+import {atEnd, Chip, FocusRing, Header, mx, stepOf} from '../components/ui';
 import {clamp, easeInOut, keys, mix, sp, tween} from '../lib/anim';
 import {FEATURE_TV, rectToStage, tvH} from '../lib/layout';
+import {dir, flowSign, isEn, t} from '../lib/lang';
 import {focusRect, hasScreen} from '../lib/screens';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // s09 — the phone as a remote: scan the QR; search, control, send links; the parent section (separate
 // PIN): adjust the quotas, unlock the time-up screen, manage the child's list. The phone shows the real
 // :remote page captures (search → now playing → link sent → parent PIN → time → quotas → allow-list); taps
-// land on their real buttons.
+// land on their real buttons. English version: the phone on the left, the TV on the right (the layout mirrored); the
+// phone's pages stay Arabic (the :remote page has no English).
 
 const PS = 0.74;
-const PX = 1452;
+const PX = mx(1452, (390 + 26) * PS); // the phone's left edge (its width is (390 + 2 * 13) * PS)
 const PY = 262;
 const toStageP = (x: number, y: number): [number, number] => [PX + (13 + x) * PS, PY + (13 + y) * PS];
 
@@ -42,7 +44,7 @@ export const S09Phone: React.FC<{scene: Scene}> = ({scene}) => {
   // the TV makes room for the phone + the verbs under it, and gives it back before the next scene
   const D = scene.duration_frames;
   const w = keys(f, [[12, FEATURE_TV.w], [42, 968], [D - 30, 968], [D - 4, FEATURE_TV.w]], easeInOut);
-  const TV = {x: FEATURE_TV.x, y: FEATURE_TV.y, w};
+  const TV = {x: mx(FEATURE_TV.x, w), y: FEATURE_TV.y, w};
   const tScan = b.at('امسح');
   const tSearch = b.at('لتبحث');
   const tControl = b.at('وتتحكم');
@@ -85,9 +87,10 @@ export const S09Phone: React.FC<{scene: Scene}> = ({scene}) => {
   const toQuotas = tween(f, tQuota - 10, 12, easeInOut);
   const tapPlus = tQuota + 8;
   const backUp = tween(f, tUnlock - 8, 12, easeInOut);
-  const tapUnlock = tUnlock + 12;
-  const tapAllowTab = tList + 2;
-  const toAllow = tween(f, tList + 6, 8);
+  // (the English voice says «add time and manage a child's list» faster than the Arabic one: the two taps sit closer)
+  const tapUnlock = tUnlock + (isEn ? 4 : 12);
+  const tapAllowTab = tList + (isEn ? 6 : 2);
+  const toAllow = tween(f, tapAllowTab + 4, 8);
   const tapAdd = tList + 24;
   const tvTimeUp = tween(f, tParent - 4, 12);
   const tvKids = tween(f, tapUnlock + 6, 12);
@@ -113,9 +116,9 @@ export const S09Phone: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="الجوال" index="١ / ٣" title="الجوال ريموتاً وقسماً للأب" />
+      <Header kicker={t('الجوال')} index={stepOf(1, 3)} title={t('الجوال ريموتاً وقسماً للأب')} />
 
-      <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)} glowColor={tvTimeUp > 0.5 && tvKids < 0.5 ? brand.amber : brand.primary}>
+      <TvFrame x={TV.x + (1 - tvIn) * -60 * flowSign} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)} glowColor={tvTimeUp > 0.5 && tvKids < 0.5 ? brand.amber : brand.primary}>
         <Screen name="remote_qr" />
         <Screen name="home_adult" opacity={toApp * (1 - tvPlayer)} />
         <Screen name="player_overlay" opacity={tvPlayer * (1 - tvTimeUp)} />
@@ -169,11 +172,11 @@ export const S09Phone: React.FC<{scene: Scene}> = ({scene}) => {
               <stop offset="1" stopColor={brand.primary} stopOpacity={0.02} />
             </linearGradient>
           </defs>
-          <polygon points={`${camX},${camY} ${qrS[0]},${qrS[1]} ${qrS[0]},${qrS[1] + qrS[3]}`} fill="url(#beamG)" opacity={beam} />
+          <polygon points={`${camX},${camY} ${isEn ? qrS[0] + qrS[2] : qrS[0]},${qrS[1]} ${isEn ? qrS[0] + qrS[2] : qrS[0]},${qrS[1] + qrS[3]}`} fill="url(#beamG)" opacity={beam} />
         </svg>
       ) : null}
 
-      <PhoneFrame x={PX} y={PY + (1 - phoneIn) * 700} scale={PS} opacity={clamp(phoneIn * 2)} rotate={mix(8, 0, phoneIn)}>
+      <PhoneFrame x={PX} y={PY + (1 - phoneIn) * 700} scale={PS} opacity={clamp(phoneIn * 2)} rotate={mix(8, 0, phoneIn) * flowSign}>
         <PhoneCameraPage scan={scan} lock={lock} f={f} />
         {hasSearch ? <PhoneScreen name="phone_search" opacity={toApp * (1 - toMain)}>{null}</PhoneScreen> : null}
         <PhoneScreen name="phone_remote_main" opacity={(hasSearch ? toMain : toApp) * (1 - toSent)}>
@@ -283,16 +286,16 @@ export const S09Phone: React.FC<{scene: Scene}> = ({scene}) => {
       ) : null}
 
       {/* verbs */}
-      <div style={{position: 'absolute', left: TV.x, top: TV.y + tvH(TV.w) + 76, display: 'flex', gap: 16, direction: 'rtl', opacity: 1 - tween(f, tParent - 6, 10)}}>
-        <Chip icon="search" label="ابحث" size={24} t={sp(f, tSearch - 2, {damping: 20})} />
-        <Chip icon="play" label="تحكّم" size={24} t={sp(f, tControl - 2, {damping: 20})} />
-        <Chip icon="link" label="أرسل رابطاً" size={24} t={sp(f, tSend - 2, {damping: 20})} />
+      <div style={{position: 'absolute', ...atEnd(FEATURE_TV.x), top: TV.y + tvH(TV.w) + 76, display: 'flex', gap: 16, direction: dir, opacity: 1 - tween(f, tParent - 6, 10)}}>
+        <Chip icon="search" label={t('ابحث')} size={24} t={sp(f, tSearch - 2, {damping: 20})} />
+        <Chip icon="play" label={t('تحكّم')} size={24} t={sp(f, tControl - 2, {damping: 20})} />
+        <Chip icon="link" label={t('أرسل رابطاً')} size={24} t={sp(f, tSend - 2, {damping: 20})} />
       </div>
-      <div style={{position: 'absolute', left: TV.x, top: TV.y + tvH(TV.w) + 76, display: 'flex', gap: 16, direction: 'rtl', opacity: 1 - tween(f, D - 24, 14)}}>
-        <Chip icon="shield" label="قسم الأب · رمز منفصل" tone="amber" size={24} t={sp(f, tSep - 2, {damping: 20})} />
-        <Chip icon="plus" label="الحصص" tone="amber" size={24} t={sp(f, tapPlus, {damping: 20})} />
-        <Chip icon="unlock" label="فتح انتهاء الوقت" tone="amber" size={24} t={sp(f, tapUnlock, {damping: 20})} />
-        <Chip icon="star" label="قائمة الطفل" tone="kids" size={24} t={sp(f, tapAdd - 8, {damping: 20})} />
+      <div style={{position: 'absolute', ...atEnd(FEATURE_TV.x), top: TV.y + tvH(TV.w) + 76, display: 'flex', gap: 16, direction: dir, opacity: 1 - tween(f, D - 24, 14)}}>
+        <Chip icon="shield" label={t('قسم الأب · رمز منفصل')} tone="amber" size={24} t={sp(f, tSep - 2, {damping: 20})} />
+        <Chip icon="plus" label={t('الحصص')} tone="amber" size={24} t={sp(f, tapPlus, {damping: 20})} />
+        <Chip icon="unlock" label={t('فتح انتهاء الوقت')} tone="amber" size={24} t={sp(f, tapUnlock, {damping: 20})} />
+        <Chip icon="star" label={t('قائمة الطفل')} tone="kids" size={24} t={sp(f, tapAdd - 8, {damping: 20})} />
       </div>
     </div>
   );

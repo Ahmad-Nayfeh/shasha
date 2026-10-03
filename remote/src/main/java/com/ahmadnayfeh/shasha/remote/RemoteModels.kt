@@ -25,7 +25,7 @@ data class RemoteStatus(
     /** The current video is under the playback lock (SPEC §4) and can only be left with a PIN. */
     val videoLocked: Boolean,
     /**
-     * «الوضع الجاد» is on for the current profile's kind (v1.2: the children's and the adult's switches are separate):
+     * «الوضع الجاد» is on for the current profile's kind (v1.1.1: the children's and the adult's switches are separate):
      * videos that start in it are locked until they end (off: nothing it starts is locked).
      */
     val seriousMode: Boolean = true,
@@ -40,15 +40,15 @@ data class RemoteStatus(
     /** The current profile's id: a switch between two profiles of the same name and kind is still a switch. */
     val profileId: String = "",
     /**
-     * v1.2: a video waiting on the TV for the parent's «تأكيد» (it would start in Serious Mode while only the phone could
+     * v1.1.1: a video waiting on the TV for the parent's «تأكيد» (it would start in Serious Mode while only the phone could
      * end it early); null when none. Answered with `POST /api/parent/confirm`.
      */
     val confirmation: RemoteConfirmation? = null,
-    /** v1.2: the latest link a phone sent and how the TV answered it (PENDING while «قبول» / «رفض» shows there). */
+    /** v1.1.1: the latest link a phone sent and how the TV answered it (PENDING while «قبول» / «رفض» shows there). */
     val playRequest: RemotePlayRequest? = null,
 )
 
-/** A video the TV will only start once the parent confirms it from the phone (v1.2). */
+/** A video the TV will only start once the parent confirms it from the phone (v1.1.1). */
 @Serializable
 data class RemoteConfirmation(
     val id: String,
@@ -57,7 +57,7 @@ data class RemoteConfirmation(
     val secondsLeft: Int,
 )
 
-/** Where a link sent from the phone stands on the TV (v1.2: nothing plays before «قبول» on the TV). */
+/** Where a link sent from the phone stands on the TV (v1.1.1: nothing plays before «قبول» on the TV). */
 @Serializable
 enum class RemotePlayState {
     /** «طلب تشغيل من الجوال» shows on the TV, waiting for «قبول» or «رفض». */

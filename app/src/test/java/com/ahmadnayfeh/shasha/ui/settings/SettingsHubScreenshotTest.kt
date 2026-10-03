@@ -10,11 +10,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.ahmadnayfeh.shasha.PromoEnglish
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
@@ -22,7 +22,6 @@ import com.ahmadnayfeh.shasha.ui.main.MainShell
 import com.ahmadnayfeh.shasha.ui.main.Tab
 import com.ahmadnayfeh.shasha.ui.settings.remote.PairingStatus
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
-import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,7 +39,7 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = TV_1080P)
 class SettingsHubScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     private fun snap(
         name: String,
@@ -49,20 +48,21 @@ class SettingsHubScreenshotTest {
         inPane: Boolean = true,
         keys: List<Key> = emptyList(),
     ) {
+        PromoEnglish.assumeRecorded(name)
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true) {
-                ShashaTheme { Hub(state, category) }
+                ShashaTheme(language = PromoEnglish.language()) { Hub(state, category) }
             }
         }
         compose.waitForIdle()
-        (if (inPane) listOf(Key.DirectionLeft) + keys else keys).forEach { key ->
+        (if (inPane) listOf(PromoEnglish.mirror(Key.DirectionLeft)) + keys else keys).forEach { key ->
             compose.onRoot().performKeyInput { pressKey(key) }
             compose.waitForIdle()
         }
         // The pane fades in (180 ms): let it finish.
         compose.mainClock.advanceTimeBy(400)
         compose.waitForIdle()
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     @Composable
@@ -132,13 +132,17 @@ class SettingsHubScreenshotTest {
     @Test
     fun updates() = snap("settings_hub_updates", SettingsCategory.UPDATES)
 
-    /** DOWN once, onto SponsorBlock's attribution: «معلومات تقنية والتراخيص» comes into view under the button. */
+    /** «حول» down to its last row: «التراخيص», closed (nothing technical in view). */
     @Test
-    fun updatesTechnical() = snap("settings_hub_updates_technical", SettingsCategory.UPDATES, keys = listOf(Key.DirectionDown))
+    fun aboutLicences() = snap("settings_hub_about_licences", SettingsCategory.ABOUT, keys = List(6) { Key.DirectionDown })
 
-    /** DOWN to the pane's last row: the libraries and the projects whose ideas the app follows, and the closing line. */
+    /** OK on «التراخيص»: SponsorBlock's attribution, then the libraries and the projects whose ideas the app follows. */
     @Test
-    fun updatesLicenses() = snap("settings_hub_updates_licenses", SettingsCategory.UPDATES, keys = List(20) { Key.DirectionDown })
+    fun aboutLicencesOpen() = snap(
+        "settings_hub_about_licences_open",
+        SettingsCategory.ABOUT,
+        keys = List(6) { Key.DirectionDown } + Key.DirectionCenter + Key.DirectionDown,
+    )
 
     /** «حول»: the developer and his other apps, and nothing else. */
     @Test

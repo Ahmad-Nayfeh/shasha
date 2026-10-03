@@ -1,5 +1,6 @@
 import React from 'react';
 import {brand, rgba} from '../brand';
+import {t} from '../lib/lang';
 import {focusRect, Rect, screenInfo} from '../lib/screens';
 import {LogoMark, Wordmark} from './Brand';
 import {Icon, IconName} from './Icons';
@@ -207,7 +208,7 @@ const Keypad: React.FC<{x: number; y: number; w: number; h: number}> = ({x, y, w
 };
 
 const TopBar: React.FC<{kids?: boolean; search?: {x: number; y: number; w: number; h: number} | null; active?: number}> = ({kids, search, active = 0}) => {
-  const tabs = kids ? ['قنواتي', 'قوائم التشغيل'] : ['الرئيسية', 'الاشتراكات', 'السجل', 'لاحقاً'];
+  const tabs = kids ? [t('قنواتي'), t('قوائم التشغيل')] : [t('الرئيسية'), t('الاشتراكات'), t('السجل'), t('لاحقاً')];
   return (
     <>
       <div style={abs({right: 90, top: 50, display: 'flex', alignItems: 'center', gap: 18, direction: 'rtl'})}>
@@ -253,7 +254,7 @@ const TopBar: React.FC<{kids?: boolean; search?: {x: number; y: number; w: numbe
           })}
         >
           <Icon name="star" size={34} color={brand.kids} stroke={2.4} />
-          ملف الطفل
+          {t('ملف الطفل')}
         </div>
       ) : null}
       {search ? (
@@ -362,8 +363,8 @@ const renderTv = (name: string, kind: string, title: string) => {
   switch (kind) {
     case 'home': {
       const s = R(name, 'search');
-      const times = ['منذ ساعتين', 'منذ 5 ساعات', 'أمس', 'منذ يومين'];
-      const chans = ['عالم الطبيعة', 'مطبخ سلمى', 'تقنية ببساطة', 'رحلات هادئة'];
+      const times = [t('منذ ساعتين'), t('منذ 5 ساعات'), t('أمس'), t('منذ يومين')];
+      const chans = [t('عالم الطبيعة'), t('مطبخ سلمى'), t('تقنية ببساطة'), t('رحلات هادئة')];
       const fc = R(name, 'firstCard');
       const rows = [fc.y, R(name, 'rows', 1).y];
       return (
@@ -372,7 +373,7 @@ const renderTv = (name: string, kind: string, title: string) => {
           {rows.map((ry, ri) => (
             <React.Fragment key={ri}>
               <T xr={1830} y={ry - 64} size={34}>
-                {ri === 0 ? 'أحدث الفيديوهات' : 'من قنواتك'}
+                {ri === 0 ? t('أحدث الفيديوهات') : t('من قنواتك')}
               </T>
               {[0, 1, 2, 3].map((ci) => {
                 const x = fc.x - ci * (fc.w + 36);
@@ -414,10 +415,10 @@ const renderTv = (name: string, kind: string, title: string) => {
             })}
           >
             <Icon name="search" size={44} color={brand.primary} stroke={2.4} />
-            <span style={{fontSize: 38, fontWeight: 600, color: brand.text}}>وثائقي أعماق المحيط</span>
+            <span style={{fontSize: 38, fontWeight: 600, color: brand.text}}>{t('وثائقي أعماق المحيط')}</span>
             <span style={{width: 3, height: 44, background: brand.primary}} />
           </div>
-          <div style={abs({left: 90, top: 70, fontSize: 28, color: brand.muted, fontFamily: brand.font})}>ملف الكبار</div>
+          <div style={abs({left: 90, top: 70, fontSize: 28, color: brand.muted, fontFamily: brand.font})}>{t('ملف الكبار')}</div>
           {[0, 1].map((ri) =>
             [0, 1, 2, 3].map((ci) => {
               const x = fr_.x - ci * (fr_.w + 36);
@@ -449,15 +450,15 @@ const renderTv = (name: string, kind: string, title: string) => {
           <PlayerBg dim={0.55} />
           <div style={abs({left: d.x, top: d.y, width: d.w, height: d.h, borderRadius: 34, background: '#151B24', border: '1.5px solid rgba(234,240,246,0.08)', boxShadow: '0 40px 90px rgba(0,0,0,0.6)'})} />
           <T xr={d.x + d.w - 60} y={d.y + 56} size={44}>
-            متابعة المشاهدة؟
+            {t('متابعة المشاهدة؟')}
           </T>
           <T xr={d.x + d.w - 60} y={d.y + 130} size={30} c={brand.muted} weight={500}>
-            توقفت عند 12:34 من 21:40
+            {t('توقفت عند 12:34 من 21:40')}
           </T>
           <Bar x={d.x + 60} y={d.y + 200} w={d.w - 120} h={10} r={5} c="rgba(234,240,246,0.14)" />
           <Bar x={d.x + 60 + (d.w - 120) * 0.43} y={d.y + 200} w={(d.w - 120) * 0.57} h={10} r={5} c={brand.primary} />
-          <Btn x={r.x} y={r.y} w={r.w} h={r.h} label="استكمال من 12:34" primary size={28} />
-          <Btn x={d.x + 60} y={r.y} w={r.x - d.x - 90} h={r.h} label="من البداية" size={28} />
+          <Btn x={r.x} y={r.y} w={r.w} h={r.h} label={t('استكمال من 12:34')} primary size={28} />
+          <Btn x={d.x + 60} y={r.y} w={r.x - d.x - 90} h={r.h} label={t('من البداية')} size={28} />
         </>
       );
     }
@@ -466,7 +467,7 @@ const renderTv = (name: string, kind: string, title: string) => {
         <>
           <PlayerBg />
           <PlayerControls p={0.52} />
-          <Toast r={R(name, 'toast')} icon="skip" text="تم تخطي فقرة رعاية" action="تراجع" />
+          <Toast r={R(name, 'toast')} icon="skip" text={t('تم تخطي فقرة رعاية')} action={t('تراجع')} />
         </>
       );
     }
@@ -474,7 +475,7 @@ const renderTv = (name: string, kind: string, title: string) => {
       return (
         <>
           <PlayerBg />
-          <Toast r={R(name, 'toast')} icon="hourglass" text="بقيت 5 دقائق من حصة اليوم" c={brand.amber} />
+          <Toast r={R(name, 'toast')} icon="hourglass" text={t('بقيت 5 دقائق من حصة اليوم')} c={brand.amber} />
         </>
       );
     case 'kidsplayer': {
@@ -503,7 +504,7 @@ const renderTv = (name: string, kind: string, title: string) => {
             })}
           >
             <Icon name="lock" size={32} color={brand.kids} stroke={2.4} />
-            الفيديو مقفل
+            {t('الفيديو مقفل')}
           </div>
         </>
       );
@@ -515,22 +516,22 @@ const renderTv = (name: string, kind: string, title: string) => {
           <PlayerBg dim={0.6} />
           <div style={abs({left: r.x, top: r.y, width: r.w, height: r.h, borderRadius: 999, border: '14px solid rgba(234,240,246,0.12)'})} />
           <div style={abs({left: r.x, top: r.y + r.h / 2 - 50, width: r.w, textAlign: 'center', fontSize: 80, fontWeight: 700, color: brand.text, fontFamily: brand.font})}>10</div>
-          <Heading title="اضغط مطوّلاً للخروج" sub="الخروج قبل نهاية الفيديو يحتاج صبراً" y={560} />
+          <Heading title={t('اضغط مطوّلاً للخروج')} sub={t('الخروج قبل نهاية الفيديو يحتاج صبراً')} y={560} />
         </>
       );
     }
     case 'phrase': {
       const ph = R(name, 'phrase');
       const inp = R(name, 'input');
-      const letters = 'ضصثقفغعهخحجدشسيبلاتنمكطئءؤرلاىةوزظ'.split('');
+      const letters = t('ضصثقفغعهخحجدشسيبلاتنمكطئءؤرلاىةوزظ').split('');
       return (
         <>
           <PlayerBg dim={0.72} />
           <T xr={ph.x + ph.w} y={ph.y - 90} size={40} c={brand.muted} weight={500}>
-            اكتب الجملة للخروج
+            {t('اكتب الجملة للخروج')}
           </T>
           <div style={abs({left: ph.x, top: ph.y, width: ph.w, height: ph.h, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 50, fontWeight: 700, color: brand.amber, fontFamily: brand.font, direction: 'rtl'})}>
-            أختار أن أتوقف الآن
+            {t('أختار أن أتوقف الآن')}
           </div>
           <div style={abs({left: inp.x, top: inp.y, width: inp.w, height: inp.h, borderRadius: 22, background: '#1A222C', boxShadow: `inset 0 0 0 2px ${rgba(brand.primary, 0.5)}`})} />
           {Array.from({length: 33}).map((_, i) => {
@@ -565,22 +566,22 @@ const renderTv = (name: string, kind: string, title: string) => {
       return (
         <>
           <div style={abs({inset: 0, background: 'radial-gradient(60% 60% at 50% 45%, #0F2A2A, #06090C 70%)'})} />
-          <Heading title="«شاشة» تعيدك الآن" sub="القفل مفعّل — لا يمكن فتح تطبيق آخر" icon="shieldCheck" y={290} />
+          <Heading title={t('«شاشة» تعيدك الآن')} sub={t('القفل مفعّل — لا يمكن فتح تطبيق آخر')} icon="shieldCheck" y={290} />
         </>
       );
     case 'status': {
-      const rows: Array<[string, string]> = [
-        ['overlay', 'العرض فوق التطبيقات'],
-        ['usage', 'الوصول إلى بيانات الاستخدام'],
-        ['install', 'تثبيت التحديثات'],
+      const rows: [string, string][] = [
+        ['overlay', t('العرض فوق التطبيقات')],
+        ['usage', t('الوصول إلى بيانات الاستخدام')],
+        ['install', t('تثبيت التحديثات')],
       ];
       return (
         <>
           <T xr={1720} y={120} size={60} weight={700}>
-            حالة الحماية
+            {t('حالة الحماية')}
           </T>
           <T xr={1720} y={205} size={30} c={brand.muted} weight={500}>
-            صلاحيات يمنحها سكربت ADB مرة واحدة
+            {t('صلاحيات يمنحها سكربت ADB مرة واحدة')}
           </T>
           {rows.map(([k, label]) => {
             const r = R(name, k);
@@ -593,7 +594,7 @@ const renderTv = (name: string, kind: string, title: string) => {
                 <div style={abs({left: r.x + r.w - 88, top: r.y + r.h / 2 - 28, width: 56, height: 56, borderRadius: 999, background: rgba(brand.primary, 0.16), display: 'grid', placeItems: 'center'})}>
                   <Icon name="check" size={36} color={brand.primary} stroke={3} />
                 </div>
-                <div style={abs({left: r.x + 36, top: r.y + r.h / 2 - 22, fontSize: 30, fontWeight: 700, color: brand.primary, fontFamily: brand.font})}>ممنوحة</div>
+                <div style={abs({left: r.x + 36, top: r.y + r.h / 2 - 22, fontSize: 30, fontWeight: 700, color: brand.primary, fontFamily: brand.font})}>{t('ممنوحة')}</div>
               </React.Fragment>
             );
           })}
@@ -608,16 +609,16 @@ const renderTv = (name: string, kind: string, title: string) => {
             <QrCode size={q.w - 52} bg="#EAF0F6" quiet={1} />
           </div>
           <T xr={1740} y={250} size={64} weight={700}>
-            امسح الرمز بجوالك
+            {t('امسح الرمز بجوالك')}
           </T>
           <T xr={1740} y={350} size={34} c={brand.muted} weight={500}>
-            افتح الكاميرا ووجّهها إلى الرمز، ثم افتح الرابط.
+            {t('افتح الكاميرا ووجّهها إلى الرمز، ثم افتح الرابط.')}
           </T>
           <div style={abs({right: W - 1740, top: 440, fontFamily: brand.mono, fontSize: 36, color: brand.primary, direction: 'ltr'})}>{`http://${TV_IP}:${PAIR_PORT}`}</div>
           <div style={abs({right: W - 1740, top: 540, display: 'flex', gap: 14, direction: 'rtl'})}>
-            {['بحث', 'تحكم', 'إرسال رابط', 'قسم الأب'].map((t) => (
-              <div key={t} style={{padding: '10px 24px', borderRadius: 999, background: '#1A222C', fontSize: 28, fontWeight: 600, color: brand.text, fontFamily: brand.font}}>
-                {t}
+            {[t('بحث'), t('تحكم'), t('إرسال رابط'), t('قسم الأب')].map((label) => (
+              <div key={label} style={{padding: '10px 24px', borderRadius: 999, background: '#1A222C', fontSize: 28, fontWeight: 600, color: brand.text, fontFamily: brand.font}}>
+                {label}
               </div>
             ))}
           </div>
@@ -633,7 +634,7 @@ const renderTv = (name: string, kind: string, title: string) => {
       return (
         <>
           <T xr={1830} y={70} size={56} weight={700}>
-            الإحصائيات · هذا الأسبوع
+            {t('الإحصائيات · هذا الأسبوع')}
           </T>
           <div style={abs({left: ch.x, top: ch.y, width: ch.w, height: ch.h, borderRadius: 30, background: '#151B24'})} />
           {a.map((v, i) => {
@@ -647,19 +648,19 @@ const renderTv = (name: string, kind: string, title: string) => {
           })}
           <div style={abs({left: cl.x, top: cl.y, width: cl.w, height: cl.h, borderRadius: 30, background: '#151B24'})} />
           <T xr={cl.x + cl.w - 36} y={cl.y + 30} size={32}>
-            أكثر القنوات
+            {t('أكثر القنوات')}
           </T>
-          {['عالم الطبيعة', 'مطبخ سلمى', 'تقنية ببساطة', 'رحلات هادئة'].map((c, i) => (
+          {[t('عالم الطبيعة'), t('مطبخ سلمى'), t('تقنية ببساطة'), t('رحلات هادئة')].map((c, i) => (
             <React.Fragment key={c}>
               <div style={abs({left: cl.x + cl.w - 36 - 56, top: cl.y + 110 + i * 100, width: 56, height: 56, borderRadius: 999, background: `linear-gradient(135deg, ${THUMBS[i][0]}, ${THUMBS[i][1]})`})} />
               <T xr={cl.x + cl.w - 110} y={cl.y + 116 + i * 100} size={30} weight={500}>
                 {c}
               </T>
-              <div style={abs({left: cl.x + 36, top: cl.y + 118 + i * 100, fontSize: 28, color: brand.muted, fontFamily: brand.font, direction: 'rtl'})}>{[124, 96, 61, 40][i]} د</div>
+              <div style={abs({left: cl.x + 36, top: cl.y + 118 + i * 100, fontSize: 28, color: brand.muted, fontFamily: brand.font, direction: 'rtl'})}>{t('{n} د', {n: [124, 96, 61, 40][i]})}</div>
             </React.Fragment>
           ))}
           <div style={abs({left: cp.x, top: cp.y, width: cp.w, height: cp.h, borderRadius: 999, background: rgba(brand.primary, 0.14), color: brand.primary, display: 'grid', placeItems: 'center', fontSize: 32, fontWeight: 700, fontFamily: brand.font, direction: 'rtl'})}>
-            <span><span style={{unicodeBidi: 'isolate', direction: 'ltr'}}>−12%</span> عن الأسبوع الماضي</span>
+            <span><span style={{unicodeBidi: 'isolate', direction: 'ltr'}}>−12%</span> {t('عن الأسبوع الماضي')}</span>
           </div>
         </>
       );
@@ -669,7 +670,7 @@ const renderTv = (name: string, kind: string, title: string) => {
       const hasKeypad = !!screenInfo(name).focus?.keypad;
       return (
         <>
-          <Heading title={title.replace('أول تشغيل: ', '')} sub={hasKeypad ? 'ملف الكبار' : 'أربعة أرقام تحمي الإعدادات والملفات'} y={140} />
+          <Heading title={title.replace(t('أول تشغيل: '), '')} sub={hasKeypad ? t('ملف الكبار') : t('أربعة أرقام تحمي الإعدادات والملفات')} y={140} />
           <Dots x={d.x} y={d.y} w={d.w} h={d.h} filled={2} />
           <Keypad x={760} y={520} w={400} h={480} />
         </>
@@ -689,9 +690,9 @@ const renderTv = (name: string, kind: string, title: string) => {
       );
       return (
         <>
-          <Heading title={setup ? 'أنشئ الملفات' : 'من يشاهد؟'} sub={setup ? 'ملف للكبار برمز سري، وملف لكل طفل' : undefined} y={100} />
-          {P(ad, brand.primary, 'الكبار', 'lock')}
-          {P(ch, brand.kids, 'الطفل', 'star')}
+          <Heading title={setup ? t('أنشئ الملفات') : t('من يشاهد؟')} sub={setup ? t('ملف للكبار برمز سري، وملف لكل طفل') : undefined} y={100} />
+          {P(ad, brand.primary, t('الكبار'), 'lock')}
+          {P(ch, brand.kids, t('الطفل'), 'star')}
         </>
       );
     }
@@ -720,7 +721,7 @@ const renderTv = (name: string, kind: string, title: string) => {
     case 'settings': {
       const m = R(name, 'minutes');
       const s = R(name, 'schedule');
-      const cats = ['الملفات', 'الحصص والجداول', 'قوائم السماح', 'SponsorBlock', 'حالة الحماية', 'التحديثات', 'حول'];
+      const cats = [t('الملفات'), t('الحصص والجداول'), t('قوائم السماح'), 'SponsorBlock', t('حالة الحماية'), t('التحديثات'), t('حول')];
       return (
         <>
           <div style={abs({left: 1300, top: 0, width: 620, height: 1080, background: '#10151C'})} />
@@ -749,11 +750,11 @@ const renderTv = (name: string, kind: string, title: string) => {
             </div>
           ))}
           <T xr={1210} y={110} size={52} weight={700}>
-            الحصص والجداول
+            {t('الحصص والجداول')}
           </T>
           {[
-            [m, 'الحصة اليومية · الكبار', '60 دقيقة'],
-            [s, 'الأوقات المسموحة', '07:00 – 22:00'],
+            [m, t('الحصة اليومية · الكبار'), t('60 دقيقة')],
+            [s, t('الأوقات المسموحة'), '07:00 – 22:00'],
           ].map(([r, label, val], i) => {
             const rr = r as typeof m;
             return (
@@ -768,9 +769,9 @@ const renderTv = (name: string, kind: string, title: string) => {
           })}
           <div style={abs({left: m.x, top: 560, width: m.w, height: 150, borderRadius: 24, background: '#151B24'})} />
           <T xr={m.x + m.w - 36} y={582} size={30} c={brand.muted} weight={500}>
-            ملف الطفل
+            {t('ملف الطفل')}
           </T>
-          <div style={abs({left: m.x + 36, top: 582, fontSize: 32, fontWeight: 700, color: brand.kids, fontFamily: brand.font, direction: 'ltr'})}>45 دقيقة</div>
+          <div style={abs({left: m.x + 36, top: 582, fontSize: 32, fontWeight: 700, color: brand.kids, fontFamily: brand.font, direction: 'ltr'})}>{t('45 دقيقة')}</div>
           <Bar x={m.x + 36} y={650} w={m.w - 72} h={14} r={7} c="rgba(234,240,246,0.1)" />
           <Bar x={m.x + 36 + (m.w - 72) * 0.25} y={650} w={(m.w - 72) * 0.75} h={14} r={7} c={brand.kids} />
         </>
@@ -781,9 +782,9 @@ const renderTv = (name: string, kind: string, title: string) => {
       return (
         <>
           <div style={abs({inset: 0, background: 'radial-gradient(60% 60% at 50% 35%, rgba(255,181,71,0.10), transparent 70%)'})} />
-          <Heading title="انتهى الوقت" sub="انتهت حصة المشاهدة لهذا اليوم. نلتقي غداً." icon="hourglass" c={brand.amber} y={120} />
+          <Heading title={t('انتهى الوقت')} sub={t('انتهت حصة المشاهدة لهذا اليوم. نلتقي غداً.')} icon="hourglass" c={brand.amber} y={120} />
           <Dots x={p.x} y={p.y} w={p.w} h={p.h} filled={0} c={brand.amber} />
-          <div style={abs({left: 0, right: 0, top: p.y + p.h + 40, textAlign: 'center', fontSize: 30, color: brand.muted, fontFamily: brand.font, direction: 'rtl'})}>أدخل الرمز للفتح، أو افتح من الجوال</div>
+          <div style={abs({left: 0, right: 0, top: p.y + p.h + 40, textAlign: 'center', fontSize: 30, color: brand.muted, fontFamily: brand.font, direction: 'rtl'})}>{t('أدخل الرمز للفتح، أو افتح من الجوال')}</div>
         </>
       );
     }
@@ -793,22 +794,22 @@ const renderTv = (name: string, kind: string, title: string) => {
       const pg = R(name, 'progress');
       return (
         <>
-          <Heading title="يتوفر إصدار جديد" sub="من GitHub Releases" icon="download" y={40} />
+          <Heading title={t('يتوفر إصدار جديد')} sub={t('من GitHub Releases')} icon="download" y={40} />
           <div style={abs({left: r.x, top: r.y, width: r.w, height: r.h, borderRadius: 28, background: '#151B24', border: '1.5px solid rgba(234,240,246,0.08)'})} />
           <div style={abs({left: r.x + 40, top: r.y + 34, fontFamily: brand.mono, fontSize: 44, color: brand.text, direction: 'ltr'})}>{RELEASE_TAG}</div>
           <div style={abs({left: r.x + 40, top: r.y + 104, fontFamily: brand.mono, fontSize: 28, color: brand.muted, direction: 'ltr'})}>{`${APK_NAME} · ${APK_SIZE}`}</div>
           <Bar x={pg.x} y={pg.y + pg.h / 2 - 8} w={pg.w} h={16} r={8} c="rgba(234,240,246,0.1)" />
           <Bar x={pg.x + pg.w * 0.36} y={pg.y + pg.h / 2 - 8} w={pg.w * 0.64} h={16} r={8} c={brand.primary} />
-          <div style={abs({left: 0, right: 0, top: pg.y + pg.h + 30, textAlign: 'center', fontSize: 30, color: brand.muted, fontFamily: brand.font, direction: 'rtl'})}>جارٍ التنزيل… 64٪</div>
+          <div style={abs({left: 0, right: 0, top: pg.y + pg.h + 30, textAlign: 'center', fontSize: 30, color: brand.muted, fontFamily: brand.font, direction: 'rtl'})}>{t('جارٍ التنزيل… 64٪')}</div>
         </>
       );
     }
     case 'error':
       return (
         <>
-          <Heading title="يوتيوب غيّر شيئاً. حدّث التطبيق." sub="تعذّر تشغيل الفيديو." icon="warning" c={brand.error} y={150} />
-          <Btn x={633} y={880} w={386} h={104} label="فحص التحديثات" icon="download" />
-          <Btn x={1049} y={877} w={247} h={110} label="رجوع" primary />
+          <Heading title={t('يوتيوب غيّر شيئاً. حدّث التطبيق.')} sub={t('تعذّر تشغيل الفيديو.')} icon="warning" c={brand.error} y={150} />
+          <Btn x={633} y={880} w={386} h={104} label={t('فحص التحديثات')} icon="download" />
+          <Btn x={1049} y={877} w={247} h={110} label={t('رجوع')} primary />
         </>
       );
     case 'menu':

@@ -97,6 +97,33 @@ class ErrorScreenTest {
     }
 
     @Test
+    fun theTvsOwnDecoderFailingBlamesNotYouTube_andHasNoUpdateToCheck() {
+        show(SourceErrorKind.DEVICE_DECODER, "ERROR_CODE_DECODING_FAILED")
+        compose.onNodeWithTag("error_title").assertTextEquals("تعذّر على شاشتك تشغيل هذا الفيديو")
+        compose.onNodeWithTag("error_explanation").assertTextEquals("جرّب فيديو آخر؛ وإن تكرر فأعد تشغيل الشاشة.")
+        compose.onNodeWithText("ERROR_CODE_DECODING_FAILED").assertIsDisplayed()
+        compose.onNodeWithText("DEVICE_DECODER").assertIsDisplayed()
+        // An update does not touch the TV's decoder: «فحص التحديثات» is not offered, «رجوع» is where focus starts.
+        compose.onNodeWithTag("error_check_updates").assertDoesNotExist()
+        compose.onNodeWithTag("error_back").assertIsFocused()
+        press(Key.DirectionCenter)
+        assertThat(backs).isEqualTo(1)
+        assertThat(updateChecks).isEqualTo(0)
+    }
+
+    @Test
+    fun everyOtherKindStillOffersTheUpdateCheck() {
+        for (kind in SourceErrorKind.entries.filter { it != SourceErrorKind.DEVICE_DECODER }) {
+            assertThat(ErrorTexts.offersUpdateCheck(kind)).isTrue()
+        }
+        assertThat(ErrorTexts.offersUpdateCheck(SourceErrorKind.DEVICE_DECODER)).isFalse()
+        // The smaller places (a list's footer, the home's banner) follow the kind's own advice, which is not an update either.
+        assertThat(ErrorTexts.suggestsUpdate(SourceErrorKind.DEVICE_DECODER)).isFalse()
+        assertThat(ErrorTexts.suggestsUpdate(SourceErrorKind.EXTRACTION_BROKEN)).isTrue()
+        assertThat(ErrorTexts.suggestsUpdate(SourceErrorKind.NETWORK)).isFalse()
+    }
+
+    @Test
     fun moreActionsSitBetweenBackAndCheckUpdates() {
         var unsubscribes = 0
         compose.setContent {

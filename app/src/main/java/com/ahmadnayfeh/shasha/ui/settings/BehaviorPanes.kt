@@ -175,7 +175,7 @@ private fun ResetRow(key: String, onClick: () -> Unit, modifier: Modifier = Modi
 }
 
 /**
- * «الوضع الجاد» (SPEC §4's lock): v1.2, one switch for the children's profiles and one for the adult's (independent,
+ * «الوضع الجاد» (SPEC §4's lock): v1.1.1, one switch for the children's profiles and one for the adult's (independent,
  * owner decision), the adult's way out (allowed or not, how long to hold, which phrase; turning it off needs a paired
  * phone, which then confirms every adult video), and how much skipping still lets a video end by itself.
  */

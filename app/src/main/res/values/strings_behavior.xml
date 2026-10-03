@@ -128,8 +128,8 @@
     </string-array>
 
     <!-- The phone remote's port (in «التحكم من الجوال»). -->
-    <string name="remote_port">منفذ الخادم</string>
-    <string name="remote_port_body">من 1024 حتى 65535. بعد تغييره يعمل الخادم عليه من جديد، فامسح رمز الاقتران مرة أخرى</string>
+    <string name="remote_port">منفذ الاتصال</string>
+    <string name="remote_port_body">غيّره فقط إن لم يعمل التحكم من الجوال لأن تطبيقاً آخر يستعمل هذا الرقم: اختر رقماً بين 1024 و65535، ثم امسح رمز QR من جديد</string>
     <string name="remote_port_hint">رقم المنفذ</string>
     <string name="remote_port_invalid">المنفذ رقم من 1024 إلى 65535.</string>
 

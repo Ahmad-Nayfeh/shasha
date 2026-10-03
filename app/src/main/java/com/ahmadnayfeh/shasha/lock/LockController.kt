@@ -81,7 +81,7 @@ class LockController(
     private val surrenders: SurrenderLog,
     private val scope: CoroutineScope,
     /**
-     * «الوضع الجاد», per kind of profile (Settings; v1.2: the children's and the adult's switches). Turned off for the
+     * «الوضع الجاد», per kind of profile (Settings; v1.1.1: the children's and the adult's switches). Turned off for the
      * kind of the lock that holds a video now, that lock ends at once (no surrender: the parent chose it), and no video
      * of that kind is locked any more ([PolicyEngine.lockFor]). The other kind's lock is not touched.
      */

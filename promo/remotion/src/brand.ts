@@ -1,4 +1,6 @@
 // Brand tokens — same values as /home/user/shasha/branding/README.md and the app's ShashaColors.
+import {isEn} from './lib/lang';
+
 export const brand = {
   bg: '#0B0F14',
   surface: '#151B24',
@@ -28,8 +30,10 @@ export const rgba = (hex: string, a: number) => {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 };
 
-// Arabic-Indic digits for on-screen counters (١ ٢ ٣ …).
-export const arDigits = (n: number | string) => String(n).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[+d]);
+// Digits for on-screen counters: Arabic-Indic in the Arabic version (١ ٢ ٣ …, U+0660..U+0669), Western in the English one
+// (so every scene that counts with arDigits() follows the language of the render).
+export const arDigits = (n: number | string) =>
+  isEn ? String(n) : String(n).replace(/[0-9]/g, (d) => String.fromCharCode(0x660 + +d));
 
 /** Mix two hex colours (t = 0 → a, 1 → b). */
 export const mixHex = (a: string, b: string, t: number) => {

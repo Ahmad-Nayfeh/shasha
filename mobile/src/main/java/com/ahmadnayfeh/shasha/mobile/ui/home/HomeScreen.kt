@@ -37,11 +37,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ahmadnayfeh.shasha.mobile.AppContainer
 import com.ahmadnayfeh.shasha.mobile.R
+import com.ahmadnayfeh.shasha.mobile.data.toChannelItem
 import com.ahmadnayfeh.shasha.mobile.ui.components.Avatar
 import com.ahmadnayfeh.shasha.mobile.ui.components.EmptyState
 import com.ahmadnayfeh.shasha.mobile.ui.components.ErrorState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LoadingBox
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoCard
+import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +51,7 @@ import com.ahmadnayfeh.shasha.youtube.VideoItem
 fun HomeScreen(
     container: AppContainer,
     onOpenVideo: (VideoItem) -> Unit,
-    onOpenChannel: (String) -> Unit,
+    onOpenChannel: (ChannelItem) -> Unit,
     onSearch: () -> Unit,
 ) {
     val vm: HomeViewModel = viewModel(factory = HomeViewModel.factory(container))
@@ -94,7 +96,7 @@ fun HomeScreen(
 private fun FeedGrid(
     state: HomeState,
     onOpenVideo: (VideoItem) -> Unit,
-    onOpenChannel: (String) -> Unit,
+    onOpenChannel: (ChannelItem) -> Unit,
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 320.dp),
@@ -108,10 +110,10 @@ private fun FeedGrid(
             LazyRow(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 items(state.subscriptions, key = { it.channelId }) { channel ->
                     Column(
-                        Modifier.width(68.dp).clickable { onOpenChannel(channel.channelId) },
+                        Modifier.width(68.dp).clickable { onOpenChannel(channel.toChannelItem()) },
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Avatar(channel.avatarUrl, size = 56)
+                        Avatar(channel.avatarUrl, size = 56, name = channel.name)
                         Text(
                             channel.name,
                             style = MaterialTheme.typography.labelSmall,

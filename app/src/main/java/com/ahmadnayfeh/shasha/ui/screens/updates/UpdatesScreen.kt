@@ -66,7 +66,7 @@ import java.util.Locale
 fun UpdatesRoute(adult: Boolean, onBack: () -> Unit) {
     val container = LocalContext.current.appContainer
     if (!adult) {
-        UpdatesChildNotice(BuildConfig.VERSION_NAME, container.videoSource.extractorVersion, onBack)
+        UpdatesChildNotice(BuildConfig.VERSION_NAME, onBack)
         return
     }
     val vm: UpdatesViewModel = viewModel(factory = viewModelFactory { initializer { UpdatesViewModel(container.updater) } })
@@ -115,7 +115,7 @@ fun UpdatesScreen(state: UpdateUiState, installed: InstalledVersion, actions: Up
 
 /** A child profile never reaches the updater: who can update the app, and the version it runs. */
 @Composable
-fun UpdatesChildNotice(appVersion: String, extractorVersion: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun UpdatesChildNotice(appVersion: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
     UpdatesLayout(
         title = stringResource(R.string.updates_child_title),
         body = stringResource(R.string.updates_child_body),
@@ -123,7 +123,7 @@ fun UpdatesChildNotice(appVersion: String, extractorVersion: String, onBack: () 
         focusKey = Unit,
     ) { first ->
         Text(
-            stringResource(R.string.updates_current_version, appVersion, extractorVersion),
+            stringResource(R.string.updates_current_version, appVersion),
             style = MaterialTheme.typography.labelLarge,
             color = ShashaColors.Secondary,
         )

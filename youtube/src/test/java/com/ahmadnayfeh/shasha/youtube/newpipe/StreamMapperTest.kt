@@ -2,10 +2,22 @@ package com.ahmadnayfeh.shasha.youtube.newpipe
 
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.newpipe.StreamMapper.StreamSummary
+import com.ahmadnayfeh.shasha.youtube.playback.PlaybackFixtures
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
+import org.schabi.newpipe.extractor.Image
+import org.schabi.newpipe.extractor.stream.StreamInfo
 
 class StreamMapperTest {
+
+    /** A playable extraction of a video of «Rick Astley», whose page lists [avatars] for the uploader. */
+    private fun extraction(avatars: List<Image>): StreamInfo = PlaybackFixtures.info().apply {
+        uploaderUrl = PlaybackFixtures.CHANNEL_URL
+        uploaderName = "Rick Astley"
+        uploaderAvatars = avatars
+    }
+
+    private fun avatar(width: Int) = Image("https://yt3.ggpht.com/uploader=s$width", width, width, Image.ResolutionLevel.UNKNOWN)
 
     private fun vod(adaptive: List<Int> = emptyList(), muxed: List<Int> = emptyList(), audio: Boolean = true, hls: Boolean = false) =
         StreamSummary(isLive = false, hasHls = hls, hasDash = false, adaptiveHeights = adaptive, muxedHeights = muxed, hasAudio = audio)
@@ -99,5 +111,30 @@ class StreamMapperTest {
     fun htmlDescriptionsBecomePlainText() {
         val html = "Line one<br>Line <a href=\"https://x\">two</a> &amp; three<br/>&quot;quoted&quot; &#39;single&#39; &#x1F600; &amp;lt;"
         assertThat(HtmlText.toPlain(html)).isEqualTo("Line one\nLine two & three\n\"quoted\" 'single' 😀 &lt;")
+    }
+
+    // --- the uploader's picture, from the video's own page ---------------------------------------------------------------
+
+    @Test
+    fun theUploadersPictureIsTheOneAChannelsOwnPictureWouldBe() {
+        // The smallest one that is wide enough (176 px, as for a channel's avatar), not the biggest.
+        val details = StreamMapper.toDetails(extraction(listOf(avatar(48), avatar(176), avatar(900))))
+
+        assertThat(details.uploaderAvatarUrl).isEqualTo("https://yt3.ggpht.com/uploader=s176")
+        // The channel the picture belongs to is the video's: the same page names it.
+        assertThat(details.video.channelId).isEqualTo("UCuAXFkgsw1L7xaCfnd5JJOw")
+        assertThat(details.video.channelName).isEqualTo("Rick Astley")
+    }
+
+    @Test
+    fun whenNoPictureIsBigEnoughTheLargestIsTaken() {
+        val details = StreamMapper.toDetails(extraction(listOf(avatar(48), avatar(88))))
+
+        assertThat(details.uploaderAvatarUrl).isEqualTo("https://yt3.ggpht.com/uploader=s88")
+    }
+
+    @Test
+    fun aVideoPageWithoutAPictureHasNone() {
+        assertThat(StreamMapper.toDetails(extraction(emptyList())).uploaderAvatarUrl).isNull()
     }
 }

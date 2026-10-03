@@ -48,7 +48,7 @@ class RemoteServer internal constructor(
 
     private val sessions = ParentSessions(nowMillis)
 
-    /** When a paired phone last reached this server (v1.2); it outlives stop/start like the PIN brake. */
+    /** When a paired phone last reached this server (v1.1.1); it outlives stop/start like the PIN brake. */
     val presence = PhonePresence(nowMillis)
     // Unlike sessions it survives stop/start: restarting the server must not hand out fresh PIN guesses.
     private val pinGate = PinGate(freeFailures = pinFailuresBeforeBlock, nowMillis = nowMillis)

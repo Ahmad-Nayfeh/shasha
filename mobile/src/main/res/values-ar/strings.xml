@@ -95,6 +95,7 @@
     <string name="error_rate_limited">طلبات كثيرة. انتظر قليلاً ثم حاول مجدداً.</string>
     <string name="error_low_quality">لم يُعثر إلا على جودة منخفضة جداً لهذا الفيديو.</string>
     <string name="error_broken">تعذّرت قراءة يوتيوب. ربما يحتاج التطبيق إلى تحديث.</string>
+    <string name="error_device_decoder">تعذّر على جهازك تشغيل هذا الفيديو. جرّب فيديو آخر؛ وإن تكرر فأعد تشغيل الجهاز.</string>
     <string name="error_generic">حدث خطأ ما.</string>
 
     <!-- الرئيسية -->
@@ -121,6 +122,7 @@
     <string name="channel_no_videos">لا توجد فيديوهات</string>
     <string name="channel_no_shorts">لا توجد مقاطع قصيرة</string>
     <string name="channel_no_playlists">لا توجد قوائم تشغيل</string>
+    <string name="channel_playlists_unavailable">تعذّر عرض قوائم التشغيل الآن.</string>
     <string name="playlist_empty">قائمة التشغيل فارغة</string>
     <string name="playlist_play_all">تشغيل الكل</string>
 
@@ -263,7 +265,7 @@
 
     <!-- حول -->
     <string name="about_title">حول</string>
-    <string name="about_version">الإصدار %1$s (%2$s)</string>
+    <string name="about_version">الإصدار %1$s</string>
     <string name="about_developer_caption">المطوّر</string>
     <string name="about_developer_name">احمد نايفه</string>
     <string name="about_made_with_love">صُنع بحب لعائلتي</string>

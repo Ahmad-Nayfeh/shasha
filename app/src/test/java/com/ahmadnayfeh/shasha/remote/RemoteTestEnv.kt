@@ -192,7 +192,8 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
 
     /**
      * A controller over this TV's rules with [phonePin]: `PhonePin(policyStore, clock)` is the phone's count as a new
-     * process reads it back from the store.
+     * process reads it back from the store. [source] is what it asks YouTube through (the fake, or the fake behind the
+     * built-in content filter, as AppContainer has it).
      */
     fun newController(
         phonePin: PhonePin,
@@ -201,6 +202,7 @@ class RemoteTestEnv(dir: File, afterRestore: suspend (RestoreReport) -> Unit = {
         restartDelayMs: Long = 50,
         portAvailable: suspend (Int) -> Boolean = { it !in takenPorts },
         movingTo: () -> Int? = { this.movingTo },
+        source: VideoSource = this.source,
     ) = TvRemoteController(
         gate = gate,
         profiles = profiles,

@@ -4,6 +4,7 @@ import {NoteChip, StepHeader} from '../components/Install';
 import {Press} from '../components/Remote';
 import {Crumbs, RowHalo, sx, sy, TvStepStage} from '../components/TvStep';
 import {easeInOut, keys, sp, tween} from '../lib/anim';
+import {t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 import {DEV_ROW, P_ABOUT, P_DEVELOPER, P_SYSTEM, rowRect, SYSTEM_ROW} from '../lib/tvPanels';
 
@@ -52,16 +53,16 @@ export const S15Debugging: React.FC<{scene: Scene}> = ({scene}) => {
       </TvStepStage>
       <Crumbs
         items={[
-          {ar: 'الإعدادات', en: 'Settings', at: 0},
-          {ar: 'النظام', en: 'System', at: backAt},
-          {ar: 'خيارات المطوّر', en: 'Developer options', at: okDev},
+          {ar: t('الإعدادات'), en: 'Settings', at: 0},
+          {ar: t('النظام'), en: 'System', at: backAt},
+          {ar: t('خيارات المطوّر'), en: 'Developer options', at: okDev},
         ]}
       />
       <NoteChip x={sx(60)} y={sy(300)} t={sp(f, okUsb, {damping: 20})} icon="check" en="USB debugging">
-        فعّل: تصحيح أخطاء USB
+        {t('فعّل: تصحيح أخطاء USB')}
       </NoteChip>
       <NoteChip x={sx(60)} y={sy(300) + 96} t={sp(f, okNet, {damping: 20})} icon="check" en="Network debugging">
-        وفعّل تصحيح الشبكة إن وجدته
+        {t('وفعّل تصحيح الشبكة إن وجدته')}
       </NoteChip>
     </div>
   );

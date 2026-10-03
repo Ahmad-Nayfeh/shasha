@@ -1,12 +1,18 @@
 import React from 'react';
 import {brand, rgba} from '../brand';
 import {clamp, mix} from '../lib/anim';
-import {captureSize, focusRect, hasScreen} from '../lib/screens';
+import {dir, t} from '../lib/lang';
+import {captureSize, focusRect, hasScreen, isEnglishScreen} from '../lib/screens';
 import {Icon} from './Icons';
 
 // Live overlays on real captures: they re-draw one small part of a screenshot in its app style so the
 // screen can animate (PIN dots filling, the 10-second ring counting, the phrase being typed, a phone toast).
 // Drawn in the capture's own pixel space (TV screen space = 1920x1080); only when the capture exists.
+//
+// English version: the overlays follow the capture that is drawn. The English captures (public/screens-en, left to
+// right) have their own rects in screens-en.json, which `px()` reads like any other; what is laid out by hand here
+// (the side a bar fills from, the side typed text starts at) follows `isEnglishScreen(name)`, so on a screen that
+// still falls back to its Arabic capture the overlay keeps the Arabic geometry. The words follow the language (t()).
 
 const px = (name: string, key: string) => {
   const r = focusRect(name, key);
@@ -117,11 +123,15 @@ export const HoldRingOverlay: React.FC<{p: number; seconds: number}> = ({p, seco
 };
 
 /**
- * lock_phrase: the typed text in the input (right-aligned, cursor on its left) and the phrase above with its typed
- * prefix in teal, re-drawn as the phrase is typed on the on-screen keyboard.
+ * lock_phrase: the typed text in the input (starting at the right, cursor on its left, in the Arabic capture; at the
+ * left, cursor on its right, in the English one: the app lays the field out left to right there, and the phrase and its
+ * keyboard stay Arabic) and the phrase above with its typed prefix in teal, re-drawn as the phrase is typed on the
+ * on-screen keyboard.
  */
 export const PhraseOverlay: React.FC<{phrase: string; typed: number; blink: boolean}> = ({phrase, typed, blink}) => {
   if (!hasScreen('lock_phrase')) return null;
+  const ltr = isEnglishScreen('lock_phrase');
+  const input = px('lock_phrase', 'input');
   const done = phrase.slice(0, typed);
   const rest = phrase.slice(typed);
   return (
@@ -133,11 +143,23 @@ export const PhraseOverlay: React.FC<{phrase: string; typed: number; blink: bool
         <span style={{color: brand.text}}>{rest}</span>
       </div>
       {/* the input */}
-      <div style={{position: 'absolute', left: 1000, top: 300, width: 506, height: 84, background: '#151B24'}} />
-      <div style={{position: 'absolute', right: 1920 - 1486, top: 300, height: 84, display: 'flex', alignItems: 'center', gap: 8, direction: 'rtl'}}>
-        <span style={{fontFamily: brand.font, fontWeight: 600, fontSize: 48, color: brand.text, whiteSpace: 'pre', lineHeight: '84px'}}>{done}</span>
-        <span style={{width: 5, height: 59, borderRadius: 2, background: '#2EC4B6', opacity: blink ? 1 : 0.25}} />
-      </div>
+      {ltr ? (
+        <>
+          <div style={{position: 'absolute', left: input.x + 20, top: 300, width: 506, height: 84, background: '#151B24'}} />
+          <div style={{position: 'absolute', left: input.x + 44, top: 300, height: 84, display: 'flex', alignItems: 'center', gap: 8, direction: 'ltr'}}>
+            <span style={{fontFamily: brand.font, fontWeight: 600, fontSize: 48, color: brand.text, whiteSpace: 'pre', lineHeight: '84px', direction: 'rtl', unicodeBidi: 'isolate'}}>{done}</span>
+            <span style={{width: 5, height: 59, borderRadius: 2, background: '#2EC4B6', opacity: blink ? 1 : 0.25}} />
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{position: 'absolute', left: 1000, top: 300, width: 506, height: 84, background: '#151B24'}} />
+          <div style={{position: 'absolute', right: 1920 - 1486, top: 300, height: 84, display: 'flex', alignItems: 'center', gap: 8, direction: 'rtl'}}>
+            <span style={{fontFamily: brand.font, fontWeight: 600, fontSize: 48, color: brand.text, whiteSpace: 'pre', lineHeight: '84px'}}>{done}</span>
+            <span style={{width: 5, height: 59, borderRadius: 2, background: '#2EC4B6', opacity: blink ? 1 : 0.25}} />
+          </div>
+        </>
+      )}
     </>
   );
 };
@@ -192,18 +214,19 @@ export const PhonePinField: React.FC<{n: number}> = ({n}) => {
 };
 
 /**
- * update_downloading: the bar fill (teal, growing from the right: RTL) and the «x من 18.0 ميغابايت» line re-drawn
- * at progress p (0..1), over the capture's static 7.0 / 18.0 state.
+ * update_downloading: the bar fill (teal, growing from the right in the Arabic capture, from the left in the English one)
+ * and the «x of 18.0 MB» line re-drawn at progress p (0..1), over the capture's static 7.0 / 18.0 state.
  */
 export const UpdateProgressOverlay: React.FC<{p: number; totalMb?: number}> = ({p, totalMb = 18}) => {
   if (!hasScreen('update_downloading')) return null;
+  const ltr = isEnglishScreen('update_downloading');
   const bar = px('update_downloading', 'bar');
-  const t = clamp(p);
-  const fillW = Math.max(bar.h, bar.w * t);
+  const k = clamp(p);
+  const fillW = Math.max(bar.h, bar.w * k);
   return (
     <>
       <div style={{position: 'absolute', left: bar.x, top: bar.y, width: bar.w, height: bar.h, borderRadius: bar.h / 2, background: '#1E2632'}} />
-      {t > 0.001 ? <div style={{position: 'absolute', left: bar.x + bar.w - fillW, top: bar.y, width: fillW, height: bar.h, borderRadius: bar.h / 2, background: '#2EC4B6'}} /> : null}
+      {k > 0.001 ? <div style={{position: 'absolute', left: ltr ? bar.x : bar.x + bar.w - fillW, top: bar.y, width: fillW, height: bar.h, borderRadius: bar.h / 2, background: '#2EC4B6'}} /> : null}
       <div style={{position: 'absolute', left: 700, top: 520, width: 520, height: 60, background: '#0B0F14'}} />
       <div
         style={{
@@ -218,24 +241,24 @@ export const UpdateProgressOverlay: React.FC<{p: number; totalMb?: number}> = ({
           fontSize: 35,
           lineHeight: 1,
           color: brand.text,
-          direction: 'rtl',
+          direction: dir,
           whiteSpace: 'nowrap',
         }}
       >
-        {`${(totalMb * t).toFixed(1)} من ${totalMb.toFixed(1)} ميغابايت`}
+        {t('{done} من {total} ميغابايت', {done: (totalMb * k).toFixed(1), total: totalMb.toFixed(1)})}
       </div>
     </>
   );
 };
 
 /** phone_parent_quotas: Sara's daily quota value re-lettered after a «+» tap (phone CSS px). */
-export const PhoneQuotaValue: React.FC<{minutes: number; t: number}> = ({minutes, t}) => {
-  if (!hasScreen('phone_parent_quotas') || t <= 0) return null;
+export const PhoneQuotaValue: React.FC<{minutes: number; t: number}> = ({minutes, t: p}) => {
+  if (!hasScreen('phone_parent_quotas') || p <= 0) return null;
   const k = 390 / 780;
   const v = px('phone_parent_quotas', 'childValue');
   return (
     <>
-      <div style={{position: 'absolute', left: v.x * k, top: v.y * k, width: v.w * k, height: v.h * k, background: '#1E2632', opacity: clamp(t * 3)}} />
+      <div style={{position: 'absolute', left: v.x * k, top: v.y * k, width: v.w * k, height: v.h * k, background: '#1E2632', opacity: clamp(p * 3)}} />
       <div
         style={{
           position: 'absolute',
@@ -250,11 +273,12 @@ export const PhoneQuotaValue: React.FC<{minutes: number; t: number}> = ({minutes
           fontSize: 16,
           color: brand.text,
           direction: 'rtl',
-          opacity: clamp(t * 3),
-          transform: `scale(${1 + Math.sin(clamp(t) * Math.PI) * 0.12})`,
+          opacity: clamp(p * 3),
+          transform: `scale(${1 + Math.sin(clamp(p) * Math.PI) * 0.12})`,
         }}
       >
-        {`${minutes} دقيقة`}
+        {/* the phone page has no English: its capture stays Arabic, and so does the number drawn over it */}
+        {t('{minutes} دقيقة', {minutes})}
       </div>
     </>
   );

@@ -4,6 +4,7 @@ import android.util.Log
 import com.ahmadnayfeh.shasha.player.PlaybackActivity
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
+import com.ahmadnayfeh.shasha.youtube.safety.ExplicitFilter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -82,7 +83,13 @@ class HomeSuggestions(
         val now = clock()
         val fromFile = stored.entries
             .filter { now - it.atMs in 0 until SHOWN_FOR_MS }
-            .associate { entry -> entry.seed to Kept(entry.videos.map(StoredVideo::toItem), entry.atMs) }
+            // The file may be from before the built-in filter (or an older version): what it holds back is not shown from it either.
+            .associate { entry ->
+                entry.seed to Kept(
+                    entry.videos.map(StoredVideo::toItem).filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) },
+                    entry.atMs,
+                )
+            }
         // What was fetched meanwhile (nothing, normally) wins over the file.
         _kept.update { trimmed(fromFile + it) }
     }

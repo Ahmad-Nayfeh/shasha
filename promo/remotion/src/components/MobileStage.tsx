@@ -1,5 +1,6 @@
 import React from 'react';
 import {brand, rgba} from '../brand';
+import {dir, flowSign, isEn, startSide} from '../lib/lang';
 import {Icon, IconName} from './Icons';
 import {PhoneFrame, Tap} from './Phone';
 import {MH, MW} from './MobileUi';
@@ -8,6 +9,9 @@ import {clamp, mix, sp, tween} from '../lib/anim';
 
 // The phone video's stage (1920x1080): the phone in the middle, big, and callouts on both sides in the TV video's
 // language (cards, chips, ticks). The phone's screen is laid out in phone space (390 x 844).
+// Arabic runs right-to-left (callouts, pills and the header on the right of the phone); the English version mirrors the
+// whole stage: they sit on the left, and everything slides in from the other side (the shared header, chip, strike and
+// list card of ./ui and ./ListCard do the same for the TV video).
 
 export const PHONE = {scale: 1.02, x: 960 - ((MW + 26) * 1.02) / 2, y: 52};
 /** Phone-space point -> stage px. */
@@ -18,7 +22,7 @@ export const PhoneStage: React.FC<{f: number; from?: number; children: React.Rea
   return (
     <>
       {glow ? <div style={{position: 'absolute', left: 560, top: 90, width: 800, height: 820, background: `radial-gradient(50% 50% at 50% 50%, ${rgba(glow, 0.1)}, transparent 70%)`}} /> : null}
-      <PhoneFrame x={PHONE.x} y={PHONE.y + (1 - t) * 700 + dy} scale={PHONE.scale} opacity={clamp(t * 2) * opacity} rotate={mix(6, 0, t) + rotate}>
+      <PhoneFrame x={PHONE.x} y={PHONE.y + (1 - t) * 700 + dy} scale={PHONE.scale} opacity={clamp(t * 2) * opacity} rotate={mix(6 * flowSign, 0, t) + rotate}>
         {children}
       </PhoneFrame>
     </>
@@ -28,17 +32,20 @@ export const PhoneStage: React.FC<{f: number; from?: number; children: React.Rea
 /** A finger tap at a phone-space point (inside a PhoneStage). */
 export const TapAt: React.FC<{f: number; at: number; x: number; y: number}> = ({f, at, x, y}) => <Tap f={f} at={at} x={x} y={y} />;
 
-/** A titled callout card with a big icon, for the sides of the phone. side: 'right' (reading start) or 'left'. */
+/**
+ * A titled callout card with a big icon, for the sides of the phone. side: 'right' or 'left' (default: where reading
+ * starts, so the right in Arabic and the left in English). English titles are wider: a wider card (still clear of the phone) and a slightly smaller title.
+ */
 export const Callout: React.FC<{f: number; at: number; icon: IconName; title: string; sub?: string; side?: 'right' | 'left'; top: number; tone?: 'teal' | 'amber' | 'kids'; width?: number; out?: number; dim?: number}> = ({
   f,
   at,
   icon,
   title,
   sub,
-  side = 'right',
+  side = startSide,
   top,
   tone = 'teal',
-  width = 520,
+  width = isEn ? 590 : 520,
   out,
   dim = 0,
 }) => {
@@ -53,8 +60,8 @@ export const Callout: React.FC<{f: number; at: number; icon: IconName; title: st
             <Icon name={icon} size={46} color={c} stroke={2.1} />
           </div>
           <div>
-            <div style={{fontSize: 38, fontWeight: 700, lineHeight: 1.25}}>{title}</div>
-            {sub ? <div style={{fontSize: 26, color: brand.muted, marginTop: 6, lineHeight: 1.4}}>{sub}</div> : null}
+            <div style={{fontSize: isEn ? 35 : 38, fontWeight: 700, lineHeight: 1.25, ...(isEn ? {textWrap: 'balance'} : null)}}>{title}</div>
+            {sub ? <div style={{fontSize: isEn ? 24 : 26, color: brand.muted, marginTop: 6, lineHeight: 1.4}}>{sub}</div> : null}
           </div>
         </div>
       </Card>
@@ -62,12 +69,16 @@ export const Callout: React.FC<{f: number; at: number; icon: IconName; title: st
   );
 };
 
-/** A kicker + title at the top right, as the TV video's Header but sized for the phone video's stage. */
+/** A kicker + title at the top, where reading starts (the TV video's Header: right in Arabic, left in English). */
 export {Header as MobileHeader} from './ui';
 
 export {MW, MH};
 
-/** A pill on the right of the phone: a positive chip, or (with crossAt) something crossed out with the amber strike. */
+// ------------------------------------------------------------------------------------------------ pills
+/**
+ * A pill beside the phone, on the side where reading starts (`right`: its offset from that edge): a positive chip, or
+ * (with crossAt) something crossed out with the amber strike.
+ */
 export const SidePill: React.FC<{f: number; at: number; icon: IconName; label: string; top: number; crossAt?: number; tone?: Tone; right?: number; size?: number}> = ({
   f,
   at,
@@ -79,7 +90,7 @@ export const SidePill: React.FC<{f: number; at: number; icon: IconName; label: s
   right = 100,
   size = 40,
 }) => (
-  <div style={{position: 'absolute', right, top, direction: 'rtl'}}>
+  <div style={{position: 'absolute', [startSide]: right, top, direction: dir}}>
     {crossAt !== undefined ? (
       <CrossedOut from={at - 2} strikeAt={crossAt}>
         <div style={{display: 'flex', alignItems: 'center', gap: 16, padding: '16px 36px', borderRadius: 999, background: 'rgba(234,240,246,0.10)', border: '1.5px solid rgba(234,240,246,0.24)', fontSize: size, fontWeight: 600, color: brand.text}}>

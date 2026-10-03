@@ -74,6 +74,7 @@ import com.ahmadnayfeh.shasha.ui.lock.lockMethodFor
 import com.ahmadnayfeh.shasha.ui.lock.playerActions
 import com.ahmadnayfeh.shasha.ui.parental.LocalParentUnlock
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
+import com.ahmadnayfeh.shasha.ui.screens.error.ErrorTexts
 import com.ahmadnayfeh.shasha.ui.screens.watchedFractions
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
@@ -105,7 +106,7 @@ import kotlinx.coroutines.flow.map
  * profile plays that file, with a "360p" badge; the adult sees the unified error screen (LOW_QUALITY_ONLY)
  * with «شغّل بجودة 360p على أي حال».
  *
- * v1.2: a video that would start locked while nothing on the TV could end it early (the adult's way out turned off)
+ * v1.1.1: a video that would start locked while nothing on the TV could end it early (the adult's way out turned off)
  * first waits for the parent's «تأكيد» on the phone ([PhoneConfirmPrompt]); «رفض» or two minutes leave the player.
  * [phoneApproved]: a link the phone sent and the TV accepted (the phone is there: no «تأكيد» on top). [onRestart]
  * opens this video afresh (a «إعادة التشغيل» that needs the «تأكيد» again); [onPairPhone]: the pairing screen.
@@ -132,7 +133,7 @@ fun PlayerScreen(
 ) {
     val container = LocalContext.current.appContainer
     val locking = if (lock != null && profile != null) lock else null
-    // v1.2: what asks the phone before a start only it could end early (never without a lock to end).
+    // v1.1.1: what asks the phone before a start only it could end early (never without a lock to end).
     val confirmation = if (locking != null && profile != null && !phoneApproved) {
         remember(locking, profile, playlistId) {
             PhoneStartConfirmation(container.policyEngine, locking.lock, profile, playlistId, container.phoneConfirmations)
@@ -354,7 +355,7 @@ internal fun PlayerContent(
                     onPlayLowQuality = if (offerLowQuality) vm::playLowQuality else null,
                 )
                 is PlayerViewModel.Load.Denied -> PolicyNotice(state.reason, lock::requestExit)
-                // v1.2: nothing plays until the phone confirms; «إلغاء» withdraws the request and leaves.
+                // v1.1.1: nothing plays until the phone confirms; «إلغاء» withdraws the request and leaves.
                 is PlayerViewModel.Load.AwaitingPhone -> PhoneConfirmPrompt(
                     title = state.title,
                     wait = phoneWait ?: NoPhoneWait,
@@ -394,7 +395,8 @@ internal fun PlayerContent(
 /**
  * The player's unified [ErrorScreen]: «إعادة المحاولة» for failures that may pass by themselves ([onRetry]), and,
  * when [onPlayLowQuality] is given (the adult), «شغّل بجودة 360p على أي حال» for LOW_QUALITY_ONLY: the error is
- * still said (SPEC), the choice to watch the 360p file anyway is the adult's.
+ * still said (SPEC), the choice to watch the 360p file anyway is the adult's. Where the screen has no «فحص التحديثات»
+ * (the TV's own decoder failed: an update does not help) «إعادة المحاولة» is its main button.
  */
 @Composable
 internal fun PlayerErrorScreen(
@@ -412,6 +414,7 @@ internal fun PlayerErrorScreen(
                 stringResource(R.string.action_retry),
                 onRetry,
                 icon = ShashaIcons.Refresh,
+                primary = !ErrorTexts.offersUpdateCheck(error.kind),
                 modifier = Modifier.testTag("error_retry"),
             )
         }
@@ -456,32 +459,6 @@ private fun VideoPlayer(
     var meter by remember { mutableStateOf<PlaybackMeter?>(null) }
 
     DisposableEffect(lifecycleOwner, ready) {
-        fun start() {
-            if (controller != null) return
-            if (!vm.canStart(ready)) return // a fresh extraction replaces this one; its player starts then
-            lateinit var created: PlaybackController
-            created = PlaybackController(
-                context,
-                factory(),
-                ready.stream,
-                maxQuality = maxQuality(),
-                seekStepMs = seekStepMs,
-                onJump = vm::onJumped,
-                onAutoSkip = vm::onAutoSkipped,
-            ) { error ->
-                vm.onPlaybackError(ready, error, created.resumeState())
-            }
-            try {
-                created.start(vm.resume)
-                controller = created
-                meter = meterFor(ready.stream.video)
-                vm.onPlaybackStarted(ready.stream.video)
-            } catch (e: Exception) {
-                created.release()
-                vm.fail(e.asSourceException())
-            }
-        }
-
         fun stop() {
             meter?.let {
                 it.setPlaying(false)
@@ -494,6 +471,40 @@ private fun VideoPlayer(
                 vm.onReleased(it.release())
             }
             controller = null
+        }
+
+        fun start() {
+            if (controller != null) return
+            if (!vm.canStart(ready)) return // a fresh extraction replaces this one; its player starts then
+            lateinit var created: PlaybackController
+            created = PlaybackController(
+                context,
+                factory(),
+                ready.stream,
+                maxQuality = maxQuality(),
+                seekStepMs = seekStepMs,
+                safe = vm.safePlan,
+                onJump = vm::onJumped,
+                onAutoSkip = vm::onAutoSkipped,
+            ) { error ->
+                val at = created.resumeState()
+                try {
+                    vm.onPlaybackError(ready, error, at)
+                } finally {
+                    // The failed player goes now, not when the screen has faded to the error (or to the loader of the retry):
+                    // its decoder is free, and the TV's hardware is not shared with a player that can no longer play.
+                    if (controller === created) stop()
+                }
+            }
+            try {
+                created.start(vm.resume)
+                controller = created
+                meter = meterFor(ready.stream.video)
+                vm.onPlaybackStarted(ready.stream.video)
+            } catch (e: Exception) {
+                created.release()
+                vm.fail(e.asSourceException())
+            }
         }
 
         val observer = LifecycleEventObserver { _, event ->
@@ -562,7 +573,7 @@ private fun VideoPlayer(
                 title = ui.title,
                 onBack = lock::requestExit,
                 onReplay = {
-                    // v1.2: a replay that only the phone could end early is a new start: it asks the phone first.
+                    // v1.1.1: a replay that only the phone could end early is a new start: it asks the phone first.
                     if (vm.replayNeedsConfirmation()) {
                         onRestart()
                     } else {
@@ -641,7 +652,7 @@ internal suspend fun nextVisible(
 private const val MAX_HIDDEN_SKIPPED = 200
 
 /**
- * v1.2: the «تأكيد» [PlayerViewModel] waits for: needed when [profile]'s video would start locked while nothing on the TV
+ * v1.1.1: the «تأكيد» [PlayerViewModel] waits for: needed when [profile]'s video would start locked while nothing on the TV
  * could end it early ([PolicyEngine.needsPhoneConfirmation]), unless [lock] already holds it (this video, or this
  * playlist's lock moving on); asked of the parent's phone through [confirmations].
  */
@@ -665,5 +676,8 @@ private object NoPhoneWait : PhoneWait {
     override fun phoneConnected(): Boolean = false
 }
 
-/** Failures that may pass by themselves: the error screen offers «إعادة المحاولة». */
-private val RETRYABLE = setOf(SourceErrorKind.NETWORK, SourceErrorKind.RATE_LIMITED)
+/**
+ * Failures that may pass by themselves: the error screen offers «إعادة المحاولة». The TV's decoder is one: after a restart
+ * of the TV it is free again, and another try plays the safe plan ([PlayerViewModel.safePlan]).
+ */
+private val RETRYABLE = setOf(SourceErrorKind.NETWORK, SourceErrorKind.RATE_LIMITED, SourceErrorKind.DEVICE_DECODER)

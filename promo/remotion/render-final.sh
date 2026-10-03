@@ -7,6 +7,7 @@
 #   CAPTIONS=0 ./render-final.sh out/shasha_explainer_nocc.mp4         without burned-in captions
 #   MUSIC=0 ./render-final.sh                                          narration only
 #   GRAIN=0 ./render-final.sh                                          no film grain (much smaller file)
+#   VIDEO_LANG=en ./render-final.sh [out/shasha_explainer_en.mp4]       the English version (COMP=Mobile too)
 #
 # Video is rendered by Remotion (muted). The audio (narration + the synthesized pad) is mixed and muxed with ffmpeg:
 # Remotion's own AAC mux shifts the audio ~43 ms late (2048 priming samples without an edit list); the ffmpeg mux
@@ -15,11 +16,13 @@ set -euo pipefail
 cd "$(dirname "$0")"
 FF=../bin/ffmpeg
 COMP=${COMP:-Main}
+SFX=$([ "${VIDEO_LANG:-ar}" = en ] && printf %s -en || true)
 if [ "$COMP" = Mobile ]; then
-  AUD=public/audio-mobile; TL=../timeline-mobile.json; DATA=src/data/timeline-mobile.json; DEF=out/shasha_mobile.mp4
+  AUD=public/audio-mobile$SFX; TL=../timeline-mobile$SFX.json; DATA=src/data/timeline-mobile$SFX.json; DEF=out/shasha_mobile${SFX//-/_}.mp4
 else
-  AUD=public/audio; TL=../timeline.json; DATA=src/data/timeline.json; DEF=out/shasha_explainer.mp4
+  AUD=public/audio$SFX; TL=../timeline$SFX.json; DATA=src/data/timeline$SFX.json; DEF=out/shasha_explainer${SFX//-/_}.mp4
 fi
+LANGPROP=$([ -n "$SFX" ] && echo ',"lang":"en"' || true)
 OUT=${1:-$DEF}
 CONC=${CONCURRENCY:-1}
 CAP=$([ "${CAPTIONS:-1}" = 0 ] && echo false || echo true)
@@ -30,10 +33,10 @@ mkdir -p out "$(dirname "$OUT")"
 cmp -s "$DATA" "$TL" || { echo "$DATA differs from $TL: run ./sync-assets.sh and tools/align_words.py first" >&2; exit 1; }
 
 t0=$(date +%s)
-V=out/.video_$COMP.mp4
-M=out/.mix_$COMP.wav
+V=out/.video_$COMP$SFX.mp4
+M=out/.mix_$COMP$SFX.wav
 npx remotion render src/index.ts "$COMP" "$V" --muted --concurrency="$CONC" \
-  --props="{\"captions\":$CAP,\"grain\":$GR,\"music\":false}"
+  --props="{\"captions\":$CAP,\"grain\":$GR,\"music\":false$LANGPROP}"
 
 if [ "${MUSIC:-1}" = 1 ] && [ -f "$AUD/music_bed.wav" ]; then
   "$FF" -v error -y -i "$AUD/narration_full.wav" -i "$AUD/music_bed.wav" -filter_complex \

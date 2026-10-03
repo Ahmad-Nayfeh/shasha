@@ -1,15 +1,18 @@
 import React from 'react';
 import {useCurrentFrame} from 'remotion';
 import {brand} from '../brand';
-import {LogoMark, Wordmark, WORDMARK_RATIO} from '../components/Brand';
+import {HAS_WORDMARK, LogoMark, Wordmark, WORDMARK_RATIO} from '../components/Brand';
 import {Icon} from '../components/Icons';
 import {Screen, TvFrame} from '../components/Tv';
-import {Chip, Strike} from '../components/ui';
+import {atEnd, Chip, Strike} from '../components/ui';
 import {clamp, easeInOut, easeOut, mix, sp, tween} from '../lib/anim';
+import {dir, flowSign, isEn, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // s01 — logo reveal, then "this is Shasha": the TV with the home feed, ads and the sign-in crossed out,
 // and the family features (kids' profiles, a set time, the phone as remote) as chips.
+// English version: the brand mark alone (no Latin wordmark exists, see HAS_WORDMARK), parked top left; the ad badges
+// sit on the mirrored corners of the TV (the English home capture is the mirror image of the Arabic one).
 
 const TV = {x: 448, y: 176, w: 1024};
 const TVH = (TV.w * 9) / 16;
@@ -21,22 +24,22 @@ const SignIn: React.FC<{f: number; from: number; strike: number; out: number}> =
   if (appear <= 0.01 || gone >= 1) return null;
   const s = tween(f, strike, 10, easeInOut);
   const field = (label: string, w: number) => (
-    <div style={{height: 64, borderRadius: 14, background: 'rgba(234,240,246,0.07)', border: '1.5px solid rgba(234,240,246,0.16)', display: 'flex', alignItems: 'center', padding: '0 22px', fontSize: 28, color: brand.muted, width: w, direction: 'rtl'}}>
+    <div style={{height: 64, borderRadius: 14, background: 'rgba(234,240,246,0.07)', border: '1.5px solid rgba(234,240,246,0.16)', display: 'flex', alignItems: 'center', padding: '0 22px', fontSize: 28, color: brand.muted, width: w, direction: dir}}>
       {label}
     </div>
   );
   return (
     <div style={{position: 'absolute', left: TV.x + TV.w / 2 - 270, top: TV.y + TVH / 2 - 235, width: 540, opacity: clamp(appear * 1.4) * (1 - gone), transform: `scale(${mix(0.92, 1, appear)})`}}>
-      <div style={{position: 'relative', padding: '34px 40px 38px', borderRadius: 28, background: 'rgba(14,19,26,0.94)', border: '1.5px solid rgba(234,240,246,0.2)', boxShadow: '0 30px 70px rgba(0,0,0,0.5)', direction: 'rtl', fontFamily: brand.font}}>
+      <div style={{position: 'relative', padding: '34px 40px 38px', borderRadius: 28, background: 'rgba(14,19,26,0.94)', border: '1.5px solid rgba(234,240,246,0.2)', boxShadow: '0 30px 70px rgba(0,0,0,0.5)', direction: dir, fontFamily: brand.font}}>
         <div style={{display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24}}>
           <div style={{width: 64, height: 64, borderRadius: 999, background: 'rgba(234,240,246,0.1)', display: 'grid', placeItems: 'center'}}>
             <Icon name="user" size={36} color={brand.text} stroke={2.2} />
           </div>
-          <div style={{fontSize: 38, fontWeight: 700, color: brand.text}}>تسجيل الدخول</div>
+          <div style={{fontSize: 38, fontWeight: 700, color: brand.text}}>{t('تسجيل الدخول')}</div>
         </div>
         <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
-          {field('البريد الإلكتروني', 460)}
-          {field('كلمة المرور', 460)}
+          {field(t('البريد الإلكتروني'), 460)}
+          {field(t('كلمة المرور'), 460)}
         </div>
         <Strike p={s} color={brand.amber} width={8} />
       </div>
@@ -58,18 +61,19 @@ export const S01Intro: React.FC<{scene: Scene}> = ({scene}) => {
   const dots: [ReturnType<typeof dot>, ReturnType<typeof dot>, ReturnType<typeof dot>] = [dot(26), dot(34), dot(42)];
   const wm = tween(f, 46, 22);
 
-  // park the lockup top-right just before "يوتيوب"
+  // park the lockup top-right just before "يوتيوب" (top left in English, where the mark stands alone)
   const parkStart = b.at('يوتيوب') - 16;
   const park = tween(f, parkStart, 30, easeInOut);
   const float = Math.sin(f / 19) * 3 * (1 - park);
 
   const markW = mix(300, 62, park); // visible screen width in px
   const S = (markW / 751) * 1024;
-  const cx = mix(960, 1792, park);
-  const cy = mix(446, 104, park);
+  const cx = mix(960, isEn ? 1920 - 1792 : 1792, park);
+  // with no wordmark below it, the mark is centred on the stage (its screen sits 139 box units under the mark's centre)
+  const cy = mix(HAS_WORDMARK ? 446 : 540 + (139 * ((300 / 751) * 1024)) / 1024, 104, park);
   const wmW = mix(340, 122, park);
   const wmH = wmW * WORDMARK_RATIO;
-  const wmCx = mix(960, cx - markW / 2 - 20 - wmW / 2, park);
+  const wmCx = mix(960, isEn ? cx + markW / 2 + 20 + wmW / 2 : cx - markW / 2 - 20 - wmW / 2, park);
   const wmCy = mix(700, cy - 6, park);
 
   // --- TV -------------------------------------------------------------------------------------------
@@ -83,9 +87,9 @@ export const S01Intro: React.FC<{scene: Scene}> = ({scene}) => {
 
   // feature montage inside the TV, in sync with the chips
   const feats = [
-    {at: b.at('ملفات خاصة'), icon: 'star' as const, label: 'ملفات للأطفال', tone: 'kids' as const, screen: 'kids_home'},
-    {at: b.at('ووقت محدد'), icon: 'hourglass' as const, label: 'وقت محدد', tone: 'teal' as const, screen: 'quota_warning'},
-    {at: b.at('وريموت'), icon: 'phone' as const, label: 'ريموت من جوالك', tone: 'teal' as const, screen: 'remote_qr'},
+    {at: b.at('ملفات خاصة'), icon: 'star' as const, label: t('ملفات للأطفال'), tone: 'kids' as const, screen: 'kids_home'},
+    {at: b.at('ووقت محدد'), icon: 'hourglass' as const, label: t('وقت محدد'), tone: 'teal' as const, screen: 'quota_warning'},
+    {at: b.at('وريموت'), icon: 'phone' as const, label: t('ريموت من جوالك'), tone: 'teal' as const, screen: 'remote_qr'},
   ];
   const screens = ['home_adult', ...feats.map((x) => x.screen)];
   const starts = [0, ...feats.map((x) => x.at)];
@@ -94,7 +98,7 @@ export const S01Intro: React.FC<{scene: Scene}> = ({scene}) => {
     <div style={{position: 'absolute', inset: 0}}>
       {/* TV */}
       <TvFrame
-        x={TV.x + (1 - tvIn) * -240}
+        x={TV.x + (1 - tvIn) * -240 * flowSign}
         y={TV.y}
         w={TV.w}
         opacity={clamp(tvIn * 1.6)}
@@ -113,22 +117,22 @@ export const S01Intro: React.FC<{scene: Scene}> = ({scene}) => {
         <>
           {[
             // on the capture's top-left video thumbnail (a "sponsored" badge), then the skip-ad button
-            {x: TV.x + 72, y: TV.y + 166, label: 'إعلان', icon: true, delay: 0},
-            {x: TV.x + 70, y: TV.y + TVH - 140, label: 'تخطَّ الإعلان  ◂', icon: false, delay: 5},
+            {x: TV.x + 72, y: TV.y + 166, label: t('إعلان'), icon: true, delay: 0},
+            {x: TV.x + 70, y: TV.y + TVH - 140, label: t('تخطَّ الإعلان  ◂'), icon: false, delay: 5},
           ].map((ad, i) => {
-            const t = sp(f, adsFrom + ad.delay, {damping: 20});
+            const k = sp(f, adsFrom + ad.delay, {damping: 20});
             const s = tween(f, adsStrike + i * 3, 8, easeInOut);
-            const o = clamp(t * 1.5) * mix(1, 0.3, tween(f, adsStrike + 10, 12)) * (1 - tween(f, adsOut, 14));
+            const o = clamp(k * 1.5) * mix(1, 0.3, tween(f, adsStrike + 10, 12)) * (1 - tween(f, adsOut, 14));
             return (
               <div
                 key={i}
                 style={{
                   position: 'absolute',
-                  left: ad.x,
+                  ...atEnd(ad.x), // the TV is centred: the mirror image of `left: x` is `right: x`
                   top: ad.y,
                   opacity: o,
-                  transform: `scale(${mix(0.9, 1, t)})`,
-                  transformOrigin: 'left center',
+                  transform: `scale(${mix(0.9, 1, k)})`,
+                  transformOrigin: isEn ? 'right center' : 'left center',
                 }}
               >
                 <div
@@ -145,7 +149,7 @@ export const S01Intro: React.FC<{scene: Scene}> = ({scene}) => {
                     fontFamily: brand.font,
                     fontSize: i === 0 ? 34 : 30,
                     fontWeight: 700,
-                    direction: 'rtl',
+                    direction: dir,
                     boxShadow: '0 14px 30px rgba(0,0,0,0.4)',
                   }}
                 >
@@ -160,7 +164,7 @@ export const S01Intro: React.FC<{scene: Scene}> = ({scene}) => {
 
       <SignIn f={f} from={loginFrom} strike={loginStrike} out={loginOut} />
 
-      {/* feature chips under the TV (enter from the left, first chip on the right) */}
+      {/* feature chips under the TV (enter from the left, first chip on the right; mirrored in English) */}
       <div
         style={{
           position: 'absolute',
@@ -170,7 +174,7 @@ export const S01Intro: React.FC<{scene: Scene}> = ({scene}) => {
           display: 'flex',
           justifyContent: 'center',
           gap: 22,
-          direction: 'rtl',
+          direction: dir,
         }}
       >
         {feats.map((c) => (

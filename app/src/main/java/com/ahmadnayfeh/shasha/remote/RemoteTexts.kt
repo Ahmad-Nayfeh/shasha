@@ -45,6 +45,8 @@ class RemoteTexts(private val resources: Resources) {
         SourceErrorKind.NETWORK -> get(R.string.remote_offline)
         SourceErrorKind.BOT_CHECK, SourceErrorKind.BLOCKED_403, SourceErrorKind.LOW_QUALITY_ONLY, SourceErrorKind.EXTRACTION_BROKEN ->
             get(R.string.remote_youtube_changed, get(ErrorTexts.explanation(e.kind)))
+        // The TV's own decoder: not YouTube's doing, and its explanation alone is only the advice.
+        SourceErrorKind.DEVICE_DECODER -> get(R.string.remote_device_decoder)
         else -> get(ErrorTexts.explanation(e.kind))
     }
 

@@ -4,52 +4,65 @@ import {arDigits, brand, rgba} from '../brand';
 import {Icon} from '../components/Icons';
 import {PhoneFrame, PhoneScreen, pr, Tap} from '../components/Phone';
 import {Screen, TvFrame} from '../components/Tv';
-import {Chip, FocusRing, Header} from '../components/ui';
+import {atEnd, atStart, Chip, featureTv, FocusRing, Header, mx, stepOf} from '../components/ui';
 import {clamp, easeInOut, mix, sp, tween} from '../lib/anim';
 import {FEATURE_TV} from '../lib/layout';
+import {dir, flowSign, isEn, t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // s13 — what the phone sends, the TV asks about: «قبول» or «رفض». What is playing now goes on until you accept;
-// an unanswered request is refused by itself. The bar is drawn like the app's overlay (cast_request_overlay).
+// an unanswered request is refused by itself. The bar is drawn like the app's overlay (cast_request_overlay); in
+// English the bar is its mirror image (icon, text, then the two buttons, left to right) with the app's own words:
+// «Play request from the phone:», «Accept» and «Reject» (cast_request_label, cast_accept, cast_reject).
 
-const TV = FEATURE_TV;
+const TV = featureTv();
 const PS = 0.74;
-const PX = 1452;
+const PX = mx(1452, (390 + 26) * PS);
 const PY = 262;
 
+// the bar's box, screen px (1920x1080, like the capture), and where its two buttons are on it
+const BAR = {x: 200, y: 795, w: 1520, h: 220};
+const ACCEPT_AR: [number, number, number, number] = [486, 851, 244, 110];
+const REJECT_AR: [number, number, number, number] = [239, 853, 233, 105];
+/** A rect of the bar in the Arabic layout, as it is laid out in the language of the render. */
+const onBar = (r: [number, number, number, number]): [number, number, number, number] => [isEn ? BAR.x + BAR.w - (r[0] - BAR.x) - r[2] : r[0], r[1], r[2], r[3]];
+
 /** The request bar (screen px 1920x1080, like the capture). */
-const RequestBar: React.FC<{t: number; seconds: number; acceptGlow: number}> = ({t, seconds, acceptGlow}) => (
+const RequestBar: React.FC<{t: number; seconds: number; acceptGlow: number}> = ({t: k, seconds, acceptGlow}) => (
   <div
     style={{
       position: 'absolute',
-      left: 200,
-      top: 795,
-      width: 1520,
-      height: 220,
+      left: BAR.x,
+      top: BAR.y,
+      width: BAR.w,
+      height: BAR.h,
       borderRadius: 64,
       background: 'rgba(20,27,37,0.97)',
       border: '2px solid rgba(46,196,182,0.5)',
       boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
-      opacity: clamp(t * 1.6),
-      transform: `translateY(${(1 - t) * 160}px)`,
-      direction: 'rtl',
+      opacity: clamp(k * 1.6),
+      transform: `translateY(${(1 - k) * 160}px)`,
+      direction: dir,
       fontFamily: brand.font,
     }}
   >
-    <div style={{position: 'absolute', right: 34, top: 62, width: 96, height: 96, borderRadius: 999, background: 'rgba(46,196,182,0.16)', border: '2px solid rgba(46,196,182,0.55)', display: 'grid', placeItems: 'center'}}>
+    <div style={{position: 'absolute', ...atStart(34), top: 62, width: 96, height: 96, borderRadius: 999, background: 'rgba(46,196,182,0.16)', border: '2px solid rgba(46,196,182,0.55)', display: 'grid', placeItems: 'center'}}>
       <Icon name="phone" size={50} color={brand.primary} stroke={2.2} />
     </div>
-    <div style={{position: 'absolute', right: 160, top: 34, textAlign: 'right'}}>
-      <div style={{fontSize: 36, fontWeight: 600, color: brand.primary}}>طلب تشغيل من الجوال:</div>
-      <div style={{fontSize: 52, fontWeight: 700, color: brand.text, marginTop: 4}}>«حقائق مذهلة عن الثقوب السوداء»</div>
-      <div style={{fontSize: 33, fontWeight: 500, color: brand.muted, marginTop: 8}}>
-        يستمر ما يُعرض الآن حتى تقبل. · يُرفض وحده بعد {arDigits(seconds)} ثانية
+    <div style={{position: 'absolute', ...atStart(160), top: isEn ? 24 : 34, textAlign: isEn ? 'left' : 'right'}}>
+      <div style={{fontSize: isEn ? 34 : 36, fontWeight: 600, color: brand.primary, lineHeight: isEn ? 1.2 : undefined}}>{t('طلب تشغيل من الجوال:')}</div>
+      <div style={{fontSize: isEn ? 44 : 52, fontWeight: 700, color: brand.text, marginTop: 4, lineHeight: isEn ? 1.2 : undefined}}>{t('«حقائق مذهلة عن الثقوب السوداء»')}</div>
+      {/* Arabic: one line, the text in the three nodes the capture-matched layout was made with; English: two lines */}
+      <div style={isEn ? {fontSize: 29, fontWeight: 500, color: brand.muted, marginTop: 6, lineHeight: 1.3, whiteSpace: 'pre-line'} : {fontSize: 33, fontWeight: 500, color: brand.muted, marginTop: 8}}>
+        {t('يستمر ما يُعرض الآن حتى تقبل. · يُرفض وحده بعد ')}
+        {arDigits(seconds)}
+        {t(' ثانية')}
       </div>
     </div>
     <div
       style={{
         position: 'absolute',
-        left: 286,
+        ...atEnd(286),
         top: 56,
         width: 244,
         height: 110,
@@ -66,12 +79,12 @@ const RequestBar: React.FC<{t: number; seconds: number; acceptGlow: number}> = (
       }}
     >
       <Icon name="play" size={40} color={brand.onPrimary} stroke={2.4} />
-      قبول
+      {t('قبول')}
     </div>
     <div
       style={{
         position: 'absolute',
-        left: 39,
+        ...atEnd(39),
         top: 58,
         width: 233,
         height: 105,
@@ -88,7 +101,7 @@ const RequestBar: React.FC<{t: number; seconds: number; acceptGlow: number}> = (
       }}
     >
       <Icon name="x" size={40} color={brand.text} stroke={2.4} />
-      رفض
+      {t('رفض')}
     </div>
   </div>
 );
@@ -112,19 +125,19 @@ export const S13Accept: React.FC<{scene: Scene}> = ({scene}) => {
   // the link flying from the phone to the TV
   const fly = tween(f, tapSend + 4, 34, easeInOut);
   const bez = (a: number, c: number, e: number, t: number) => (1 - t) * (1 - t) * a + 2 * (1 - t) * t * c + t * t * e;
-  const fx = bez(1606, 1250, 700, fly);
+  const fx = bez(mx(1606), mx(1250), mx(700), fly);
   const fy = bez(470, 330, 760, fly);
 
   // focus ring on the bar's buttons (screen px, as in the capture)
-  const accept: [number, number, number, number] = [486, 851, 244, 110];
-  const reject: [number, number, number, number] = [239, 853, 233, 105];
+  const accept = onBar(ACCEPT_AR);
+  const reject = onBar(REJECT_AR);
   const send = pr('phone_send_link', 'send');
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="الجوال" index="٢ / ٣" title="قبول أو رفض" />
+      <Header kicker={t('الجوال')} index={stepOf(2, 3)} title={t('قبول أو رفض')} />
 
-      <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)}>
+      <TvFrame x={TV.x + (1 - tvIn) * -60 * flowSign} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)}>
         <Screen name="player_overlay" />
         <RequestBar t={barIn} seconds={seconds} acceptGlow={glow} />
         <FocusRing
@@ -139,7 +152,7 @@ export const S13Accept: React.FC<{scene: Scene}> = ({scene}) => {
       </TvFrame>
 
       {/* the phone that sends */}
-      <PhoneFrame x={PX} y={PY + (1 - phoneIn) * 600} scale={PS} opacity={clamp(phoneIn * 2)} rotate={mix(8, 0, phoneIn)}>
+      <PhoneFrame x={PX} y={PY + (1 - phoneIn) * 600} scale={PS} opacity={clamp(phoneIn * 2)} rotate={mix(8, 0, phoneIn) * flowSign}>
         <PhoneScreen name="phone_send_link">{null}</PhoneScreen>
         <Tap f={f} at={tapSend} x={send[0] + send[2] / 2} y={send[1] + send[3] / 2} />
       </PhoneFrame>
@@ -151,8 +164,8 @@ export const S13Accept: React.FC<{scene: Scene}> = ({scene}) => {
       ) : null}
 
       {/* what keeps going */}
-      <div style={{position: 'absolute', left: TV.x, top: TV.y - 74, opacity: tween(f, tKeep - 4, 14), transform: `translateY(${(1 - tween(f, tKeep - 4, 14)) * 10}px)`}}>
-        <Chip icon="play" label="يستمر ما تشاهده حتى تقرر" tone="teal" size={24} />
+      <div style={{position: 'absolute', ...atEnd(FEATURE_TV.x), top: TV.y - 74, opacity: tween(f, tKeep - 4, 14), transform: `translateY(${(1 - tween(f, tKeep - 4, 14)) * 10}px)`}}>
+        <Chip icon="play" label={t('يستمر ما تشاهده حتى تقرر')} tone="teal" size={24} />
       </div>
     </div>
   );

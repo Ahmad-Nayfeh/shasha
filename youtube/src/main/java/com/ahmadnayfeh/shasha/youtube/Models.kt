@@ -25,6 +25,11 @@ data class VideoItem(
      * pages): the upload may be up to one unit older. RSS dates are exact.
      */
     val publishedAtIsApproximate: Boolean = false,
+    /**
+     * A fragment of the video's description, when the list that gave this item carries one (search results do; YouTube shows
+     * the part that matches the query). Never shown: [com.ahmadnayfeh.shasha.youtube.safety.SafeVideoSource] judges it.
+     */
+    val snippet: String? = null,
 ) : SourceItem
 
 data class ChannelItem(
@@ -32,6 +37,8 @@ data class ChannelItem(
     val name: String,
     val avatarUrl: String?,
     val subscriberCount: Long?,
+    /** The start of the channel's description, in search results. Never shown: judged like [VideoItem.snippet]. */
+    val snippet: String? = null,
 ) : SourceItem
 
 data class PlaylistItem(
@@ -98,6 +105,12 @@ data class StreamDetails(
      * had to (no adaptive ladder, no HLS): the height of the best such file (≤ 360), which is what plays. Show it.
      */
     val lowQualityHeight: Int? = null,
+    /**
+     * The picture of the channel that uploaded the video, from the video's own page: a subscription made from the player
+     * screen stores it. Null when the page has none. It needs no request of its own, so it is there also where
+     * [VideoSource.channel] fails for the same channel (a network that answers the channel's page with an error).
+     */
+    val uploaderAvatarUrl: String? = null,
 )
 
 data class VideoTrack(val height: Int, val fps: Int, val codec: String, val bitrate: Int)

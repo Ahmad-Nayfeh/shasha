@@ -1,10 +1,11 @@
-.venv/
-bin/
+.venv
+/bin
 audio*/
-remotion/node_modules/
+remotion/node_modules
 remotion/out/
 remotion/public/audio*/
 remotion/public/screens/
+remotion/public/screens-en/
 tts/cache/
 tts/models/
 __pycache__/

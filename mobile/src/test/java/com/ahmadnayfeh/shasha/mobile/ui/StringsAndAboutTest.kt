@@ -113,6 +113,15 @@ class AboutEnglishTest {
     fun everyUpdateFailureHasAText() {
         for (kind in UpdateErrorKind.entries) assertThat(appContext().getString(updateErrorText(kind))).isNotEmpty()
     }
+
+    /** The device's own decoder failing (SourceErrorKind.DEVICE_DECODER) is not YouTube changing something, and no update helps. */
+    @Test
+    fun theDecoderFailureBlamesTheDeviceNotYouTube() {
+        val text = appContext().getString(R.string.error_device_decoder)
+        assertThat(text).contains("device")
+        assertThat(text).doesNotContain("YouTube")
+        assertThat(text).doesNotContain("update")
+    }
 }
 
 /** About, in Arabic. */
@@ -130,6 +139,14 @@ class AboutArabicTest {
     fun theAttributionStaysInEnglishWhateverTheLanguage() {
         assertThat(appContext().getString(R.string.sponsorblock_attribution_exact))
             .isEqualTo("Uses SponsorBlock data licensed used under CC BY-NC-SA 4.0 from https://sponsor.ajay.app/.")
+    }
+
+    @Test
+    fun theDecoderFailureBlamesTheDeviceNotYouTube() {
+        val text = appContext().getString(R.string.error_device_decoder)
+        assertThat(text).isEqualTo("تعذّر على جهازك تشغيل هذا الفيديو. جرّب فيديو آخر؛ وإن تكرر فأعد تشغيل الجهاز.")
+        assertThat(text).doesNotContain("يوتيوب")
+        assertThat(text).doesNotContain("تحديث")
     }
 
     @Test

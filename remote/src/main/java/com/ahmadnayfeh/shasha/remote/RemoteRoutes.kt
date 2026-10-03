@@ -101,7 +101,7 @@ internal fun Application.remoteModule(
             finish()
             return@intercept
         }
-        // A paired phone is here (its page polls every 2 s while it is open): the TV may ask it to confirm (v1.2).
+        // A paired phone is here (its page polls every 2 s while it is open): the TV may ask it to confirm (v1.1.1).
         presence?.seen()
         try {
             proceed()

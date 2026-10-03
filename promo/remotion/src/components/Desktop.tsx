@@ -3,6 +3,7 @@ import {useCurrentFrame} from 'remotion';
 import {brand, rgba} from '../brand';
 import {clamp, easeInOut, easeOut, mix, tween} from '../lib/anim';
 import {KIT_DATE, KIT_TAG, KitFile, KitKind} from '../lib/installer';
+import {dir} from '../lib/lang';
 import {isolateArabic, isolateLatin} from './Laptop';
 
 // Redrawn, generic desktop UI for the installation steps (no vendor logos): a Windows-like and a macOS-like
@@ -182,7 +183,7 @@ export const FileManager: React.FC<{
   files: Array<KitFile & {highlight?: number}>;
   selected?: number; // index, -1 none
   rowH?: number;
-  labels?: number; // 0..1: show the Arabic labels next to the files
+  labels?: number; // 0..1: show the descriptive labels (in the video's language) next to the files
 }> = ({os, path, files, selected = -1, rowH = 56, labels = 0}) => (
   <div style={{position: 'absolute', inset: 0, background: os === 'win' ? '#FAFBFC' : '#FFFFFF', color: '#1F2329', direction: 'ltr', fontFamily: UI}}>
     <div style={{height: 52, display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', borderBottom: '1px solid #E3E6EB', fontSize: 17, color: '#4A5160'}}>
@@ -226,7 +227,7 @@ export const FileManager: React.FC<{
             {f.label && labels > 0 ? (
               <span
                 style={{
-                  direction: 'rtl',
+                  direction: dir,
                   unicodeBidi: 'isolate',
                   fontFamily: brand.font,
                   fontSize: 17,

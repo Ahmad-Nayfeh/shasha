@@ -8,9 +8,11 @@ import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.ByteArrayDataSource
 import androidx.media3.datasource.DataSource
+import androidx.media3.exoplayer.ExoPlaybackException
 import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.dash.DefaultDashChunkSource
 import androidx.media3.exoplayer.dash.manifest.DashManifest
@@ -37,12 +39,14 @@ import java.util.concurrent.TimeUnit
 /**
  * Builds Media3 sources for YouTube streams returned by [com.ahmadnayfeh.shasha.youtube.VideoSource.stream].
  *
- * Create one per process (it keeps an HTTP client and caches decoder capabilities).
+ * Create one per process (it keeps an HTTP client, caches decoder capabilities, and remembers which pictures a decoder of
+ * this device failed on, for every video that follows: [recordDecoderFailure]).
  */
 @OptIn(UnstableApi::class)
 class YouTubeMediaSourceFactory internal constructor(
     okHttpClient: OkHttpClient,
     private val decoders: VideoDecoderCheck,
+    private val failures: DecoderFailures = DecoderFailures(),
 ) {
     constructor(context: Context, okHttpClient: OkHttpClient) :
         this(okHttpClient, MediaCodecVideoDecoderCheck(context.applicationContext))
@@ -61,7 +65,7 @@ class YouTubeMediaSourceFactory internal constructor(
     private val dashData = YouTubeHttpDataSource.Factory(client, GoogleVideoQuirks.DASH)
     private val progressiveData = YouTubeHttpDataSource.Factory(client, GoogleVideoQuirks.PROGRESSIVE)
     private val liveData = YouTubeHttpDataSource.Factory(client, GoogleVideoQuirks.LIVE)
-    private val planner = PlaybackPlanner(decoders)
+    private val planner = PlaybackPlanner(decoders, failures)
 
     init {
         // NPE caches every manifest it creates for the whole process; a TV session can run for hours.
@@ -75,6 +79,13 @@ class YouTubeMediaSourceFactory internal constructor(
      * all decodable qualities up to it. ≤ 0 means no cap. If nothing fits, the lowest quality is used.
      * @param subtitleLanguage a [com.ahmadnayfeh.shasha.youtube.SubtitleTrack.languageCode], or null
      * for none. The track is selected by default (human-made captions preferred over auto-generated).
+     * @param maxPortraitShortSide the same cap for a vertical picture (taller than wide), whatever [maxHeight] says; ≤ 0 means
+     * none. The TV passes 720: a 9:16 picture is 607 px wide on a 1080p screen, and weak TV decoders fail on the biggest ones.
+     * A phone shows vertical video natively and passes none.
+     * @param safe the plan for the second try after a decoder failure ([DecoderRetry]): H.264 only, at most
+     * [SafePlan.MAX_PORTRAIT_SHORT_SIDE] (vertical) or [SafePlan.MAX_LANDSCAPE_SHORT_SIDE] (horizontal) on the short side.
+     *
+     * Whatever a decoder of this device already failed on in this run ([recordDecoderFailure]) is left out as well.
      *
      * No network I/O happens here: manifests that need it (OTF, ended live streams) are built by
      * Media3's loader threads, and their failures surface as player errors ([classifyPlaybackError]).
@@ -85,8 +96,15 @@ class YouTubeMediaSourceFactory internal constructor(
      *
      * @throws SourceException (EXTRACTION_BROKEN, LOW_QUALITY_ONLY) when the stream has nothing playable.
      */
-    fun create(stream: StreamDetails, maxHeight: Int, subtitleLanguage: String?): MediaSource {
-        val plan = planner.plan(stream.playback.info, maxHeight, subtitleLanguage, stream.playback.allowLowQuality)
+    fun create(
+        stream: StreamDetails,
+        maxHeight: Int,
+        subtitleLanguage: String?,
+        maxPortraitShortSide: Int = 0,
+        safe: Boolean = false,
+    ): MediaSource {
+        val limits = PlanLimits(maxPortraitShortSide, safe)
+        val plan = planner.plan(stream.playback.info, maxHeight, subtitleLanguage, stream.playback.allowLowQuality, limits)
         val metadata = MediaMetadata.Builder().setTitle(stream.video.title).setArtist(stream.video.channelName).build()
         // The first source's MediaItem becomes the player's current item: mediaId = the video id.
         val newItem = { MediaItem.Builder().setMediaId(stream.video.videoId).setMediaMetadata(metadata) }
@@ -104,6 +122,28 @@ class YouTubeMediaSourceFactory internal constructor(
      * (seek to the live edge and prepare again).
      */
     fun classifyPlaybackError(error: Throwable): SourceException = PlaybackErrorClassifier.classify(error)
+
+    /**
+     * Call when [classifyPlaybackError] said DEVICE_DECODER, before anything else is done with the failure: the picture the
+     * decoder failed on, and every bigger one of the same codec and orientation, is left out of the plans of all the videos that
+     * follow in this run ([create]), so the next Short does not fail the way this one did. The decoder-capability cache
+     * forgets that picture too: the device said it could decode it, and it could not.
+     *
+     * The picture is the video format ExoPlayer's renderer was working on ([ExoPlaybackException.rendererFormat]), else
+     * [playing] (the player's current video format). An audio decoder's failure (the picture on screen is not to blame), one
+     * that names no picture, and a decoder the system took back for another app (the picture is not to blame: the next try
+     * may well work) remember nothing.
+     */
+    fun recordDecoderFailure(error: Throwable, playing: Format? = null) {
+        if ((error as? PlaybackException)?.errorCode == PlaybackException.ERROR_CODE_DECODING_RESOURCES_RECLAIMED) return
+        val renderer = (error as? ExoPlaybackException)?.rendererFormat
+        if (renderer != null && MimeTypes.isAudio(renderer.sampleMimeType)) return
+        // Only a video format has a size.
+        val format = listOfNotNull(renderer, playing).firstOrNull { it.width > 0 && it.height > 0 } ?: return
+        val family = VideoCodecs.family(format) ?: return
+        failures.record(family, format.width, format.height)
+        format.codecs?.takeIf { it.isNotBlank() }?.let { decoders.forget(it, format.width, format.height) }
+    }
 
     private fun build(part: MediaPart, item: MediaItem.Builder, key: String): MediaSource = when (part) {
         is MediaPart.Dash -> dashSource(item, key) { part.manifest }

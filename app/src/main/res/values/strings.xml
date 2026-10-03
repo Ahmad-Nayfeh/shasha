@@ -12,6 +12,7 @@
     <!-- Unified error screen -->
     <string name="error_title_youtube">يوتيوب غيّر شيئاً. حدّث التطبيق.</string>
     <string name="error_title_network">لا يوجد اتصال بالإنترنت</string>
+    <string name="error_title_device_decoder">تعذّر على شاشتك تشغيل هذا الفيديو</string>
     <string name="error_detail_name">اسم الخطأ</string>
     <string name="error_detail_extractor">إصدار المكتبة</string>
     <string name="error_explain_content_unavailable">هذا الفيديو غير متاح: ربما حُذف أو أخفاه صاحبه.</string>
@@ -26,9 +27,10 @@
     <string name="error_explain_low_quality_only">لم يعطِ يوتيوب إلا جودة 360p أو أقل، وهذه علامة على تعطّل الاستخراج.</string>
     <string name="error_explain_network">تأكّد من اتصال الشاشة بالشبكة ثم حاول من جديد.</string>
     <string name="error_explain_extraction_broken">تعذّر فهم ردّ يوتيوب. غالباً غيّر يوتيوب شيئاً في موقعه.</string>
+    <string name="error_explain_device_decoder">جرّب فيديو آخر؛ وإن تكرر فأعد تشغيل الشاشة.</string>
 
     <!-- A child's notice where the updater would be (the updater's own texts are in strings_updates.xml). -->
-    <string name="updates_current_version">الإصدار الحالي: %1$s · مكتبة الاستخراج %2$s</string>
+    <string name="updates_current_version">الإصدار الحالي: %1$s</string>
 
     <!-- Player -->
     <string name="player_loading">جارٍ تجهيز الفيديو…</string>
@@ -256,7 +258,7 @@
 
     <!-- Settings (SPEC §7). The hub's own strings are the hub_* section. -->
     <string name="settings_title">الإعدادات</string>
-    <string name="settings_version">شاشة %1$s · مكتبة الاستخراج %2$s</string>
+    <string name="settings_version">شاشة %1$s</string>
 
     <!-- Counted phrases (same order as above: ONE, TWO, FEW, MANY, OTHER) -->
     <string-array name="count_minutes">
@@ -676,6 +678,7 @@
     <string name="remote_search_disabled">البحث غير متاح في ملف الطفل.</string>
     <string name="remote_youtube_changed">يوتيوب غيّر شيئاً. حدّث التطبيق. %1$s</string>
     <string name="remote_offline">الشاشة غير متصلة بالإنترنت الآن.</string>
+    <string name="remote_device_decoder">تعذّر على الشاشة تشغيل هذا الفيديو. جرّب فيديو آخر؛ وإن تكرر فأعد تشغيل الشاشة.</string>
     <string name="remote_profile_not_found">هذا الملف غير موجود.</string>
     <string name="remote_profile_current">«&#x2068;%1$s&#x2069;» هو الملف المفتوح الآن.</string>
     <string name="remote_profile_switched">الشاشة الآن على ملف «&#x2068;%1$s&#x2069;».</string>
@@ -793,12 +796,13 @@
     <string name="hub_sponsorblock">فئات SponsorBlock</string>
     <string name="hub_quality">الجودة الافتراضية</string>
     <string name="hub_quality_summary">أعلى جودة يبلغها المشغّل وحده، ويهبط عنها تلقائياً حين تضعف الشبكة</string>
-    <string name="hub_remote">الخادم المحلي</string>
-    <string name="hub_remote_summary">التحكم من الجوال: تشغيله، ورمز QR للاقتران، ورمز جديد</string>
+    <string name="hub_remote">التحكم من الجوال</string>
+    <string name="hub_remote_summary">اربط جوالك برمز QR ليصبح ريموتاً للشاشة</string>
     <string name="hub_data_summary">نسخة احتياطية لكل بيانات الشاشة، واشتراكاتك من Takeout</string>
-    <string name="hub_updates_summary">تحديث «شاشة» بضغطة واحدة، ومعلومات الإصدار والتراخيص</string>
+    <string name="hub_updates_summary">تحديث «شاشة» بضغطة واحدة</string>
     <string name="hub_about">حول</string>
     <string name="hub_about_summary">من صنع «شاشة»، وتطبيقاته الأخرى</string>
+    <string name="about_licences">التراخيص</string>
     <string name="hub_loading">جارٍ التحميل…</string>
 
     <!-- A parental pane before the parent PIN. -->
@@ -853,12 +857,11 @@
     <string name="hub_protection_last_return">آخر عودة إلى «شاشة» بعد Home: %1$s ث</string>
 
     <!-- الخادم المحلي; %1$s: ip:port, e.g. 192.168.1.23:8765. -->
-    <string name="hub_remote_switch">تشغيل الخادم</string>
-    <string name="hub_remote_switch_body">يبدأ وحده مع الشاشة، ويستمع على شبكة البيت فقط</string>
-    <string name="hub_remote_pairing">رمز الاقتران QR</string>
-    <string name="hub_remote_pairing_body">امسحه بكاميرا الجوال. ومنه تعيد توليد الرمز فيتوقف كل جوال مقترن.</string>
-    <string name="hub_remote_address">يعمل على &#x2068;%1$s&#x2069;</string>
-    <string name="hub_remote_note">كل طلب من الجوال يحتاج رمز الاقتران، وقسم الأب فيه يحتاج رمز الوالدين أيضاً.</string>
+    <string name="hub_remote_switch">السماح بالتحكم من الجوال</string>
+    <string name="hub_remote_switch_body">على شبكة البيت فقط، ويبدأ وحده مع الشاشة</string>
+    <string name="hub_remote_pairing">ربط جوال (رمز QR)</string>
+    <string name="hub_remote_pairing_body">افتح كاميرا الجوال وامسح الرمز الذي يظهر. ومن هناك تلغي ربط كل الجوالات أيضاً.</string>
+    <string name="hub_remote_note">لا يتحكم بالشاشة إلا جوال مسح الرمز، وقسم الوالدين في الجوال يطلب رمز الوالدين.</string>
 
     <!-- الاستيراد والتصدير -->
     <string name="hub_data_backup">النسخة الاحتياطية</string>
@@ -867,12 +870,10 @@
 
     <!-- فحص التحديثات; %1$s of hub_build_line: the versionCode, %2$s: the extractor's version. -->
     <string name="hub_version">شاشة %1$s</string>
-    <string name="hub_build_line">رقم البناء %1$s · مكتبة الاستخراج %2$s</string>
     <string name="hub_updates_how">يفحص «شاشة» هل يوجد إصدار أحدث، فإن وجده نزّله وثبّته وحده: يُغلق التطبيق لحظة ثم يُفتح من جديد.</string>
     <string name="hub_updates_when">حين يتعطّل يوتيوب فجرّب التحديث أولاً: غالباً يكون فيه الإصلاح.</string>
 
     <!-- فحص التحديثات ← معلومات تقنية والتراخيص (كانت في «حول»، ثم في «تشخيص») -->
-    <string name="hub_tech_title">معلومات تقنية والتراخيص</string>
     <string name="hub_tech_data_title">بيانات تخطي المقاطع</string>
     <string name="hub_tech_licenses">المكتبات ورخصها</string>
     <string name="hub_tech_ideas">أفكار من مشاريع مفتوحة المصدر، بشيفرة كُتبت من جديد</string>

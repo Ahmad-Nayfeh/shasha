@@ -164,6 +164,20 @@ internal object PlaybackFixtures {
         videoOnly(160, "avc1.4d400c", 256, 144, bitrate = 110_000),
     )
 
+    /** A Short as YouTube returns it: the itags of a normal video, turned upright (taller than wide). */
+    fun portraitLadder() = listOf(
+        videoOnly(313, "vp9", 2160, 3840, bitrate = 17_000_000),
+        videoOnly(271, "vp9", 1440, 2560, bitrate = 9_000_000),
+        videoOnly(137, "avc1.640028", 1080, 1920, bitrate = 4_400_000),
+        videoOnly(248, "vp9", 1080, 1920, bitrate = 2_600_000),
+        videoOnly(136, "avc1.4d401f", 720, 1280, bitrate = 2_300_000),
+        videoOnly(247, "vp9", 720, 1280, bitrate = 1_500_000),
+        videoOnly(135, "avc1.4d401e", 480, 854, bitrate = 1_100_000),
+        videoOnly(244, "vp9", 480, 854, bitrate = 800_000),
+        videoOnly(134, "avc1.4d401e", 360, 640, bitrate = 600_000),
+        videoOnly(160, "avc1.4d400c", 144, 256, bitrate = 110_000),
+    )
+
     fun standardAudio() = listOf(
         audio(139, "mp4a.40.5", 49_000),
         audio(140, "mp4a.40.2", 130_000),

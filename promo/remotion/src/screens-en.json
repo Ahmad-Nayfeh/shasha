@@ -1,0 +1,4 @@
+{
+ "_readme": ["English captures of the screens in screens.json (same keys and shape; files in public/screens-en/). See lib/screens.ts."],
+ "screens": {}
+}

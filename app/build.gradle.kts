@@ -32,7 +32,7 @@ android {
         versionCode = ciEnv("SHASHA_VERSION_CODE")
             ?.let { it.toIntOrNull() ?: error("SHASHA_VERSION_CODE must be an integer, got '$it'") }
             ?: 1
-        versionName = "1.2.1"
+        versionName = "1.3.0"
         // SPEC §6's updater reads this repository's GitHub Releases. The repository is private, so it needs a
         // read-only token (CI's SHASHA_UPDATE_TOKEN); empty = the updater explains that it has none.
         buildConfigField("String", "UPDATE_REPO", javaString("Ahmad-Nayfeh/shasha"))
@@ -83,12 +83,17 @@ roborazzi {
 // Real-network tests (FeedSyncRealNetworkTest) are skipped unless run with -Dyoutube.realNetwork=true, as in :youtube.
 val realNetwork = System.getProperty("youtube.realNetwork") ?: "false"
 
+// The explainer video's English captures (promo/remotion): -PshashaPromoEnglish makes the screenshot tests record them,
+// in English, into promo/screens-en (see PromoEnglish in the tests). Off, the tests are untouched.
+val promoEnglish = providers.gradleProperty("shashaPromoEnglish").map { it != "false" }.getOrElse(false)
+
 tasks.withType<Test>().configureEach {
     // Robolectric downloads its android-all jars at test time. Maven Central (repo1) rate-limits this
     // build environment, so use Google's mirror of it, the same one settings.gradle.kts uses.
     systemProperty("robolectric.dependency.repo.url", "https://maven-central.storage-download.googleapis.com/maven2")
     maxHeapSize = "3g"
     systemProperty("youtube.realNetwork", realNetwork)
+    if (promoEnglish) systemProperty("shasha.promoEnglish", "true")
     if (realNetwork == "true") {
         // YouTube's answer changes over time: never reuse a cached or up-to-date result.
         outputs.upToDateWhen { false }

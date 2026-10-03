@@ -1,0 +1,1177 @@
+{
+ "fps": 30,
+ "width": 1920,
+ "height": 1080,
+ "total_duration_s": 293.367,
+ "total_frames": 8801,
+ "narration_track": "audio-en/narration_full.wav",
+ "tts": {
+  "engine": "ElevenLabs text-to-speech with character timestamps",
+  "voice_id": "pCKbQ4EPGE06zpEPGNvS",
+  "voice": "Abdullah - Professional, and Energetic",
+  "model": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_192",
+  "text_field": "tts",
+  "pauses_s": {
+   "comma": 0.25,
+   "colon": 0.3,
+   "sentence": 0.5,
+   "beat": 0.9
+  },
+  "note": "phrase-by-phrase synthesis (previous_text/next_text for continuity), silences inserted by us"
+ },
+ "loudness": {
+  "target": "-16 LUFS integrated, true peak <= -1.5 dBTP (EBU R128 / ffmpeg loudnorm)",
+  "measured_combined": {
+   "integrated_lufs": -16.0,
+   "true_peak_dbtp": -2.05,
+   "lra": 2.8
+  }
+ },
+ "asr_check": null,
+ "padding_s": {
+  "lead_in": 0.3,
+  "tail": 0.4,
+  "section_extra": 0.6,
+  "first_lead": 2.5,
+  "last_hold": 3.2
+ },
+ "scenes": [
+  {
+   "id": "s01_intro",
+   "section": "intro",
+   "title": "What is Shasha?",
+   "step": null,
+   "audio": "audio-en/scenes/s01_intro.wav",
+   "audio_duration_s": 12.414,
+   "start_s": 0.0,
+   "duration_s": 15.3,
+   "start_frame": 0,
+   "duration_frames": 459,
+   "voice_offset_s": 2.5,
+   "voice_offset_frames": 75,
+   "cues": [
+    {
+     "start_s": 2.6,
+     "end_s": 3.41,
+     "start_frame": 78,
+     "end_frame": 102,
+     "text_display": "This is Shasha:",
+     "text_tts": "This is Shasha:"
+    },
+    {
+     "start_s": 3.71,
+     "end_s": 5.48,
+     "start_frame": 111,
+     "end_frame": 164,
+     "text_display": "a calm YouTube for the family TV.",
+     "text_tts": "a calm YouTube for the family TV."
+    },
+    {
+     "start_s": 5.98,
+     "end_s": 7.974,
+     "start_frame": 179,
+     "end_frame": 239,
+     "text_display": "No ads, and no need to sign in.",
+     "text_tts": "No ads, and no need to sign in."
+    },
+    {
+     "start_s": 8.474,
+     "end_s": 10.744,
+     "start_frame": 254,
+     "end_frame": 322,
+     "text_display": "And it comes with what reassures you about your children:",
+     "text_tts": "And it comes with what reassures you about your children:"
+    },
+    {
+     "start_s": 11.044,
+     "end_s": 14.814,
+     "start_frame": 331,
+     "end_frame": 444,
+     "text_display": "their own profiles, a daily time limit, and a remote on your phone.",
+     "text_tts": "their own profiles, a daily time limit, and a remote on your phone."
+    }
+   ]
+  },
+  {
+   "id": "s02_why",
+   "section": "intro",
+   "title": "Why?",
+   "step": null,
+   "audio": "audio-en/scenes/s02_why.wav",
+   "audio_duration_s": 9.699,
+   "start_s": 15.3,
+   "duration_s": 10.4,
+   "start_frame": 459,
+   "duration_frames": 312,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 1.481,
+     "start_frame": 12,
+     "end_frame": 44,
+     "text_display": "The idea is simple:",
+     "text_tts": "The idea is simple:"
+    },
+    {
+     "start_s": 1.781,
+     "end_s": 3.854,
+     "start_frame": 53,
+     "end_frame": 116,
+     "text_display": "calm, deliberate viewing.",
+     "text_tts": "calm, deliberate viewing."
+    },
+    {
+     "start_s": 4.354,
+     "end_s": 9.899,
+     "start_frame": 131,
+     "end_frame": 297,
+     "text_display": "You watch what you chose, then turn the TV off feeling good, instead of losing an hour to a video you never looked for.",
+     "text_tts": "You watch what you chose, then turn the TV off feeling good, instead of losing an hour to a video you never looked for."
+    }
+   ]
+  },
+  {
+   "id": "s03_home",
+   "section": "intro",
+   "title": "Home",
+   "step": null,
+   "audio": "audio-en/scenes/s03_home.wav",
+   "audio_duration_s": 8.743,
+   "start_s": 25.7,
+   "duration_s": 9.433,
+   "start_frame": 771,
+   "duration_frames": 283,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 4.703,
+     "start_frame": 12,
+     "end_frame": 141,
+     "text_display": "You open the app and find the latest from the channels you picked, newest first.",
+     "text_tts": "You open the app and find the latest from the channels you picked, newest first."
+    },
+    {
+     "start_s": 5.203,
+     "end_s": 8.943,
+     "start_frame": 156,
+     "end_frame": 268,
+     "text_display": "Nothing is pushed at you, and nothing drags you from one video to the next.",
+     "text_tts": "Nothing is pushed at you, and nothing drags you from one video to the next."
+    }
+   ]
+  },
+  {
+   "id": "s04_profiles",
+   "section": "family",
+   "title": "Profiles: adults and children",
+   "step": null,
+   "audio": "audio-en/scenes/s04_profiles.wav",
+   "audio_duration_s": 10.857,
+   "start_s": 35.133,
+   "duration_s": 12.167,
+   "start_frame": 1054,
+   "duration_frames": 365,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 2.977,
+     "start_frame": 30,
+     "end_frame": 89,
+     "text_display": "Everyone in the family has their own profile.",
+     "text_tts": "Everyone in the family has their own profile."
+    },
+    {
+     "start_s": 3.477,
+     "end_s": 6.097,
+     "start_frame": 104,
+     "end_frame": 183,
+     "text_display": "The adults' profile is protected by a secret code.",
+     "text_tts": "The adults' profile is protected by a secret code."
+    },
+    {
+     "start_s": 6.597,
+     "end_s": 11.657,
+     "start_frame": 198,
+     "end_frame": 350,
+     "text_display": "A child's profile shows only the channels you allow, and it can only be left with the parents' code.",
+     "text_tts": "A child's profile shows only the channels you allow, and it can only be left with the parents' code."
+    }
+   ]
+  },
+  {
+   "id": "s05_time",
+   "section": "family",
+   "title": "Time limits and hours",
+   "step": null,
+   "audio": "audio-en/scenes/s05_time.wav",
+   "audio_duration_s": 10.939,
+   "start_s": 47.3,
+   "duration_s": 11.633,
+   "start_frame": 1419,
+   "duration_frames": 349,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 3.428,
+     "start_frame": 12,
+     "end_frame": 103,
+     "text_display": "Each profile has a daily limit, and allowed viewing hours.",
+     "text_tts": "Each profile has a daily limit, and allowed viewing hours."
+    },
+    {
+     "start_s": 3.928,
+     "end_s": 7.619,
+     "start_frame": 118,
+     "end_frame": 229,
+     "text_display": "Five minutes before the end, a small, gentle reminder appears.",
+     "text_tts": "Five minutes before the end, a small, gentle reminder appears."
+    },
+    {
+     "start_s": 8.119,
+     "end_s": 11.139,
+     "start_frame": 244,
+     "end_frame": 334,
+     "text_display": "Then a \"Time is up\" screen, which opens only with the code.",
+     "text_tts": "Then a Time is up screen, which opens only with the code."
+    }
+   ]
+  },
+  {
+   "id": "s06_serious",
+   "section": "family",
+   "title": "Serious mode",
+   "step": null,
+   "audio": "audio-en/scenes/s06_serious.wav",
+   "audio_duration_s": 12.793,
+   "start_s": 58.933,
+   "duration_s": 13.5,
+   "start_frame": 1768,
+   "duration_frames": 405,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 1.73,
+     "start_frame": 12,
+     "end_frame": 52,
+     "text_display": "Then there is \"Serious mode\":",
+     "text_tts": "Then there is Serious mode:"
+    },
+    {
+     "start_s": 2.03,
+     "end_s": 4.47,
+     "start_frame": 61,
+     "end_frame": 134,
+     "text_display": "a video that has started does not stop before its end.",
+     "text_tts": "a video that has started does not stop before its end."
+    },
+    {
+     "start_s": 4.97,
+     "end_s": 7.16,
+     "start_frame": 149,
+     "end_frame": 215,
+     "text_display": "Children and adults each have their own switch.",
+     "text_tts": "Children and adults each have their own switch."
+    },
+    {
+     "start_s": 7.66,
+     "end_s": 9.62,
+     "start_frame": 230,
+     "end_frame": 289,
+     "text_display": "A child leaves only with the parents' code.",
+     "text_tts": "A child leaves only with the parents' code."
+    },
+    {
+     "start_s": 10.12,
+     "end_s": 12.993,
+     "start_frame": 304,
+     "end_frame": 390,
+     "text_display": "An adult needs a long press, then a sentence to type.",
+     "text_tts": "An adult needs a long press, then a sentence to type."
+    }
+   ]
+  },
+  {
+   "id": "s07_guard",
+   "section": "family",
+   "title": "The Guard",
+   "step": null,
+   "audio": "audio-en/scenes/s07_guard.wav",
+   "audio_duration_s": 6.249,
+   "start_s": 72.433,
+   "duration_s": 6.933,
+   "start_frame": 2173,
+   "duration_frames": 208,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 6.449,
+     "start_frame": 12,
+     "end_frame": 193,
+     "text_display": "And if a child presses the Home button on the remote, the Guard covers the other app, and brings Shasha back within moments.",
+     "text_tts": "And if a child presses the Home button on the remote, the Guard covers the other app, and brings Shasha back within moments."
+    }
+   ]
+  },
+  {
+   "id": "s08_suggest",
+   "section": "family",
+   "title": "Suggestions and Shorts",
+   "step": null,
+   "audio": "audio-en/scenes/s08_suggest.wav",
+   "audio_duration_s": 8.963,
+   "start_s": 79.367,
+   "duration_s": 9.667,
+   "start_frame": 2381,
+   "duration_frames": 290,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 5.453,
+     "start_frame": 12,
+     "end_frame": 164,
+     "text_display": "Suggested videos, and the short \"Shorts\" clips, can be shown or hidden for each profile separately.",
+     "text_tts": "Suggested videos, and the short Shorts clips, can be shown or hidden for each profile separately."
+    },
+    {
+     "start_s": 5.953,
+     "end_s": 9.163,
+     "start_frame": 179,
+     "end_frame": 275,
+     "text_display": "So your child's screen stays calm, and you keep what you like.",
+     "text_tts": "So your child's screen stays calm, and you keep what you like."
+    }
+   ]
+  },
+  {
+   "id": "s09_channel",
+   "section": "watch",
+   "title": "Channel page",
+   "step": null,
+   "audio": "audio-en/scenes/s09_channel.wav",
+   "audio_duration_s": 11.295,
+   "start_s": 89.033,
+   "duration_s": 12.6,
+   "start_frame": 2671,
+   "duration_frames": 378,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 3.199,
+     "start_frame": 30,
+     "end_frame": 96,
+     "text_display": "Every channel page is divided into sections:",
+     "text_tts": "Every channel page is divided into sections:"
+    },
+    {
+     "start_s": 3.499,
+     "end_s": 7.227,
+     "start_frame": 105,
+     "end_frame": 217,
+     "text_display": "videos, Shorts, live streams, and playlists.",
+     "text_tts": "videos, Shorts, live streams, and playlists."
+    },
+    {
+     "start_s": 7.727,
+     "end_s": 9.076,
+     "start_frame": 232,
+     "end_frame": 272,
+     "text_display": "And you choose the order:",
+     "text_tts": "And you choose the order:"
+    },
+    {
+     "start_s": 9.376,
+     "end_s": 12.095,
+     "start_frame": 281,
+     "end_frame": 363,
+     "text_display": "newest first, most viewed, or oldest.",
+     "text_tts": "newest first, most viewed, or oldest."
+    }
+   ]
+  },
+  {
+   "id": "s10_search",
+   "section": "watch",
+   "title": "Voice search",
+   "step": null,
+   "audio": "audio-en/scenes/s10_search.wav",
+   "audio_duration_s": 7.12,
+   "start_s": 101.633,
+   "duration_s": 7.833,
+   "start_frame": 3049,
+   "duration_frames": 235,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 5.22,
+     "start_frame": 12,
+     "end_frame": 157,
+     "text_display": "To search, press the microphone button and say what you want, in Arabic or in English.",
+     "text_tts": "To search, press the microphone button and say what you want, in Arabic or in English."
+    },
+    {
+     "start_s": 5.72,
+     "end_s": 7.32,
+     "start_frame": 172,
+     "end_frame": 220,
+     "text_display": "The results appear in moments.",
+     "text_tts": "The results appear in moments."
+    }
+   ]
+  },
+  {
+   "id": "s12_phone",
+   "section": "phone",
+   "title": "The phone as a remote",
+   "step": null,
+   "audio": "audio-en/scenes/s12_phone.wav",
+   "audio_duration_s": 12.081,
+   "start_s": 109.467,
+   "duration_s": 13.367,
+   "start_frame": 3284,
+   "duration_frames": 401,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 2.705,
+     "start_frame": 30,
+     "end_frame": 81,
+     "text_display": "Your phone becomes a remote:",
+     "text_tts": "Your phone becomes a remote:"
+    },
+    {
+     "start_s": 3.005,
+     "end_s": 7.72,
+     "start_frame": 90,
+     "end_frame": 232,
+     "text_display": "scan the QR code, to search, to control playback, and to send links.",
+     "text_tts": "scan the Q R code, to search, to control playback, and to send links."
+    },
+    {
+     "start_s": 8.22,
+     "end_s": 12.881,
+     "start_frame": 247,
+     "end_frame": 386,
+     "text_display": "And in the \"Parent\" section, with the parents' code, you add time and manage a child's list.",
+     "text_tts": "And in the Parent section, with the parents' code, you add time and manage a child's list."
+    }
+   ]
+  },
+  {
+   "id": "s13_accept",
+   "section": "phone",
+   "title": "Accept or decline",
+   "step": null,
+   "audio": "audio-en/scenes/s13_accept.wav",
+   "audio_duration_s": 7.998,
+   "start_s": 122.833,
+   "duration_s": 8.7,
+   "start_frame": 3685,
+   "duration_frames": 261,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 3.798,
+     "start_frame": 12,
+     "end_frame": 114,
+     "text_display": "If someone sends a video from their phone, the TV asks you:",
+     "text_tts": "If someone sends a video from their phone, the TV asks you:"
+    },
+    {
+     "start_s": 4.098,
+     "end_s": 5.338,
+     "start_frame": 123,
+     "end_frame": 160,
+     "text_display": "\"Accept\" or \"Decline\".",
+     "text_tts": "Accept or Decline."
+    },
+    {
+     "start_s": 5.838,
+     "end_s": 8.198,
+     "start_frame": 175,
+     "end_frame": 246,
+     "text_display": "And what you are watching carries on until you decide.",
+     "text_tts": "And what you are watching carries on until you decide."
+    }
+   ]
+  },
+  {
+   "id": "s15_updates",
+   "section": "tv",
+   "title": "One-button updates",
+   "step": null,
+   "audio": "audio-en/scenes/s15_updates.wav",
+   "audio_duration_s": 8.769,
+   "start_s": 131.533,
+   "duration_s": 10.067,
+   "start_frame": 3946,
+   "duration_frames": 302,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 6.87,
+     "start_frame": 30,
+     "end_frame": 206,
+     "text_display": "When a new version is released, press one button in Settings, and the download and installation start by themselves.",
+     "text_tts": "When a new version is released, press one button in Settings, and the download and installation start by themselves."
+    },
+    {
+     "start_s": 7.37,
+     "end_s": 9.569,
+     "start_frame": 221,
+     "end_frame": 287,
+     "text_display": "No computer, and no reinstalling.",
+     "text_tts": "No computer, and no reinstalling."
+    }
+   ]
+  },
+  {
+   "id": "s16_tvs",
+   "section": "tv",
+   "title": "Which TV?",
+   "step": null,
+   "audio": "audio-en/scenes/s16_tvs.wav",
+   "audio_duration_s": 6.814,
+   "start_s": 141.6,
+   "duration_s": 7.5,
+   "start_frame": 4248,
+   "duration_frames": 225,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 1.97,
+     "start_frame": 12,
+     "end_frame": 59,
+     "text_display": "Which TVs does Shasha run on?",
+     "text_tts": "Which TVs does Shasha run on?"
+    },
+    {
+     "start_s": 2.47,
+     "end_s": 7.014,
+     "start_frame": 74,
+     "end_frame": 210,
+     "text_display": "Every TV with Google TV or Android TV, and Amazon Fire TV devices.",
+     "text_tts": "Every TV with Google TV or Android TV, and Amazon Fire TV devices."
+    }
+   ]
+  },
+  {
+   "id": "s17_stick",
+   "section": "tv",
+   "title": "Samsung, LG and others",
+   "step": null,
+   "audio": "audio-en/scenes/s17_stick.wav",
+   "audio_duration_s": 9.487,
+   "start_s": 149.1,
+   "duration_s": 10.2,
+   "start_frame": 4473,
+   "duration_frames": 306,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 5.006,
+     "start_frame": 12,
+     "end_frame": 150,
+     "text_display": "For a Samsung or LG TV, or any other, a small Android TV stick is enough.",
+     "text_tts": "For a Samsung or L G TV, or any other, a small Android TV stick is enough."
+    },
+    {
+     "start_s": 5.506,
+     "end_s": 9.687,
+     "start_frame": 165,
+     "end_frame": 291,
+     "text_display": "You plug it into the HDMI port, and Shasha runs on it with all its features.",
+     "text_tts": "You plug it into the H D M I port, and Shasha runs on it with all its features."
+    }
+   ]
+  },
+  {
+   "id": "s18_need",
+   "section": "install",
+   "title": "Installing: what you need",
+   "step": null,
+   "audio": "audio-en/scenes/s18_need.wav",
+   "audio_duration_s": 7.459,
+   "start_s": 159.3,
+   "duration_s": 9.367,
+   "start_frame": 4779,
+   "duration_frames": 281,
+   "voice_offset_s": 1.5,
+   "voice_offset_frames": 45,
+   "cues": [
+    {
+     "start_s": 1.6,
+     "end_s": 3.565,
+     "start_frame": 48,
+     "end_frame": 107,
+     "text_display": "Now the installation, step by step.",
+     "text_tts": "Now the installation, step by step."
+    },
+    {
+     "start_s": 4.065,
+     "end_s": 8.859,
+     "start_frame": 122,
+     "end_frame": 266,
+     "text_display": "You need a personal computer, a Mac or Windows, on the same network as the TV.",
+     "text_tts": "You need a personal computer, a Mac or Windows, on the same network as the TV."
+    }
+   ]
+  },
+  {
+   "id": "s19_download",
+   "section": "install",
+   "title": "Step 1: Download",
+   "step": 1,
+   "audio": "audio-en/scenes/s19_download.wav",
+   "audio_duration_s": 12.889,
+   "start_s": 168.667,
+   "duration_s": 13.7,
+   "start_frame": 5060,
+   "duration_frames": 411,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 2.3,
+     "start_frame": 15,
+     "end_frame": 69,
+     "text_display": "Step one, on the computer:",
+     "text_tts": "Step one, on the computer:"
+    },
+    {
+     "start_s": 2.6,
+     "end_s": 6.708,
+     "start_frame": 78,
+     "end_frame": 201,
+     "text_display": "from the Shasha page on GitHub, click the zip file \"Shasha-Setup.zip\", then the download button.",
+     "text_tts": "from the Shasha page on GitHub, click the zip file, then the download button."
+    },
+    {
+     "start_s": 7.208,
+     "end_s": 8.329,
+     "start_frame": 216,
+     "end_frame": 250,
+     "text_display": "Then unzip it:",
+     "text_tts": "Then unzip it:"
+    },
+    {
+     "start_s": 8.629,
+     "end_s": 11.349,
+     "start_frame": 259,
+     "end_frame": 340,
+     "text_display": "on Windows, right-click, then \"Extract All\".",
+     "text_tts": "on Windows, right-click, then Extract All."
+    },
+    {
+     "start_s": 11.849,
+     "end_s": 13.189,
+     "start_frame": 355,
+     "end_frame": 396,
+     "text_display": "On a Mac, double-click.",
+     "text_tts": "On a Mac, double-click."
+    }
+   ]
+  },
+  {
+   "id": "s21_devmode",
+   "section": "install",
+   "title": "Step 2: Developer options",
+   "step": 2,
+   "audio": "audio-en/scenes/s21_devmode.wav",
+   "audio_duration_s": 12.934,
+   "start_s": 182.367,
+   "duration_s": 13.733,
+   "start_frame": 5471,
+   "duration_frames": 412,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 2.216,
+     "start_frame": 15,
+     "end_frame": 66,
+     "text_display": "Step two, on the TV:",
+     "text_tts": "Step two, on the TV:"
+    },
+    {
+     "start_s": 2.516,
+     "end_s": 5.375,
+     "start_frame": 75,
+     "end_frame": 161,
+     "text_display": "open Settings, then System, then About.",
+     "text_tts": "open Settings, then System, then About."
+    },
+    {
+     "start_s": 5.875,
+     "end_s": 11.834,
+     "start_frame": 176,
+     "end_frame": 355,
+     "text_display": "Scroll down to \"Android TV OS build\", and press the middle button seven times, until a message appears:",
+     "text_tts": "Scroll down to Android TV O S build, and press the middle button seven times, until a message appears:"
+    },
+    {
+     "start_s": 12.134,
+     "end_s": 13.234,
+     "start_frame": 364,
+     "end_frame": 397,
+     "text_display": "\"You are now a developer\".",
+     "text_tts": "You are now a developer."
+    }
+   ]
+  },
+  {
+   "id": "s22_debugging",
+   "section": "install",
+   "title": "Step 3: USB debugging",
+   "step": 3,
+   "audio": "audio-en/scenes/s22_debugging.wav",
+   "audio_duration_s": 7.72,
+   "start_s": 196.1,
+   "duration_s": 8.533,
+   "start_frame": 5883,
+   "duration_frames": 256,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 1.17,
+     "start_frame": 15,
+     "end_frame": 35,
+     "text_display": "Step three:",
+     "text_tts": "Step three:"
+    },
+    {
+     "start_s": 1.47,
+     "end_s": 4.243,
+     "start_frame": 44,
+     "end_frame": 127,
+     "text_display": "go back to System, and open Developer options.",
+     "text_tts": "go back to System, and open Developer options."
+    },
+    {
+     "start_s": 4.743,
+     "end_s": 8.02,
+     "start_frame": 142,
+     "end_frame": 241,
+     "text_display": "Turn on \"USB debugging\", and \"Network debugging\" if you see it.",
+     "text_tts": "Turn on U S B debugging, and Network debugging if you see it."
+    }
+   ]
+  },
+  {
+   "id": "s23_find_ip",
+   "section": "install",
+   "title": "Step 4: The TV's address",
+   "step": 4,
+   "audio": "audio-en/scenes/s23_find_ip.wav",
+   "audio_duration_s": 13.589,
+   "start_s": 204.633,
+   "duration_s": 14.4,
+   "start_frame": 6139,
+   "duration_frames": 432,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 1.213,
+     "start_frame": 15,
+     "end_frame": 36,
+     "text_display": "Step four:",
+     "text_tts": "Step four:"
+    },
+    {
+     "start_s": 1.513,
+     "end_s": 3.893,
+     "start_frame": 45,
+     "end_frame": 117,
+     "text_display": "in Settings, open \"Network & Internet\".",
+     "text_tts": "in Settings, open Network and Internet."
+    },
+    {
+     "start_s": 4.393,
+     "end_s": 7.525,
+     "start_frame": 132,
+     "end_frame": 226,
+     "text_display": "On Wi-Fi, choose your network, then \"IP address\".",
+     "text_tts": "On Wi-Fi, choose your network, then I P address."
+    },
+    {
+     "start_s": 8.025,
+     "end_s": 10.498,
+     "start_frame": 241,
+     "end_frame": 315,
+     "text_display": "On a cable, the address is right under \"Ethernet\".",
+     "text_tts": "On a cable, the address is right under Ethernet."
+    },
+    {
+     "start_s": 10.998,
+     "end_s": 12.159,
+     "start_frame": 330,
+     "end_frame": 365,
+     "text_display": "Write it down:",
+     "text_tts": "Write it down:"
+    },
+    {
+     "start_s": 12.459,
+     "end_s": 13.889,
+     "start_frame": 374,
+     "end_frame": 417,
+     "text_display": "numbers with dots between them.",
+     "text_tts": "numbers with dots between them."
+    }
+   ]
+  },
+  {
+   "id": "s24_run_windows",
+   "section": "install",
+   "title": "Step 5: Run on Windows",
+   "step": 5,
+   "audio": "audio-en/scenes/s24_run_windows.wav",
+   "audio_duration_s": 8.665,
+   "start_s": 219.033,
+   "duration_s": 9.467,
+   "start_frame": 6571,
+   "duration_frames": 284,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 2.237,
+     "start_frame": 15,
+     "end_frame": 67,
+     "text_display": "Step five, on the computer:",
+     "text_tts": "Step five, on the computer:"
+    },
+    {
+     "start_s": 2.537,
+     "end_s": 4.817,
+     "start_frame": 76,
+     "end_frame": 144,
+     "text_display": "on Windows, double-click the Windows file.",
+     "text_tts": "on Windows, double-click the Windows file."
+    },
+    {
+     "start_s": 5.317,
+     "end_s": 8.965,
+     "start_frame": 159,
+     "end_frame": 269,
+     "text_display": "If a blue warning appears, choose \"More info\", then \"Run anyway\".",
+     "text_tts": "If a blue warning appears, choose More info, then Run anyway."
+    }
+   ]
+  },
+  {
+   "id": "s25_run_mac",
+   "section": "install",
+   "title": "Step 5: Run on a Mac",
+   "step": 5,
+   "audio": "audio-en/scenes/s25_run_mac.wav",
+   "audio_duration_s": 8.388,
+   "start_s": 228.5,
+   "duration_s": 9.1,
+   "start_frame": 6855,
+   "duration_frames": 273,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 2.54,
+     "start_frame": 12,
+     "end_frame": 76,
+     "text_display": "On a Mac, double-click the Mac file.",
+     "text_tts": "On a Mac, double-click the Mac file."
+    },
+    {
+     "start_s": 3.04,
+     "end_s": 8.588,
+     "start_frame": 91,
+     "end_frame": 258,
+     "text_display": "If the Mac refuses to open it, open \"System Settings\", then \"Privacy & Security\", then \"Open Anyway\".",
+     "text_tts": "If the Mac refuses to open it, open System Settings, then Privacy and Security, then Open Anyway."
+    }
+   ]
+  },
+  {
+   "id": "s26_type_ip",
+   "section": "install",
+   "title": "Step 5: Type the address",
+   "step": 5,
+   "audio": "audio-en/scenes/s26_type_ip.wav",
+   "audio_duration_s": 6.263,
+   "start_s": 237.6,
+   "duration_s": 6.967,
+   "start_frame": 7128,
+   "duration_frames": 209,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 1.49,
+     "start_frame": 12,
+     "end_frame": 45,
+     "text_display": "The program will ask:",
+     "text_tts": "The program will ask:"
+    },
+    {
+     "start_s": 1.79,
+     "end_s": 3.4,
+     "start_frame": 54,
+     "end_frame": 102,
+     "text_display": "\"Enter the TV's IP address\".",
+     "text_tts": "Enter the TV's I P address."
+    },
+    {
+     "start_s": 3.9,
+     "end_s": 6.463,
+     "start_frame": 117,
+     "end_frame": 194,
+     "text_display": "Type the address you wrote down, then press Enter.",
+     "text_tts": "Type the address you wrote down, then press Enter."
+    }
+   ]
+  },
+  {
+   "id": "s27_allow",
+   "section": "install",
+   "title": "Step 6: Allow",
+   "step": 6,
+   "audio": "audio-en/scenes/s27_allow.wav",
+   "audio_duration_s": 8.683,
+   "start_s": 244.567,
+   "duration_s": 9.467,
+   "start_frame": 7337,
+   "duration_frames": 284,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 2.223,
+     "start_frame": 15,
+     "end_frame": 67,
+     "text_display": "Step six, on the TV:",
+     "text_tts": "Step six, on the TV:"
+    },
+    {
+     "start_s": 2.523,
+     "end_s": 4.563,
+     "start_frame": 76,
+     "end_frame": 137,
+     "text_display": "a message will ask whether to allow debugging.",
+     "text_tts": "a message will ask whether to allow debugging."
+    },
+    {
+     "start_s": 5.063,
+     "end_s": 8.983,
+     "start_frame": 152,
+     "end_frame": 269,
+     "text_display": "Tick \"Always allow from this computer\", then press \"OK\" within a minute.",
+     "text_tts": "Tick Always allow from this computer, then press Okay within a minute."
+    }
+   ]
+  },
+  {
+   "id": "s28_automatic",
+   "section": "install",
+   "title": "Step 7: The program finishes by itself",
+   "step": 7,
+   "audio": "audio-en/scenes/s28_automatic.wav",
+   "audio_duration_s": 13.084,
+   "start_s": 254.033,
+   "duration_s": 13.9,
+   "start_frame": 7621,
+   "duration_frames": 417,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 1.29,
+     "start_frame": 15,
+     "end_frame": 39,
+     "text_display": "Step seven:",
+     "text_tts": "Step seven:"
+    },
+    {
+     "start_s": 1.59,
+     "end_s": 3.24,
+     "start_frame": 48,
+     "end_frame": 97,
+     "text_display": "the program finishes by itself.",
+     "text_tts": "the program finishes by itself."
+    },
+    {
+     "start_s": 3.74,
+     "end_s": 8.601,
+     "start_frame": 112,
+     "end_frame": 258,
+     "text_display": "It installs the app, gives it its permissions, then asks whether to stop the official YouTube app.",
+     "text_tts": "It installs the app, gives it its permissions, then asks whether to stop the official YouTube app."
+    },
+    {
+     "start_s": 9.101,
+     "end_s": 11.884,
+     "start_frame": 273,
+     "end_frame": 357,
+     "text_display": "Type the letter Y to agree, or N to decline.",
+     "text_tts": "Type the letter Y to agree, or N to decline."
+    },
+    {
+     "start_s": 12.384,
+     "end_s": 13.384,
+     "start_frame": 372,
+     "end_frame": 402,
+     "text_display": "Then it shows a summary.",
+     "text_tts": "Then it shows a summary."
+    }
+   ]
+  },
+  {
+   "id": "s29_first_start",
+   "section": "install",
+   "title": "Step 8: First start",
+   "step": 8,
+   "audio": "audio-en/scenes/s29_first_start.wav",
+   "audio_duration_s": 10.327,
+   "start_s": 267.933,
+   "duration_s": 11.133,
+   "start_frame": 8038,
+   "duration_frames": 334,
+   "voice_offset_s": 0.4,
+   "voice_offset_frames": 12,
+   "cues": [
+    {
+     "start_s": 0.5,
+     "end_s": 1.1,
+     "start_frame": 15,
+     "end_frame": 33,
+     "text_display": "Step eight:",
+     "text_tts": "Step eight:"
+    },
+    {
+     "start_s": 1.4,
+     "end_s": 2.25,
+     "start_frame": 42,
+     "end_frame": 68,
+     "text_display": "the first start.",
+     "text_tts": "the first start."
+    },
+    {
+     "start_s": 2.75,
+     "end_s": 8.797,
+     "start_frame": 82,
+     "end_frame": 264,
+     "text_display": "Choose the parents' code, then create your own profile, and your child's profile with their daily minutes and allowed hours.",
+     "text_tts": "Choose the parents' code, then create your own profile, and your child's profile with their daily minutes and allowed hours."
+    },
+    {
+     "start_s": 9.297,
+     "end_s": 10.627,
+     "start_frame": 279,
+     "end_frame": 319,
+     "text_display": "Then add the channels you allow.",
+     "text_tts": "Then add the channels you allow."
+    }
+   ]
+  },
+  {
+   "id": "s30_phone_app",
+   "section": "outro",
+   "title": "The phone app",
+   "step": null,
+   "audio": "audio-en/scenes/s30_phone_app.wav",
+   "audio_duration_s": 4.44,
+   "start_s": 279.067,
+   "duration_s": 6.333,
+   "start_frame": 8372,
+   "duration_frames": 190,
+   "voice_offset_s": 1.5,
+   "voice_offset_frames": 45,
+   "cues": [
+    {
+     "start_s": 1.6,
+     "end_s": 5.84,
+     "start_frame": 48,
+     "end_frame": 175,
+     "text_display": "And there is a Shasha app for your Android phone too, with its own video that explains it.",
+     "text_tts": "And there is a Shasha app for your Android phone too, with its own video that explains it."
+    }
+   ]
+  },
+  {
+   "id": "s31_outro",
+   "section": "outro",
+   "title": "Closing",
+   "step": null,
+   "audio": "audio-en/scenes/s31_outro.wav",
+   "audio_duration_s": 4.47,
+   "start_s": 285.4,
+   "duration_s": 7.967,
+   "start_frame": 8562,
+   "duration_frames": 239,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 1.34,
+     "start_frame": 12,
+     "end_frame": 40,
+     "text_display": "And that is Shasha.",
+     "text_tts": "And that is Shasha."
+    },
+    {
+     "start_s": 1.84,
+     "end_s": 3.17,
+     "start_frame": 55,
+     "end_frame": 95,
+     "text_display": "Made with love for my family.",
+     "text_tts": "Made with love for my family."
+    },
+    {
+     "start_s": 3.67,
+     "end_s": 4.67,
+     "start_frame": 110,
+     "end_frame": 140,
+     "text_display": "Ahmad Nayfeh.",
+     "text_tts": "Ahmad Nayfeh."
+    }
+   ]
+  }
+ ]
+}

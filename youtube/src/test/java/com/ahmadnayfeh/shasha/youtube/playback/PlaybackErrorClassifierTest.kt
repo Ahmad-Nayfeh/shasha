@@ -1,6 +1,9 @@
 package com.ahmadnayfeh.shasha.youtube.playback
 
 import android.net.Uri
+import androidx.media3.common.C
+import androidx.media3.common.Format
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.ParserException
 import androidx.media3.common.PlaybackException
 import androidx.media3.datasource.DataSpec
@@ -75,11 +78,55 @@ class PlaybackErrorClassifierTest {
 
     @Test
     fun anythingElseIsExtractionBrokenNamedByTheErrorCode() {
-        classify(PlaybackException("decoder", null, PlaybackException.ERROR_CODE_DECODER_INIT_FAILED)).let {
+        classify(PlaybackException("who knows", null, PlaybackException.ERROR_CODE_UNSPECIFIED)).let {
             assertThat(it.kind).isEqualTo(SourceErrorKind.EXTRACTION_BROKEN)
-            assertThat(it.technicalName).isEqualTo("ERROR_CODE_DECODER_INIT_FAILED")
+            assertThat(it.technicalName).isEqualTo("ERROR_CODE_UNSPECIFIED")
         }
         assertThat(classify(IllegalStateException("boom")).technicalName).isEqualTo("IllegalStateException")
+    }
+
+    /** What ExoPlayer's video renderer throws when the device's MediaCodec fails on a picture. */
+    private fun decoderError(code: Int, cause: Throwable = IllegalStateException("codec died")) = ExoPlaybackException.createForRenderer(
+        cause, "MediaCodecVideoRenderer", 0, Format.Builder().setSampleMimeType(MimeTypes.VIDEO_H264).setWidth(1080).setHeight(1920).build(),
+        C.FORMAT_HANDLED, /* mediaPeriodId= */ null, /* isRecoverable= */ false, code,
+    )
+
+    /**
+     * A decoder of this device that cannot start or decode is neither YouTube changing something (the old answer,
+     * EXTRACTION_BROKEN, which tells the viewer to update the app) nor an HTTP or connectivity problem.
+     */
+    @Test
+    fun theDevicesDecoderFailingIsDeviceDecoderNamedByTheErrorCode() {
+        val codes = mapOf(
+            PlaybackException.ERROR_CODE_DECODER_INIT_FAILED to "ERROR_CODE_DECODER_INIT_FAILED",
+            PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED to "ERROR_CODE_DECODER_QUERY_FAILED",
+            PlaybackException.ERROR_CODE_DECODING_FAILED to "ERROR_CODE_DECODING_FAILED",
+            PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES to "ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES",
+            PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED to "ERROR_CODE_DECODING_FORMAT_UNSUPPORTED",
+            PlaybackException.ERROR_CODE_DECODING_RESOURCES_RECLAIMED to "ERROR_CODE_DECODING_RESOURCES_RECLAIMED",
+        )
+        for ((code, name) in codes) {
+            classify(PlaybackException("decoder", null, code)).let {
+                assertThat(it.kind).isEqualTo(SourceErrorKind.DEVICE_DECODER)
+                assertThat(it.technicalName).isEqualTo(name)
+            }
+            // The way ExoPlayer really reports it: a renderer error with the format it was decoding, caused by the codec.
+            classify(decoderError(code)).let {
+                assertThat(it.kind).isEqualTo(SourceErrorKind.DEVICE_DECODER)
+                assertThat(it.technicalName).isEqualTo(name)
+            }
+        }
+    }
+
+    @Test
+    fun aDecoderErrorCodeDoesNotHideWhatIsMoreSpecific() {
+        // Connectivity and HTTP statuses keep their kind, even under a decoder's error code.
+        val offline = UnknownHostException("rr1---sn-a.googlevideo.com")
+        assertThat(classify(decoderError(PlaybackException.ERROR_CODE_DECODING_FAILED, offline)).kind).isEqualTo(SourceErrorKind.NETWORK)
+        assertThat(classify(decoderError(PlaybackException.ERROR_CODE_DECODING_FAILED, status(403))).kind).isEqualTo(SourceErrorKind.BLOCKED_403)
+        // And it is more specific than "the data is not what the player expected".
+        val parser = ParserException.createForMalformedManifest("bad mpd", null)
+        assertThat(classify(decoderError(PlaybackException.ERROR_CODE_DECODER_INIT_FAILED, parser)).kind).isEqualTo(SourceErrorKind.DEVICE_DECODER)
     }
 
     @Test

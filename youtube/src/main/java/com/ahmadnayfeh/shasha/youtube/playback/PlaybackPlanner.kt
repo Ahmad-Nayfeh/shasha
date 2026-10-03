@@ -41,6 +41,24 @@ internal data class SubtitlePart(val url: String, val mimeType: String, val lang
 internal data class PlaybackPlan(val parts: List<MediaPart>, val subtitle: SubtitlePart?, val isLive: Boolean)
 
 /**
+ * What the player asks of the picture beyond the quality cap (the `maxHeight` of [PlaybackPlanner.plan]).
+ *
+ * @property maxPortraitShortSide the short side a vertical picture (taller than wide) may have, whatever the quality cap;
+ * ≤ 0: none. The TV asks for 720: a 9:16 picture is 607 px wide on a 1080p screen, so more pixels are never seen, and the
+ * decoders of weak TV SoCs fail on the biggest vertical ones. A phone shows vertical video natively and asks for none.
+ * @property safe the retry after a decoder failure ([DecoderRetry]): H.264 only, and on the short side at most
+ * [SafePlan.MAX_PORTRAIT_SHORT_SIDE] for a vertical picture and [SafePlan.MAX_LANDSCAPE_SHORT_SIDE] for a horizontal one.
+ */
+internal data class PlanLimits(val maxPortraitShortSide: Int = 0, val safe: Boolean = false) {
+    /** The highest quality (short side) a picture of this orientation may have under the overall cap [maxHeight] (≤ 0: none). */
+    fun shortSideCap(portrait: Boolean, maxHeight: Int): Int = listOfNotNull(
+        maxHeight.takeIf { it > 0 },
+        maxPortraitShortSide.takeIf { portrait && it > 0 },
+        if (!safe) null else if (portrait) SafePlan.MAX_PORTRAIT_SHORT_SIDE else SafePlan.MAX_LANDSCAPE_SHORT_SIDE,
+    ).minOrNull() ?: Int.MAX_VALUE
+}
+
+/**
  * A muxed-only result at or below this height is a broken extraction (SPEC: "360p only" → error screen), unless
  * the caller allowed low quality (VideoSource.stream's allowLowQuality: then it plays, and the app shows it).
  */
@@ -66,18 +84,30 @@ internal fun VideoStream.heightOrResolution(): Int =
  *   without audio is never played (a mute picture is a failure too).
  * - Live: HLS, else the DASH manifest URL. Ended live (post-live DVR) and OTF: NPE's manifest creators.
  *
+ * The video qualities also answer to [PlanLimits] (a cap for vertical pictures, the safe plan) and to [failures]: what a
+ * decoder of this device already failed on in this run is left out of every later plan ([selectVideos]).
+ *
  * StreamMapper.checkPlayable applies the same rules when the stream is extracted, so its verdict
  * (e.g. when the policy looks a video up) is the one the player would reach.
  */
 @OptIn(UnstableApi::class)
-internal class PlaybackPlanner(private val decoders: VideoDecoderCheck) {
+internal class PlaybackPlanner(
+    private val decoders: VideoDecoderCheck,
+    private val failures: DecoderFailures = DecoderFailures(),
+) {
 
-    fun plan(info: StreamInfo, maxHeight: Int, subtitleLanguage: String?, allowLowQuality: Boolean = false): PlaybackPlan =
+    fun plan(
+        info: StreamInfo,
+        maxHeight: Int,
+        subtitleLanguage: String?,
+        allowLowQuality: Boolean = false,
+        limits: PlanLimits = PlanLimits(),
+    ): PlaybackPlan =
         when (info.streamType) {
             StreamType.LIVE_STREAM, StreamType.AUDIO_LIVE_STREAM -> livePlan(info)
             StreamType.POST_LIVE_STREAM, StreamType.POST_LIVE_AUDIO_STREAM ->
-                PlaybackPlan(postLiveParts(info, maxHeight, allowLowQuality), subtitle(info, subtitleLanguage), isLive = false)
-            else -> PlaybackPlan(vodParts(info, maxHeight, allowLowQuality), subtitle(info, subtitleLanguage), isLive = false)
+                PlaybackPlan(postLiveParts(info, maxHeight, allowLowQuality, limits), subtitle(info, subtitleLanguage), isLive = false)
+            else -> PlaybackPlan(vodParts(info, maxHeight, allowLowQuality, limits), subtitle(info, subtitleLanguage), isLive = false)
         }
 
     private fun livePlan(info: StreamInfo): PlaybackPlan {
@@ -87,9 +117,9 @@ internal class PlaybackPlanner(private val decoders: VideoDecoderCheck) {
         return PlaybackPlan(listOf(part), subtitle = null, isLive = true)
     }
 
-    private fun vodParts(info: StreamInfo, maxHeight: Int, allowLowQuality: Boolean): List<MediaPart> {
+    private fun vodParts(info: StreamInfo, maxHeight: Int, allowLowQuality: Boolean, limits: PlanLimits): List<MediaPart> {
         val durationSeconds = info.duration
-        val videos = selectVideos(info.videoOnlyStreams.orEmpty(), maxHeight)
+        val videos = selectVideos(info.videoOnlyStreams.orEmpty(), maxHeight, limits)
         val audios = preferredAudio(info.audioStreams.orEmpty())
         val rangedVideos = videos.filter { it.stream.hasIndexRanges() }
         val rangedAudios = audios.filter { it.hasIndexRanges() }
@@ -107,9 +137,9 @@ internal class PlaybackPlanner(private val decoders: VideoDecoderCheck) {
         return fallbackParts(info, maxHeight, videoWithoutAudio = hasVideo, audioOnly = audioOnly, allowLowQuality = allowLowQuality)
     }
 
-    private fun postLiveParts(info: StreamInfo, maxHeight: Int, allowLowQuality: Boolean): List<MediaPart> {
+    private fun postLiveParts(info: StreamInfo, maxHeight: Int, allowLowQuality: Boolean, limits: PlanLimits): List<MediaPart> {
         val durationSeconds = info.duration
-        val video = selectVideos(info.videoOnlyStreams.orEmpty(), maxHeight).firstNotNullOfOrNull { postLivePart(it.stream, durationSeconds) }
+        val video = selectVideos(info.videoOnlyStreams.orEmpty(), maxHeight, limits).firstNotNullOfOrNull { postLivePart(it.stream, durationSeconds) }
         val audio = preferredAudio(info.audioStreams.orEmpty()).firstNotNullOfOrNull { postLivePart(it, durationSeconds) }
         if (video != null && audio != null) return listOf(video, audio)
         val audioOnly = if (info.streamType == StreamType.POST_LIVE_AUDIO_STREAM) listOfNotNull(audio) else emptyList()
@@ -187,24 +217,34 @@ internal class PlaybackPlanner(private val decoders: VideoDecoderCheck) {
     ) {
         /** YouTube's quality label ("1080p") is the short side: vertical videos are 1080x1920. */
         val quality: Int get() = if (width > 0 && height > 0) minOf(width, height) else height
+
+        /** A vertical picture (a Short): taller than wide. A size the stream does not say is not vertical. */
+        val isPortrait: Boolean get() = width > 0 && height > width
     }
 
     /**
      * Video-only streams to offer, best first:
+     * - no HDR (SDR versions always exist);
+     * - nothing a decoder of this device already failed on in this run ([failures]: that codec's pictures from the size that
+     *   failed up, in that orientation); if that leaves nothing, the failures are not held against the video, it is
+     *   better to try than to give up;
+     * - with [PlanLimits.safe], H.264 only (unless the video has none);
      * - only what the device decodes in hardware (software decoding stutters on TV CPUs); if nothing has
      *   a hardware decoder, software-decodable ones except AV1; if the device reports nothing, H.264.
-     * - no HDR (SDR versions always exist);
-     * - quality (short side) ≤ [maxHeight], or the lowest quality when nothing fits.
+     * - quality (short side) ≤ [maxHeight] and ≤ what [limits] allow for its orientation, or the lowest quality when
+     *   nothing fits.
      */
-    internal fun selectVideos(streams: List<VideoStream>, maxHeight: Int): List<VideoCandidate> {
+    internal fun selectVideos(streams: List<VideoStream>, maxHeight: Int, limits: PlanLimits = PlanLimits()): List<VideoCandidate> {
         val all = streams.filter { it.isVideoOnly() }.mapNotNull(::candidate)
         if (all.isEmpty()) return emptyList()
         val sdr = all.filterNot { VideoCodecs.isHdr(it.codecs) }.ifEmpty { all }
-        val decodable = sdr.filter { it.decoder == DecoderKind.HARDWARE }
-            .ifEmpty { sdr.filter { it.decoder == DecoderKind.SOFTWARE && VideoCodecs.family(it.codecs) != "av01" } }
-            .ifEmpty { sdr.filter { VideoCodecs.family(it.codecs) == "avc1" } }
-            .ifEmpty { sdr }
-        val capped = if (maxHeight <= 0) decodable else decodable.filter { it.quality <= maxHeight }
+        val untried = sdr.filterNot { failures.rulesOut(it.codecs, it.width, it.height) }.ifEmpty { sdr }
+        val allowed = if (limits.safe) untried.filter { VideoCodecs.family(it.codecs) == "avc1" }.ifEmpty { untried } else untried
+        val decodable = allowed.filter { it.decoder == DecoderKind.HARDWARE }
+            .ifEmpty { allowed.filter { it.decoder == DecoderKind.SOFTWARE && VideoCodecs.family(it.codecs) != "av01" } }
+            .ifEmpty { allowed.filter { VideoCodecs.family(it.codecs) == "avc1" } }
+            .ifEmpty { allowed }
+        val capped = decodable.filter { it.quality <= limits.shortSideCap(it.isPortrait, maxHeight) }
             .ifEmpty { decodable.minOf { it.quality }.let { lowest -> decodable.filter { it.quality == lowest } } }
         return capped.sortedWith(
             compareByDescending<VideoCandidate> { it.quality }

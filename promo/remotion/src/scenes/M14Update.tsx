@@ -4,6 +4,7 @@ import {brand} from '../brand';
 import {SettingsPage, UpdatePage} from '../components/MobileScreens';
 import {Callout, MobileHeader, PhoneStage, TapAt} from '../components/MobileStage';
 import {easeInOut, tween} from '../lib/anim';
+import {t} from '../lib/lang';
 import {beatsFor, Scene} from '../lib/timeline';
 
 // m14 — updates with one button: Settings → «فحص التحديثات» → «نزّل وثبّت»; the download and the install go on
@@ -27,7 +28,7 @@ export const M14Update: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <MobileHeader kicker="التحديث" title="التحديث بضغطة واحدة" />
+      <MobileHeader kicker={t('التحديث')} title={t('التحديث بضغطة واحدة')} />
       <PhoneStage f={f} from={-60} glow={brand.primary}>
         <SettingsPage hiUpdate={tween(f, tPress - 2, 8)} />
         <div style={{position: 'absolute', inset: 0, opacity: toUpdate}}>
@@ -37,9 +38,9 @@ export const M14Update: React.FC<{scene: Scene}> = ({scene}) => {
         <TapAt f={f} at={tapBtn} x={195} y={373} />
       </PhoneStage>
 
-      <Callout f={f} at={tNew - 4} icon="download" title="إصدار جديد" sub="١٫٢٫٠" top={300} tone="amber" />
-      <Callout f={f} at={tOne - 4} icon="check" title="زر واحد" sub="«نزّل وثبّت»" top={470} />
-      <Callout f={f} at={tStart - 2} icon="refresh" title="وحدهما" sub="التنزيل ثم التثبيت" top={640} />
+      <Callout f={f} at={tNew - 4} icon="download" title={t('إصدار جديد')} sub={t('١٫٢٫٠')} top={300} tone="amber" />
+      <Callout f={f} at={tOne - 4} icon="check" title={t('زر واحد')} sub={t('«نزّل وثبّت»')} top={470} />
+      <Callout f={f} at={tStart - 2} icon="refresh" title={t('وحدهما')} sub={t('التنزيل ثم التثبيت')} top={640} />
     </div>
   );
 };

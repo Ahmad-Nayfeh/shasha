@@ -232,12 +232,12 @@ class PhoneSettings(
         override suspend fun apply(value: JsonElement, before: Snapshot): Outcome = write(value, before)
     }
 
-    /** The adult's way out only matters while the adult's «الوضع الجاد» is on (v1.2: the switches are separate). */
+    /** The adult's way out only matters while the adult's «الوضع الجاد» is on (v1.1.1: the switches are separate). */
     private val serious = mapOf(BehaviorKeys.SERIOUS_MODE_ADULT.name to JsonPrimitive(true))
     private val escape = serious + (BehaviorKeys.ADULT_ESCAPE.name to JsonPrimitive(true))
 
     private val definitions: List<Def> = listOf(
-        // «الوضع الجاد»: v1.2, one switch for the children's profiles and one for the adult's.
+        // «الوضع الجاد»: v1.1.1, one switch for the children's profiles and one for the adult's.
         Switch(
             BehaviorKeys.SERIOUS_MODE_CHILDREN.name, GROUP_SERIOUS, R.string.serious_children, R.string.serious_children_body,
             { it.behavior.seriousModeChildren }, Behavior.DEFAULT.seriousModeChildren, { behavior.setSeriousModeChildren(it) },

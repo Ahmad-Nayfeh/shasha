@@ -23,6 +23,7 @@ import coil3.annotation.ExperimentalCoilApi
 import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
+import com.ahmadnayfeh.shasha.PromoEnglish
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.TV_1080P_EN
 import com.ahmadnayfeh.shasha.data.AppLanguage
@@ -85,6 +86,7 @@ class AppearanceScreenshotTest {
         waitFor: String? = null,
         content: @Composable () -> Unit,
     ) {
+        PromoEnglish.assumeRecorded(name)
         val pictures = AsyncImagePreviewHandler { request -> UiFixtures.fakeThumbnail(request.data.toString()).asImage() }
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true, LocalAsyncImagePreviewHandler provides pictures) {

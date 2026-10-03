@@ -24,6 +24,7 @@ import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.BehaviorKeys
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
+import com.ahmadnayfeh.shasha.ui.settings.remote.PairingStatus
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
@@ -303,8 +304,13 @@ class SettingsBehaviorPanesTest {
     }
 
     @Test
-    fun thePortRow_isInTheRemotePane_underThePairing() {
+    fun thePortRow_showsOnlyWhenItMatters_underThePairing() {
+        // Running on the original port: nothing technical in the pane.
         show(SettingsCategory.REMOTE)
+        assertThat(exists("hub_remote_port")).isFalse()
+        // The server could not start (another app holds the port): the port shows, to choose another.
+        state = state.copy(remote = RemoteSummary(enabled = true, status = PairingStatus.FAILED))
+        compose.waitForIdle()
         press(Key.DirectionDown)
         press(Key.DirectionDown)
         compose.onNodeWithTag("hub_remote_port").assertIsFocused()

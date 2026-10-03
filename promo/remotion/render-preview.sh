@@ -3,14 +3,17 @@
 # (keep it <= 300 frames = 10 s on the shared machine). Scene frames: see ../timeline.json (TV) or
 # ../timeline-mobile.json (phone, with COMP=Mobile).
 #   COMP=Mobile ./render-preview.sh 1584 1884
+#   VIDEO_LANG=en ./render-preview.sh 0 299        the English version (frames of ../timeline-en.json)
 set -euo pipefail
 cd "$(dirname "$0")"
 FF=../bin/ffmpeg
 COMP=${COMP:-Main}
-if [ "$COMP" = Mobile ]; then AUD=public/audio-mobile; else AUD=public/audio; fi
-A=$1; B=$2; OUT=${3:-out/preview_${COMP}_${A}-${B}.mp4}
+SFX=$([ "${VIDEO_LANG:-ar}" = en ] && printf %s -en || true)
+if [ "$COMP" = Mobile ]; then AUD=public/audio-mobile$SFX; else AUD=public/audio$SFX; fi
+PROPS=$([ -n "$SFX" ] && echo '--props={"lang":"en"}' || true)
+A=$1; B=$2; OUT=${3:-out/preview_${COMP}${SFX}_${A}-${B}.mp4}
 mkdir -p "$(dirname "$OUT")"
-npx remotion render src/index.ts "$COMP" out/.pv.mp4 --muted --concurrency="${CONCURRENCY:-1}" --frames="$A-$B" --log=error
+npx remotion render src/index.ts "$COMP" out/.pv.mp4 --muted --concurrency="${CONCURRENCY:-1}" --frames="$A-$B" --log=error $PROPS
 SS=$(awk -v a="$A" 'BEGIN{printf "%.6f", a/30}')
 DUR=$(awk -v a="$A" -v b="$B" 'BEGIN{printf "%.6f", (b-a+1)/30}')
 "$FF" -v error -y -ss "$SS" -t "$DUR" -i "$AUD/narration_full.wav" -ss "$SS" -t "$DUR" -i "$AUD/music_bed.wav" \

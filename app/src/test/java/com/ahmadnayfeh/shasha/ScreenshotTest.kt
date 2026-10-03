@@ -9,13 +9,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.res.stringResource
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import coil3.annotation.ExperimentalCoilApi
 import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
+import com.ahmadnayfeh.shasha.PromoEnglish.en
 import com.ahmadnayfeh.shasha.player.PlaybackProgress
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoaderWithText
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
@@ -24,7 +24,6 @@ import com.ahmadnayfeh.shasha.ui.screens.player.PlayerErrorScreen
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerOsd
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
-import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,20 +40,21 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = TV_1080P)
 class ScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     @OptIn(ExperimentalCoilApi::class)
     private fun snap(name: String, content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         val pictures = AsyncImagePreviewHandler { request ->
             Fixtures.fakePicture(640, 360, seed = request.data.toString().length).asImage()
         }
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true, LocalAsyncImagePreviewHandler provides pictures) {
-                ShashaTheme { content() }
+                ShashaTheme(language = PromoEnglish.language()) { content() }
             }
         }
         compose.waitForIdle()
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     @Test
@@ -71,7 +71,7 @@ class ScreenshotTest {
     fun playerOsdHiddenWithSubtitle() = snap("player_subtitle_controls_hidden") {
         OverFakeVideo {
             PlayerOsd(
-                Fixtures.osd.copy(cueText = "هذه الكائنات تعيش على عمق أربعة آلاف متر\nحيث لا يصل ضوء الشمس أبداً"),
+                Fixtures.osd.copy(cueText = en("هذه الكائنات تعيش على عمق أربعة آلاف متر\nحيث لا يصل ضوء الشمس أبداً")),
                 { Fixtures.progress },
                 {},
                 {},
@@ -118,7 +118,7 @@ class ScreenshotTest {
     @Test
     fun playerLoading() = snap("player_loading") {
         Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-            ShashaLoaderWithText("جارٍ تجهيز الفيديو…")
+            ShashaLoaderWithText(stringResource(R.string.player_loading))
         }
     }
 
@@ -146,6 +146,19 @@ class ScreenshotTest {
             onBack = {},
             onRetry = {},
             onPlayLowQuality = {},
+        )
+    }
+
+    /** The TV's own decoder failed twice (the safe retry too): no blame on YouTube, no update to look for, another try. */
+    @Test
+    fun playerErrorDeviceDecoder() = snap("player_error_device_decoder") {
+        PlayerErrorScreen(
+            Fixtures.error(SourceErrorKind.DEVICE_DECODER, "ERROR_CODE_DECODING_FAILED"),
+            extractorVersion = "v0.26.5",
+            onCheckUpdates = {},
+            onBack = {},
+            onRetry = {},
+            onPlayLowQuality = null,
         )
     }
 

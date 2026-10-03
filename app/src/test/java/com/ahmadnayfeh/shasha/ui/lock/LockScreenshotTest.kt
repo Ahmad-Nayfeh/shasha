@@ -10,13 +10,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.Fixtures
+import com.ahmadnayfeh.shasha.PromoEnglish
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.lock.ProtectionStatus
 import com.ahmadnayfeh.shasha.lock.ReturnTime
@@ -28,7 +27,6 @@ import com.ahmadnayfeh.shasha.ui.screens.player.PlaybackEnd
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerOsd
 import com.ahmadnayfeh.shasha.ui.theme.KidsAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
-import com.github.takahirom.roborazzi.captureRoboImage
 import androidx.compose.foundation.layout.padding
 import org.junit.Rule
 import org.junit.Test
@@ -47,16 +45,17 @@ import java.time.ZoneId
 @Config(sdk = [35], qualifiers = TV_1080P)
 class LockScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     private fun snap(name: String, content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true) {
-                ShashaTheme { content() }
+                ShashaTheme(language = PromoEnglish.language()) { content() }
             }
         }
         compose.waitForIdle()
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     @Test
@@ -146,7 +145,7 @@ class LockScreenshotTest {
         }
         compose.onNodeWithTag("protection_limits").performScrollTo()
         compose.waitForIdle()
-        compose.onRoot().captureRoboImage("src/test/screenshots/protection_ok_limits.png")
+        PromoEnglish.capture(compose, "protection_ok_limits")
     }
 
     @Composable

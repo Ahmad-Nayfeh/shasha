@@ -1,0 +1,481 @@
+{
+ "fps": 30,
+ "width": 1920,
+ "height": 1080,
+ "total_duration_s": 100.167,
+ "total_frames": 3005,
+ "narration_track": "audio-mobile-en/narration_full.wav",
+ "tts": {
+  "engine": "ElevenLabs text-to-speech with character timestamps",
+  "voice_id": "pCKbQ4EPGE06zpEPGNvS",
+  "voice": "Abdullah - Professional, and Energetic",
+  "model": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_192",
+  "text_field": "tts",
+  "pauses_s": {
+   "comma": 0.25,
+   "colon": 0.3,
+   "sentence": 0.5,
+   "beat": 0.9
+  },
+  "note": "phrase-by-phrase synthesis (previous_text/next_text for continuity), silences inserted by us"
+ },
+ "loudness": {
+  "target": "-16 LUFS integrated, true peak <= -1.5 dBTP (EBU R128 / ffmpeg loudnorm)",
+  "measured_combined": {
+   "integrated_lufs": -16.01,
+   "true_peak_dbtp": -2.05,
+   "lra": 2.9
+  }
+ },
+ "asr_check": null,
+ "padding_s": {
+  "lead_in": 0.3,
+  "tail": 0.4,
+  "section_extra": 0.6,
+  "first_lead": 2.2,
+  "last_hold": 3.0
+ },
+ "scenes": [
+  {
+   "id": "m01_intro",
+   "section": "intro",
+   "title": "Shasha on your phone",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m01_intro.wav",
+   "audio_duration_s": 4.85,
+   "start_s": 0.0,
+   "duration_s": 7.467,
+   "start_frame": 0,
+   "duration_frames": 224,
+   "voice_offset_s": 2.2,
+   "voice_offset_frames": 66,
+   "cues": [
+    {
+     "start_s": 2.3,
+     "end_s": 4.08,
+     "start_frame": 69,
+     "end_frame": 122,
+     "text_display": "Shasha is on your Android phone too:",
+     "text_tts": "Shasha is on your Android phone too:"
+    },
+    {
+     "start_s": 4.38,
+     "end_s": 6.95,
+     "start_frame": 131,
+     "end_frame": 208,
+     "text_display": "a calm YouTube, with no ads and no sign-in.",
+     "text_tts": "a calm YouTube, with no ads and no sign-in."
+    }
+   ]
+  },
+  {
+   "id": "m02_download",
+   "section": "install",
+   "title": "Downloading the app",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m02_download.wav",
+   "audio_duration_s": 4.9,
+   "start_s": 7.467,
+   "duration_s": 6.2,
+   "start_frame": 224,
+   "duration_frames": 186,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 5.7,
+     "start_frame": 30,
+     "end_frame": 171,
+     "text_display": "Start by downloading the app file from the Shasha page on GitHub, and open it on your phone.",
+     "text_tts": "Start by downloading the app file from the Shasha page on GitHub, and open it on your phone."
+    }
+   ]
+  },
+  {
+   "id": "m03_allow",
+   "section": "install",
+   "title": "Allowing the install",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m03_allow.wav",
+   "audio_duration_s": 7.02,
+   "start_s": 13.667,
+   "duration_s": 7.733,
+   "start_frame": 410,
+   "duration_frames": 232,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 1.46,
+     "start_frame": 12,
+     "end_frame": 44,
+     "text_display": "Your phone will ask:",
+     "text_tts": "Your phone will ask:"
+    },
+    {
+     "start_s": 1.76,
+     "end_s": 3.41,
+     "start_frame": 53,
+     "end_frame": 102,
+     "text_display": "allow installing from this source?",
+     "text_tts": "allow installing from this source?"
+    },
+    {
+     "start_s": 3.91,
+     "end_s": 5.7,
+     "start_frame": 117,
+     "end_frame": 171,
+     "text_display": "Allow it, then tap \"Install\".",
+     "text_tts": "Allow it, then tap Install."
+    },
+    {
+     "start_s": 6.2,
+     "end_s": 7.22,
+     "start_frame": 186,
+     "end_frame": 217,
+     "text_display": "It will not ask again.",
+     "text_tts": "It will not ask again."
+    }
+   ]
+  },
+  {
+   "id": "m05_search",
+   "section": "watch",
+   "title": "Search",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m05_search.wav",
+   "audio_duration_s": 6.75,
+   "start_s": 21.4,
+   "duration_s": 8.033,
+   "start_frame": 642,
+   "duration_frames": 241,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 3.469,
+     "start_frame": 30,
+     "end_frame": 104,
+     "text_display": "Open Search, and type what you want.",
+     "text_tts": "Open Search, and type what you want."
+    },
+    {
+     "start_s": 3.969,
+     "end_s": 7.55,
+     "start_frame": 119,
+     "end_frame": 226,
+     "text_display": "Videos, channels and playlists appear, with no ads between them.",
+     "text_tts": "Videos, channels and playlists appear, with no ads between them."
+    }
+   ]
+  },
+  {
+   "id": "m06_channel",
+   "section": "watch",
+   "title": "Channel page",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m06_channel.wav",
+   "audio_duration_s": 5.5,
+   "start_s": 29.433,
+   "duration_s": 6.2,
+   "start_frame": 883,
+   "duration_frames": 186,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 3.049,
+     "start_frame": 12,
+     "end_frame": 91,
+     "text_display": "On a channel page, you move between the sections:",
+     "text_tts": "On a channel page, you move between the sections:"
+    },
+    {
+     "start_s": 3.349,
+     "end_s": 5.7,
+     "start_frame": 100,
+     "end_frame": 171,
+     "text_display": "videos, Shorts, and playlists.",
+     "text_tts": "videos, Shorts, and playlists."
+    }
+   ]
+  },
+  {
+   "id": "m07_background",
+   "section": "player",
+   "title": "Background play",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m07_background.wav",
+   "audio_duration_s": 5.42,
+   "start_s": 35.633,
+   "duration_s": 6.733,
+   "start_frame": 1069,
+   "duration_frames": 202,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 2.45,
+     "start_frame": 30,
+     "end_frame": 74,
+     "text_display": "The player works in the background:",
+     "text_tts": "The player works in the background:"
+    },
+    {
+     "start_s": 2.75,
+     "end_s": 6.22,
+     "start_frame": 82,
+     "end_frame": 187,
+     "text_display": "the sound carries on while the screen is off, and you do whatever you like.",
+     "text_tts": "the sound carries on while the screen is off, and you do whatever you like."
+    }
+   ]
+  },
+  {
+   "id": "m08_pip",
+   "section": "player",
+   "title": "Picture in picture",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m08_pip.wav",
+   "audio_duration_s": 7.079,
+   "start_s": 42.367,
+   "duration_s": 7.767,
+   "start_frame": 1271,
+   "duration_frames": 233,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 7.279,
+     "start_frame": 12,
+     "end_frame": 218,
+     "text_display": "And with one tap, the video becomes a small floating window, called \"picture in picture\", so you keep watching while you do something else.",
+     "text_tts": "And with one tap, the video becomes a small floating window, called picture in picture, so you keep watching while you do something else."
+    }
+   ]
+  },
+  {
+   "id": "m09_speed",
+   "section": "player",
+   "title": "Speed",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m09_speed.wav",
+   "audio_duration_s": 5.891,
+   "start_s": 50.133,
+   "duration_s": 6.6,
+   "start_frame": 1504,
+   "duration_frames": 198,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 2.801,
+     "start_frame": 12,
+     "end_frame": 84,
+     "text_display": "You choose the playback speed that suits you:",
+     "text_tts": "You choose the playback speed that suits you:"
+    },
+    {
+     "start_s": 3.101,
+     "end_s": 6.091,
+     "start_frame": 93,
+     "end_frame": 183,
+     "text_display": "slower to understand, or faster to save time.",
+     "text_tts": "slower to understand, or faster to save time."
+    }
+   ]
+  },
+  {
+   "id": "m10_sponsor",
+   "section": "player",
+   "title": "Skipping sponsor segments",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m10_sponsor.wav",
+   "audio_duration_s": 5.23,
+   "start_s": 56.733,
+   "duration_s": 5.933,
+   "start_frame": 1702,
+   "duration_frames": 178,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 2.94,
+     "start_frame": 12,
+     "end_frame": 88,
+     "text_display": "And Shasha skips sponsor segments by itself:",
+     "text_tts": "And Shasha skips sponsor segments by itself:"
+    },
+    {
+     "start_s": 3.24,
+     "end_s": 5.43,
+     "start_frame": 97,
+     "end_frame": 163,
+     "text_display": "the ads the video's owner puts inside the video.",
+     "text_tts": "the ads the video's owner puts inside the video."
+    }
+   ]
+  },
+  {
+   "id": "m11_downloads",
+   "section": "library",
+   "title": "Downloads",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m11_downloads.wav",
+   "audio_duration_s": 7.176,
+   "start_s": 62.667,
+   "duration_s": 8.467,
+   "start_frame": 1880,
+   "duration_frames": 254,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 2.62,
+     "start_frame": 30,
+     "end_frame": 79,
+     "text_display": "For downloads you have two choices:",
+     "text_tts": "For downloads you have two choices:"
+    },
+    {
+     "start_s": 2.92,
+     "end_s": 5.08,
+     "start_frame": 88,
+     "end_frame": 152,
+     "text_display": "the whole video, or the audio only.",
+     "text_tts": "the whole video, or the audio only."
+    },
+    {
+     "start_s": 5.58,
+     "end_s": 7.976,
+     "start_frame": 167,
+     "end_frame": 239,
+     "text_display": "So you can watch it with no internet, anywhere.",
+     "text_tts": "So you can watch it with no internet, anywhere."
+    }
+   ]
+  },
+  {
+   "id": "m12_subscriptions",
+   "section": "library",
+   "title": "Subscriptions",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m12_subscriptions.wav",
+   "audio_duration_s": 4.9,
+   "start_s": 71.133,
+   "duration_s": 5.6,
+   "start_frame": 2134,
+   "duration_frames": 168,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 5.1,
+     "start_frame": 12,
+     "end_frame": 153,
+     "text_display": "You subscribe to the channels you love with one tap, and find all their new videos in one place.",
+     "text_tts": "You subscribe to the channels you love with one tap, and find all their new videos in one place."
+    }
+   ]
+  },
+  {
+   "id": "m13_history",
+   "section": "library",
+   "title": "Watch history",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m13_history.wav",
+   "audio_duration_s": 5.62,
+   "start_s": 76.733,
+   "duration_s": 6.333,
+   "start_frame": 2302,
+   "duration_frames": 190,
+   "voice_offset_s": 0.3,
+   "voice_offset_frames": 9,
+   "cues": [
+    {
+     "start_s": 0.4,
+     "end_s": 5.82,
+     "start_frame": 12,
+     "end_frame": 175,
+     "text_display": "In your watch history you find everything you watched, so you can continue any video from where you stopped.",
+     "text_tts": "In your watch history you find everything you watched, so you can continue any video from where you stopped."
+    }
+   ]
+  },
+  {
+   "id": "m14_update",
+   "section": "update",
+   "title": "One-button updates",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m14_update.wav",
+   "audio_duration_s": 5.983,
+   "start_s": 83.067,
+   "duration_s": 7.267,
+   "start_frame": 2492,
+   "duration_frames": 218,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 6.783,
+     "start_frame": 30,
+     "end_frame": 203,
+     "text_display": "When a new version is released, press one button in Settings, and the download and installation start by themselves.",
+     "text_tts": "When a new version is released, press one button in Settings, and the download and installation start by themselves."
+    }
+   ]
+  },
+  {
+   "id": "m15_outro",
+   "section": "outro",
+   "title": "Closing",
+   "step": null,
+   "audio": "audio-mobile-en/scenes/m15_outro.wav",
+   "audio_duration_s": 5.934,
+   "start_s": 90.333,
+   "duration_s": 9.833,
+   "start_frame": 2710,
+   "duration_frames": 295,
+   "voice_offset_s": 0.9,
+   "voice_offset_frames": 27,
+   "cues": [
+    {
+     "start_s": 1.0,
+     "end_s": 3.62,
+     "start_frame": 30,
+     "end_frame": 109,
+     "text_display": "Shasha, in your pocket, calm and safe.",
+     "text_tts": "Shasha, in your pocket, calm and safe."
+    },
+    {
+     "start_s": 4.12,
+     "end_s": 5.483,
+     "start_frame": 124,
+     "end_frame": 165,
+     "text_display": "Made with love for my family.",
+     "text_tts": "Made with love for my family."
+    },
+    {
+     "start_s": 5.983,
+     "end_s": 6.733,
+     "start_frame": 180,
+     "end_frame": 202,
+     "text_display": "Ahmad Nayfeh.",
+     "text_tts": "Ahmad Nayfeh."
+    }
+   ]
+  }
+ ]
+}

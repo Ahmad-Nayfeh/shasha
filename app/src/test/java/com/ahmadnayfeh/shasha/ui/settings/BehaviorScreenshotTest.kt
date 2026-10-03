@@ -15,12 +15,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.ahmadnayfeh.shasha.PromoEnglish
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.data.Behavior
 import com.ahmadnayfeh.shasha.data.PhraseMode
@@ -30,7 +30,6 @@ import com.ahmadnayfeh.shasha.ui.main.MainShell
 import com.ahmadnayfeh.shasha.ui.main.Tab
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
-import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -47,28 +46,30 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = TV_1080P)
 class BehaviorScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     private fun snap(name: String, category: SettingsCategory, state: SettingsHubState = SettingsHubFixtures.state(), keys: List<Key> = emptyList()) {
+        PromoEnglish.assumeRecorded(name)
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true) {
-                ShashaTheme { Hub(state, category) }
+                ShashaTheme(language = PromoEnglish.language()) { Hub(state, category) }
             }
         }
         compose.waitForIdle()
-        (listOf(Key.DirectionLeft) + keys).forEach { key ->
+        (listOf(PromoEnglish.mirror(Key.DirectionLeft)) + keys).forEach { key ->
             compose.onRoot().performKeyInput { pressKey(key) }
             compose.waitForIdle()
         }
         compose.mainClock.advanceTimeBy(400)
         compose.waitForIdle()
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     private fun panel(name: String, content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true) {
-                ShashaTheme {
+                ShashaTheme(language = PromoEnglish.language()) {
                     Box(Modifier.fillMaxSize().background(ShashaColors.Background), contentAlignment = Alignment.Center) { content() }
                 }
             }
@@ -76,7 +77,7 @@ class BehaviorScreenshotTest {
         compose.waitForIdle()
         compose.mainClock.advanceTimeBy(400)
         compose.waitForIdle()
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     @Composable

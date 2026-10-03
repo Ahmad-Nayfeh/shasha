@@ -1,5 +1,6 @@
 package com.ahmadnayfeh.shasha.mobile.data
 
+import android.util.Log
 import com.ahmadnayfeh.shasha.mobile.data.db.FeedDao
 import com.ahmadnayfeh.shasha.mobile.data.db.FeedItemEntity
 import com.ahmadnayfeh.shasha.mobile.data.db.HistoryDao
@@ -15,6 +16,7 @@ import com.ahmadnayfeh.shasha.mobile.data.db.WatchProgressEntity
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
+import com.ahmadnayfeh.shasha.youtube.safety.ExplicitFilter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -62,8 +64,9 @@ fun VideoItem.toWatchLaterEntity(addedAt: Long) = WatchLaterEntity(
     durationSeconds = durationSeconds, addedAt = addedAt,
 )
 
+/** A channel whose name is not known (its page could not be read) is stored under its id until a page says better ([SubscriptionRepository.updateDetails]). */
 fun ChannelItem.toSubscription(subscribedAt: Long) =
-    SubscriptionEntity(channelId = channelId, name = name, avatarUrl = avatarUrl, subscribedAt = subscribedAt)
+    SubscriptionEntity(channelId = channelId, name = name.trim().ifEmpty { channelId }, avatarUrl = avatarUrl, subscribedAt = subscribedAt)
 
 fun SubscriptionEntity.toChannelItem() = ChannelItem(channelId = channelId, name = name, avatarUrl = avatarUrl, subscriberCount = null)
 
@@ -79,7 +82,30 @@ class SubscriptionRepository(
 
     fun isSubscribed(channelId: String): Flow<Boolean> = dao.observeIsSubscribed(channelId)
 
+    /** What is stored of a followed channel, as a channel; null when the viewer does not follow it. */
+    suspend fun find(channelId: String): ChannelItem? = dao.get(channelId)?.toChannelItem()
+
     suspend fun subscribe(channel: ChannelItem) = dao.upsert(channel.toSubscription(now()))
+
+    /**
+     * Keeps a followed channel's name and picture current from a page of it that loaded (the channel's own page, or the page of
+     * one of its videos): a missing picture is filled in, a changed one replaced, and a page without one leaves the stored one.
+     * This is how subscriptions that were saved without a picture (YouTube's page for the channel could not be read when the
+     * viewer subscribed) get it later. Nothing happens for a channel that is not followed, or for a name that is blank; one
+     * UPDATE that writes only when something changed, so it is cheap enough to call whenever such a page loads. Best effort:
+     * a page that has loaded must not fail because this could not be written, so a database error is only logged.
+     */
+    suspend fun updateDetails(channel: ChannelItem) {
+        val name = channel.name.trim()
+        if (name.isEmpty()) return
+        try {
+            dao.updateDetails(channel.channelId, name, channel.avatarUrl)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w("SubscriptionRepository", "${channel.channelId}: the stored details could not be updated: ${e.javaClass.simpleName}: ${e.message}")
+        }
+    }
 
     /** The channel's cached uploads leave the feed with it. */
     suspend fun unsubscribe(channelId: String) {
@@ -108,8 +134,13 @@ class FeedRepository(
     private val now: () -> Long = System::currentTimeMillis,
     private val concurrency: Int = 4,
 ) {
-    /** The newest uploads, at most [FEED_LIMIT]. */
-    val feed: Flow<List<VideoItem>> = feedDao.observe(FEED_LIMIT).map { rows -> rows.map { it.toVideoItem() } }
+    /**
+     * The newest uploads, at most [FEED_LIMIT], without what the built-in filter holds back: the source no longer hands such
+     * uploads out, but a feed stored before that (or by an older version) may still hold some.
+     */
+    val feed: Flow<List<VideoItem>> = feedDao.observe(FEED_LIMIT).map { rows ->
+        rows.filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) }.map { it.toVideoItem() }
+    }
 
     val refreshedAt: Flow<Long> = settings.feedRefreshedAt
 
@@ -179,8 +210,13 @@ class LibraryRepository(
     private val progress: ProgressDao,
     private val now: () -> Long = System::currentTimeMillis,
 ) {
-    val historyItems: Flow<List<VideoItem>> = history.observe(HISTORY_LIMIT).map { rows -> rows.map { it.toVideoItem() } }
-    val watchLaterItems: Flow<List<VideoItem>> = watchLater.observeAll().map { rows -> rows.map { it.toVideoItem() } }
+    // Without what the built-in filter holds back (a video watched or saved before it existed stays out of sight; it is not deleted).
+    val historyItems: Flow<List<VideoItem>> = history.observe(HISTORY_LIMIT).map { rows ->
+        rows.filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) }.map { it.toVideoItem() }
+    }
+    val watchLaterItems: Flow<List<VideoItem>> = watchLater.observeAll().map { rows ->
+        rows.filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) }.map { it.toVideoItem() }
+    }
 
     /** Video id → how much of it was watched (0..1), for the bar under its thumbnail. */
     val watchedFractions: Flow<Map<String, Float>> = progress.observeRecent().map { rows ->
@@ -242,13 +278,15 @@ class LibraryRepository(
     }
 }
 
-/** Recent searches, newest first. */
+/** Recent searches, newest first; one the built-in filter holds back is neither kept nor offered again. */
 class SearchHistoryRepository(private val dao: SearchHistoryDao, private val now: () -> Long = System::currentTimeMillis) {
-    val recent: Flow<List<String>> = dao.observe(LIMIT).map { rows -> rows.map { it.query } }
+    val recent: Flow<List<String>> = dao.observe(LIMIT).map { rows ->
+        rows.map { it.query }.filterNot { ExplicitFilter.default.isExplicit(it) }
+    }
 
     suspend fun add(query: String) {
         val text = query.trim()
-        if (text.isEmpty()) return
+        if (text.isEmpty() || ExplicitFilter.default.isExplicit(text)) return
         dao.upsert(SearchHistoryEntity(text, now()))
         dao.trim(LIMIT * 2)
     }

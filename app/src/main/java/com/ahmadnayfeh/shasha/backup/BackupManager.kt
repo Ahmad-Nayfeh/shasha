@@ -320,7 +320,7 @@ class BackupManager(
 
         /**
          * Bump with every change a previous app could not read; [import] refuses newer ones and reads every older
-         * one. 2: the settings gained the "behavior" section (Serious Mode, timings, the PIN's brake…). 3 (v1.2):
+         * one. 2: the settings gained the "behavior" section (Serious Mode, timings, the PIN's brake…). 3 (v1.1.1):
          * «الوضع الجاد» is two switches, the children's and the adult's; a format-2 file's single switch sets both
          * (BehaviorSettings.backupSection).
          */

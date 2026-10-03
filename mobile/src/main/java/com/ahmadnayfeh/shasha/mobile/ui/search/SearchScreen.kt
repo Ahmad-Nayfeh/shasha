@@ -64,7 +64,7 @@ fun SearchScreen(
     container: AppContainer,
     initialQuery: String?,
     onOpenVideo: (VideoItem) -> Unit,
-    onOpenChannel: (String) -> Unit,
+    onOpenChannel: (ChannelItem) -> Unit,
     onOpenPlaylist: (String) -> Unit,
 ) {
     val vm: SearchViewModel = viewModel(factory = SearchViewModel.factory(container, initialQuery))
@@ -198,7 +198,7 @@ private fun Results(
     results: com.ahmadnayfeh.shasha.mobile.common.PagedState<com.ahmadnayfeh.shasha.youtube.SourceItem>,
     vm: SearchViewModel,
     onOpenVideo: (VideoItem) -> Unit,
-    onOpenChannel: (String) -> Unit,
+    onOpenChannel: (ChannelItem) -> Unit,
     onOpenPlaylist: (String) -> Unit,
 ) {
     val listState = rememberLazyListState()
@@ -215,7 +215,7 @@ private fun Results(
             items(results.items, key = { it.key() }) { item ->
                 when (item) {
                     is VideoItem -> VideoListItem(item, onClick = { onOpenVideo(item) })
-                    is ChannelItem -> ChannelListItem(item, onClick = { onOpenChannel(item.channelId) })
+                    is ChannelItem -> ChannelListItem(item, onClick = { onOpenChannel(item) })
                     is PlaylistItem -> PlaylistListItem(item, onClick = { onOpenPlaylist(item.playlistId) })
                 }
             }

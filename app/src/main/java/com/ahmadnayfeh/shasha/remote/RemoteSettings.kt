@@ -58,7 +58,7 @@ class RemoteSettings(private val store: DataStore<Preferences>, private val rand
     }
 
     /**
-     * v1.2: a phone has reached the server with the current token at least once (it scanned the QR code and opened the
+     * v1.1.1: a phone has reached the server with the current token at least once (it scanned the QR code and opened the
      * page). Kept across restarts, forgotten with a new token ([regenerateToken]). Not in the backup.
      */
     val phonePaired: Flow<Boolean> = store.data.map { it[PHONE_PAIRED] ?: false }.distinctUntilChanged()

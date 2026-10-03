@@ -1,0 +1,88 @@
+{
+ "_readme": [
+  "English anchors: per scene, the Arabic phrase a scene looks up (beatsFor(scene).at('…') / end('…'))",
+  "-> the English narration's phrase said at that moment (words of src/data/words*-en.json, case and punctuation ignored).",
+  "A value [phrase, n] picks the phrase's n-th occurrence (0-based); a key 'phrase#1' is the Arabic phrase's second occurrence.",
+  "Missing anchors fall back to the same relative moment of the scene (lib/timeline.ts). Check: node tools/check_i18n.mjs"
+ ],
+ "s18_need": {
+  "تحتاج": "You need",
+  "كمبيوتر شخصي": "personal computer",
+  "ويندوز": "Windows",
+  "على شبكة": "on the same"
+ },
+ "s19_download": {
+  "من صفحة": "from the Shasha",
+  "اضغط الملف": "click the zip",
+  "ثم زر": "then the download",
+  "ثم فك": "Then unzip",
+  "في ويندوز": "on Windows",
+  "بالزر الأيمن": "right-click",
+  "ثم استخراج": "then Extract",
+  "وفي ماك": "On a Mac",
+  "بنقرتين": "double-click"
+ },
+ "s21_devmode": {
+  "افتح الإعدادات": "open Settings",
+  "ثم النظام": "then System",
+  "ثم حول": "then About",
+  "انزل": "Scroll down",
+  "واضغط الزر": "and press",
+  "حتى تظهر": "until a message"
+ },
+ "s22_debugging": {
+  "ارجع": "go back",
+  "وافتح خيارات": "and open Developer",
+  "فعل تصحيح": "Turn on",
+  "وفعل تصحيح": "and Network"
+ },
+ "s23_find_ip": {
+  "من الإعدادات": "in Settings",
+  "افتح الشبكة": "open Network",
+  "إن كانت الشاشة": "On Wi-Fi",
+  "فاختر شبكتك": "choose your network",
+  "ثم آي بي": "then I P",
+  "وإن كانت موصولة": "On a cable",
+  "تحت إيثرنت": "under Ethernet",
+  "سجل العنوان": "Write it down",
+  "أرقاما": "numbers"
+ },
+ "s24_run_windows": {
+  "انقر مرتين": "double-click",
+  "وإن ظهر": "If a blue",
+  "فاختر مزيد": "choose More",
+  "ثم تشغيل": "then Run"
+ },
+ "s25_run_mac": {
+  "انقر مرتين": "double-click",
+  "وإن رفض": "If the Mac",
+  "فافتح إعدادات": "open System",
+  "ثم الخصوصية": "then Privacy",
+  "ثم فتح": "then Open"
+ },
+ "s26_type_ip": {
+  "سيسألك": "will ask",
+  "اكتب العنوان": "Type the address",
+  "ثم اضغط": "then press"
+ },
+ "s27_allow": {
+  "ستسألك": "will ask",
+  "ضع علامة": "Tick",
+  "ثم اضغط": "then press"
+ },
+ "s28_automatic": {
+  "يثبت": "installs the",
+  "ويمنحه": "gives it",
+  "ثم يسألك": "then asks",
+  "حرف واي": "letter Y",
+  "ثم يعرض": "Then it shows"
+ },
+ "s29_first_start": {
+  "أول تشغيل": "first start",
+  "اختر رمز": "Choose the",
+  "ثم أنشئ": "then create",
+  "وملف طفلك": "and your child's",
+  "بدقائقه": "daily minutes",
+  "ثم أضف": "Then add"
+ }
+}

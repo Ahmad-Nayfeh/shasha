@@ -37,12 +37,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ahmadnayfeh.shasha.mobile.AppContainer
 import com.ahmadnayfeh.shasha.mobile.R
 import com.ahmadnayfeh.shasha.mobile.data.db.DownloadStatus
+import com.ahmadnayfeh.shasha.mobile.data.toChannelItem
 import com.ahmadnayfeh.shasha.mobile.ui.components.ChannelListItem
 import com.ahmadnayfeh.shasha.mobile.ui.components.ConfirmDialog
 import com.ahmadnayfeh.shasha.mobile.ui.components.EmptyState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LoadingBox
 import com.ahmadnayfeh.shasha.mobile.ui.components.SubScreen
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
+import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 /** The Library tab: downloads, history, watch later and the channels followed. */
@@ -174,7 +176,7 @@ private fun VideoList(
 }
 
 @Composable
-fun SubscriptionsScreen(container: AppContainer, onBack: () -> Unit, onOpenChannel: (String) -> Unit, onSearch: () -> Unit) {
+fun SubscriptionsScreen(container: AppContainer, onBack: () -> Unit, onOpenChannel: (ChannelItem) -> Unit, onSearch: () -> Unit) {
     val vm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container))
     val channels by vm.channels.collectAsStateWithLifecycle()
     SubScreen(title = stringResource(R.string.library_subscriptions), onBack = onBack) { padding ->
@@ -191,8 +193,8 @@ fun SubscriptionsScreen(container: AppContainer, onBack: () -> Unit, onOpenChann
                 else -> LazyColumn(Modifier.fillMaxSize()) {
                     items(list, key = { it.channelId }) { channel ->
                         ChannelListItem(
-                            channel = com.ahmadnayfeh.shasha.youtube.ChannelItem(channel.channelId, channel.name, channel.avatarUrl, null),
-                            onClick = { onOpenChannel(channel.channelId) },
+                            channel = channel.toChannelItem(),
+                            onClick = { onOpenChannel(channel.toChannelItem()) },
                             trailing = {
                                 OutlinedButton(onClick = { vm.unsubscribe(channel.channelId) }) { Text(stringResource(R.string.action_unsubscribe)) }
                             },

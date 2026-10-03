@@ -32,7 +32,7 @@ class PhoneConfirmation internal constructor(
 )
 
 /**
- * v1.2 (owner decision): a video that would start in Serious Mode while nothing on the TV could end it early (the adult
+ * v1.1.1 (owner decision): a video that would start in Serious Mode while nothing on the TV could end it early (the adult
  * profile with its escape turned off: [com.ahmadnayfeh.shasha.policy.PolicyEngine.needsPhoneConfirmation]) waits for the
  * parent's «تأكيد» on the phone, at most [timeoutMs]: the phone is then the only way out, so one must be there first.
  *

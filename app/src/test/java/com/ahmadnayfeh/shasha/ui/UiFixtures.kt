@@ -6,6 +6,8 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.RadialGradient
 import android.graphics.Shader
+import com.ahmadnayfeh.shasha.PromoEnglish
+import com.ahmadnayfeh.shasha.PromoEnglish.en
 import com.ahmadnayfeh.shasha.ui.model.ChannelUi
 import com.ahmadnayfeh.shasha.ui.model.ItemUi
 import com.ahmadnayfeh.shasha.ui.model.PlaylistUi
@@ -25,6 +27,13 @@ object UiFixtures {
     private const val HOUR = 60 * MINUTE
     private const val DAY = 24 * HOUR
 
+    /** Channels whose name and a time are wider than a card's line in English: the app would cut the name («Holy Qura…»). */
+    private val NAME_ALONE = setOf("Holy Quran Channel", "Numberphile Talks", "Calligraphy School", "Arabic Calligraphy Lessons")
+
+    /** A card for [video]; in the English recording those channels' cards show no time, so that their names show whole. */
+    private fun card(video: VideoItem, timeMs: Long? = video.publishedAtEpochMs): VideoUi =
+        VideoUi(video, timeMs.takeUnless { PromoEnglish.on && video.channelName in NAME_ALONE })
+
     fun video(
         n: Int,
         title: String,
@@ -35,9 +44,9 @@ object UiFixtures {
         channelId: String = "UC" + "fixture".padEnd(20, 'x') + n.toString().padStart(2, '0'),
     ) = VideoItem(
         videoId = "vid" + n.toString().padStart(8, '0'),
-        title = title,
+        title = en(title),
         channelId = channelId.take(24),
-        channelName = channel,
+        channelName = en(channel),
         durationSeconds = durationSeconds,
         publishedAtEpochMs = NOW - agoMs,
         thumbnailUrl = null,
@@ -62,7 +71,7 @@ object UiFixtures {
         video(12, "Lo-fi Beats to Study and Relax — 3 Hours", "Calm Studio", 10_800, 70 * DAY),
     )
 
-    val videoUis: List<VideoUi> = videos.map { VideoUi(it, it.publishedAtEpochMs, TimeKind.PUBLISHED) }
+    val videoUis: List<VideoUi> = videos.map { card(it) }
 
     /** Watched fractions: one in progress, one finished. */
     val watched: Map<String, Float> = mapOf(videos[0].videoId to 0.35f, videos[4].videoId to 1f, videos[6].videoId to 0.72f)
@@ -106,16 +115,16 @@ object UiFixtures {
         video(74, "Building a Log Cabin with Hand Tools Only", "Woodland Craft", 3125, 30 * DAY),
         video(75, "كنافة بالقشطة: الوصفة الأصلية", "مطبخ سلمى", 680, 9 * DAY),
         video(76, "How Do Whales Sleep?", "Curious Minds", 455, 45 * DAY),
-    ).map { VideoUi(it, it.publishedAtEpochMs) }
+    ).map { card(it) }
 
-    val calligraphyChannel = ChannelItem("UCfixturecalligraphy0001", "فنون الخط", avatarUrl = "fake://avatar/khat", subscriberCount = 1_250_000)
+    val calligraphyChannel = ChannelItem("UCfixturecalligraphy0001", en("فنون الخط"), avatarUrl = "fake://avatar/khat", subscriberCount = 1_250_000)
     private val lessonsChannel = ChannelItem("UCfixturelessons00000002", "Arabic Calligraphy Lessons", avatarUrl = null, subscriberCount = 38_400)
 
     val searchResults: List<ItemUi> = listOf(
         ChannelUi(calligraphyChannel),
         VideoUi(videos[5], videos[5].publishedAtEpochMs),
-        PlaylistUi(PlaylistItem("PLfixture0001", "دروس الخط العربي للمبتدئين", "فنون الخط", "fake://playlist/khat", 24)),
-        VideoUi(video(20, "Arabic Calligraphy for Beginners: Your First Letters", "Arabic Calligraphy Lessons", 1320, 9 * DAY), NOW - 9 * DAY),
+        PlaylistUi(PlaylistItem("PLfixture0001", en("دروس الخط العربي للمبتدئين"), en("فنون الخط"), "fake://playlist/khat", 24)),
+        card(video(20, "Arabic Calligraphy for Beginners: Your First Letters", "Arabic Calligraphy Lessons", 1320, 9 * DAY), NOW - 9 * DAY),
         ChannelUi(lessonsChannel),
         VideoUi(video(21, "كيف تختار القلم والحبر المناسبين للخط", "فنون الخط", 544, 40 * DAY), NOW - 40 * DAY),
         VideoUi(video(22, "خط الرقعة في عشر دقائق", "مدرسة الخط", 610, 120 * DAY), NOW - 120 * DAY),

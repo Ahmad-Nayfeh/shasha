@@ -19,7 +19,6 @@ import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -31,6 +30,9 @@ import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
 import com.ahmadnayfeh.shasha.Fixtures
+import com.ahmadnayfeh.shasha.PromoEnglish
+import com.ahmadnayfeh.shasha.PromoEnglish.en
+import com.ahmadnayfeh.shasha.PromoEnglish.pick
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.policy.Allowlist
@@ -90,7 +92,6 @@ import com.ahmadnayfeh.shasha.ui.theme.KidsAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
-import com.github.takahirom.roborazzi.captureRoboImage
 import kotlinx.coroutines.flow.emptyFlow
 import org.junit.Rule
 import org.junit.Test
@@ -108,14 +109,15 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = TV_1080P)
 class PolicyScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     @OptIn(ExperimentalCoilApi::class)
     private fun snap(name: String, keys: List<Key> = emptyList(), content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         val pictures = AsyncImagePreviewHandler { request -> UiFixtures.fakeThumbnail(request.data.toString()).asImage() }
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true, LocalAsyncImagePreviewHandler provides pictures) {
-                ShashaTheme { content() }
+                ShashaTheme(language = PromoEnglish.language()) { content() }
             }
         }
         compose.waitForIdle()
@@ -123,29 +125,29 @@ class PolicyScreenshotTest {
             compose.onRoot().performKeyInput { pressKey(key) }
             compose.waitForIdle()
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     // ---- Data ------------------------------------------------------------------------------------------
 
-    private val adult = Profile.newAdult("أحمد", id = "owner")
-    private val sara = Profile.newChild("سارة", id = "sara", avatar = "rocket").copy(
+    private val adult = Profile.newAdult(en("أحمد"), id = "owner")
+    private val sara = Profile.newChild(en("سارة"), id = "sara", avatar = "rocket").copy(
         dailyQuotaMinutes = 60,
         schedule = Schedule(7 * 60, 20 * 60),
         allowlist = Allowlist(
             channels = listOf(
-                ListedChannel("UCkids00000000000000000a1", "عالم الطبيعة"),
+                ListedChannel("UCkids00000000000000000a1", en("عالم الطبيعة")),
                 ListedChannel("UCkids00000000000000000a2", "Space Lab"),
-                ListedChannel("UCkids00000000000000000a3", "حكايات قبل النوم"),
+                ListedChannel("UCkids00000000000000000a3", en("حكايات قبل النوم")),
                 ListedChannel("UCkids00000000000000000a4", "Math Corner"),
             ),
             playlists = listOf(
-                ListedPlaylist("PLkids000000000000000001", "تعلم الحروف مع أرنوب"),
-                ListedPlaylist("PLkids000000000000000002", "تجارب علمية للصغار"),
+                ListedPlaylist("PLkids000000000000000001", en("تعلم الحروف مع أرنوب")),
+                ListedPlaylist("PLkids000000000000000002", en("تجارب علمية للصغار")),
             ),
         ),
     )
-    private val omar = Profile.newChild("عمر", id = "omar", avatar = "bear").copy(dailyQuotaMinutes = 45, hideShorts = true)
+    private val omar = Profile.newChild(en("عمر"), id = "omar", avatar = "bear").copy(dailyQuotaMinutes = 45, hideShorts = true)
     private val profiles = listOf(adult, sara, omar)
 
     private val kidsVideos: List<VideoUi> = listOf(
@@ -160,14 +162,14 @@ class PolicyScreenshotTest {
     ).map { VideoUi(it, it.publishedAtEpochMs) }
 
     private val kidsPlaylists = listOf(
-        PlaylistUi(PlaylistItem("PLkids000000000000000001", "تعلم الحروف مع أرنوب", "حكايات قبل النوم", "fake://playlist/letters", 28)),
-        PlaylistUi(PlaylistItem("PLkids000000000000000002", "تجارب علمية للصغار", "Space Lab", "fake://playlist/science", 12)),
+        PlaylistUi(PlaylistItem("PLkids000000000000000001", en("تعلم الحروف مع أرنوب"), en("حكايات قبل النوم"), "fake://playlist/letters", 28)),
+        PlaylistUi(PlaylistItem("PLkids000000000000000002", en("تجارب علمية للصغار"), "Space Lab", "fake://playlist/science", 12)),
     )
 
     private val kidsChannels = listOf(
-        ChannelItem("UCkids00000000000000000a1", "عالم الطبيعة", "fake://avatar/1", null),
+        ChannelItem("UCkids00000000000000000a1", en("عالم الطبيعة"), "fake://avatar/1", null),
         ChannelItem("UCkids00000000000000000a2", "Space Lab", "fake://avatar/22", null),
-        ChannelItem("UCkids00000000000000000a3", "حكايات قبل النوم", null, null),
+        ChannelItem("UCkids00000000000000000a3", en("حكايات قبل النوم"), null, null),
         ChannelItem("UCkids00000000000000000a4", "Math Corner", "fake://avatar/4444", null),
     ).map { ChannelUi(it) }
 
@@ -180,8 +182,8 @@ class PolicyScreenshotTest {
         previousWeekSeconds = 290 * 60L,
         changePercent = 16,
         topChannels = listOf(
-            ChannelUsage("UCkids00000000000000000a1", "عالم الطبيعة", 118 * 60L),
-            ChannelUsage("UCkids00000000000000000a3", "حكايات قبل النوم", 74 * 60L),
+            ChannelUsage("UCkids00000000000000000a1", en("عالم الطبيعة"), 118 * 60L),
+            ChannelUsage("UCkids00000000000000000a3", en("حكايات قبل النوم"), 74 * 60L),
             ChannelUsage("UCkids00000000000000000a2", "Space Lab", 52 * 60L),
             ChannelUsage("UCkids00000000000000000a4", "Math Corner", 21 * 60L),
         ),
@@ -195,11 +197,11 @@ class PolicyScreenshotTest {
         previousWeekSeconds = 710 * 60L,
         changePercent = -22,
         topChannels = listOf(
-            ChannelUsage("UCfixturecalligraphy0001", "فنون الخط", 140 * 60L),
+            ChannelUsage("UCfixturecalligraphy0001", en("فنون الخط"), 140 * 60L),
             ChannelUsage("UCfixturesub0000000000a4", "Math Corner", 95 * 60L),
-            ChannelUsage("UCfixturesub0000000000a7", "رياضة اليوم", 64 * 60L),
-            ChannelUsage("UCfixturesub0000000000a3", "مطبخ سلمى", 38 * 60L),
-            ChannelUsage("UCfixturesub0000000000a8", "رحّالة", 12 * 60L),
+            ChannelUsage("UCfixturesub0000000000a7", en("رياضة اليوم"), 64 * 60L),
+            ChannelUsage("UCfixturesub0000000000a3", en("مطبخ سلمى"), 38 * 60L),
+            ChannelUsage("UCfixturesub0000000000a8", en("رحّالة"), 12 * 60L),
         ),
         surrendersLast7Days = 3,
     )
@@ -231,9 +233,9 @@ class PolicyScreenshotTest {
             PinPanel {
                 PinPad(
                     state = state,
-                    title = "رمز الوالدين",
-                    subtitle = "للدخول إلى ملف «⁨أحمد⁩»",
-                    notice = "رمز غير صحيح. بقيت 4 محاولات.",
+                    title = pick("رمز الوالدين", "Parent PIN"),
+                    subtitle = pick("للدخول إلى ملف «⁨أحمد⁩»", "To enter \u2068${adult.name}\u2069's profile"),
+                    notice = pick("رمز غير صحيح. بقيت 4 محاولات.", "Wrong PIN. 4 attempts left."),
                     onSubmit = {},
                     header = { ProfileAvatar(adult.avatar, adult.name, 64.dp) },
                 )
@@ -461,7 +463,10 @@ class PolicyScreenshotTest {
 
     @Test
     fun setupChild() = snap("setup_child") {
-        SetupScreen(SetupStep.CHILD, busy = false, ownerName = adult.name, ownerAvatar = adult.avatar, onStart = {}, onPin = {}, onOwner = { _, _ -> }, onChild = { _, _ -> }, onSkipChild = {})
+        // In English the text is a line longer and the buttons are squeezed out of the 1080p TV: at a smaller text size it fits.
+        PromoEnglish.smallerText(0.85f) {
+            SetupScreen(SetupStep.CHILD, busy = false, ownerName = adult.name, ownerAvatar = adult.avatar, onStart = {}, onPin = {}, onOwner = { _, _ -> }, onChild = { _, _ -> }, onSkipChild = {})
+        }
     }
 
     private companion object {

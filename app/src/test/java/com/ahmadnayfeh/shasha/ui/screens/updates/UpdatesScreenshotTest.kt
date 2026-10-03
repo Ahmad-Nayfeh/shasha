@@ -3,9 +3,8 @@ package com.ahmadnayfeh.shasha.ui.screens.updates
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.ahmadnayfeh.shasha.PromoEnglish
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.TV_1080P_EN
 import com.ahmadnayfeh.shasha.data.AppLanguage
@@ -14,7 +13,6 @@ import com.ahmadnayfeh.shasha.update.InstalledVersion
 import com.ahmadnayfeh.shasha.update.ReleaseAsset
 import com.ahmadnayfeh.shasha.update.ReleaseInfo
 import com.ahmadnayfeh.shasha.update.UpdateErrorKind
-import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,14 +25,15 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = TV_1080P)
 class UpdatesScreenshotTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = PromoEnglish.composeRule()
 
     private fun snap(name: String, language: AppLanguage = AppLanguage.ARABIC, content: @Composable () -> Unit) {
+        PromoEnglish.assumeRecorded(name)
         compose.setContent {
-            CompositionLocalProvider(LocalInspectionMode provides true) { ShashaTheme(language = language) { content() } }
+            CompositionLocalProvider(LocalInspectionMode provides true) { ShashaTheme(language = PromoEnglish.language(language)) { content() } }
         }
         compose.waitForIdle()
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        PromoEnglish.capture(compose, name)
     }
 
     private fun screen(name: String, state: UpdateUiState, language: AppLanguage = AppLanguage.ARABIC) =
@@ -78,7 +77,7 @@ class UpdatesScreenshotTest {
     fun tokenMissing() = screen("updates_token_missing", UpdateUiState.TokenMissing)
 
     @Test
-    fun child() = snap("updates_child") { UpdatesChildNotice("1.0.0", "v0.26.5", onBack = {}) }
+    fun child() = snap("updates_child") { UpdatesChildNotice("1.0.0", onBack = {}) }
 
     private companion object {
         val INSTALLED = InstalledVersion("1.1.1", 1057)
