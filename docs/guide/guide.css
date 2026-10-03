@@ -537,6 +537,10 @@ ol.flow.two li { padding: 4mm 5mm 3.6mm; }
 .tvkind ol.steps > li { padding-right: 9.5mm; }
 .tvkind .small { margin: 0.6mm 0 0; }
 
+/* Fourteen questions on one page */
+.help .qa.dense { margin-top: 5mm; }
+.help .qa.dense .q { margin-bottom: 5.2mm; }
+
 /* The phone app: a spot kept for a screenshot that is added later */
 .ph-shot {
   aspect-ratio: 9 / 18.5; border: 0.5mm dashed #9AA7B5; border-radius: 5.5mm;
