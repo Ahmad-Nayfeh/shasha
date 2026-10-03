@@ -8,13 +8,37 @@
 #   bash docs/guide/build.sh --images         # first remake img/ from the screenshots (needs Pillow)
 #   bash docs/guide/build.sh --png <dir>      # also one PNG per page in <dir>/ar and <dir>/en, to check the layout
 #   bash docs/guide/build.sh --pages <dir>    # the pages for the TV's in-app guide: <dir>/{ar,en}/page-NN.webp,
-#                                             # 1280 px wide, WebP quality 80 (needs Pillow); not kept in the repository
+#                                             # 1280 px wide, WebP quality 80 (needs Pillow)
+#   (a relative <dir> is taken from where you run the command)
+#
+# The TV app bundles those pages from app/src/main/assets/guide: after a change to either guide run, from the
+# repository root, `bash docs/guide/build.sh --pages app/src/main/assets/guide`, and keep PAGES (and the last page's
+# name) in app/src/test/.../guide/GuidePagesTest.kt equal to the number of pages. The screenshot baselines
+# guide_ar, guide_en and guide_ar_turned show some of those pages: record them again (:app:recordRoborazziDebug).
 #
 # Needs: Node 18+, the npm package playwright-core somewhere outside the repository (PLAYWRIGHT_DIR is the
 # folder holding its node_modules), and a Chromium Playwright can launch (PLAYWRIGHT_BROWSERS_PATH, or
 # CHROMIUM_PATH). The install pictures come from docs/images/install; the QR codes in qr/ from make_qr.py.
 set -euo pipefail
+here=$PWD
 cd "$(dirname "$0")"
+
+# The folders given to --png and --pages are relative to where the command was run, not to docs/guide.
+args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --png | --pages)
+      args+=("$1")
+      shift
+      if [ $# -gt 0 ]; then
+        case "$1" in /*) args+=("$1") ;; *) args+=("$here/$1") ;; esac
+        shift
+      fi
+      ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+set -- ${args[@]+"${args[@]}"}
 
 if [ "${1:-}" = "--images" ]; then
   shift

@@ -70,7 +70,7 @@
 
 | | |
 |---|---|
-| 📘 **دليل شاشة** (عربي) | [docs/دليل-شاشة.pdf](docs/دليل-شاشة.pdf) — التثبيت، والاستخدام، والوالدين، والإعدادات، وحل المشاكل |
+| 📘 **دليل شاشة** (عربي) | [docs/دليل-شاشة.pdf](docs/دليل-شاشة.pdf): الشاشات المدعومة، والتثبيت، والاستخدام، والوالدين، وتطبيق الجوال، والتحديث، وحل المشاكل |
 | 📗 **Shasha Guide** (English) | [docs/Shasha-Guide.pdf](docs/Shasha-Guide.pdf) |
 | 🎬 **فيديو الشرح** | [docs/video/shasha-explainer.mp4](docs/video/shasha-explainer.mp4) |
 
