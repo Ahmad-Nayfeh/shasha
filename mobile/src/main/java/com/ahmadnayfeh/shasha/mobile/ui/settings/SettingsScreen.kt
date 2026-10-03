@@ -51,8 +51,8 @@ import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.mobile.ui.components.ConfirmDialog
 
 /**
- * Settings: language, theme, playback (default quality, background playback, picture-in-picture), downloads (quality) and
- * SponsorBlock (on/off and its categories). Each group has «Reset», and so does the whole page.
+ * Settings: language, theme, playback (default quality, background playback, picture-in-picture), Shorts (on/off), downloads
+ * (quality) and SponsorBlock (on/off and its categories). Each group has «Reset», and so does the whole page.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,6 +92,15 @@ fun SettingsScreen(container: AppContainer, onOpenAbout: () -> Unit, onOpenUpdat
             Section(stringResource(R.string.settings_playback), resettable = settings.backgroundPlayback != defaults.backgroundPlayback || settings.pictureInPicture != defaults.pictureInPicture, onReset = vm::resetPlayback) {
                 SwitchRow(stringResource(R.string.settings_background), stringResource(R.string.settings_background_hint), settings.backgroundPlayback, vm::setBackgroundPlayback)
                 SwitchRow(stringResource(R.string.settings_pip), stringResource(R.string.settings_pip_hint), settings.pictureInPicture, vm::setPictureInPicture)
+            }
+
+            Section(
+                stringResource(R.string.settings_shorts),
+                resettable = settings.showShorts != defaults.showShorts,
+                onReset = vm::resetShorts,
+                hint = stringResource(R.string.settings_shorts_hint),
+            ) {
+                SwitchRow(stringResource(R.string.settings_shorts_show), null, settings.showShorts, vm::setShowShorts)
             }
 
             Section(

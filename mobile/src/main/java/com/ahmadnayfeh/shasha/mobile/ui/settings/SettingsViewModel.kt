@@ -40,6 +40,9 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun setPictureInPicture(enabled: Boolean) = launch { repository.setPictureInPicture(enabled) }
     fun resetPlayback() = launch { repository.resetPlayback() }
 
+    fun setShowShorts(enabled: Boolean) = launch { repository.setShowShorts(enabled) }
+    fun resetShorts() = launch { repository.resetShorts() }
+
     fun resetAll() = launch { repository.resetAll() }
 
     private fun launch(block: suspend () -> Unit) {
