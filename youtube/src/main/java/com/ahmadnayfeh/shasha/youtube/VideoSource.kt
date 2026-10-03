@@ -13,6 +13,29 @@ interface VideoSource {
     suspend fun search(query: String, filter: SearchFilter = SearchFilter.ALL, page: PageKey? = null): ItemsPage
 
     /**
+     * The Shorts YouTube finds for [query], page by page (null [page]: the first), best match first: the «Shorts» row beside a
+     * search's results, in both apps. Every item is a [VideoItem] with [VideoItem.isShortForm] true.
+     *
+     * Why a method of its own: [search] answers videos, channels and playlists. YouTube puts the Shorts a search finds in
+     * shelves of their own (two a page, which the extractor does not read) and answers a search for Shorts alone ("Type:
+     * Shorts", about 25 a page), which the extractor cannot ask for. This asks for that and reads the Shorts itself, from
+     * wherever in the answer YouTube lists them, so a change of its layout costs the Shorts, never a screen's results.
+     *
+     * What YouTube says of a Short in a search is its id, title, view count and (vertical) picture: no channel
+     * ([VideoItem.channelId] and [VideoItem.channelName] are null), no duration, no date; [stream] has them. A rule that needs the
+     * channel (a block of the household, a child's allowlist) therefore judges a Short when it is opened, as the player's
+     * policy check does. The pages of one search overlap (a Short comes again a page later): a list drops what it already shows.
+     *
+     * Unfiltered YouTube content: the app decides who may see it, the profile's Shorts rule first of all; the built-in explicit
+     * filter ([com.ahmadnayfeh.shasha.youtube.safety.SafeVideoSource]) holds back an explicit [query] and explicit titles. A failure
+     * is a [SourceException] like any other's, but Shorts are an extra beside the results: a screen shows no row for it, not its error
+     * screen. A [PageKey] belongs to the [query] that returned it.
+     *
+     * The default answers nothing, so other implementations need not know it.
+     */
+    suspend fun searchShorts(query: String, page: PageKey? = null): ShortsPage = ShortsPage(emptyList(), null)
+
+    /**
      * YouTube's search suggestions for what was typed so far, best first, at most [MAX_SUGGESTIONS], without
      * duplicates or blanks ([language]: "ar" or "en", YouTube's interface language for them). An empty query
      * gives none. Unfiltered YouTube text: the app decides who may see it.

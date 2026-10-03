@@ -30,6 +30,7 @@ import com.ahmadnayfeh.shasha.mobile.sponsorblock.SkipTarget
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorBlockRepository
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorSegment
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
+import com.ahmadnayfeh.shasha.youtube.StreamDetails
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
 import com.ahmadnayfeh.shasha.youtube.playback.DecoderRetry
@@ -39,7 +40,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,6 +57,10 @@ import kotlin.math.roundToInt
  * resuming where the viewer stopped, SponsorBlock's automatic skips, quality, speed, and the state the player screen
  * shows ([state]). The [PlaybackService] gives the same player a media session and a notification.
  *
+ * The same player also serves the Shorts viewer ([ShortsPlayer], [PlaybackMode.SHORT]): what differs for a Short is listed in
+ * [PlaybackMode] and kept to the few places that need it, so the extraction, the decoder-failure retry and the history are the
+ * player screen's own.
+ *
  * Main thread only (it owns an ExoPlayer). Failures never throw: they become [PlayerUiState.error].
  */
 @OptIn(UnstableApi::class)
@@ -66,13 +73,17 @@ class PlayerController(
     private val library: LibraryRepository,
     private val scope: CoroutineScope,
     private val elapsedClock: () -> Long = SystemClock::elapsedRealtime,
-) {
+) : ShortsPlayer {
     private var created = false
 
     val player: ExoPlayer by lazy(LazyThreadSafetyMode.NONE) { createPlayer().also { created = true } }
 
     private val _state = MutableStateFlow(PlayerUiState())
-    val state: StateFlow<PlayerUiState> = _state.asStateFlow()
+    override val state: StateFlow<PlayerUiState> = _state.asStateFlow()
+
+    /** What the player is playing for now; [PlaybackMode.VIDEO] when nothing plays. */
+    var mode = PlaybackMode.VIDEO
+        private set
 
     private var loadJob: Job? = null
     private var tickJob: Job? = null
@@ -103,6 +114,17 @@ class PlayerController(
     private var historyRecorded = false
     private var backgroundDisabledVideo = false
 
+    /** How long the Short on screen has played (in the ticker's steps): it enters the history once this reaches [SHORT_WATCHED_MS]. */
+    private var shortPlayedMs = 0L
+
+    /** A Short was playing when the app was left (it paused): it plays on when the viewer comes back. */
+    private var resumeShortOnStart = false
+
+    /** The streams of the Short after the current one, being looked up ahead ([prefetch]). */
+    private var prefetched: Prefetched? = null
+
+    private class Prefetched(val videoId: String, val atMs: Long, val details: Deferred<StreamDetails>)
+
     private fun createPlayer(): ExoPlayer = ExoPlayer.Builder(context)
         .setAudioAttributes(
             AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
@@ -124,25 +146,63 @@ class PlayerController(
     /**
      * Plays [videoId]. [preview] is what the screen shows until the extraction answers (the item the viewer tapped).
      * Asking for the video that is already loaded does nothing (a rotation or a recomposition must not restart it).
+     * [mode]: what it is played for; a [PlaybackMode.SHORT] starts at [startMs] (the start when null), never at a resume point.
      */
-    fun play(videoId: String, preview: VideoItem? = null, startMs: Long? = null) {
+    fun play(videoId: String, preview: VideoItem? = null, startMs: Long? = null, mode: PlaybackMode = PlaybackMode.VIDEO) {
         val current = _state.value
-        val same = current.video?.videoId == videoId && !current.isOffline
+        val same = current.video?.videoId == videoId && !current.isOffline && this.mode == mode
         if (same && current.phase != PlayerPhase.IDLE && current.phase != PlayerPhase.ERROR) return
-        startLoad(videoId, preview ?: previews[videoId] ?: current.video?.takeIf { same }, startMs, isReload = false)
+        val start = if (mode == PlaybackMode.SHORT) startMs ?: 0L else startMs
+        startLoad(videoId, preview ?: previews[videoId] ?: current.video?.takeIf { same }, start, isReload = false, newMode = mode)
+    }
+
+    override fun playShort(video: VideoItem) = play(video.videoId, preview = video, startMs = 0, mode = PlaybackMode.SHORT)
+
+    /**
+     * Looks up [videoId]'s streams now and keeps the answer for the next [play] of it, which then starts without asking again:
+     * the Shorts viewer asks for the Short after the one on screen while that one plays. One lookup is kept, the newest; a
+     * failure is not kept (the play asks again and reports what it finds); an answer older than [PREFETCH_MAX_AGE_MS] is not used.
+     */
+    override fun prefetch(videoId: String) {
+        if (prefetched?.videoId == videoId) return
+        prefetched?.details?.cancel()
+        prefetched = Prefetched(videoId, elapsedClock(), scope.async { videoSource.stream(videoId, allowLowQuality = true) })
+    }
+
+    /** [videoId]'s streams: the lookup [prefetch] made when it is still good, else a new one. */
+    private suspend fun streamDetails(videoId: String, reload: Boolean): StreamDetails {
+        val ready = prefetched?.takeIf { it.videoId == videoId }
+        if (ready != null) {
+            prefetched = null
+            // A reload (the streams' addresses expired, or the decoder failed on this plan) must not be answered by the old lookup.
+            if (!reload && elapsedClock() - ready.atMs <= PREFETCH_MAX_AGE_MS) {
+                try {
+                    return ready.details.await()
+                } catch (e: CancellationException) {
+                    currentCoroutineContext().ensureActive() // our own cancellation ends here; a dropped lookup is just asked again
+                } catch (e: Exception) {
+                    // The plain lookup below answers, and reports the failure when it is real.
+                }
+            } else {
+                ready.details.cancel()
+            }
+        }
+        return videoSource.stream(videoId, allowLowQuality = true)
     }
 
     /** Tries the current video again (the error screen's button), from where it was. */
-    fun retry() {
+    override fun retry() {
         val video = _state.value.video ?: return
         val position = if (created) player.currentPosition.takeIf { it > 0 } else null
         startLoad(video.videoId, video, position, isReload = false)
     }
 
-    private fun startLoad(videoId: String, preview: VideoItem?, startMs: Long?, isReload: Boolean) {
+    private fun startLoad(videoId: String, preview: VideoItem?, startMs: Long?, isReload: Boolean, newMode: PlaybackMode = mode) {
         loadJob?.cancel()
         stopTickers()
+        // Under the mode of what was playing: a video leaves its resume point behind, a Short does not.
         saveProgressNow()
+        mode = newMode
         if (created) {
             player.stop()
             player.clearMediaItems()
@@ -160,23 +220,28 @@ class PlayerController(
         defaultQualityApplied = false
         historyRecorded = false
         backgroundDisabledVideo = false
+        shortPlayedMs = 0
+        resumeShortOnStart = false
         val item = preview ?: placeholder(videoId)
         _state.value = PlayerUiState(phase = PlayerPhase.LOADING, video = item, speed = _state.value.speed)
-        PlaybackService.start(context)
+        // A Short is not played on in the background (the viewer leaves the app and it waits): no media notification for it.
+        if (mode == PlaybackMode.VIDEO) PlaybackService.start(context)
         val newSkip = SkipController(undoAllowed = true, clock = elapsedClock)
         skip = newSkip
         noticeJob?.cancel()
         noticeJob = scope.launch { newSkip.notice.collect { notice -> _state.update { it.copy(skipNotice = notice) } } }
 
         loadJob = scope.launch {
+            // SponsorBlock's data is for videos: a Short is not asked about (one request less for every swipe).
             val segments: Deferred<List<SponsorSegment>>? =
-                if (settings().sponsorBlockEnabled) async { sponsorBlock.segments(videoId) } else null
+                if (mode == PlaybackMode.VIDEO && settings().sponsorBlockEnabled) async { sponsorBlock.segments(videoId) } else null
             try {
-                val details = videoSource.stream(videoId, allowLowQuality = true)
+                val details = streamDetails(videoId, reload = isReload)
                 val source = mediaSources.create(details, maxHeight = 0, subtitleLanguage = null, safe = decoderRetry.safe)
                 val video = details.video.fillFrom(item)
                 withArtwork(source, video)
-                val resume = startMs ?: library.resumePosition(videoId)
+                val resume = startMs ?: if (mode == PlaybackMode.SHORT) null else library.resumePosition(videoId)
+                prepareFor(mode)
                 player.setMediaSource(source, resume ?: C.TIME_UNSET)
                 player.prepare()
                 player.playWhenReady = true
@@ -214,6 +279,7 @@ class PlayerController(
         defaultQualityApplied = true // a file has one quality
         historyRecorded = false
         backgroundDisabledVideo = false
+        mode = PlaybackMode.VIDEO
         val video = VideoItem(
             videoId = download.videoId, title = download.title, channelId = null, channelName = download.channelName,
             durationSeconds = download.durationSeconds, publishedAtEpochMs = null, thumbnailUrl = download.thumbnailUrl,
@@ -236,6 +302,7 @@ class PlayerController(
                     .apply { download.thumbnailUrl?.let { setArtworkUri(it.toUri()) } }.build()
                 val item = MediaItem.Builder().setMediaId(download.videoId).setUri(uri.toUri()).setMediaMetadata(metadata).build()
                 val resume = library.resumePosition(download.videoId)
+                prepareFor(PlaybackMode.VIDEO)
                 player.setMediaItem(item, resume ?: C.TIME_UNSET)
                 player.prepare()
                 player.playWhenReady = true
@@ -249,17 +316,22 @@ class PlayerController(
         }
     }
 
-    /** Stops and forgets everything (the player screen was left). */
-    fun stop() {
+    /** Stops and forgets everything (the player screen, or the Shorts viewer, was left). */
+    override fun stop() {
         loadJob?.cancel()
         stopTickers()
         noticeJob?.cancel()
         saveProgressNow()
+        prefetched?.details?.cancel()
+        prefetched = null
         skip = null
         if (created) {
             player.stop()
             player.clearMediaItems()
+            player.repeatMode = Player.REPEAT_MODE_OFF
         }
+        mode = PlaybackMode.VIDEO
+        resumeShortOnStart = false
         _state.update { PlayerUiState(speed = it.speed) }
         PlaybackService.stop(context)
     }
@@ -271,7 +343,7 @@ class PlayerController(
 
     // --- the viewer's controls ------------------------------------------------------------------------------------
 
-    fun togglePlay() {
+    override fun togglePlay() {
         val p = player
         when {
             p.playbackState == Player.STATE_ENDED -> {
@@ -285,7 +357,7 @@ class PlayerController(
     }
 
     /** Plays on (from the start when the video had ended). */
-    fun resumePlayback() {
+    override fun resumePlayback() {
         val p = player
         if (p.playbackState == Player.STATE_ENDED) {
             skip?.onReplay()
@@ -294,7 +366,7 @@ class PlayerController(
         p.play()
     }
 
-    fun pause() {
+    override fun pause() {
         if (created) player.pause()
     }
 
@@ -348,6 +420,12 @@ class PlayerController(
     fun onAppStopped() {
         if (!created || _state.value.phase == PlayerPhase.IDLE) return
         val p = player
+        if (mode == PlaybackMode.SHORT) {
+            // A Short does not play on as audio: it waits where it is, and plays again when the viewer comes back to it.
+            resumeShortOnStart = p.playWhenReady
+            p.pause()
+            return
+        }
         if (!settings().backgroundPlayback) {
             p.pause()
             return
@@ -358,9 +436,14 @@ class PlayerController(
         }
     }
 
-    /** The screen is visible again: the picture comes back. */
+    /** The screen is visible again: the picture comes back (and a Short that was playing plays on). */
     fun onAppStarted() {
-        if (!created || !backgroundDisabledVideo) return
+        if (!created) return
+        if (resumeShortOnStart) {
+            resumeShortOnStart = false
+            player.play()
+        }
+        if (!backgroundDisabledVideo) return
         backgroundDisabledVideo = false
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon().setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, false).build()
     }
@@ -373,7 +456,8 @@ class PlayerController(
                 Player.STATE_BUFFERING -> _state.update { if (it.phase == PlayerPhase.IDLE) it else it.copy(isBuffering = true) }
                 Player.STATE_READY -> {
                     _state.update { if (it.phase == PlayerPhase.LOADING || it.phase == PlayerPhase.ENDED || it.phase == PlayerPhase.READY) it.copy(phase = PlayerPhase.READY, isBuffering = false) else it }
-                    recordHistoryOnce()
+                    // A Short is entered once it was watched a little ([startTicker]): flicking past it is not watching it.
+                    if (mode == PlaybackMode.VIDEO) recordHistoryOnce()
                 }
                 Player.STATE_ENDED -> {
                     _state.update { it.copy(phase = PlayerPhase.ENDED, isBuffering = false, isPlaying = false) }
@@ -440,6 +524,15 @@ class PlayerController(
         }
     }
 
+    /**
+     * What differs on the player itself for [playMode], set before each media item: a Short loops, and plays at the normal speed
+     * (the Shorts viewer has no speed control, so a speed chosen for a long video must not follow the viewer into it).
+     */
+    private fun prepareFor(playMode: PlaybackMode) {
+        player.repeatMode = if (playMode == PlaybackMode.SHORT) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+        if (playMode == PlaybackMode.SHORT && _state.value.speed != 1f) setSpeed(1f)
+    }
+
     private fun recordHistoryOnce() {
         if (historyRecorded) return
         val video = _state.value.video ?: return
@@ -460,6 +553,10 @@ class PlayerController(
             while (isActive) {
                 delay(SkipController.TICK_MS)
                 skip?.tick(skipTarget)
+                if (mode == PlaybackMode.SHORT && !historyRecorded && player.isPlaying) {
+                    shortPlayedMs += SkipController.TICK_MS
+                    if (shortPlayedMs >= SHORT_WATCHED_MS) recordHistoryOnce()
+                }
                 sinceSave += SkipController.TICK_MS
                 if (sinceSave >= SAVE_EVERY_MS) {
                     sinceSave = 0
@@ -476,7 +573,8 @@ class PlayerController(
 
     /** Where the viewer is, for the next time (and the bar under the thumbnail). */
     private fun saveProgressNow() {
-        if (!created) return
+        // A Short loops and starts from its start: it has no resume point (and no bar under its picture).
+        if (!created || mode == PlaybackMode.SHORT) return
         val state = _state.value
         val video = state.video ?: return
         if (state.phase != PlayerPhase.READY && state.phase != PlayerPhase.ENDED) return
@@ -516,6 +614,12 @@ class PlayerController(
         const val SEEK_STEP_MS = 10_000L
         private const val SAVE_EVERY_MS = 5_000L
         private const val MAX_PREVIEWS = 40
+
+        /** A Short enters the history after playing this long. */
+        const val SHORT_WATCHED_MS = 3_000L
+
+        /** A lookup made ahead is used for this long: the Short after the current one is a few seconds away, not minutes. */
+        const val PREFETCH_MAX_AGE_MS = 5 * 60_000L
 
         /** One option per picture height from the player's video tracks, best first. */
         fun qualitiesOf(tracks: Tracks): List<QualityOption> {

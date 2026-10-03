@@ -48,6 +48,17 @@ data class WatchRoute(
     val downloadId: Long = -1,
 )
 
+/**
+ * The Shorts viewer, opened at [videoId] in the list that the screen it was opened from put in
+ * [com.ahmadnayfeh.shasha.mobile.common.ShortsQueues] under [queueId] (-1 or a number nobody holds: the viewer shows the one Short).
+ */
+@Serializable
+data class ShortsRoute(val videoId: String, val queueId: Long = -1)
+
+/** One of the viewer's own playlists ([com.ahmadnayfeh.shasha.mobile.data.UserPlaylistRepository]). */
+@Serializable
+data class UserPlaylistRoute(val playlistId: Long)
+
 @Serializable
 data object HistoryRoute
 

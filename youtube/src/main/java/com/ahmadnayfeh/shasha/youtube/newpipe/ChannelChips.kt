@@ -7,7 +7,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
@@ -101,25 +100,8 @@ internal object ChannelChips {
      * The body of a request that posts a chip's [token] to browse, as NewPipeExtractor builds its continuation requests
      * (InnerTube's WEB client: [language], [country] and the [clientVersion] the extractor reads from YouTube).
      */
-    fun continuationBody(token: String, language: String, country: String, clientVersion: String): ByteArray = buildJsonObject {
-        putJsonObject("context") {
-            putJsonObject("client") {
-                put("hl", language)
-                put("gl", country)
-                put("clientName", "WEB")
-                put("clientVersion", clientVersion)
-                put("originalUrl", "https://www.youtube.com")
-                put("platform", "DESKTOP")
-                put("utcOffsetMinutes", 0)
-            }
-            putJsonObject("request") {
-                put("internalExperimentFlags", buildJsonArray { })
-                put("useSsl", true)
-            }
-            putJsonObject("user") { put("lockedSafetyMode", false) }
-        }
-        put("continuation", token)
-    }.toString().toByteArray(Charsets.UTF_8)
+    fun continuationBody(token: String, language: String, country: String, clientVersion: String): ByteArray =
+        InnerTubeBody.build(language, country, clientVersion) { put("continuation", token) }
 
     /** What a chip's [text] orders by, in YouTube's English; null for anything else (a topic chip, a filter). */
     fun sortOf(text: String?): ChannelSort? = when (text?.trim()?.lowercase()) {

@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -35,8 +36,24 @@ internal fun SourceItem.key(): String = when (this) {
 }
 
 /**
+ * What the results list shows: [items] (videos, channels, playlists) without the Shorts, and the Shorts that were among them as
+ * their own row ([shorts], in the order they came). The general search ([SearchFilter.ALL]) has the row; the other filters ask for
+ * videos, channels or playlists and show no Shorts. Shorts turned off: none anywhere.
+ */
+data class SearchRows(val items: List<SourceItem> = emptyList(), val shorts: List<VideoItem> = emptyList()) {
+    companion object {
+        fun of(all: List<SourceItem>, filter: SearchFilter, showShorts: Boolean): SearchRows {
+            val shorts = all.filter { it is VideoItem && it.isShortForm }
+            val rest = all.filterNot { it is VideoItem && it.isShortForm }
+            return SearchRows(rest, if (showShorts && filter == SearchFilter.ALL) shorts.filterIsInstance<VideoItem>() else emptyList())
+        }
+    }
+}
+
+/**
  * Search: suggestions while typing (YouTube's, after a short pause), the four filters, and endless paging of the
- * results ([PagedLoader]). Typing shows suggestions and recent searches; submitting runs the search.
+ * results ([PagedLoader]). Typing shows suggestions and recent searches; submitting runs the search. The Shorts among
+ * the results of the general search are a row of their own ([rows]), which [showShorts] can take away.
  */
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class SearchViewModel(
@@ -45,6 +62,8 @@ class SearchViewModel(
     /** "ar" or "en": the language of YouTube's suggestions. */
     private val language: () -> String,
     initialQuery: String? = null,
+    /** The «Show Shorts» setting. */
+    showShorts: Flow<Boolean> = flowOf(true),
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
@@ -63,6 +82,11 @@ class SearchViewModel(
 
     private val results = PagedLoader<SourceItem, String>(viewModelScope, key = { it.key() }) { _ -> emptyList<SourceItem>() to null }
     val resultState: StateFlow<PagedState<SourceItem>> = results.state
+
+    /** [resultState]'s items told apart into the list and the Shorts row. */
+    val rows: StateFlow<SearchRows> = combine(results.state, _filter, showShorts) { state, filter, shortsOn ->
+        SearchRows.of(state.items, filter, shortsOn)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, SearchRows())
 
     val recent: StateFlow<List<String>> = history.recent.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -144,6 +168,7 @@ class SearchViewModel(
                     history = container.searchHistory,
                     language = { suggestionLanguage(container.latestSettings().language.tag, java.util.Locale.getDefault().language) },
                     initialQuery = initialQuery,
+                    showShorts = container.showShorts,
                 )
             }
         }

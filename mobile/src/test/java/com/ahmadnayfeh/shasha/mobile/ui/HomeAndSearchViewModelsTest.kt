@@ -1,13 +1,18 @@
 package com.ahmadnayfeh.shasha.mobile.ui
 
 import com.ahmadnayfeh.shasha.mobile.FakeFeedDao
+import com.ahmadnayfeh.shasha.mobile.FakeHistoryDao
+import com.ahmadnayfeh.shasha.mobile.FakeProgressDao
 import com.ahmadnayfeh.shasha.mobile.FakeSearchHistoryDao
 import com.ahmadnayfeh.shasha.mobile.FakeSubscriptionDao
+import com.ahmadnayfeh.shasha.mobile.FakeWatchLaterDao
 import com.ahmadnayfeh.shasha.mobile.FakeVideoSource
 import com.ahmadnayfeh.shasha.mobile.MainDispatcherRule
 import com.ahmadnayfeh.shasha.mobile.awaitReal
 import com.ahmadnayfeh.shasha.mobile.channel
 import com.ahmadnayfeh.shasha.mobile.data.FeedRepository
+import com.ahmadnayfeh.shasha.mobile.data.HomeSuggestions
+import com.ahmadnayfeh.shasha.mobile.data.LibraryRepository
 import com.ahmadnayfeh.shasha.mobile.data.NOW_MS
 import com.ahmadnayfeh.shasha.mobile.data.SearchHistoryRepository
 import com.ahmadnayfeh.shasha.mobile.data.SubscriptionRepository
@@ -59,9 +64,13 @@ class HomeViewModelTest {
     @After
     fun tearDown() = storeScope.cancel()
 
+    private val historyDao = FakeHistoryDao()
+    private val library = LibraryRepository(historyDao, FakeWatchLaterDao(), FakeProgressDao()) { now }
+
     private fun viewModel() = HomeViewModel(
         SubscriptionRepository(subsDao, feedDao) { now },
         FeedRepository(source, subsDao, feedDao, settings, now = { now }),
+        HomeSuggestions(library, source, file = null, clock = { now }),
     )
 
     private suspend fun subscribe(vararg ids: String) = ids.forEach { subsDao.upsert(channel(it).toSubscription(now)) }

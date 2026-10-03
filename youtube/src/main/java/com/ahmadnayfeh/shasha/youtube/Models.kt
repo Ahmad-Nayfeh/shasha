@@ -4,6 +4,12 @@ data class ItemsPage(val items: List<SourceItem>, val next: PageKey?)
 
 data class PlaylistPage(val details: PlaylistItem, val videos: List<VideoItem>, val next: PageKey?)
 
+/**
+ * One page of [VideoSource.searchShorts]: Shorts only (every item has [VideoItem.isShortForm] true, no channel, duration or
+ * date: see there) and where the list continues ([next]; null at its end).
+ */
+data class ShortsPage(val shorts: List<VideoItem>, val next: PageKey?)
+
 sealed interface SourceItem
 
 data class VideoItem(

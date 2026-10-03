@@ -222,6 +222,9 @@ class HomeSuggestions(
         const val VIDEOS_LIMIT = 20
         const val SHORTS_LIMIT = 20
 
+        /** The kept lists, in the app's cache folder. */
+        const val FILE_NAME = "home_suggestions.json"
+
         /** The answers that mean "slower, please": a round that gets one asks for nothing more. */
         private val SLOW_DOWN = setOf(SourceErrorKind.RATE_LIMITED, SourceErrorKind.BOT_CHECK, SourceErrorKind.BLOCKED_403)
 
