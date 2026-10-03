@@ -493,3 +493,75 @@ html[dir="ltr"] .ar { direction: rtl; unicode-bidi: isolate; }
 .app.wide { justify-content: center; }
 html[dir="ltr"] .app.wide { text-align: left; }
 .app h3 .en.ar { text-align: inherit; }
+
+/* ---------- v1.2: which TVs work, the steps for each kind of TV, the phone app ---------- */
+
+/* Ten parts on the contents page */
+ol.parts { grid-template-rows: repeat(5, auto); }
+
+/* A card that says yes or no (which TVs work) */
+.card.yes, .card.no { border-top: 1mm solid var(--teal); }
+.card.no { border-top-color: var(--error); }
+.card.yes h3, .card.no h3 { margin: 0 0 2.4mm; font-size: 12.5pt; }
+ul.ticks { list-style: none; margin: 0; padding: 0; }
+ul.ticks li { position: relative; padding-right: 7mm; margin: 0 0 2.2mm; }
+ul.ticks li:last-child { margin-bottom: 0; }
+ul.ticks li::before {
+  content: ""; position: absolute; right: 0; top: 1.4mm; width: 4.4mm; height: 4.4mm; border-radius: 50%;
+  background: var(--teal-soft); box-shadow: inset 0 0 0 0.3mm var(--teal);
+}
+ul.ticks li::after {
+  content: ""; position: absolute; right: 1.2mm; top: 2.55mm; width: 2.1mm; height: 1.1mm;
+  border-left: 0.5mm solid var(--teal-deep); border-bottom: 0.5mm solid var(--teal-deep); transform: rotate(-45deg);
+}
+ul.ticks.no li::before { background: var(--error-soft); box-shadow: inset 0 0 0 0.3mm var(--error); }
+ul.ticks.no li::after {
+  right: 1.3mm; top: 2.7mm; width: 1.9mm; height: 1.9mm; border: none; transform: none;
+  background:
+    linear-gradient(45deg, transparent 42%, #C23B3B 42%, #C23B3B 58%, transparent 58%),
+    linear-gradient(-45deg, transparent 42%, #C23B3B 42%, #C23B3B 58%, transparent 58%);
+}
+
+/* Four steps in two columns */
+ol.flow.two { grid-template-columns: 1fr 1fr; gap: 5mm 6mm; }
+ol.flow.two li { padding: 4mm 5mm 3.6mm; }
+
+/* One kind of TV: its name, the devices, and the steps (Part 2, last page) */
+.tvkind { background: var(--paper-2); border-radius: 2.6mm; border-top: 1mm solid var(--teal); padding: 3.6mm 5mm 3mm; }
+.tvkind .bh { margin-bottom: 2.4mm; }
+.tvkind .bh h3 { margin: 0 0 0.4mm; font-size: 12.5pt; }
+.tvkind .bh p { margin: 0; font-size: 8.8pt; line-height: 1.55; color: var(--muted); }
+.tvkind ol.steps > li { font-size: 9.8pt; line-height: 1.62; padding-bottom: 1.8mm; }
+.tvkind ol.steps > li::before { width: 6mm; height: 6mm; line-height: 6mm; font-size: 8.4pt; }
+.tvkind ol.steps > li::after { right: 2.85mm; top: 7mm; }
+.tvkind ol.steps > li { padding-right: 9.5mm; }
+.tvkind .small { margin: 0.6mm 0 0; }
+
+/* The phone app: a spot kept for a screenshot that is added later */
+.ph-shot {
+  aspect-ratio: 9 / 18.5; border: 0.5mm dashed #9AA7B5; border-radius: 5.5mm;
+  background: repeating-linear-gradient(135deg, #F5F7F9 0 3mm, #ECF0F4 3mm 6mm);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.6mm;
+  text-align: center; color: var(--muted); padding: 3mm; font-size: 9.4pt; line-height: 1.45;
+}
+.ph-shot svg { width: 9mm; height: 9mm; stroke: #8E9BAA; }
+.ph-shot b { color: var(--ink); font-weight: 600; font-size: 10pt; }
+.ph-shot span { font-size: 8.4pt; }
+.phone-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7mm; align-items: start; padding: 0 9mm; }
+.phone-trio figure { margin: 0; }
+.phone-trio figcaption { text-align: center; margin-top: 2mm; }
+
+/* Where a long word list sits on one line (a folder name, a file name) */
+.file { font-family: "Plex Arabic", sans-serif; direction: ltr; unicode-bidi: isolate; white-space: nowrap; font-weight: 500; }
+
+/* The English-guide mirror of the new blocks */
+html[dir="ltr"] ul.ticks li { padding-right: 0; padding-left: 7mm; }
+html[dir="ltr"] ul.ticks li::before { right: auto; left: 0; }
+html[dir="ltr"] ul.ticks li::after { right: auto; left: 1.2mm; }
+html[dir="ltr"] ul.ticks.no li::after { right: auto; left: 1.3mm; }
+html[dir="ltr"] ol.steps > li { padding: 0 0 2.8mm 10.5mm; }
+html[dir="ltr"] ol.steps > li::before { right: auto; left: 0; }
+html[dir="ltr"] ol.steps > li::after { right: auto; left: 3.35mm; }
+html[dir="ltr"] .tvkind ol.steps > li { padding: 0 0 1.8mm 9.5mm; }
+html[dir="ltr"] .tvkind ol.steps > li::after { right: auto; left: 2.85mm; }
+html[dir="ltr"] .page.spread ol.steps > li:last-child { padding-bottom: 0; }
