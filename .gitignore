@@ -8,6 +8,8 @@ captures/
 *.apk
 # ...except the signed app inside the one-download install kit (Shasha-Setup/, Shasha-Setup.zip).
 !Shasha-Setup/*.apk
+!Shasha-Setup/Phone/
+!Shasha-Setup/Phone/*.apk
 *.aab
 *.ap_
 *.dex
