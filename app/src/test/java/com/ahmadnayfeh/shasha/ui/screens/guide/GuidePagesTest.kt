@@ -34,7 +34,7 @@ class GuidePagesTest {
         assertThat(arabic).hasSize(PAGES)
         assertThat(english.map { it.substringAfterLast('/') }).isEqualTo(arabic.map { it.substringAfterLast('/') })
         assertThat(arabic.first()).isEqualTo("guide/ar/page-01.webp")
-        assertThat(english.last()).isEqualTo("guide/en/page-17.webp")
+        assertThat(english.last()).isEqualTo("guide/en/page-24.webp")
     }
 
     @Test
@@ -76,6 +76,6 @@ class GuidePagesTest {
     }
 
     private companion object {
-        const val PAGES = 17
+        const val PAGES = 24
     }
 }
