@@ -1,0 +1,218 @@
+[
+  {
+    "id": "s01_intro",
+    "section": "intro",
+    "title": "What is Shasha?",
+    "display": "This is Shasha: a calm YouTube for the family TV. No ads, and no need to sign in. And it comes with what reassures you about your children: their own profiles, a daily time limit, and a remote on your phone.",
+    "tts": "This is Shasha: a calm YouTube for the family TV. No ads, and no need to sign in. And it comes with what reassures you about your children: their own profiles, a daily time limit, and a remote on your phone."
+  },
+  {
+    "id": "s02_why",
+    "section": "intro",
+    "title": "Why?",
+    "display": "The idea is simple: calm, deliberate viewing. You watch what you chose, then turn the TV off feeling good, instead of losing an hour to a video you never looked for.",
+    "tts": "The idea is simple: calm, deliberate viewing. You watch what you chose, then turn the TV off feeling good, instead of losing an hour to a video you never looked for."
+  },
+  {
+    "id": "s03_home",
+    "section": "intro",
+    "title": "Home",
+    "display": "You open the app and find the latest from the channels you picked, newest first. Nothing is pushed at you, and nothing drags you from one video to the next.",
+    "tts": "You open the app and find the latest from the channels you picked, newest first. Nothing is pushed at you, and nothing drags you from one video to the next."
+  },
+  {
+    "id": "s04_profiles",
+    "section": "family",
+    "title": "Profiles: adults and children",
+    "display": "Everyone in the family has their own profile. The adults' profile is protected by a secret code. A child's profile shows only the channels you allow, and it can only be left with the parents' code.",
+    "tts": "Everyone in the family has their own profile. The adults' profile is protected by a secret code. A child's profile shows only the channels you allow, and it can only be left with the parents' code."
+  },
+  {
+    "id": "s05_time",
+    "section": "family",
+    "title": "Time limits and hours",
+    "display": "Each profile has a daily limit, and allowed viewing hours. Five minutes before the end, a small, gentle reminder appears. Then a \"Time is up\" screen, which opens only with the code.",
+    "tts": "Each profile has a daily limit, and allowed viewing hours. Five minutes before the end, a small, gentle reminder appears. Then a Time is up screen, which opens only with the code."
+  },
+  {
+    "id": "s06_serious",
+    "section": "family",
+    "title": "Serious mode",
+    "display": "Then there is \"Serious mode\": a video that has started does not stop before its end. Children and adults each have their own switch. A child leaves only with the parents' code. An adult needs a long press, then a sentence to type.",
+    "tts": "Then there is Serious mode: a video that has started does not stop before its end. Children and adults each have their own switch. A child leaves only with the parents' code. An adult needs a long press, then a sentence to type."
+  },
+  {
+    "id": "s07_guard",
+    "section": "family",
+    "title": "The Guard",
+    "display": "And if a child presses the Home button on the remote, the Guard covers the other app, and brings Shasha back within moments.",
+    "tts": "And if a child presses the Home button on the remote, the Guard covers the other app, and brings Shasha back within moments."
+  },
+  {
+    "id": "s08_suggest",
+    "section": "family",
+    "title": "Suggestions and Shorts",
+    "display": "Suggested videos, and the short \"Shorts\" clips, can be shown or hidden for each profile separately. So your child's screen stays calm, and you keep what you like.",
+    "tts": "Suggested videos, and the short Shorts clips, can be shown or hidden for each profile separately. So your child's screen stays calm, and you keep what you like."
+  },
+  {
+    "id": "s09_channel",
+    "section": "watch",
+    "title": "Channel page",
+    "display": "Every channel page is divided into sections: videos, Shorts, live streams, and playlists. And you choose the order: newest first, most viewed, or oldest.",
+    "tts": "Every channel page is divided into sections: videos, Shorts, live streams, and playlists. And you choose the order: newest first, most viewed, or oldest."
+  },
+  {
+    "id": "s10_search",
+    "section": "watch",
+    "title": "Voice search",
+    "display": "To search, press the microphone button and say what you want, in Arabic or in English. The results appear in moments.",
+    "tts": "To search, press the microphone button and say what you want, in Arabic or in English. The results appear in moments."
+  },
+  {
+    "id": "s12_phone",
+    "section": "phone",
+    "title": "The phone as a remote",
+    "display": "Your phone becomes a remote: scan the QR code, to search, to control playback, and to send links. And in the \"Parent\" section, with the parents' code, you add time and manage a child's list.",
+    "tts": "Your phone becomes a remote: scan the Q R code, to search, to control playback, and to send links. And in the Parent section, with the parents' code, you add time and manage a child's list."
+  },
+  {
+    "id": "s13_accept",
+    "section": "phone",
+    "title": "Accept or decline",
+    "display": "If someone sends a video from their phone, the TV asks you: \"Accept\" or \"Decline\". And what you are watching carries on until you decide.",
+    "tts": "If someone sends a video from their phone, the TV asks you: Accept or Decline. And what you are watching carries on until you decide."
+  },
+  {
+    "id": "s15_updates",
+    "section": "tv",
+    "title": "One-button updates",
+    "display": "When a new version is released, press one button in Settings, and the download and installation start by themselves. No computer, and no reinstalling.",
+    "tts": "When a new version is released, press one button in Settings, and the download and installation start by themselves. No computer, and no reinstalling."
+  },
+  {
+    "id": "s16_tvs",
+    "section": "tv",
+    "title": "Which TV?",
+    "display": "Which TVs does Shasha run on? Every TV with Google TV or Android TV, and Amazon Fire TV devices.",
+    "tts": "Which TVs does Shasha run on? Every TV with Google TV or Android TV, and Amazon Fire TV devices."
+  },
+  {
+    "id": "s17_stick",
+    "section": "tv",
+    "title": "Samsung, LG and others",
+    "display": "For a Samsung or LG TV, or any other, a small Android TV stick is enough. You plug it into the HDMI port, and Shasha runs on it with all its features.",
+    "tts": "For a Samsung or L G TV, or any other, a small Android TV stick is enough. You plug it into the H D M I port, and Shasha runs on it with all its features."
+  },
+  {
+    "id": "s18_need",
+    "section": "install",
+    "lead": 0.9,
+    "title": "Installing: what you need",
+    "display": "Now the installation, step by step. You need a personal computer, a Mac or Windows, on the same network as the TV.",
+    "tts": "Now the installation, step by step. You need a personal computer, a Mac or Windows, on the same network as the TV."
+  },
+  {
+    "id": "s19_download",
+    "section": "install",
+    "step": 1,
+    "lead": 0.4,
+    "title": "Step 1: Download",
+    "display": "Step one, on the computer: from the Shasha page on GitHub, click the zip file \"Shasha-Setup.zip\", then the download button. Then unzip it: on Windows, right-click, then \"Extract All\". On a Mac, double-click.",
+    "tts": "Step one, on the computer: from the Shasha page on GitHub, click the zip file, then the download button. Then unzip it: on Windows, right-click, then Extract All. On a Mac, double-click."
+  },
+  {
+    "id": "s21_devmode",
+    "section": "install",
+    "step": 2,
+    "lead": 0.4,
+    "title": "Step 2: Developer options",
+    "display": "Step two, on the TV: open Settings, then System, then About. Scroll down to \"Android TV OS build\", and press the middle button seven times, until a message appears: \"You are now a developer\".",
+    "tts": "Step two, on the TV: open Settings, then System, then About. Scroll down to Android TV O S build, and press the middle button seven times, until a message appears: You are now a developer."
+  },
+  {
+    "id": "s22_debugging",
+    "section": "install",
+    "step": 3,
+    "lead": 0.4,
+    "title": "Step 3: USB debugging",
+    "display": "Step three: go back to System, and open Developer options. Turn on \"USB debugging\", and \"Network debugging\" if you see it.",
+    "tts": "Step three: go back to System, and open Developer options. Turn on U S B debugging, and Network debugging if you see it."
+  },
+  {
+    "id": "s23_find_ip",
+    "section": "install",
+    "step": 4,
+    "lead": 0.4,
+    "title": "Step 4: The TV's address",
+    "display": "Step four: in Settings, open \"Network & Internet\". On Wi-Fi, choose your network, then \"IP address\". On a cable, the address is right under \"Ethernet\". Write it down: numbers with dots between them.",
+    "tts": "Step four: in Settings, open Network and Internet. On Wi-Fi, choose your network, then I P address. On a cable, the address is right under Ethernet. Write it down: numbers with dots between them."
+  },
+  {
+    "id": "s24_run_windows",
+    "section": "install",
+    "step": 5,
+    "lead": 0.4,
+    "title": "Step 5: Run on Windows",
+    "display": "Step five, on the computer: on Windows, double-click the Windows file. If a blue warning appears, choose \"More info\", then \"Run anyway\".",
+    "tts": "Step five, on the computer: on Windows, double-click the Windows file. If a blue warning appears, choose More info, then Run anyway."
+  },
+  {
+    "id": "s25_run_mac",
+    "section": "install",
+    "step": 5,
+    "title": "Step 5: Run on a Mac",
+    "display": "On a Mac, double-click the Mac file. If the Mac refuses to open it, open \"System Settings\", then \"Privacy & Security\", then \"Open Anyway\".",
+    "tts": "On a Mac, double-click the Mac file. If the Mac refuses to open it, open System Settings, then Privacy and Security, then Open Anyway."
+  },
+  {
+    "id": "s26_type_ip",
+    "section": "install",
+    "step": 5,
+    "title": "Step 5: Type the address",
+    "display": "The program will ask: \"Enter the TV's IP address\". Type the address you wrote down, then press Enter.",
+    "tts": "The program will ask: Enter the TV's I P address. Type the address you wrote down, then press Enter."
+  },
+  {
+    "id": "s27_allow",
+    "section": "install",
+    "step": 6,
+    "lead": 0.4,
+    "title": "Step 6: Allow",
+    "display": "Step six, on the TV: a message will ask whether to allow debugging. Tick \"Always allow from this computer\", then press \"OK\" within a minute.",
+    "tts": "Step six, on the TV: a message will ask whether to allow debugging. Tick Always allow from this computer, then press Okay within a minute."
+  },
+  {
+    "id": "s28_automatic",
+    "section": "install",
+    "step": 7,
+    "lead": 0.4,
+    "title": "Step 7: The program finishes by itself",
+    "display": "Step seven: the program finishes by itself. It installs the app, gives it its permissions, then asks whether to stop the official YouTube app. Type the letter Y to agree, or N to decline. Then it shows a summary.",
+    "tts": "Step seven: the program finishes by itself. It installs the app, gives it its permissions, then asks whether to stop the official YouTube app. Type the letter Y to agree, or N to decline. Then it shows a summary."
+  },
+  {
+    "id": "s29_first_start",
+    "section": "install",
+    "step": 8,
+    "lead": 0.4,
+    "title": "Step 8: First start",
+    "display": "Step eight: the first start. Choose the parents' code, then create your own profile, and your child's profile with their daily minutes and allowed hours. Then add the channels you allow.",
+    "tts": "Step eight: the first start. Choose the parents' code, then create your own profile, and your child's profile with their daily minutes and allowed hours. Then add the channels you allow."
+  },
+  {
+    "id": "s30_phone_app",
+    "section": "outro",
+    "lead": 0.9,
+    "title": "The phone app",
+    "display": "And there is a Shasha app for your Android phone too, with its own video that explains it.",
+    "tts": "And there is a Shasha app for your Android phone too, with its own video that explains it."
+  },
+  {
+    "id": "s31_outro",
+    "section": "outro",
+    "title": "Closing",
+    "display": "And that is Shasha. Made with love for my family. Ahmad Nayfeh.",
+    "tts": "And that is Shasha. Made with love for my family. Ahmad Nayfeh."
+  }
+]

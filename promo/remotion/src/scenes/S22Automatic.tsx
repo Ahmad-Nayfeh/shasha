@@ -15,7 +15,7 @@ export const S22Automatic: React.FC<{scene: Scene}> = ({scene}) => {
   const tInstall = b.at('يثبت');
   const tGrant = b.at('ويمنحه');
   const tAsk = b.at('ثم يسألك');
-  const tY = b.at('اكتب واي');
+  const tY = b.at('حرف واي');
   const tSummary = b.at('ثم يعرض');
   const C = consoleAfterIp();
   const yAt = tY + 12;

@@ -1,31 +1,42 @@
 // Everything the installation scenes show about the kit and the installer, in ONE place so a rename is a
-// one-line change. Source of truth: /INSTALL_FLOW.md (v2) and the installers in the repo's Shasha-Setup/ folder
-// (their own `say`/`info` lines are quoted below, English line + Arabic line).
+// one-line change. Source of truth: the installers and the guide in the repo's Shasha-Setup/ folder (their own
+// `say`/`info` lines are quoted below, English line + Arabic line). The names are those of the kit of release 1.2.0
+// (shasha-1.2.0-1065.apk): after a new release change KIT_APK and the sizes, then re-render the install scenes.
 import {TV_IP} from './demo';
 
 export const REPO_PATH = 'github.com/Ahmad-Nayfeh/shasha';
 export const KIT_ZIP = 'Shasha-Setup.zip';
 export const KIT_DIR = 'Shasha-Setup';
-export const KIT_ZIP_SIZE = '25.1 MB';
+export const KIT_ZIP_SIZE = '42.7 MB';
+export const KIT_DATE = '03/10/2026';
+export const KIT_TAG = '1.2.0';
 
-// installer file names (the install agent may fall back to ASCII names: install-windows.bat / install-mac.command)
+// installer file names
 export const WIN_INSTALLER = 'Windows - ثبّت شاشة.bat';
 export const MAC_INSTALLER = 'Mac - ثبّت شاشة.command';
 export const LINUX_INSTALLER = 'install-linux.sh';
-export const GUIDE_PDF = 'اقرأني - طريقة التثبيت.pdf';
-export const KIT_APK = 'shasha-1.0.0-1001.apk';
+export const GUIDE_PDF = 'دليل شاشة.pdf';
+export const GUIDE_PDF_EN = 'Shasha Guide (English).pdf';
+export const KIT_APK = 'shasha-1.2.0-1065.apk';
+export const PHONE_DIR = 'Phone';
 export const TOOLS_DIR = 'tools';
+/** What the installer prints for the TV (maker, model, Android version): an example. */
+export const TV_NAME = 'Sony BRAVIA 4K VH2, Android 12 (API 31)';
 
 export type KitKind = 'folder' | 'bat' | 'command' | 'sh' | 'pdf' | 'apk' | 'zip';
 export type KitFile = {name: string; kind: KitKind; size: string; label?: string; date: string};
+/** Row height of the kit's file list in the install scenes (8 rows must fit in the laptop window). */
+export const KIT_ROW_H = 54;
 /** The Shasha-Setup folder as a file manager lists it (folders first, then by name). */
 export const KIT_FILES: KitFile[] = [
-  {name: TOOLS_DIR, kind: 'folder', size: '', label: 'أدوات: لا تلمسها', date: '30/09/2026'},
-  {name: MAC_INSTALLER, kind: 'command', size: '34 KB', label: 'مثبّت ماك', date: '30/09/2026'},
-  {name: WIN_INSTALLER, kind: 'bat', size: '31 KB', label: 'مثبّت ويندوز', date: '30/09/2026'},
-  {name: GUIDE_PDF, kind: 'pdf', size: '2.4 MB', label: 'دليل مصوّر', date: '30/09/2026'},
-  {name: LINUX_INSTALLER, kind: 'sh', size: '1 KB', date: '30/09/2026'},
-  {name: KIT_APK, kind: 'apk', size: '9.2 MB', label: 'التطبيق', date: '30/09/2026'},
+  {name: PHONE_DIR, kind: 'folder', size: '', label: 'تطبيق الجوال', date: KIT_DATE},
+  {name: TOOLS_DIR, kind: 'folder', size: '', label: 'أدوات: لا تلمسها', date: KIT_DATE},
+  {name: LINUX_INSTALLER, kind: 'sh', size: '1 KB', date: KIT_DATE},
+  {name: MAC_INSTALLER, kind: 'command', size: '41 KB', label: 'مثبّت ماك', date: KIT_DATE},
+  {name: GUIDE_PDF_EN, kind: 'pdf', size: '2.9 MB', date: KIT_DATE},
+  {name: KIT_APK, kind: 'apk', size: '19.0 MB', label: 'التطبيق', date: KIT_DATE},
+  {name: WIN_INSTALLER, kind: 'bat', size: '45 KB', label: 'مثبّت ويندوز', date: KIT_DATE},
+  {name: GUIDE_PDF, kind: 'pdf', size: '3.0 MB', label: 'الدليل', date: KIT_DATE},
 ];
 
 /** The prompt the installer shows when it is started by a double-click (no address given). */
@@ -46,12 +57,16 @@ export const consoleAfterIp = (serial = `${TV_IP}:5555`) => ({
     {text: `    connected to ${serial}`, kind: 'dim'},
   ],
   allow: [
-    {text: '==> Look at the TV: it asks «Allow USB debugging?»', kind: 'say'},
-    {text: 'انظر إلى الشاشة: تسأل «Allow USB debugging?»', kind: 'ar'},
+    {text: '==> Look at the TV: it asks «Allow USB debugging?» (Fire TV asks the same)', kind: 'say'},
+    {text: 'انظر إلى الشاشة: تسأل «Allow USB debugging?» (وFire TV تسأل السؤال نفسه)', kind: 'ar'},
     {text: '    Tick «Always allow from this computer», then press OK.', kind: 'info'},
     {text: '    Waiting up to 60 s ... / بانتظار الموافقة حتى 60 ثانية ...', kind: 'dim'},
   ],
-  connected: [{text: '    Connected. / تم الاتصال.', kind: 'ok'}],
+  connected: [
+    {text: '    Connected. / تم الاتصال.', kind: 'ok'},
+    {text: `==> The TV: ${TV_NAME}`, kind: 'say'},
+    {text: `الشاشة: ${TV_NAME}`, kind: 'ar'},
+  ],
   install: [
     {text: `==> Installing ${KIT_APK} ...`, kind: 'say'},
     {text: 'تثبيت التطبيق على الشاشة (قد يستغرق دقيقة) ...', kind: 'ar'},
@@ -78,6 +93,7 @@ export const consoleAfterIp = (serial = `${TV_IP}:5555`) => ({
     {text: '==> Summary', kind: 'say'},
     {text: 'الملخص', kind: 'ar'},
     {text: `    TV / الشاشة:              ${serial}`, kind: 'info'},
+    {text: `    Model / الطراز:            ${TV_NAME}`, kind: 'info'},
     {text: `    APK / الملف:               ${KIT_APK}`, kind: 'info'},
     {text: '    Permissions / الصلاحيات:   granted / ممنوحة', kind: 'ok'},
     {text: '    Guard / الحارس:            running / تعمل', kind: 'ok'},

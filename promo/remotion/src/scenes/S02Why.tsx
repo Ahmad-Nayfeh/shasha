@@ -138,8 +138,8 @@ export const S02Why: React.FC<{scene: Scene}> = ({scene}) => {
             fontSize: 30,
             fontWeight: 600,
             color: brand.primary,
-            opacity: tween(f, b.at('الفكرة') - 2, 14),
-            transform: `translateY(${(1 - tween(f, b.at('الفكرة') - 2, 14)) * 10}px)`,
+            opacity: tween(f, b.at('فكرتها') - 2, 14),
+            transform: `translateY(${(1 - tween(f, b.at('فكرتها') - 2, 14)) * 10}px)`,
             marginBottom: 8,
           }}
         >

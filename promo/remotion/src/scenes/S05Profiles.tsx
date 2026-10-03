@@ -10,8 +10,8 @@ import {clamp, easeInOut, mix, sp, tween} from '../lib/anim';
 import {FEATURE_TV, tvH} from '../lib/layout';
 import {beatsFor, Scene} from '../lib/timeline';
 
-// s05 — profiles: the adult profile is protected by a PIN; the child profile only shows the channels you
-// chose — no search, no typing, no exit without the PIN.
+// s04 — profiles: the adult profile is protected by a PIN; the child profile only shows the channels you
+// allowed, and leaving it needs the parents' PIN.
 
 const TV = FEATURE_TV;
 
@@ -88,10 +88,8 @@ export const S05Profiles: React.FC<{scene: Scene}> = ({scene}) => {
   const tPin = b.at('يحميه');
   const tKid = b.at('أما ملف الطفل');
   const tChosen = b.at('القنوات التي');
-  const tNo1 = b.at('بحث');
-  const tNo2 = b.at('كتابة');
-  const tNo3 = b.at('خروج');
-  const tCode = b.at('بالرمز');
+  const tExit = b.at('ولا يخرج');
+  const tCode = b.at('برمز الوالدين');
 
   const tvIn = 1; // continuity: same TV as the previous scene (pure cross-fade, no entrance)
   const fPress = tPin - 8;
@@ -105,7 +103,7 @@ export const S05Profiles: React.FC<{scene: Scene}> = ({scene}) => {
   const pinCardOut = tween(f, tKid - 6, 12);
   const filled = clamp((f - (fPress + 14)) / 7, 0, 4);
   const allowIn = sp(f, tKid + 14, {damping: 22});
-  const allowOut = tween(f, tNo1 - 16, 12);
+  const allowOut = tween(f, tExit - 16, 12);
 
   // a channel from outside the allow-list meets an invisible wall at the TV's edge
   const intr = tween(f, tChosen + 12, 26, easeInOut);
@@ -120,7 +118,7 @@ export const S05Profiles: React.FC<{scene: Scene}> = ({scene}) => {
   return (
     <div style={{position: 'absolute', inset: 0}}>
       <AbsoluteFill style={{background: `radial-gradient(60% 60% at 35% 45%, ${rgba(brand.kids, 0.06)}, transparent 70%)`, opacity: warm}} />
-      <Header kicker="جولة في الميزات" index="٣ / ٨" title="الملفات: كبار وطفل" />
+      <Header kicker="حماية الأطفال" index="١ / ٥" title="الملفات: كبار وأطفال" />
 
       <TvFrame
         x={TV.x + (1 - tvIn) * -60}
@@ -242,11 +240,9 @@ export const S05Profiles: React.FC<{scene: Scene}> = ({scene}) => {
         </Card>
       </div>
 
-      {/* no search, no typing, no exit without the PIN */}
+      {/* no exit without the parents' PIN */}
       <div style={{position: 'absolute', right: 90, top: 290, display: 'flex', flexDirection: 'column', gap: 34}}>
-        <NoTile icon="search" label="لا بحث" t={sp(f, tNo1 - 6, {damping: 18})} />
-        <NoTile icon="keyboard" label="لا كتابة" t={sp(f, tNo2 - 6, {damping: 18})} />
-        <NoTile icon="exit" label="لا خروج إلا بالرمز" t={sp(f, tNo3 - 6, {damping: 18})} lock={f > tCode} />
+        <NoTile icon="exit" label="لا خروج إلا برمز الوالدين" t={sp(f, tExit - 6, {damping: 18})} lock={f > tCode} />
       </div>
     </div>
   );

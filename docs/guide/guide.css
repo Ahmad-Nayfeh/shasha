@@ -541,16 +541,7 @@ ol.flow.two li { padding: 4mm 5mm 3.6mm; }
 .help .qa.dense { margin-top: 5mm; }
 .help .qa.dense .q { margin-bottom: 5.2mm; }
 
-/* The phone app: a spot kept for a screenshot that is added later */
-.ph-shot {
-  aspect-ratio: 9 / 18.5; border: 0.5mm dashed #9AA7B5; border-radius: 5.5mm;
-  background: repeating-linear-gradient(135deg, #F5F7F9 0 3mm, #ECF0F4 3mm 6mm);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.6mm;
-  text-align: center; color: var(--muted); padding: 3mm; font-size: 9.4pt; line-height: 1.45;
-}
-.ph-shot svg { width: 9mm; height: 9mm; stroke: #8E9BAA; }
-.ph-shot b { color: var(--ink); font-weight: 600; font-size: 10pt; }
-.ph-shot span { font-size: 8.4pt; }
+/* The phone app's three pictures (Part 8): phone frames side by side, each with its caption */
 .phone-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7mm; align-items: start; padding: 0 9mm; }
 .phone-trio figure { margin: 0; }
 .phone-trio figcaption { text-align: center; margin-top: 2mm; }

@@ -41,6 +41,29 @@ sealed interface WatchEvent {
     data class PlayNext(val video: VideoItem) : WatchEvent
 }
 
+/** What the player screen reads for the part under the video: the real source is [WatchViewModel]. */
+internal interface WatchDetailsSource {
+    val videoId: String
+    val playlistId: String?
+
+    /** The videos YouTube suggests beside this one. */
+    val related: StateFlow<Loadable<List<VideoItem>>>
+
+    /** The playlist being played, when there is one: shown instead of the related videos. */
+    val queueState: StateFlow<PagedState<VideoItem>>
+    val subscribed: StateFlow<Boolean>
+    val savedForLater: StateFlow<Boolean>
+
+    /** The channel of the video, with its avatar, once known. */
+    val channel: StateFlow<ChannelItem?>
+
+    fun retryRelated()
+
+    fun loadMoreQueue()
+
+    fun toggleSubscribe()
+}
+
 /**
  * One player screen. The player itself is the app's ([PlayerController]); this holds what belongs to the screen: the
  * related videos (or the playlist being played), the channel and its subscribe button, «watch later», and the start of
@@ -56,38 +79,37 @@ class WatchViewModel(
     private val feed: FeedRepository,
     private val library: LibraryRepository,
     private val downloads: DownloadManager,
-    val videoId: String,
-    val playlistId: String?,
+    override val videoId: String,
+    override val playlistId: String?,
     val downloadId: Long?,
     startMs: Long?,
-) : ViewModel() {
+) : ViewModel(), WatchDetailsSource {
 
     val player: StateFlow<PlayerUiState> = controller.state
 
     private val _related = MutableStateFlow<Loadable<List<VideoItem>>>(Loadable.Loading)
 
-    /** The videos YouTube suggests beside this one. */
-    val related: StateFlow<Loadable<List<VideoItem>>> = _related
+    override val related: StateFlow<Loadable<List<VideoItem>>> = _related
 
     /** The playlist being played, when there is one: shown instead of the related videos. */
     private val queue = PagedLoader<VideoItem, String>(viewModelScope, key = { it.videoId }, minPerLoad = 50, maxRounds = 4) { page ->
         val answer = source.playlist(checkNotNull(playlistId), page)
         answer.videos to answer.next
     }
-    val queueState: StateFlow<PagedState<VideoItem>> = queue.state
+    override val queueState: StateFlow<PagedState<VideoItem>> = queue.state
 
     private val _channel = MutableStateFlow<ChannelItem?>(null)
 
     /** The channel of the video, with its avatar, once known (a subscription stores it). */
-    val channel: StateFlow<ChannelItem?> = _channel
+    override val channel: StateFlow<ChannelItem?> = _channel
 
-    val subscribed: StateFlow<Boolean> = player
+    override val subscribed: StateFlow<Boolean> = player
         .map { it.video?.channelId }
         .distinctUntilChanged()
         .flatMapLatest { id -> if (id == null) flowOf(false) else subscriptions.isSubscribed(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    val savedForLater: StateFlow<Boolean> = library.isInWatchLater(videoId)
+    override val savedForLater: StateFlow<Boolean> = library.isInWatchLater(videoId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     private val events = Channel<WatchEvent>(Channel.BUFFERED)
@@ -146,7 +168,7 @@ class WatchViewModel(
         }
     }
 
-    fun retryRelated() {
+    override fun retryRelated() {
         relatedRequested = false
         _related.value = Loadable.Loading
         loadRelated()
@@ -174,11 +196,11 @@ class WatchViewModel(
         events.send(WatchEvent.PlayNext(next))
     }
 
-    fun loadMoreQueue() = queue.loadMore()
+    override fun loadMoreQueue() = queue.loadMore()
 
     fun retry() = controller.retry()
 
-    fun toggleSubscribe() {
+    override fun toggleSubscribe() {
         val video = player.value.video ?: return
         val channelId = video.channelId ?: return
         viewModelScope.launch {

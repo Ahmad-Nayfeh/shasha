@@ -68,6 +68,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.compose.ContentFrame
 import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
@@ -77,6 +78,7 @@ import com.ahmadnayfeh.shasha.mobile.R
 import com.ahmadnayfeh.shasha.mobile.common.Formatters
 import com.ahmadnayfeh.shasha.mobile.common.Loadable
 import com.ahmadnayfeh.shasha.mobile.player.PlaybackSpeeds
+import com.ahmadnayfeh.shasha.mobile.player.PlayerController
 import com.ahmadnayfeh.shasha.mobile.player.PlayerPhase
 import com.ahmadnayfeh.shasha.mobile.player.PlayerUiState
 import com.ahmadnayfeh.shasha.mobile.ui.LocalActivityBridge
@@ -91,12 +93,10 @@ import com.ahmadnayfeh.shasha.youtube.VideoItem
 import kotlin.math.roundToInt
 
 /**
- * The player screen. Portrait: the video on top, then its title, actions, channel, description and the related videos (or
- * the playlist). Landscape: the video fills the screen with the system bars hidden. In picture-in-picture only the video
- * shows. The player (one ExoPlayer for the whole app) is attached to the same place in the tree in every layout, so a
- * rotation does not restart the video.
+ * The player screen. Everything that belongs to the window happens here (rotation, the system bars, picture-in-picture,
+ * the screen staying on) around [WatchContent], which draws it. The player (one ExoPlayer for the whole app) is attached
+ * to the same place in the tree in every layout, so a rotation does not restart the video.
  */
-@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun WatchScreen(
     container: AppContainer,
@@ -119,10 +119,8 @@ fun WatchScreen(
     val inPip by bridge.inPictureInPicture.collectAsStateWithLifecycle()
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val isFullscreen = isLandscape && !inPip
-    var showSettings by remember { mutableStateOf(false) }
     // Where the video is in the window: picture-in-picture grows its floating window out of it.
     var videoBounds by remember { mutableStateOf<Rect?>(null) }
-    val player = controller.player
     val view = LocalView.current
 
     // Back from a detour (this video's channel, then another video): the player may have been let go meanwhile.
@@ -159,6 +157,50 @@ fun WatchScreen(
     }
     BackHandler(enabled = isFullscreen) { bridge.requestOrientation(OrientationMode.PORTRAIT) }
 
+    WatchContent(
+        state = state,
+        player = controller.player,
+        controller = controller,
+        details = vm,
+        isFullscreen = isFullscreen,
+        inPip = inPip,
+        onRetry = vm::retry,
+        onBack = { if (isFullscreen) bridge.requestOrientation(OrientationMode.PORTRAIT) else onBack() },
+        onToggleFullscreen = { bridge.requestOrientation(if (isFullscreen) OrientationMode.PORTRAIT else OrientationMode.LANDSCAPE) },
+        onEnterPictureInPicture = if (bridge.supportsPictureInPicture && !state.isAudioOnly) {
+            { bridge.enterPictureInPicture(state.aspectRatio, videoBounds) }
+        } else {
+            null
+        },
+        onVideoBounds = { videoBounds = it },
+        onOpenVideo = { onOpenVideo(it, null) },
+        onOpenChannel = onOpenChannel,
+    )
+}
+
+/**
+ * What the player screen looks like for a given [state] (the screenshot tests draw it over fake ones). Portrait: the video
+ * on top, then its title, actions, channel, description and the related videos (or the playlist). Landscape ([isFullscreen]):
+ * the video fills the screen. In picture-in-picture ([inPip]) only the video shows.
+ */
+@androidx.annotation.OptIn(UnstableApi::class)
+@Composable
+internal fun WatchContent(
+    state: PlayerUiState,
+    player: Player,
+    controller: PlayerController,
+    details: WatchDetailsSource,
+    isFullscreen: Boolean,
+    inPip: Boolean,
+    onRetry: () -> Unit,
+    onBack: () -> Unit,
+    onToggleFullscreen: () -> Unit,
+    onEnterPictureInPicture: (() -> Unit)?,
+    onVideoBounds: (Rect) -> Unit,
+    onOpenVideo: (VideoItem) -> Unit,
+    onOpenChannel: (String) -> Unit,
+) {
+    var showSettings by remember { mutableStateOf(false) }
     val playerModifier = when {
         inPip || isFullscreen -> Modifier.fillMaxSize()
         else -> Modifier.fillMaxWidth().statusBarsPadding().aspectRatio(state.aspectRatio.coerceIn(0.8f, 16f / 9f))
@@ -169,7 +211,7 @@ fun WatchScreen(
             Box(
                 playerModifier.background(Color.Black).onGloballyPositioned { coordinates ->
                     val bounds = coordinates.boundsInWindow()
-                    videoBounds = Rect(bounds.left.roundToInt(), bounds.top.roundToInt(), bounds.right.roundToInt(), bounds.bottom.roundToInt())
+                    onVideoBounds(Rect(bounds.left.roundToInt(), bounds.top.roundToInt(), bounds.right.roundToInt(), bounds.bottom.roundToInt()))
                 },
             ) {
                 if (state.isAudioOnly) {
@@ -185,6 +227,15 @@ fun WatchScreen(
                         modifier = Modifier.fillMaxSize(),
                         surfaceType = SURFACE_TYPE_SURFACE_VIEW,
                         contentScale = ContentScale.Fit,
+                        // Until the first frame is drawn the video's own picture stands in for it, not a black one.
+                        shutter = {
+                            AsyncImage(
+                                model = state.video?.thumbnailUrl,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Fit,
+                            )
+                        },
                     )
                 }
                 if (state.phase == PlayerPhase.LOADING && !state.isOffline) {
@@ -197,7 +248,7 @@ fun WatchScreen(
                 }
                 if (state.phase == PlayerPhase.ERROR && state.error != null) {
                     Box(Modifier.fillMaxSize().background(Color(0xE6000000)), contentAlignment = Alignment.Center) {
-                        ErrorState(state.error!!, onRetry = vm::retry)
+                        ErrorState(state.error!!, onRetry = onRetry)
                     }
                 } else if (!inPip) {
                     PlayerOverlay(
@@ -206,24 +257,16 @@ fun WatchScreen(
                         controller = controller,
                         title = state.video?.title.orEmpty(),
                         isFullscreen = isFullscreen,
-                        onBack = {
-                            if (isFullscreen) bridge.requestOrientation(OrientationMode.PORTRAIT) else onBack()
-                        },
-                        onToggleFullscreen = {
-                            bridge.requestOrientation(if (isFullscreen) OrientationMode.PORTRAIT else OrientationMode.LANDSCAPE)
-                        },
-                        onPictureInPicture = if (bridge.supportsPictureInPicture && !state.isAudioOnly) {
-                            { bridge.enterPictureInPicture(state.aspectRatio, videoBounds) }
-                        } else {
-                            null
-                        },
+                        onBack = onBack,
+                        onToggleFullscreen = onToggleFullscreen,
+                        onPictureInPicture = onEnterPictureInPicture,
                         onOpenSettings = { showSettings = true },
                     )
                 }
             }
         }
         if (!isFullscreen && !inPip) {
-            Details(vm, state, onOpenVideo = { onOpenVideo(it, null) }, onOpenChannel = onOpenChannel, modifier = Modifier.weight(1f))
+            Details(details, state, onOpenVideo = onOpenVideo, onOpenChannel = onOpenChannel, modifier = Modifier.weight(1f))
         }
     }
 
@@ -240,7 +283,7 @@ fun WatchScreen(
 /** Title, actions, channel, description and the related videos (or the playlist) under the player. */
 @Composable
 private fun Details(
-    vm: WatchViewModel,
+    vm: WatchDetailsSource,
     state: PlayerUiState,
     onOpenVideo: (VideoItem) -> Unit,
     onOpenChannel: (String) -> Unit,

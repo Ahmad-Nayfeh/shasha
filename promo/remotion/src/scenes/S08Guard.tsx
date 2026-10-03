@@ -60,7 +60,7 @@ export const S08Guard: React.FC<{scene: Scene}> = ({scene}) => {
 
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <Header kicker="جولة في الميزات" index="٦ / ٨" title="الحارس" />
+      <Header kicker="حماية الأطفال" index="٤ / ٥" title="الحارس" />
 
       <TvFrame x={TV.x + (1 - tvIn) * -60} y={TV.y} w={TV.w} opacity={clamp(tvIn * 1.4)} glowColor={brand.kids}>
         <Screen name="kids_video" />

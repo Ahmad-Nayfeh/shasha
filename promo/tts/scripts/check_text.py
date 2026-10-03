@@ -17,7 +17,8 @@ from narr import split_phrases, words, strip_diac, pausal_ok, DIAC, ARABIC_LETTE
 from arnorm import normalize, latin_to_arabic
 
 V = Path(__file__).resolve().parents[2]
-scenes = json.loads((V / 'narration/scenes.json').read_text())
+# python check_text.py [narration/scenes-mobile.json]   (default: the TV script)
+scenes = json.loads((V / (sys.argv[1] if len(sys.argv) > 1 else 'narration/scenes.json')).read_text())
 SUN = set('تثدذرزسشصضطظلن')
 LONG = set('اوىيآ')
 errors, review, total_words = [], [], 0

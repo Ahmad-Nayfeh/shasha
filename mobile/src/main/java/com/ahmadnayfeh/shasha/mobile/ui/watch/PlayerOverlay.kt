@@ -143,12 +143,13 @@ fun SeekBar(
                 val top = (size.height - track) / 2
                 drawRect(Color(0x4DFFFFFF), Offset(0f, top), Size(size.width, track))
                 drawRect(Color(0x8CFFFFFF), Offset(0f, top), Size(size.width * buffered, track))
+                drawRect(primary, Offset(0f, top), Size(size.width * fraction, track))
+                // SponsorBlock's colours over the bar, the played part included, as its own extension draws them.
                 for (segment in segments) {
                     val start = (segment.startMs.toFloat() / duration).coerceIn(0f, 1f)
                     val end = (segment.endMs.toFloat() / duration).coerceIn(0f, 1f)
                     if (end > start) drawRect(categoryColor(segment.category), Offset(size.width * start, top), Size(size.width * (end - start), track))
                 }
-                drawRect(primary, Offset(0f, top), Size(size.width * fraction, track))
                 if (enabled) {
                     val radius = if (dragFraction != null) 9.dp.toPx() else 6.dp.toPx()
                     drawCircle(primary, radius, Offset(size.width * fraction, size.height / 2))
@@ -267,27 +268,30 @@ fun PlayerOverlay(
                     }
 
                     // Middle: jump back, play/pause, jump forward.
-                    Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(28.dp), verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { controller.seekBy(-PlayerController.SEEK_STEP_MS); interactions++ }, Modifier.size(48.dp)) {
-                            Icon(Icons.Filled.Replay10, contentDescription = stringResource(R.string.player_back_10), modifier = Modifier.size(32.dp))
-                        }
-                        IconButton(onClick = { controller.togglePlay(); interactions++ }, Modifier.size(64.dp).clip(CircleShape).background(Color(0x66000000))) {
-                            if (state.isBuffering && state.phase == PlayerPhase.READY && !state.isPlaying) {
-                                CircularProgressIndicator(Modifier.size(32.dp), color = Color.White)
-                            } else {
-                                Icon(
-                                    when {
-                                        state.phase == PlayerPhase.ENDED -> Icons.Filled.Replay
-                                        state.isPlaying -> Icons.Filled.Pause
-                                        else -> Icons.Filled.PlayArrow
-                                    },
-                                    contentDescription = stringResource(if (state.isPlaying) R.string.player_pause else R.string.player_play),
-                                    modifier = Modifier.size(40.dp),
-                                )
+                    // Like the timeline and the double tap (right half = forward), these run left to right in every language.
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                        Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(28.dp), verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { controller.seekBy(-PlayerController.SEEK_STEP_MS); interactions++ }, Modifier.size(48.dp)) {
+                                Icon(Icons.Filled.Replay10, contentDescription = stringResource(R.string.player_back_10), modifier = Modifier.size(32.dp))
                             }
-                        }
-                        IconButton(onClick = { controller.seekBy(PlayerController.SEEK_STEP_MS); interactions++ }, Modifier.size(48.dp)) {
-                            Icon(Icons.Filled.Forward10, contentDescription = stringResource(R.string.player_forward_10), modifier = Modifier.size(32.dp))
+                            IconButton(onClick = { controller.togglePlay(); interactions++ }, Modifier.size(64.dp).clip(CircleShape).background(Color(0x66000000))) {
+                                if (state.isBuffering && state.phase == PlayerPhase.READY && !state.isPlaying) {
+                                    CircularProgressIndicator(Modifier.size(32.dp), color = Color.White)
+                                } else {
+                                    Icon(
+                                        when {
+                                            state.phase == PlayerPhase.ENDED -> Icons.Filled.Replay
+                                            state.isPlaying -> Icons.Filled.Pause
+                                            else -> Icons.Filled.PlayArrow
+                                        },
+                                        contentDescription = stringResource(if (state.isPlaying) R.string.player_pause else R.string.player_play),
+                                        modifier = Modifier.size(40.dp),
+                                    )
+                                }
+                            }
+                            IconButton(onClick = { controller.seekBy(PlayerController.SEEK_STEP_MS); interactions++ }, Modifier.size(48.dp)) {
+                                Icon(Icons.Filled.Forward10, contentDescription = stringResource(R.string.player_forward_10), modifier = Modifier.size(32.dp))
+                            }
                         }
                     }
 

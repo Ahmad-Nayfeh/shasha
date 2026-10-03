@@ -7,15 +7,15 @@ import {easeInOut, keys, sp, tween} from '../lib/anim';
 import {beatsFor, Scene} from '../lib/timeline';
 import {DEV_ROW, P_ABOUT, P_DEVELOPER, P_SYSTEM, rowRect, SYSTEM_ROW} from '../lib/tvPanels';
 
-// Step 3 (TV): back to System → Developer options → «USB debugging» on (and «Network debugging» if present).
+// Step 3 (TV): back to System → Developer options → «USB debugging» on, then «Network debugging» if the TV has it.
 export const S15Debugging: React.FC<{scene: Scene}> = ({scene}) => {
   const f = useCurrentFrame();
   const b = beatsFor(scene);
   const tBack = b.at('ارجع');
   const tOpenDev = b.at('وافتح خيارات');
   const tUsb = b.at('فعل تصحيح');
-  const tNet = b.at('وإن وجدت');
-  const tNetOn = b.at('ففعله');
+  const tNet = b.at('وفعل تصحيح'); // «وفعّل تصحيح الشبكة إن وجدته»
+  const tNetOn = tNet + 10;
 
   const backAt = tBack + 2;
   const downs1 = Array.from({length: SYSTEM_ROW.developer}, (_, i) => Math.min(backAt + 14 + i * 5, tOpenDev + i * 4));
@@ -60,8 +60,8 @@ export const S15Debugging: React.FC<{scene: Scene}> = ({scene}) => {
       <NoteChip x={sx(60)} y={sy(300)} t={sp(f, okUsb, {damping: 20})} icon="check" en="USB debugging">
         فعّل: تصحيح أخطاء USB
       </NoteChip>
-      <NoteChip x={sx(60)} y={sy(440)} t={sp(f, okNet, {damping: 20})} icon="check" en="Network debugging">
-        وإن وُجد: تصحيح الأخطاء عبر الشبكة
+      <NoteChip x={sx(60)} y={sy(300) + 96} t={sp(f, okNet, {damping: 20})} icon="check" en="Network debugging">
+        وفعّل تصحيح الشبكة إن وجدته
       </NoteChip>
     </div>
   );

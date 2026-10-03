@@ -9,6 +9,9 @@ from pathlib import Path
 RM = Path(__file__).resolve().parents[1]
 TL = json.loads((RM / 'src/data/timeline.json').read_text())
 WORDS = json.loads((RM / 'src/data/words.json').read_text())
+if (RM / 'src/data/timeline-mobile.json').exists():   # the phone video's scenes (m..) share the lookup
+    TL['scenes'] = TL['scenes'] + json.loads((RM / 'src/data/timeline-mobile.json').read_text())['scenes']
+    WORDS.update(json.loads((RM / 'src/data/words-mobile.json').read_text()))
 FPS = 30
 DIAC = re.compile(r'[ؐ-ًؚ-ٰٟۖ-ۭـ]')
 

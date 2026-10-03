@@ -641,13 +641,9 @@ gh secret set UPDATE_TOKEN --repo Ahmad-Nayfeh/shasha
 
 خطوات مهمة «Android» (`.github/workflows/android.yml`):
 
-1. مهمة **Unit tests**: اختبارات `:policy` و`:youtube` و`:remote` و`:app`، ومعها مطابقة لقطات الشاشة المرجعية.
-2. مهمة **Release APK**: تفك المفتاح وتتحقق منه، وتبني نسخة Release مع R8، وتتأكد أن R8 لم يغيّر أسماء الاستثناءات (تظهر في شاشة الخطأ)، وتحفظ ملف mapping لتسعين يوماً، وتتحقق من اسم الحزمة ورقم البناء وبصمة شهادة التوقيع.
-3. مهمة **GitHub Release**: تنشر الإصدار بوسم `v<versionName>-<versionCode>` وملف `shasha-<versionName>-<versionCode>.apk` (ومعه، من v1.2، `shasha-mobile-<versionName>-<versionCode>.apk` لتطبيق الجوال، ولا يأخذه محدِّث التلفاز)، وفي ملاحظاته إصدار NewPipeExtractor والـ commit ورابط البناء وبصمة الشهادة وأمر التثبيت، وتعلّمه «الأحدث» (وهو ما يقرؤه المحدِّث).
-
 1. مهمة **Unit tests**: اختبارات `:policy` و`:youtube` و`:remote` و`:mobile` و`:app`، ومعها مطابقة لقطات الشاشة المرجعية.
 2. مهمة **Release APK**: تفك المفتاح وتتحقق منه، وتبني نسخة Release مع R8، وتتأكد أن R8 لم يغيّر أسماء الاستثناءات (تظهر في شاشة الخطأ)، وتحفظ ملف mapping لتسعين يوماً، وتتحقق من اسم الحزمة ورقم البناء وبصمة شهادة التوقيع. ثم تبني بالمفتاح نفسه ورقم البناء نفسه نسخة Release من تطبيق الجوال `:mobile` وتجري عليها الفحوص نفسها، وترفعها ملفاً مستقلاً باسم `shasha-mobile-<versionName>-<versionCode>.apk`.
-3. مهمة **GitHub Release**: تنشر الإصدار بوسم `v<versionName>-<versionCode>` وملفين: `shasha-<versionName>-<versionCode>.apk` (الشاشة) و`shasha-mobile-<versionName>-<versionCode>.apk` (تطبيق الجوال)، وفي ملاحظاته إصدار NewPipeExtractor والـ commit ورابط البناء وبصمة الشهادة وأمر التثبيت، وتعلّمه «الأحدث» (وهو ما يقرؤه المحدِّث).
+3. مهمة **GitHub Release**: تنشر الإصدار بوسم `v<versionName>-<versionCode>` وملفين: `shasha-<versionName>-<versionCode>.apk` (الشاشة) و`shasha-mobile-<versionName>-<versionCode>.apk` (تطبيق الجوال، ولا يأخذه محدِّث التلفاز)، وفي ملاحظاته إصدار NewPipeExtractor والـ commit ورابط البناء وبصمة الشهادة وأمر التثبيت، وتعلّمه «الأحدث» (وهو ما يقرؤه المحدِّث).
 
 رقم البناء `versionCode` = 1000 + رقم التشغيل، فيزيد دائماً. و`versionName` مكتوب في `app/build.gradle.kts` (وللجوال في `mobile/build.gradle.kts`: وسم الإصدار يتبع رقم الشاشة، ومحدِّث الجوال يقرأ رقم نسخته من اسم ملفه). ومثبّتات `Shasha-Setup` تأخذ أحدث `shasha-*.apk` بجانبها، وهذا النمط يطابق ملف الجوال أيضاً، فلا تضع ملف الجوال في ذلك المجلد. وإلى جانبها مهمة «YouTube canary» (`.github/workflows/youtube-canary.yml`): الثلاثاء والجمعة 04:41 UTC، ويدوياً، وعلى كل طلب دمج يغيّر `gradle/libs.versions.toml` أو `youtube/`. وDependabot يفتح طلبات التحديث كل خميس (`.github/dependabot.yml`). ومهمة «Voice» (`.github/workflows/voice.yml`) تولّد التعليق الصوتي بمفتاح ElevenLabs المحفوظ سراً باسم `ELEVEN_LABS`: عدّل `promo/voice/request.json` وادفعه، ثم نزّل الناتج من صفحة التشغيل (Artifact باسم `voice-output`).
 
@@ -685,6 +681,7 @@ gh secret set UPDATE_TOKEN --repo Ahmad-Nayfeh/shasha
   اجعل `SHASHA_VERSION_CODE` مساوياً لرقم البناء المثبّت («فحص التحديثات» يعرضه) أو أكبر منه بواحد. لا تقفز بعيداً عن أرقام CI، وإلا رفضت الشاشة إصدارات CI التالية لأنها «أقدم» حتى يتجاوزها العدّاد. `SHASHA_UPDATE_TOKEN` اختياري.
 
 - لقطات الشاشة المرجعية في `app/src/test/screenshots/`: بعد تغيير مقصود في الواجهة سجّلها من جديد بـ `./gradlew :app:recordRoborazziDebug` وراجع الفرق قبل رفعها.
+- لقطات تطبيق الجوال المرجعية في `mobile/src/test/screenshots/` (بالعربية، فاتحة وداكنة، ببيانات وهمية وبلا شبكة): بعد تغيير مقصود في الواجهة سجّلها بـ `./gradlew :mobile:recordRoborazziDebug` وراجع الفرق قبل رفعها، ويطابقها `./gradlew :mobile:verifyRoborazziDebug`. أما CI فيشغّل `:mobile:testDebugUnitTest`، وهو يرسمها دون مقارنة.
 - الاختبارات على يوتيوب الحقيقي تُتخطى إلا مع `-Dyoutube.realNetwork=true` (انظر أعلى هذا الملف).
 
 ## بنية المشروع

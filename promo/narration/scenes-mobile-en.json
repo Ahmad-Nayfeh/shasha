@@ -1,0 +1,100 @@
+[
+  {
+    "id": "m01_intro",
+    "section": "intro",
+    "title": "Shasha on your phone",
+    "display": "Shasha is on your Android phone too: a calm YouTube, with no ads and no sign-in.",
+    "tts": "Shasha is on your Android phone too: a calm YouTube, with no ads and no sign-in."
+  },
+  {
+    "id": "m02_download",
+    "section": "install",
+    "title": "Downloading the app",
+    "display": "Start by downloading the app file from the Shasha page on GitHub, and open it on your phone.",
+    "tts": "Start by downloading the app file from the Shasha page on GitHub, and open it on your phone."
+  },
+  {
+    "id": "m03_allow",
+    "section": "install",
+    "title": "Allowing the install",
+    "display": "Your phone will ask: allow installing from this source? Allow it, then tap \"Install\". It will not ask again.",
+    "tts": "Your phone will ask: allow installing from this source? Allow it, then tap Install. It will not ask again."
+  },
+  {
+    "id": "m05_search",
+    "section": "watch",
+    "title": "Search",
+    "display": "Open Search, and type what you want. Videos, channels and playlists appear, with no ads between them.",
+    "tts": "Open Search, and type what you want. Videos, channels and playlists appear, with no ads between them."
+  },
+  {
+    "id": "m06_channel",
+    "section": "watch",
+    "title": "Channel page",
+    "display": "On a channel page, you move between the sections: videos, Shorts, and playlists.",
+    "tts": "On a channel page, you move between the sections: videos, Shorts, and playlists."
+  },
+  {
+    "id": "m07_background",
+    "section": "player",
+    "title": "Background play",
+    "display": "The player works in the background: the sound carries on while the screen is off, and you do whatever you like.",
+    "tts": "The player works in the background: the sound carries on while the screen is off, and you do whatever you like."
+  },
+  {
+    "id": "m08_pip",
+    "section": "player",
+    "title": "Picture in picture",
+    "display": "And with one tap, the video becomes a small floating window, called \"picture in picture\", so you keep watching while you do something else.",
+    "tts": "And with one tap, the video becomes a small floating window, called picture in picture, so you keep watching while you do something else."
+  },
+  {
+    "id": "m09_speed",
+    "section": "player",
+    "title": "Speed",
+    "display": "You choose the playback speed that suits you: slower to understand, or faster to save time.",
+    "tts": "You choose the playback speed that suits you: slower to understand, or faster to save time."
+  },
+  {
+    "id": "m10_sponsor",
+    "section": "player",
+    "title": "Skipping sponsor segments",
+    "display": "And Shasha skips sponsor segments by itself: the ads the video's owner puts inside the video.",
+    "tts": "And Shasha skips sponsor segments by itself: the ads the video's owner puts inside the video."
+  },
+  {
+    "id": "m11_downloads",
+    "section": "library",
+    "title": "Downloads",
+    "display": "For downloads you have two choices: the whole video, or the audio only. So you can watch it with no internet, anywhere.",
+    "tts": "For downloads you have two choices: the whole video, or the audio only. So you can watch it with no internet, anywhere."
+  },
+  {
+    "id": "m12_subscriptions",
+    "section": "library",
+    "title": "Subscriptions",
+    "display": "You subscribe to the channels you love with one tap, and find all their new videos in one place.",
+    "tts": "You subscribe to the channels you love with one tap, and find all their new videos in one place."
+  },
+  {
+    "id": "m13_history",
+    "section": "library",
+    "title": "Watch history",
+    "display": "In your watch history you find everything you watched, so you can continue any video from where you stopped.",
+    "tts": "In your watch history you find everything you watched, so you can continue any video from where you stopped."
+  },
+  {
+    "id": "m14_update",
+    "section": "update",
+    "title": "One-button updates",
+    "display": "When a new version is released, press one button in Settings, and the download and installation start by themselves.",
+    "tts": "When a new version is released, press one button in Settings, and the download and installation start by themselves."
+  },
+  {
+    "id": "m15_outro",
+    "section": "outro",
+    "title": "Closing",
+    "display": "Shasha, in your pocket, calm and safe. Made with love for my family. Ahmad Nayfeh.",
+    "tts": "Shasha, in your pocket, calm and safe. Made with love for my family. Ahmad Nayfeh."
+  }
+]

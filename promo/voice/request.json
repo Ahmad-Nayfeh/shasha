@@ -1,14 +1,15 @@
 {
-  "id": "arabic-male-samples-1",
-  "jobs": [
-    {"type": "subscription"},
-    {
-      "type": "samples",
-      "text": "مرحباً بك في شاشة. تطبيق هادئ لمشاهدة يوتيوب في بيتك، بلا إعلانات، ومع حماية كاملة لأطفالك.",
-      "filters": {"language": "ar", "gender": "male"},
-      "count": 8,
-      "exclude": ["rPNcQ53R703tTmtue1AT"],
-      "model_id": "eleven_multilingual_v2"
-    }
-  ]
+ "id": "narration-fix-2",
+ "workers": 3,
+ "budget_seconds": 1500,
+ "jobs": [
+  {"type": "subscription"},
+  {"type": "tts", "voice_id": "pCKbQ4EPGE06zpEPGNvS", "model_id": "eleven_multilingual_v2", "text": "فعل تصحيح أخطاء يو إس بي،", "out": "tv_s22_debugging_03rf38d1a.mp3", "timestamps": true, "previous_text": "ارجع إلى النظام، وافتح خيارات المطور.", "next_text": "وفعل تصحيح الشبكة إن وجدته."},
+  {"type": "tts", "voice_id": "pCKbQ4EPGE06zpEPGNvS", "model_id": "eleven_multilingual_v2", "text": "وفعل تصحيح الشبكة إن وجدته.", "out": "tv_s22_debugging_04rf67456.mp3", "timestamps": true, "previous_text": "وافتح خيارات المطور. فعل تصحيح أخطاء يو إس بي،"},
+  {"type": "tts", "voice_id": "pCKbQ4EPGE06zpEPGNvS", "model_id": "eleven_multilingual_v2", "text": "وفي ماك انقر مرتين على ملف ماك.", "out": "tv_s25_run_mac_00r4234fe.mp3", "timestamps": true, "next_text": "وإن رفض ماك فتحه، فافتح إعدادات النظام،"},
+  {"type": "tts", "voice_id": "pCKbQ4EPGE06zpEPGNvS", "model_id": "eleven_multilingual_v2", "text": "وإن رفض ماك فتحه،", "out": "tv_s25_run_mac_01r15dd7a.mp3", "timestamps": true, "previous_text": "وفي ماك انقر مرتين على ملف ماك.", "next_text": "فافتح إعدادات النظام، ثم الخصوصية والأمان،"},
+  {"type": "tts", "voice_id": "pCKbQ4EPGE06zpEPGNvS", "model_id": "eleven_multilingual_v2", "text": "فافتح إعدادات النظام،", "out": "tv_s25_run_mac_02r6aef44.mp3", "timestamps": true, "previous_text": "وفي ماك انقر مرتين على ملف ماك. وإن رفض ماك فتحه،", "next_text": "ثم الخصوصية والأمان، ثم فتح على أي حال."},
+  {"type": "tts", "voice_id": "pCKbQ4EPGE06zpEPGNvS", "model_id": "eleven_multilingual_v2", "text": "ثم الخصوصية والأمان،", "out": "tv_s25_run_mac_03r073f4e.mp3", "timestamps": true, "previous_text": "وإن رفض ماك فتحه، فافتح إعدادات النظام،", "next_text": "ثم فتح على أي حال."},
+  {"type": "tts", "voice_id": "pCKbQ4EPGE06zpEPGNvS", "model_id": "eleven_multilingual_v2", "text": "ثم فتح على أي حال.", "out": "tv_s25_run_mac_04r9a5e9e.mp3", "timestamps": true, "previous_text": "فافتح إعدادات النظام، ثم الخصوصية والأمان،"}
+ ]
 }

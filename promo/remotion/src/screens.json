@@ -424,24 +424,6 @@
         "_note": "base draws the capture's focused «رجوع» as an unfocused button: our ring moves to «فحص التحديثات»."
       }
     },
-    "update_check": {
-      "file": "update_check.png",
-      "source": "app/src/test/screenshots/updates_available.png",
-      "title": "فحص التحديثات: إصدار جديد",
-      "kind": "update",
-      "scenes": ["s14_breaks"],
-      "units": "px",
-      "size": [1920, 1080],
-      "focus": {
-        "install": [1363, 747, 351, 110],
-        "back": [1106, 750, 231, 104],
-        "versions": [1117, 569, 574, 142],
-        "latest": [1150, 630, 220, 60],
-        "notes": [112, 209, 808, 663],
-        "release": [1117, 569, 574, 142],
-        "progress": [1117, 569, 574, 142]
-      }
-    },
     "update_downloading": {
       "file": "update_downloading.png",
       "source": "app/src/test/screenshots/updates_downloading.png",
@@ -459,6 +441,110 @@
         "progress": [320, 477, 1280, 24]
       },
       "_note": "S14 re-draws the bar fill (from the right) and the «x من 18.0 ميغابايت» line as the download runs (UpdateProgressOverlay)."
+    },
+    "serious_settings": {
+      "file": "serious_settings.png",
+      "source": "app/src/test/screenshots/behavior_serious.png",
+      "title": "الوضع الجاد: مفتاح للأطفال ومفتاح للكبار",
+      "kind": "settings",
+      "scenes": ["s06_serious"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {"kidsToggle": [140, 310, 106, 62], "adultToggle": [148, 513, 104, 62]}
+    },
+    "channel_videos": {
+      "file": "channel_videos.png",
+      "source": "app/src/test/screenshots/channel.png",
+      "title": "صفحة القناة: الفيديوهات",
+      "kind": "channel",
+      "scenes": ["s09_channel"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "tabVideos": [1581, 553, 228, 90], "tabShorts": [1368, 553, 185, 90], "tabLive": [1105, 553, 236, 90], "tabLists": [903, 553, 175, 90],
+        "sortNewest": [624, 553, 208, 78], "sortViewed": [344, 553, 253, 78], "sortOldest": [155, 553, 162, 78]
+      }
+    },
+    "channel_shorts": {
+      "file": "channel_shorts.png",
+      "source": "app/src/test/screenshots/channel_shorts.png",
+      "title": "صفحة القناة: القصيرة",
+      "kind": "channel",
+      "scenes": ["s09_channel"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "tabVideos": [1581, 487, 228, 90], "tabShorts": [1368, 487, 185, 90], "tabLive": [1105, 487, 236, 90], "tabLists": [903, 487, 175, 90],
+        "sortNewest": [624, 487, 208, 78], "sortViewed": [344, 487, 253, 78], "sortOldest": [155, 487, 162, 78]
+      }
+    },
+    "search_mic": {
+      "file": "search_mic.png",
+      "source": "app/src/test/screenshots/search_idle_mic.png",
+      "title": "البحث: زر الميكروفون",
+      "kind": "search",
+      "scenes": ["s10_search"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {"mic": [207, 81, 126, 126], "lang": [95, 88, 96, 112], "field": [358, 88, 1306, 112]}
+    },
+    "search_listening": {
+      "file": "search_listening.png",
+      "source": "app/src/test/screenshots/search_listening.png",
+      "title": "البحث: أسمعك…",
+      "kind": "search",
+      "scenes": ["s10_search"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {"card": [236, 103, 1240, 874]}
+    },
+    "profile_toggles": {
+      "file": "profile_toggles.png",
+      "source": "app/src/test/screenshots/profile_edit_shorts.png",
+      "title": "ملف الطفل: Shorts والمقترحة",
+      "kind": "settings",
+      "scenes": ["s08_suggest"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {"shorts": [112, 144, 1104, 198], "suggestions": [112, 362, 1104, 196], "shortsToggle": [152, 213, 104, 60], "suggestionsToggle": [142, 431, 106, 60]}
+    },
+    "home_suggested": {
+      "file": "home_suggested.png",
+      "source": "app/src/test/screenshots/home_suggestions.png",
+      "title": "الرئيسية مع المقترحة وShorts",
+      "kind": "home",
+      "scenes": ["s08_suggest"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {"row": [96, 690, 1568, 356]}
+    },
+    "updates_hub": {
+      "file": "updates_hub.png",
+      "source": "app/src/test/screenshots/settings_hub_updates.png",
+      "title": "الإعدادات: فحص التحديثات",
+      "kind": "update",
+      "scenes": ["s15_updates"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {"button": [661, 392, 415, 110]}
+    },
+    "updates_checking": {
+      "file": "updates_checking.png",
+      "source": "app/src/test/screenshots/updates_checking.png",
+      "title": "جارٍ البحث عن تحديث",
+      "kind": "update",
+      "scenes": ["s15_updates"],
+      "units": "px",
+      "size": [1920, 1080]
+    },
+    "updates_installing": {
+      "file": "updates_installing.png",
+      "source": "app/src/test/screenshots/updates_installing.png",
+      "title": "جارٍ تثبيت التحديث",
+      "kind": "update",
+      "scenes": ["s15_updates"],
+      "units": "px",
+      "size": [1920, 1080]
     },
     "phone_remote_main": {
       "file": "phone_remote_main.png",

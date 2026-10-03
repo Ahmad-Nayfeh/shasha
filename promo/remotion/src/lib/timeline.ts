@@ -3,6 +3,7 @@
 // hard-coded in frames: scenes ask for beats by the *spoken* words (cue.text_tts).
 import timelineJson from '../data/timeline.json';
 import wordsJson from '../data/words.json';
+import wordsMobileJson from '../data/words-mobile.json';
 
 export const FPS = 30;
 
@@ -60,7 +61,8 @@ export const normWord = (w: string) =>
 
 export type Word = {w: string; cue: number; s: number; e: number}; // seconds from scene start
 type WordsFile = Record<string, {audio_duration_s: number; words: Word[]}>;
-const wordsFile = wordsJson as unknown as WordsFile;
+// scene ids are unique across both videos (s.. = the TV video, m.. = the phone video), so one lookup serves both
+const wordsFile = {...(wordsJson as unknown as WordsFile), ...(wordsMobileJson as unknown as WordsFile)};
 
 const proportionalWords = (scene: Scene): Word[] => {
   const out: Word[] = [];

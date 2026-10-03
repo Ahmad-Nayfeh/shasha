@@ -1,6 +1,7 @@
 // Render several stills of the Main composition with ONE bundle + ONE browser (cheap on a shared box).
 //   node tools/stills.mjs <outDir> name:frame [name:frame ...]      (frame = absolute frame in Main)
-//   node tools/stills.mjs <outDir> s03_home_search@120 ...          (frame relative to a scene start)
+//   node tools/stills.mjs <outDir> s03_home@120 ...                 (frame relative to a scene start)
+//   node tools/stills.mjs <outDir> --comp=Mobile m05_search@120     (the phone video: scene ids m..)
 //   node tools/stills.mjs <outDir> --comp=ScreensDebug home:0 search:1 (another composition, absolute frames)
 //   --props='{"captions":false,"grain":false}'   input props;   --jpeg   JPEG (q95) instead of PNG
 import {bundle} from '@remotion/bundler';
@@ -23,7 +24,7 @@ if (!outDir || !specs.length) {
   console.error('usage: node tools/stills.mjs <outDir> name:frame|scene@rel ...');
   process.exit(2);
 }
-const timeline = JSON.parse(fs.readFileSync(path.join(root, 'src/data/timeline.json'), 'utf8'));
+const timeline = JSON.parse(fs.readFileSync(path.join(root, compId === 'Mobile' ? 'src/data/timeline-mobile.json' : 'src/data/timeline.json'), 'utf8'));
 const jobs = specs.map((s) => {
   if (s.includes('@')) {
     const [id, rel] = s.split('@');
@@ -48,3 +49,4 @@ for (const j of jobs) {
   console.log(`${j.name} (frame ${j.frame}) ${((Date.now() - t) / 1000).toFixed(1)}s -> ${output}`);
 }
 await browser.close({silent: true});
+fs.rmSync(serveUrl, {recursive: true, force: true}); // the bundle is a ~180 MB copy of public/ in the temp dir

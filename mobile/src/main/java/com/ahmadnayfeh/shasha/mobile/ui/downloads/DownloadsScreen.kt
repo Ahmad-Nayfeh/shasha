@@ -154,7 +154,7 @@ private fun DownloadItem(row: DownloadRow, onPlay: () -> Unit, onCancel: () -> U
                             progress == null || progress.stage == DownloadStage.PREPARING -> stringResource(R.string.download_preparing)
                             progress.stage == DownloadStage.MERGING -> stringResource(R.string.download_merging)
                             fraction >= 0 -> stringResource(R.string.download_downloading_percent, (fraction * 100).toInt().toString()) +
-                                if (progress.bytesTotal > 0) " · ${Formatters.fileSize(progress.bytesDone)} / ${Formatters.fileSize(progress.bytesTotal)}" else ""
+                                if (progress.bytesTotal > 0) " · \u200E${Formatters.fileSize(progress.bytesDone)} / ${Formatters.fileSize(progress.bytesTotal)}\u200E" else ""
                             else -> stringResource(R.string.download_downloading)
                         },
                     )
