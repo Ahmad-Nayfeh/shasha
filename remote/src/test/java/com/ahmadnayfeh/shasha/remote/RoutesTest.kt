@@ -81,6 +81,58 @@ class RoutesTest {
         assertThat(h.controller.calls).containsExactly("status", "search(${"ب".repeat(200)})").inOrder()
     }
 
+    // ---- v1.4: the search by pages ----------------------------------------------------------------------------------
+
+    @Test
+    fun searchPage_firstPageHasTheShortsAndAToken_theNextOneIsTheLast() = remoteTest { h ->
+        val first = client.call("POST", "/api/search/page", """{"q":"  أناشيد أطفال  "}""")
+        assertThat(first.status).isEqualTo(HttpStatusCode.OK)
+        val one = first.json()
+        assertThat(one.getValue("items").jsonArray).hasSize(2)
+        val short = one.getValue("shorts").jsonArray.single().jsonObject
+        assertThat(short.str("id")).isEqualTo("shortabcdef1")
+        assertThat(short.str("isShort")).isEqualTo("true")
+        assertThat(one.str("next")).isEqualTo("page-2")
+
+        // The token comes back as it was given; the last page has none, and the Shorts are not repeated.
+        val second = client.call("POST", "/api/search/page", """{"q":"أناشيد أطفال","page":"page-2"}""").json()
+        assertThat(second.getValue("items").jsonArray.single().jsonObject.str("id")).isEqualTo("abcdefghij2")
+        assertThat(second.getValue("shorts").jsonArray).isEmpty()
+        assertThat(second.getValue("next")).isEqualTo(kotlinx.serialization.json.JsonNull)
+        assertThat(h.controller.calls)
+            .containsExactly("status", "searchPage(أناشيد أطفال,null)", "status", "searchPage(أناشيد أطفال,page-2)").inOrder()
+    }
+
+    @Test
+    fun searchPage_isRefused_whenTheProfileCannotSearch() = remoteTest { h ->
+        h.controller.status = h.controller.status.copy(canSearch = false, profileKind = RemoteProfileKind.CHILD)
+        val res = client.call("POST", "/api/search/page", """{"q":"x"}""")
+        assertThat(res.status).isEqualTo(HttpStatusCode.Forbidden)
+        assertThat(res.json().str("code")).isEqualTo("rejected")
+        assertThat(h.controller.calls).containsExactly("status")
+    }
+
+    @Test
+    fun searchPage_badRequests_neverReachTheController() = remoteTest { h ->
+        val empty = client.call("POST", "/api/search/page", """{"q":"   "}""")
+        assertThat(empty.status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(empty.json().str("message")).isEqualTo(ServerMessages.EMPTY_QUERY)
+        val long = client.call("POST", "/api/search/page", """{"q":"${"ب".repeat(201)}"}""")
+        assertThat(long.json().str("message")).isEqualTo(ServerMessages.QUERY_TOO_LONG)
+        // A token is what the TV gave out: an empty one, or one far longer than any, is not.
+        assertThat(client.call("POST", "/api/search/page", """{"q":"x","page":""}""").status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(client.call("POST", "/api/search/page", """{"q":"x","page":"${"t".repeat(129)}"}""").status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(client.call("POST", "/api/search/page", "not json").status).isEqualTo(HttpStatusCode.BadRequest)
+        assertThat(h.controller.calls).isEmpty()
+    }
+
+    @Test
+    fun searchPage_aTokenOfAnotherTvStillAnswers_anEmptyLastPage() = remoteTest { _ ->
+        val res = client.call("POST", "/api/search/page", """{"q":"x","page":"from-an-old-session"}""")
+        assertThat(res.status).isEqualTo(HttpStatusCode.OK)
+        assertThat(res.json().getValue("items").jsonArray).isEmpty()
+    }
+
     @Test
     fun play_forwardsTheLink_andPassesTheResultThrough() = remoteTest { h ->
         h.controller.playResult = RemotePlayResult.refused("هذه القناة ليست في قائمة السماح.")

@@ -39,6 +39,8 @@ import com.ahmadnayfeh.shasha.mobile.player.PlaybackMode
 import com.ahmadnayfeh.shasha.mobile.player.PlayerPhase
 import com.ahmadnayfeh.shasha.mobile.video
 import com.ahmadnayfeh.shasha.youtube.ItemsPage
+import com.ahmadnayfeh.shasha.youtube.PageKey
+import com.ahmadnayfeh.shasha.youtube.ShortsPage
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
 import com.ahmadnayfeh.shasha.youtube.VideoSource
 import com.google.common.truth.Truth.assertThat
@@ -293,6 +295,25 @@ class ShortsViewerUiTest {
     }
 
     @Test
+    fun theShortsYouTubeFindsForTheQueryAreTheRowToo_andTheViewerOpensOnThem() {
+        // The results hold no Short (YouTube keeps them in shelves of their own): the Shorts are asked for beside the search.
+        source.onSearch = { _, _, _ -> ItemsPage(listOf(video("res00000001", title = "A search result")), null) }
+        source.onSearchShorts = { _, _ ->
+            ShortsPage(listOf(short("sho00000001", "Found short one"), short("sho00000002", "Found short two")), PageKey("2"))
+        }
+        container.launch.value = LaunchRequest.Search("cats")
+        compose.startAppOffline(container)
+
+        compose.awaitText("A search result")
+        compose.awaitText("Found short two")
+        compose.onNodeWithText("Shorts").assertIsDisplayed()
+        compose.onNodeWithText("Found short two").performClick()
+
+        waitForPlayerOn("sho00000002")
+        assertThat(container.player.mode).isEqualTo(PlaybackMode.SHORT)
+    }
+
+    @Test
     fun withShortsOffASearchShowsNoRow() {
         runBlocking { container.settings.setShowShorts(false) }
         source.onSearch = { _, _, _ -> ItemsPage(listOf(video("res00000001", title = "A search result"), short("sho00000001", "Found short one")), null) }
@@ -302,6 +323,8 @@ class ShortsViewerUiTest {
         compose.awaitText("A search result")
         assertThat(compose.onAllNodesWithText("Found short one").fetchSemanticsNodes()).isEmpty()
         assertThat(compose.onAllNodesWithText("Shorts").fetchSemanticsNodes()).isEmpty()
+        // And YouTube is not even asked for them.
+        assertThat(source.shortsSearches).isEmpty()
     }
 
     @Test

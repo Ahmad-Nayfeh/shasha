@@ -1,6 +1,7 @@
 package com.ahmadnayfeh.shasha.ui.screens.player
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.ahmadnayfeh.shasha.TestStreams
 import com.ahmadnayfeh.shasha.data.MutableProfile
 import com.ahmadnayfeh.shasha.data.StreamRepository
 import com.ahmadnayfeh.shasha.data.WatchRepository
@@ -10,6 +11,7 @@ import com.ahmadnayfeh.shasha.player.PlaybackProgress
 import com.ahmadnayfeh.shasha.player.WatchSession
 import com.ahmadnayfeh.shasha.ui.FakeUiSource
 import com.ahmadnayfeh.shasha.ui.UiFixtures
+import com.ahmadnayfeh.shasha.youtube.VideoSource
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -149,5 +151,27 @@ class PlayerWatchTest {
         last.onEnded(PlaybackProgress(600_000, 600_000, 600_000))
         runBlocking { withTimeout(5_000) { last.end.first { it != null } } }
         assertThat(last.end.value).isEqualTo(PlaybackEnd.PlaylistFinished)
+    }
+
+    // ---- v1.4: the Shorts player plays each Short through this same class ---------------------------------------------
+
+    private val playable = StreamRepository(
+        object : VideoSource by FakeUiSource() {
+            override suspend fun stream(videoId: String, allowLowQuality: Boolean) = TestStreams.details(video)
+        },
+    )
+
+    @Test
+    fun aVideoResumesFromWhereItWasLeft_aShortNeverDoes() {
+        runBlocking { watch.saveProgress(id, 300_000, 600_000) }
+        val resumed = PlayerViewModel(id, playable, session())
+        runBlocking { withTimeout(5_000) { resumed.load.first { it is PlayerViewModel.Load.Ready } } }
+        assertThat(resumed.resumedFromMs.value).isEqualTo(300_000)
+
+        // A Short is watched from its start each time (flipping back to one is not «continue»): the saved position is not even read.
+        val short = PlayerViewModel(id, playable, session(), resumesFromSaved = false)
+        runBlocking { withTimeout(5_000) { short.load.first { it is PlayerViewModel.Load.Ready } } }
+        assertThat(short.resumedFromMs.value).isNull()
+        assertThat(short.resume.positionMs).isEqualTo(0)
     }
 }

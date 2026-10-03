@@ -109,7 +109,7 @@ rules, shown as is); `403 rejected` / `401 pairing` / `401|403 parent_session` /
 |---|---|---|---|
 | V-01 | any JSON route | not JSON / a required field missing | 400 bad_request «الطلب غير صالح.»; controller not called |
 | V-02 | any JSON route | body > 16 KB | 413 too_large |
-| V-03 | `/api/search` | `q` empty / > 200 chars | 400 «اكتب ما تريد البحث عنه.» / 400 «نص البحث طويل جداً…» |
+| V-03 | `/api/search`, `/api/search/page` | `q` empty / > 200 chars; (page route) `page` empty / > 128 chars | 400 «اكتب ما تريد البحث عنه.» / 400 «نص البحث طويل جداً…» / 400 |
 | V-04 | `/api/play` | url empty / > 2048 chars | 400 «الصق رابط يوتيوب أولاً.» / 400 |
 | V-05 | `/api/control` | SEEK_BY 0 or \|s\| > 86400; unknown action | 400 |
 | V-06 | `/api/profile` | id blank; pin > 32 chars | 400 |
@@ -160,6 +160,17 @@ Enumeration: profile {A, C} × session/lock {OK, UP, OUT, locked} × YouTube {re
 | SE-04 | A, YouTube fails | search | — | 403 rejected with the unified Arabic error text | card «تعذّر البحث» + the text |
 | SE-05 | A, UP / OUT / a locked video | search | nothing changes on the TV | 200 results | results shown dimmed (aria-disabled) with the reason above them; a tap only shows the reason (no request) |
 | SE-06 | A, the TV switches to C while the search runs | search | — | the answer is filtered by the CHILD's rules (outside-allowlist items gone) | — |
+
+v1.4: the page searches page by page (`POST /api/search/page {q, page?}` → `{items, shorts, next}`; `/api/search` stays, one page). Tests: `RoutesTest`, `TvRemoteControllerTest` (search section), the page's own behaviour was driven in a browser against a mock TV.
+
+| ID | Preconditions | Action | TV (expected) | HTTP / JSON | Phone UI |
+|---|---|---|---|---|---|
+| SE-07 | A, YouTube has three pages | the first page, then each `next` | each page is asked with the token the last answer gave (an opaque id of this TV) | 200 `{items, shorts, next}`; the last page's `next` is null | the next page loads by itself when the footer comes into view («عرض المزيد» is also a button); repeats of an earlier page are dropped; «هذه كل النتائج.» at the end |
+| SE-08 | A, the rules hide a whole page (blocked channels) | the next page | — | 200 `{items: [], next: token}` | the footer is still in view: the page asks for the one after |
+| SE-09 | A, a token from an old session or an evicted one | that page | the source answers an empty last page | 200 `{items: [], next: null}` | the end |
+| SE-10 | A shows Shorts / A hides them / the Shorts search fails | the first page | Shorts are asked once, beside the results (8 s at most); not asked for later pages, nor where hidden; a failure is no row | 200 with `shorts` (through the rules, `isShort` true) / `[]` | the row «Shorts» after the fourth result, portrait cards |
+| SE-11 | A taps a Short of the row | `POST /api/play` with its `/shorts/<id>` link | the same checks and «قبول» as any link; accepted, the TV opens the Shorts player on that one Short (the phone's row is not on the TV to flip through) | 200 ok (request pending) | the usual sheet |
+| SE-12 | C | `/api/search/page` | refused, YouTube not asked | 403 rejected «البحث غير متاح…» | — |
 
 ### PL: play a link (`POST /api/play`)
 Enumeration: profile {A, C} × session {OK≡WARN, UP, OUT} × lock {none, locked} × link {video, video+`list=`, video+`t=`, playlist, channel, not YouTube} × verdict {allowed, not in allowlist, blocked channel, blocked keyword, shorts hidden, YouTube failure} × TV display {shown, screen off, background, picker, profile changed, no answer} × SM {on, off} × the TV's answer {accept, reject, none}. Pruned by R10, R13, R15: locked → 1 row per kind of profile; display failures only for an allowed link (one row each, the path does not depend on the link kind); SM only decides whether the started video locks; the TV's answer only matters for an allowed link (PL-33…PL-39).

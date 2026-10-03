@@ -235,7 +235,7 @@ internal class ConfirmedOnce(private val inner: StartConfirmation) : StartConfir
 
 /** While a Short is made ready: its picture, soft, over the screen, and a quiet «جارٍ تجهيز المقطع». */
 @Composable
-private fun ShortsLoading(short: VideoItem) {
+internal fun ShortsLoading(short: VideoItem) {
     Box(Modifier.fillMaxSize().testTag("shorts_loading")) {
         ShortsBackdrop(backdropOf(short))
         ShashaLoaderWithText(stringResource(R.string.shorts_loading), Modifier.align(Alignment.Center))

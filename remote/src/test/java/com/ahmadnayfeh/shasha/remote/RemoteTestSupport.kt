@@ -26,6 +26,7 @@ val PUBLIC_ROUTES = listOf(
     Triple("GET", "/icon.png", null),
     Triple("GET", "/api/status", null),
     Triple("POST", "/api/search", """{"q":"x"}"""),
+    Triple("POST", "/api/search/page", """{"q":"x","page":"p2"}"""),
     Triple("POST", "/api/play", """{"url":"https://youtu.be/abcdefghijk"}"""),
     Triple("POST", "/api/control", """{"action":"PAUSE"}"""),
     Triple("GET", "/api/profiles", null),

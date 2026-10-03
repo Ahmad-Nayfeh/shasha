@@ -130,6 +130,21 @@ data class RemoteItem(
     val thumbnailUrl: String?,
     val durationSeconds: Long?,
     val isLive: Boolean = false,
+    /** A Short (v1.4): the page shows it in the row of Shorts, as a portrait card, and plays its `/shorts/` link. */
+    val isShort: Boolean = false,
+)
+
+/**
+ * One page of the phone page's search ([RemoteController.searchPage]). [items] are what the profile's rules allow of that page;
+ * [shorts] is the row of Shorts the search found (the first page only, and only where the profile shows Shorts: empty otherwise,
+ * and when YouTube would not say); [next] is what to send back for the following page, null at the end. A token is only good for
+ * the query it came with, and for as long as the TV keeps it (an old one answers an empty last page).
+ */
+@Serializable
+data class RemoteSearchPage(
+    val items: List<RemoteItem>,
+    val shorts: List<RemoteItem> = emptyList(),
+    val next: String? = null,
 )
 
 /**

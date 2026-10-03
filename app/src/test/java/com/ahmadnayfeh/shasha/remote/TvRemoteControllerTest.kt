@@ -17,6 +17,7 @@ import com.ahmadnayfeh.shasha.policy.SessionState
 import com.ahmadnayfeh.shasha.policy.clip
 import com.ahmadnayfeh.shasha.ui.navigation.Screen
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.youtube.PageKey
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
@@ -190,6 +191,127 @@ class TvRemoteControllerTest {
         env.source.searchFailure = SourceException(SourceErrorKind.NETWORK, "UnknownHostException", null, null)
         val refused = assertThrows(RemoteRejection::class.java) { runBlocking { controller.search("x") } }
         assertThat(refused.userMessage).isEqualTo(text(R.string.remote_offline))
+    }
+
+    // ---- Search, page by page (v1.4: the phone page used to get only the first page) -------------------------------
+
+    private fun fine(n: Int, channel: String = OTHER_CHANNEL) = clip("fine${n.toString().padStart(7, '0')}", channelId = channel, title = "Fine $n")
+
+    @Test
+    fun theSearchPages_comeOneByOne_untilYouTubeHasNoMore() = runBlocking<Unit> {
+        env.source.searchPages = listOf(listOf(fine(1), fine(2)), listOf(fine(3)), listOf(fine(4), fine(5)))
+        val first = controller.searchPage("cats", null)
+        assertThat(first.items.map { it.id }).containsExactly("fine0000001", "fine0000002").inOrder()
+        assertThat(first.next).isEqualTo("p2")
+        val second = controller.searchPage("cats", first.next)
+        assertThat(second.items.map { it.id }).containsExactly("fine0000003")
+        val third = controller.searchPage("cats", second.next)
+        assertThat(third.items.map { it.id }).containsExactly("fine0000004", "fine0000005").inOrder()
+        // The last page says so: nothing more to ask for.
+        assertThat(third.next).isNull()
+        assertThat(env.source.searchPageKeys).containsExactly(null, PageKey("p2"), PageKey("p3")).inOrder()
+    }
+
+    @Test
+    fun everyPage_passesTheRulesAsTheyAreNow_andAFullyHiddenPageStillHasANext() = runBlocking<Unit> {
+        env.profiles.update("adult") { it.copy(blocklist = Blocklist(channels = listOf(ListedChannel(BLOCKED_CHANNEL, "Blocked")))) }
+        withTimeout(5_000) { env.gate.filter.first { it.profile?.blocklist?.channels?.isNotEmpty() == true } }
+        env.source.searchPages = listOf(
+            listOf(fine(1), fine(2, channel = BLOCKED_CHANNEL)),
+            listOf(fine(3, channel = BLOCKED_CHANNEL), fine(4, channel = BLOCKED_CHANNEL)),
+            listOf(fine(5)),
+        )
+        val first = controller.searchPage("x", null)
+        assertThat(first.items.map { it.id }).containsExactly("fine0000001")
+        // A page the rules empty out is empty, and the page of the phone goes on to the next one by itself.
+        val second = controller.searchPage("x", first.next)
+        assertThat(second.items).isEmpty()
+        assertThat(second.next).isEqualTo("p3")
+        assertThat(controller.searchPage("x", second.next).items.map { it.id }).containsExactly("fine0000005")
+    }
+
+    @Test
+    fun aStaleToken_isAnEmptyLastPage_notAnError() = runBlocking<Unit> {
+        env.source.searchPages = listOf(listOf(fine(1)), listOf(fine(2)))
+        val page = controller.searchPage("x", "no-such-token")
+        assertThat(page.items).isEmpty()
+        assertThat(page.next).isNull()
+    }
+
+    @Test
+    fun theFirstPageBringsTheShorts_throughTheRules_theOthersDoNot() = runBlocking<Unit> {
+        env.profiles.update("adult") { it.copy(blocklist = Blocklist(channels = listOf(ListedChannel(BLOCKED_CHANNEL, "Blocked")))) }
+        withTimeout(5_000) { env.gate.filter.first { it.profile?.blocklist?.channels?.isNotEmpty() == true } }
+        env.source.searchPages = listOf(listOf(fine(1)), listOf(fine(2)))
+        env.source.shortsFound = listOf(
+            clip("short000001", channelId = OTHER_CHANNEL, short = true, title = "A Short"),
+            clip("short000002", channelId = BLOCKED_CHANNEL, short = true, title = "A blocked one"),
+            clip("short000001", channelId = OTHER_CHANNEL, short = true, title = "A Short"),
+        )
+        val first = controller.searchPage("cats", null)
+        assertThat(first.shorts.map { it.id }).containsExactly("short000001")
+        assertThat(first.shorts[0].isShort).isTrue()
+        assertThat(first.shorts[0].type).isEqualTo(RemoteItemType.VIDEO)
+        assertThat(first.shorts[0].thumbnailUrl).isEqualTo("https://i.ytimg.com/vi/short000001/mqdefault.jpg")
+        assertThat(first.items.single().isShort).isFalse()
+        // Asked once, with the query; the later pages have no row.
+        val second = controller.searchPage("cats", first.next)
+        assertThat(second.shorts).isEmpty()
+        assertThat(env.source.shortsSearches).containsExactly("cats")
+    }
+
+    @Test
+    fun aProfileThatHidesShorts_getsNoRow_andYouTubeIsNotAskedForOne() = runBlocking<Unit> {
+        env.profiles.update("adult") { it.copy(hideShorts = true) }
+        withTimeout(5_000) { env.gate.filter.first { it.profile?.hideShorts == true } }
+        env.source.searchPages = listOf(listOf(fine(1)))
+        env.source.shortsFound = listOf(clip("short000001", channelId = OTHER_CHANNEL, short = true))
+        val page = controller.searchPage("cats", null)
+        assertThat(page.shorts).isEmpty()
+        assertThat(page.items).hasSize(1)
+        assertThat(env.source.shortsSearches).isEmpty()
+    }
+
+    @Test
+    fun failingToFindShorts_isNoRow_notAFailedSearch() = runBlocking<Unit> {
+        env.source.searchPages = listOf(listOf(fine(1)))
+        env.source.shortsFailure = SourceException(SourceErrorKind.BLOCKED_403, "HttpStatus403", null, null)
+        val page = controller.searchPage("cats", null)
+        assertThat(page.items).hasSize(1)
+        assertThat(page.shorts).isEmpty()
+    }
+
+    @Test
+    fun aPageYouTubeRefuses_isARejection_andAChildHasNoSearchPage() = runBlocking<Unit> {
+        env.source.searchFailure = SourceException(SourceErrorKind.NETWORK, "UnknownHostException", null, null)
+        val refused = assertThrows(RemoteRejection::class.java) { runBlocking { controller.searchPage("x", null) } }
+        assertThat(refused.userMessage).isEqualTo(text(R.string.remote_offline))
+
+        env.source.searchFailure = null
+        env.enterChild()
+        val noSearch = assertThrows(RemoteRejection::class.java) { runBlocking { controller.searchPage("x", null) } }
+        assertThat(noSearch.userMessage).isEqualTo(text(R.string.remote_search_disabled))
+        assertThat(env.source.shortsSearches).isEmpty()
+    }
+
+    // ---- A Short's link from the phone's row of Shorts opens the Shorts player --------------------------------------------
+
+    @Test
+    fun aShortsLink_opensTheShortsPlayer_aWatchLinkTheNormalOne() = runBlocking<Unit> {
+        assertThat(env.playAccepted("https://www.youtube.com/shorts/$ADULT_VIDEO").ok).isTrue()
+        assertThat(env.playAccepted(watchLink(ADULT_VIDEO)).ok).isTrue()
+        assertThat(env.display.shown).containsExactly(
+            Screen.Shorts(ADULT_VIDEO, queue = null, fromLink = true, phoneApproved = true),
+            Screen.Player(ADULT_VIDEO, fromLink = true, phoneApproved = true),
+        ).inOrder()
+    }
+
+    @Test
+    fun aShortsLinkOutsideTheAllowlist_isRefusedLikeAnyOther() = runBlocking<Unit> {
+        env.enterChild()
+        val result = env.playAccepted("https://www.youtube.com/shorts/$OUTSIDE_VIDEO")
+        assertThat(result.ok).isFalse()
+        assertThat(env.display.shown).isEmpty()
     }
 
     // ---- The playback lock (SPEC §4): STOP, new links, switches and restores are refused ------------------

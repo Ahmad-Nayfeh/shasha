@@ -53,6 +53,7 @@ import com.ahmadnayfeh.shasha.youtube.PageKey
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistPage
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
+import com.ahmadnayfeh.shasha.youtube.ShortsPage
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.SourceItem
@@ -398,10 +399,29 @@ class RemoteFakeSource : VideoSource {
     @Volatile var searchFailure: SourceException? = null
     val searches = CopyOnWriteArrayList<String>()
 
+    /** When set, the search is paged: the first list is the first page (its next key is "p2"), and so on; the last has no next. */
+    @Volatile var searchPages: List<List<SourceItem>>? = null
+    val searchPageKeys = CopyOnWriteArrayList<PageKey?>()
+
+    /** What YouTube finds as Shorts for a query ([VideoSource.searchShorts]); [shortsFailure] makes asking fail. */
+    @Volatile var shortsFound: List<VideoItem> = emptyList()
+    @Volatile var shortsFailure: SourceException? = null
+    val shortsSearches = CopyOnWriteArrayList<String>()
+
     override suspend fun search(query: String, filter: SearchFilter, page: PageKey?): ItemsPage {
         searches += query
+        searchPageKeys += page
         searchFailure?.let { throw it }
-        return ItemsPage(searchResults, next = null)
+        val pages = searchPages ?: return ItemsPage(searchResults, next = null)
+        // A key this source does not know (a stale one) is the end: an empty last page.
+        val index = if (page == null) 0 else page.id.removePrefix("p").toIntOrNull()?.minus(1) ?: return ItemsPage(emptyList(), null)
+        return ItemsPage(pages.getOrElse(index) { emptyList() }, next = if (index + 1 < pages.size) PageKey("p${index + 2}") else null)
+    }
+
+    override suspend fun searchShorts(query: String, page: PageKey?): ShortsPage {
+        shortsSearches += query
+        shortsFailure?.let { throw it }
+        return ShortsPage(shortsFound, next = null)
     }
 
     override suspend fun channel(channelId: String): ChannelDetails =

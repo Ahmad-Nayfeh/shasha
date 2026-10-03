@@ -30,6 +30,7 @@ import java.time.LocalDate
 internal const val PARENT_SESSION_HEADER = "X-Parent-Session"
 
 @Serializable internal data class SearchRequest(val q: String)
+@Serializable internal data class SearchPageRequest(val q: String, val page: String? = null)
 @Serializable internal data class PlayRequest(val url: String)
 @Serializable internal data class ProfileRequest(val id: String, val pin: String? = null)
 @Serializable internal data class LoginRequest(val pin: String)
@@ -60,6 +61,9 @@ internal const val PARENT_SESSION_HEADER = "X-Parent-Session"
 
 private const val MAX_TEXT = 2048
 private const val MAX_QUERY = 200
+
+/** A search page's token is a UUID (36 characters); this is room for any id the TV may give. */
+private const val MAX_PAGE_TOKEN = 128
 private const val MAX_MINUTES = 24 * 60
 private const val MAX_SEEK_SECONDS = 24 * 60 * 60
 private const val MAX_KEY = 64
@@ -132,6 +136,16 @@ internal fun Application.remoteModule(
                 // Defence in depth: the child profile has no search at all, whatever the controller does.
                 if (!controller.status().canSearch) throw rejected(ServerMessages.SEARCH_DISABLED)
                 call.respondJson(controller.search(q))
+            }
+            post("/search/page") {
+                val req = call.receiveJson<SearchPageRequest>()
+                val q = req.q.trim()
+                if (q.isEmpty()) throw badRequest(ServerMessages.EMPTY_QUERY)
+                if (q.length > MAX_QUERY) throw badRequest(ServerMessages.QUERY_TOO_LONG)
+                // A token is what this TV gave out (an id): nothing the page may make up is long.
+                if (req.page != null && (req.page.isEmpty() || req.page.length > MAX_PAGE_TOKEN)) throw badRequest()
+                if (!controller.status().canSearch) throw rejected(ServerMessages.SEARCH_DISABLED)
+                call.respondJson(controller.searchPage(q, req.page))
             }
             post("/play") {
                 val url = call.receiveJson<PlayRequest>().url.trim()

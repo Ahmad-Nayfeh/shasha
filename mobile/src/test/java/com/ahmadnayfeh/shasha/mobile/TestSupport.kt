@@ -7,6 +7,7 @@ import com.ahmadnayfeh.shasha.youtube.PageKey
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistPage
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
+import com.ahmadnayfeh.shasha.youtube.ShortsPage
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
@@ -81,6 +82,7 @@ open class FakeVideoSource : VideoSource {
     override val extractorVersion: String = "test"
 
     var onSearch: suspend (String, SearchFilter, PageKey?) -> ItemsPage = { _, _, _ -> ItemsPage(emptyList(), null) }
+    var onSearchShorts: suspend (String, PageKey?) -> ShortsPage = { _, _ -> ShortsPage(emptyList(), null) }
     var onSuggestions: suspend (String, String) -> List<String> = { _, _ -> emptyList() }
     var onChannel: suspend (String) -> ChannelDetails = { id -> ChannelDetails(com.ahmadnayfeh.shasha.mobile.channel(id), null, null) }
     var onChannelVideos: suspend (String, PageKey?) -> ItemsPage = { _, _ -> ItemsPage(emptyList(), null) }
@@ -91,11 +93,17 @@ open class FakeVideoSource : VideoSource {
     var onRelated: suspend (String) -> List<VideoItem> = { emptyList() }
 
     val searches = ArrayList<Triple<String, SearchFilter, PageKey?>>()
+    val shortsSearches = ArrayList<Pair<String, PageKey?>>()
     val suggestionQueries = ArrayList<String>()
 
     override suspend fun search(query: String, filter: SearchFilter, page: PageKey?): ItemsPage {
         searches += Triple(query, filter, page)
         return onSearch(query, filter, page)
+    }
+
+    override suspend fun searchShorts(query: String, page: PageKey?): ShortsPage {
+        shortsSearches += query to page
+        return onSearchShorts(query, page)
     }
 
     override suspend fun suggestions(query: String, language: String): List<String> {

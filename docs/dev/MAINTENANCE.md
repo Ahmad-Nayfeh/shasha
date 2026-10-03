@@ -119,13 +119,14 @@ newpipeExtractor = "v0.26.6"
 ./gradlew :youtube:testDebugUnitTest --tests '*RealNetwork*' -Dyoutube.realNetwork=true
 ```
 
-- كل اختبار يطبع سطر `REAL-RESULT | …`. `RealNetworkVideoSourceTest` للاستخراج (عادي، بث مباشر، للأطفال، محذوف، بحث، قناة، قائمة تشغيل، RSS وبديله)، و`RealNetworkPlaybackTest` لطلبات التشغيل نفسها (ملف MPD، والمقاطع الأولى من googlevideo، وHLS)، و`RealNetworkKidsUploadsTest` لقائمة «UULF» التي تحلّ محل تبويب «الفيديوهات» لقنوات الأطفال (انظر [رفوعات القناة](#رفوعات-القناة-تبويب-الفيديوهات-وقائمة-uulf)).
+- كل اختبار يطبع سطر `REAL-RESULT | …`. `RealNetworkVideoSourceTest` للاستخراج (عادي، بث مباشر، للأطفال، محذوف، بحث، قناة، قائمة تشغيل، RSS وبديله)، و`RealNetworkPlaybackTest` لطلبات التشغيل نفسها (ملف MPD، والمقاطع الأولى من googlevideo، وHLS)، و`RealNetworkKidsUploadsTest` لقائمة «UULF» التي تحلّ محل تبويب «الفيديوهات» لقنوات الأطفال (انظر [رفوعات القناة](#رفوعات-القناة-تبويب-الفيديوهات-وقائمة-uulf))، و`RealNetworkSearchTest` لعمق البحث (صفحات كثيرة صغيرة تنتهي بانتهاء ما عند يوتيوب) ولـ Shorts البحث (انظر [مقاطع Shorts في البحث](#مقاطع-shorts-في-البحث)).
 - في ويندوز اكتب `--tests "*RealNetwork*"` بعلامتي تنصيص مزدوجتين.
 - واختيارياً، تحديث «الرئيسية» من 20 قناة، وSponsorBlock:
 
   ```sh
   ./gradlew :app:testDebugUnitTest --tests '*FeedSyncRealNetworkTest' -Dyoutube.realNetwork=true
   ./gradlew :app:testDebugUnitTest --tests '*SponsorBlockRealNetworkTest' -Dyoutube.realNetwork=true
+  ./gradlew :app:testDebugUnitTest --tests '*SearchRealNetworkTest' -Dyoutube.realNetwork=true
   ```
 
 - أو شغّل «YouTube canary» يدوياً على فرعك (Run workflow ← اختر الفرع).
@@ -284,6 +285,14 @@ newpipeExtractor = "v0.26.6"
 - حين يتغيّر شكل الردّ تختفي أزرار الترتيب (يبقى «الأحدث»، أي ترتيب يوتيوب)، ولا تظهر قائمة بترتيب خاطئ أبداً: إن قال الردّ إن الشريحة المحدَّدة غير المطلوبة، أو جاء بلا قائمة، فشل الطلب بدل أن يُعرض.
 - نصوص الشرائح بإنجليزية يوتيوب («Latest» و«Popular» و«Oldest»)، لأن اللغة المدعومة هي en-GB وحدها (القسم السابق). ولا يظهر زر ترتيب لشريحة بنص آخر.
 - الفحص: `RealNetworkChannelTabsTest` على يوتيوب الحقيقي (الأكثر مشاهدة بعدد المشاهدات تنازلياً، والأقدم بالتاريخ تصاعدياً، وصفحات تالية، وكل قسم)، والأسطر `REAL-RESULT | …`. وبلا شبكة: `ChannelTabLoaderTest` يمرّ بالمكتبة الحقيقية على ردود يوتيوب مزيّفة بالشكل الذي صُوِّر في أكتوبر 2026.
+
+### مقاطع Shorts في البحث
+
+بحث «الكل» في يوتيوب يضع مقاطع Shorts في رفّ خاص (`gridShelfViewModel` فيه `shortsLockupViewModel`، مقطعان في الصفحة) لا تقرؤه NewPipeExtractor، فلا تظهر في نتائج `search()`. لذلك تسأل الدالة `searchShorts(query, page)` عن البحث نفسه مرة ثانية بمرشّح «Shorts» (`EgIQCQ%3D%3D`) عبر المحمِّل نفسه (`newpipe/ShortsSearch`، وجسم الطلب من `InnerTubeBody`) وتقرأ الردّ `ShortsAnswers`، وللردّ ثلاثة أشكال: الرفّ، و`reelItemRenderer`، و`videoRenderer` فيه `reelWatchEndpoint` (تأتي به بعض الاستعلامات، منها العربية). كل شكل لا يعرفه المفكّك لا يُقرأ ولا يفشل: الاستعلام الذي لا مقاطع له يعطي قائمة فارغة، والردّ الذي ليس نتيجة بحث أصلاً هو الذي يرمي `ParsingException`.
+
+- حين لا تظهر Shorts في البحث رغم أن يوتيوب يعرض منها: شغّل `RealNetworkSearchTest` وانظر السطر `REAL-RESULT | searchShorts …`. صفر مقطع لاستعلام شائع (`minecraft`) يعني أن الشكل تغيّر: قارن الردّ الحيّ بالملفات في `youtube/src/test/resources/shorts/` (ردود حقيقية مصوَّرة في أكتوبر 2026: `typed_first` و`typed_next` و`typed_none` و`plain_first` و`typed_videos`) وعدّل `ShortsAnswers`، وأضف الشكل الجديد ملفاً هناك مع اختبار في `ShortsAnswersTest`.
+- يرسل يوتيوب 403 مؤقتاً على سيل من الطلبات المتتالية: اختبارات الشبكة تفصل بين طلباتها بثوانٍ، فإن فشلت بـ 403 أعدها بعد دقائق قبل أن تظنّ أن شيئاً انكسر.
+- ما يخرج من `searchShorts` يمرّ على المرشّح المدمج مثل غيره (`SafeVideoSource.searchShorts`)، والاستعلام الذي يحجبه المرشّح لا يُرسل إلى يوتيوب أصلاً.
 
 ### أسماء الاستثناءات وR8
 
