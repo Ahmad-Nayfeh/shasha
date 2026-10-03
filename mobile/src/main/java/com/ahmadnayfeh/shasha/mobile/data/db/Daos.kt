@@ -194,3 +194,72 @@ interface SearchHistoryDao {
     @Query("DELETE FROM search_history WHERE `query` NOT IN (SELECT `query` FROM search_history ORDER BY searchedAt DESC LIMIT :keep)")
     suspend fun trim(keep: Int)
 }
+
+@Dao
+interface UserPlaylistDao {
+    /** The viewer's lists in the order they were made (they do not move when something is added to one), with their size and cover. */
+    @Query(
+        "SELECT p.id AS id, p.name AS name, " +
+            "(SELECT COUNT(*) FROM user_playlist_items i WHERE i.playlistId = p.id) AS itemCount, " +
+            "(SELECT i.thumbnailUrl FROM user_playlist_items i WHERE i.playlistId = p.id ORDER BY i.position LIMIT 1) AS coverUrl " +
+            "FROM user_playlists p ORDER BY p.createdAt, p.id",
+    )
+    fun observeSummaries(): Flow<List<UserPlaylistSummary>>
+
+    @Query("SELECT * FROM user_playlists WHERE id = :id")
+    fun observe(id: Long): Flow<UserPlaylistEntity?>
+
+    @Query("SELECT * FROM user_playlists WHERE id = :id")
+    suspend fun get(id: Long): UserPlaylistEntity?
+
+    @Insert
+    suspend fun insert(playlist: UserPlaylistEntity): Long
+
+    /** Returns how many rows changed: 0 for a list that is gone. */
+    @Query("UPDATE user_playlists SET name = :name WHERE id = :id")
+    suspend fun rename(id: Long, name: String): Int
+
+    @Query("DELETE FROM user_playlists WHERE id = :id")
+    suspend fun deleteRow(id: Long)
+
+    @Query("DELETE FROM user_playlist_items WHERE playlistId = :playlistId")
+    suspend fun deleteItems(playlistId: Long)
+
+    /** The list and its videos go in one step, whether or not this database enforces foreign keys. */
+    @Transaction
+    suspend fun delete(id: Long) {
+        deleteItems(id)
+        deleteRow(id)
+    }
+
+    /** In the order the videos were added. */
+    @Query("SELECT * FROM user_playlist_items WHERE playlistId = :playlistId ORDER BY position")
+    fun observeItems(playlistId: Long): Flow<List<UserPlaylistItemEntity>>
+
+    @Query("SELECT * FROM user_playlist_items WHERE playlistId = :playlistId ORDER BY position")
+    suspend fun items(playlistId: Long): List<UserPlaylistItemEntity>
+
+    /** The ids of the lists that hold [videoId]: the checkmarks of the «Save to» sheet. */
+    @Query("SELECT playlistId FROM user_playlist_items WHERE videoId = :videoId")
+    fun observeContaining(videoId: String): Flow<List<Long>>
+
+    @Query("SELECT COALESCE(MAX(position), -1) + 1 FROM user_playlist_items WHERE playlistId = :playlistId")
+    suspend fun nextPosition(playlistId: Long): Int
+
+    /** Returns the new row id, or -1 when the list already holds the video. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertItem(item: UserPlaylistItemEntity): Long
+
+    /**
+     * Puts [item] at the end of its list, unless the list already holds that video or is gone: true when it was added. One step, so
+     * two quick taps cannot take the same position.
+     */
+    @Transaction
+    suspend fun append(item: UserPlaylistItemEntity): Boolean {
+        if (get(item.playlistId) == null) return false
+        return insertItem(item.copy(position = nextPosition(item.playlistId))) != -1L
+    }
+
+    @Query("DELETE FROM user_playlist_items WHERE playlistId = :playlistId AND videoId = :videoId")
+    suspend fun removeItem(playlistId: Long, videoId: String)
+}

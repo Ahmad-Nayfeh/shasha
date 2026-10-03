@@ -139,11 +139,14 @@ class KidsHomeViewModel(
         )
     }
 
-    /** «مقترحة لك» before the child's rules (none unless the parent turned suggestions on: the flow stays empty then). */
-    private val suggestedVideos = suggestedVideos(watch, filter, suggestions)
+    /**
+     * «مقترحة لك» before the child's rules (none unless the parent turned suggestions on: the flow stays empty then). The same
+     * ranking as the adult's home; a child's home has no row of Shorts, so none are asked for.
+     */
+    private val suggestedVideos = suggestedVideos(watch, filter, suggestions, withShorts = false)
 
     val state: StateFlow<KidsHomeState> = combine(base, suggestedVideos, filter) { s, suggested, rules ->
-        if (!s.loaded) s else s.copy(suggested = rules.suggestions(suggested).take(HomeSuggestions.ROW_LIMIT).map { it.toUi() })
+        if (!s.loaded) s else s.copy(suggested = rules.suggestions(suggested.videos).take(HomeSuggestions.ROW_LIMIT).map { it.toUi() })
     }
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), KidsHomeState())

@@ -71,13 +71,18 @@ import com.ahmadnayfeh.shasha.mobile.ui.nav.LibraryRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.PlaylistRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.SearchRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.SettingsRoute
+import com.ahmadnayfeh.shasha.mobile.ui.nav.ShortsRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.SubscriptionsRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.UpdateRoute
+import com.ahmadnayfeh.shasha.mobile.ui.nav.UserPlaylistRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.WatchLaterRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.WatchRoute
+import com.ahmadnayfeh.shasha.mobile.ui.playlist.PlaylistPickerSheet
 import com.ahmadnayfeh.shasha.mobile.ui.playlist.PlaylistScreen
+import com.ahmadnayfeh.shasha.mobile.ui.playlist.UserPlaylistScreen
 import com.ahmadnayfeh.shasha.mobile.ui.search.SearchScreen
 import com.ahmadnayfeh.shasha.mobile.ui.settings.SettingsScreen
+import com.ahmadnayfeh.shasha.mobile.ui.shorts.ShortsScreen
 import com.ahmadnayfeh.shasha.mobile.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.mobile.ui.theme.isDark
 import com.ahmadnayfeh.shasha.mobile.ui.update.UpdateScreen
@@ -124,11 +129,30 @@ fun ShashaRoot(container: AppContainer) {
         val savedIds by remember { container.library.watchLaterItems.map { list -> list.mapTo(HashSet<String>()) { it.videoId } as Set<String> } }
             .collectAsStateWithLifecycle(initialValue = emptySet())
         var downloadTarget by remember { mutableStateOf<VideoItem?>(null) }
+        var playlistTarget by remember { mutableStateOf<VideoItem?>(null) }
         val request by container.launch.collectAsStateWithLifecycle()
         val backStack by navController.currentBackStackEntryAsState()
         val destination = backStack?.destination
 
+        /**
+         * The Shorts viewer, on [videos] (the list the viewer opens from: a channel's Shorts, the Home's row, the search results'),
+         * at [index]. [replace]: it takes the place of the player screen it was opened from.
+         */
+        fun openShorts(videos: List<VideoItem>, index: Int, replace: Boolean = false) {
+            val short = videos.getOrNull(index) ?: return
+            val queueId = container.shortsQueues.put(videos)
+            navController.navigate(ShortsRoute(short.videoId, queueId)) {
+                if (replace) popUpTo<WatchRoute> { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+
         fun openVideo(video: VideoItem, playlistId: String? = null, replace: Boolean = false) {
+            // A Short has a player of its own, wherever it was tapped (a related video, a list that knows no better): its own queue of one.
+            if (video.isShortForm && playlistId == null && settings.showShorts) {
+                openShorts(listOf(video), 0, replace)
+                return
+            }
             container.player.remember(video)
             navController.navigate(WatchRoute(video.videoId, playlistId)) {
                 // The next video replaces this one: back goes to where the viewer came from, not through every video.
@@ -157,6 +181,10 @@ fun ShashaRoot(container: AppContainer) {
                         val saved = container.library.toggleWatchLater(video)
                         snackbar.showSnackbar(resources.getString(if (saved) R.string.snack_watch_later_added else R.string.snack_watch_later_removed))
                     }
+                }
+
+                override fun addToPlaylist(video: VideoItem) {
+                    playlistTarget = video
                 }
 
                 override fun download(video: VideoItem) {
@@ -198,7 +226,8 @@ fun ShashaRoot(container: AppContainer) {
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 snackbarHost = { SnackbarHost(snackbar) },
                 bottomBar = {
-                    if (destination?.hasRoute(WatchRoute::class) != true) {
+                    // The player screen and the Shorts viewer are the whole screen.
+                    if (destination?.hasRoute(WatchRoute::class) != true && destination?.hasRoute(ShortsRoute::class) != true) {
                         NavigationBar {
                             for (tab in tabs) {
                                 NavigationBarItem(
@@ -218,6 +247,7 @@ fun ShashaRoot(container: AppContainer) {
                             container,
                             onOpenVideo = { openVideo(it) },
                             onOpenChannel = { openChannelPage(it) },
+                            onOpenShorts = { videos, index -> openShorts(videos, index) },
                             onSearch = { openTab(SearchRoute()) },
                         )
                     }
@@ -228,6 +258,7 @@ fun ShashaRoot(container: AppContainer) {
                             onOpenVideo = { openVideo(it) },
                             onOpenChannel = { openChannelPage(it) },
                             onOpenPlaylist = { navController.navigate(PlaylistRoute(it)) },
+                            onOpenShorts = { videos, index -> openShorts(videos, index) },
                         )
                     }
                     composable<LibraryRoute> {
@@ -237,6 +268,7 @@ fun ShashaRoot(container: AppContainer) {
                             onOpenHistory = { navController.navigate(HistoryRoute) },
                             onOpenWatchLater = { navController.navigate(WatchLaterRoute) },
                             onOpenSubscriptions = { navController.navigate(SubscriptionsRoute) },
+                            onOpenPlaylist = { navController.navigate(UserPlaylistRoute(it)) },
                         )
                     }
                     composable<SettingsRoute> {
@@ -249,6 +281,7 @@ fun ShashaRoot(container: AppContainer) {
                             onBack = { navController.popBackStack() },
                             onOpenVideo = { openVideo(it) },
                             onOpenPlaylist = { navController.navigate(PlaylistRoute(it)) },
+                            onOpenShorts = { videos, index -> openShorts(videos, index) },
                         )
                     }
                     composable<PlaylistRoute> { entry ->
@@ -257,6 +290,22 @@ fun ShashaRoot(container: AppContainer) {
                             playlistId = entry.toRoute<PlaylistRoute>().playlistId,
                             onBack = { navController.popBackStack() },
                             onOpenVideo = { video, playlistId -> openVideo(video, playlistId) },
+                        )
+                    }
+                    composable<UserPlaylistRoute> { entry ->
+                        UserPlaylistScreen(
+                            container,
+                            playlistId = entry.toRoute<UserPlaylistRoute>().playlistId,
+                            onBack = { navController.popBackStack() },
+                            onPlay = { video, playlistId -> openVideo(video, playlistId) },
+                        )
+                    }
+                    composable<ShortsRoute> { entry ->
+                        ShortsScreen(
+                            container,
+                            route = entry.toRoute<ShortsRoute>(),
+                            onBack = { navController.popBackStack() },
+                            onOpenChannel = { openChannelPage(it) },
                         )
                     }
                     composable<WatchRoute> { entry ->
@@ -292,6 +341,9 @@ fun ShashaRoot(container: AppContainer) {
                 }
             }
 
+            playlistTarget?.let { video ->
+                PlaylistPickerSheet(container, video, onDismiss = { playlistTarget = null })
+            }
             downloadTarget?.let { video ->
                 DownloadSheet(
                     container,

@@ -12,6 +12,7 @@ import com.ahmadnayfeh.shasha.mobile.common.PagedState
 import com.ahmadnayfeh.shasha.mobile.common.UiError
 import com.ahmadnayfeh.shasha.mobile.data.FeedRepository
 import com.ahmadnayfeh.shasha.mobile.data.LibraryRepository
+import com.ahmadnayfeh.shasha.mobile.data.LocalPlaylistIds
 import com.ahmadnayfeh.shasha.mobile.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.mobile.data.logLine
 import com.ahmadnayfeh.shasha.mobile.download.DownloadManager
@@ -75,6 +76,9 @@ internal interface WatchDetailsSource {
  * playback. Leaving the screen stops the player, unless a newer screen already took it over.
  *
  * [downloadId] set: a downloaded file plays (no streams, no related videos).
+ *
+ * [playlistId] may name one of the viewer's own lists ([LocalPlaylistIds]): its queue is [localVideos], in the order the videos were
+ * added, instead of a YouTube playlist's pages. [showShorts] is the «Show Shorts» setting: off, the related videos have no Shorts.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class WatchViewModel(
@@ -90,6 +94,9 @@ class WatchViewModel(
     startMs: Long?,
     /** The player's state that the screen follows: the controller's own (a test passes one of its own). */
     playerState: StateFlow<PlayerUiState> = controller.state,
+    private val showShorts: () -> Boolean = { true },
+    /** The videos of one of the viewer's own lists, by its id, in order. */
+    private val localVideos: suspend (Long) -> List<VideoItem> = { emptyList() },
 ) : ViewModel(), WatchDetailsSource {
 
     val player: StateFlow<PlayerUiState> = playerState
@@ -100,8 +107,14 @@ class WatchViewModel(
 
     /** The playlist being played, when there is one: shown instead of the related videos. */
     private val queue = PagedLoader<VideoItem, String>(viewModelScope, key = { it.videoId }, minPerLoad = 50, maxRounds = 4) { page ->
-        val answer = source.playlist(checkNotNull(playlistId), page)
-        answer.videos to answer.next
+        val local = LocalPlaylistIds.parse(playlistId)
+        if (local != null) {
+            // One of the viewer's own lists: all of it at once, in the order the videos were added.
+            localVideos(local) to null
+        } else {
+            val answer = source.playlist(checkNotNull(playlistId), page)
+            answer.videos to answer.next
+        }
     }
     override val queueState: StateFlow<PagedState<VideoItem>> = queue.state
 
@@ -170,7 +183,7 @@ class WatchViewModel(
         relatedRequested = true
         viewModelScope.launch {
             _related.value = try {
-                Loadable.Loaded(source.related(videoId))
+                Loadable.Loaded(source.related(videoId).filter { showShorts() || !it.isShortForm })
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -304,6 +317,8 @@ class WatchViewModel(
                     playlistId = playlistId,
                     downloadId = downloadId,
                     startMs = startMs?.takeIf { it > 0 },
+                    showShorts = { container.latestSettings().showShorts },
+                    localVideos = container.userPlaylists::videosNow,
                 )
             }
         }

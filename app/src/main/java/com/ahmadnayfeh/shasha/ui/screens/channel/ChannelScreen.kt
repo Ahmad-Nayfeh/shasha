@@ -84,7 +84,8 @@ import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 /**
  * [adult]: the adult profile's page, with the subscribe toggle and the parental menu (allowlists, block).
- * A child's page has neither: nothing to manage.
+ * A child's page has neither: nothing to manage. A Short of the Shorts section opens in the Shorts player ([onPlayShorts]), the
+ * other videos in the player ([onPlay]).
  */
 @Composable
 fun ChannelRoute(
@@ -92,6 +93,7 @@ fun ChannelRoute(
     nameHint: String?,
     adult: Boolean,
     onPlay: (VideoItem) -> Unit,
+    onPlayShorts: (shorts: List<VideoItem>, index: Int) -> Unit,
     onOpenPlaylist: (playlistId: String) -> Unit,
     onBack: () -> Unit,
     onCheckUpdates: () -> Unit,
@@ -122,6 +124,7 @@ fun ChannelRoute(
             onBack()
         },
         onPlay = onPlay,
+        onPlayShorts = onPlayShorts,
         onOpenPlaylist = onOpenPlaylist,
         onSelectTab = vm::selectTab,
         onSelectSort = vm::selectSort,
@@ -170,6 +173,8 @@ fun ChannelScreen(
     onCheckUpdates: () -> Unit,
     modifier: Modifier = Modifier,
     onRetry: () -> Unit = {},
+    /** A Short of the Shorts section was chosen: the Shorts player opens at [Int] of the Shorts loaded so far. */
+    onPlayShorts: (shorts: List<VideoItem>, index: Int) -> Unit = { shorts, index -> shorts.getOrNull(index)?.let(onPlay) },
     access: Decision? = Decision.Allow,
     adult: Boolean = true,
     onParental: () -> Unit = {},
@@ -220,7 +225,7 @@ fun ChannelScreen(
     // Focus enters where the first card is; with no cards (empty, loading) on the selected section's chip.
     val firstCard = remember { FocusRequester() }
     TakeFocusWhenReady(focus, ready = header is ChannelHeader.Ready && !items.loadingFirst)
-    LoadMoreWhenNearEnd(gridState, onLoadMore = onLoadMore)
+    LoadMoreWhenNearEnd(gridState, busy = items.loadingMore, onLoadMore = onLoadMore)
     val padding = PaddingValues(horizontal = ShashaDimens.ScreenHorizontal, vertical = 40.dp)
     Box(modifier.fillMaxSize()) {
         ShashaGrid(
@@ -263,7 +268,10 @@ fun ChannelScreen(
                     )
                 }
                 // Every video here is the channel's own: the cards show only when each was published.
-                tab == ChannelTab.SHORTS -> shortCards(videos, watched, firstCard, showChannel = false) { onPlay(it.video) }
+                // The Shorts player, with the channel's Shorts loaded so far to flip through.
+                tab == ChannelTab.SHORTS -> shortCards(videos, watched, firstCard, showChannel = false) { chosen ->
+                    onPlayShorts(videos.map { it.video }, videos.indexOf(chosen))
+                }
                 tab == ChannelTab.PLAYLISTS -> playlistCards(playlists, formats, firstCard) { onOpenPlaylist(it.playlist.playlistId) }
                 else -> videoCards(videos, watched, formats, nowMs, firstCard, showChannel = false) { onPlay(it.video) }
             }

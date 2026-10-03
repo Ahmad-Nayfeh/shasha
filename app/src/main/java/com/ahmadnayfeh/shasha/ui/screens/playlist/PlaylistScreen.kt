@@ -246,7 +246,7 @@ private fun VideoList(
 ) {
     val listState = rememberLazyListState()
     val firstRow = remember { FocusRequester() }
-    LoadMoreWhenNearEnd(listState, onLoadMore = onLoadMore)
+    LoadMoreWhenNearEnd(listState, busy = videos.loadingMore, onLoadMore = onLoadMore)
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize().focusRestorer(firstRow).testTag("playlist_list"),

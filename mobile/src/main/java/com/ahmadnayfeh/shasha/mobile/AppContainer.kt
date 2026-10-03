@@ -2,12 +2,15 @@ package com.ahmadnayfeh.shasha.mobile
 
 import android.app.Application
 import android.content.Context
+import com.ahmadnayfeh.shasha.mobile.common.ShortsQueues
 import com.ahmadnayfeh.shasha.mobile.data.AppSettings
 import com.ahmadnayfeh.shasha.mobile.data.FeedRepository
+import com.ahmadnayfeh.shasha.mobile.data.HomeSuggestions
 import com.ahmadnayfeh.shasha.mobile.data.LibraryRepository
 import com.ahmadnayfeh.shasha.mobile.data.SearchHistoryRepository
 import com.ahmadnayfeh.shasha.mobile.data.SettingsRepository
 import com.ahmadnayfeh.shasha.mobile.data.SubscriptionRepository
+import com.ahmadnayfeh.shasha.mobile.data.UserPlaylistRepository
 import com.ahmadnayfeh.shasha.mobile.data.db.ShashaDatabase
 import com.ahmadnayfeh.shasha.mobile.download.DownloadManager
 import com.ahmadnayfeh.shasha.mobile.download.DownloadNotifier
@@ -17,6 +20,7 @@ import com.ahmadnayfeh.shasha.mobile.download.MediaStoreSaver
 import com.ahmadnayfeh.shasha.mobile.download.OptionsSource
 import com.ahmadnayfeh.shasha.mobile.download.StreamFetcher
 import com.ahmadnayfeh.shasha.mobile.player.PlayerController
+import com.ahmadnayfeh.shasha.mobile.player.VideoFit
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorBlockClient
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorBlockRepository
 import com.ahmadnayfeh.shasha.mobile.update.ApkInspector
@@ -35,8 +39,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
@@ -90,6 +97,9 @@ open class AppContainer(private val app: Application) {
 
     fun latestSettings(): AppSettings = settingsState.value
 
+    /** The «Show Shorts» setting, as a flow that says only when it changes: every screen with Shorts on it follows it. */
+    val showShorts: Flow<Boolean> get() = settings.settings.map { it.showShorts }.distinctUntilChanged()
+
     /** Reads the stored settings now (the activity needs the language before it can show anything). Cheap: one small file. */
     fun initialSettings(): AppSettings = runBlocking { settings.settings.first() }.also { settingsState.value = it }
 
@@ -97,6 +107,18 @@ open class AppContainer(private val app: Application) {
     val feed: FeedRepository by lazy { FeedRepository(videoSource, database.subscriptions(), database.feed(), settings) }
     val library: LibraryRepository by lazy { LibraryRepository(database.history(), database.watchLater(), database.progress()) }
     val searchHistory: SearchHistoryRepository by lazy { SearchHistoryRepository(database.searchHistory()) }
+
+    /** The viewer's own playlists («Watch later» is the built-in one, [library]). */
+    val userPlaylists: UserPlaylistRepository by lazy { UserPlaylistRepository(database.userPlaylists()) }
+
+    /** «مقترحة لك» on the home screen: the lists kept in the cache folder, refreshed beside the screen. */
+    val suggestions: HomeSuggestions by lazy { HomeSuggestions(library, videoSource, File(app.cacheDir, HomeSuggestions.FILE_NAME)) }
+
+    /** The lists the Shorts viewer was opened from, by the number its route carries. */
+    val shortsQueues = ShortsQueues()
+
+    /** How a video's picture sits in its frame (pinch to zoom): the viewer's choice, for the run of the app. */
+    val videoFit = MutableStateFlow(VideoFit.FIT)
 
     val sponsorBlock: SponsorBlockRepository by lazy {
         SponsorBlockRepository(SponsorBlockClient(okHttp), database.sponsorSegments(), System::currentTimeMillis)

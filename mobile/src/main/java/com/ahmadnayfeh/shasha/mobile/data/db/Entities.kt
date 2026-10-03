@@ -1,6 +1,7 @@
 package com.ahmadnayfeh.shasha.mobile.data.db
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
@@ -112,4 +113,53 @@ data class SponsorSegmentsEntity(
 data class SearchHistoryEntity(
     @PrimaryKey val query: String,
     val searchedAt: Long,
+)
+
+/**
+ * A list the viewer made and named. «Watch later» is not one of them: it keeps its own table ([WatchLaterEntity]) and stays the
+ * built-in list, so nothing stored by an older version has to move.
+ */
+@Entity(tableName = "user_playlists")
+data class UserPlaylistEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val createdAt: Long,
+)
+
+/**
+ * A video in one of the viewer's lists, with what the lists show of it. [position] is the order the videos were added in: a list
+ * plays in that order, and it stays what it was when a video before it is removed (the gap is harmless). Deleting the list takes
+ * its videos with it.
+ */
+@Entity(
+    tableName = "user_playlist_items",
+    primaryKeys = ["playlistId", "videoId"],
+    foreignKeys = [
+        ForeignKey(
+            entity = UserPlaylistEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["playlistId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("videoId")],
+)
+data class UserPlaylistItemEntity(
+    val playlistId: Long,
+    val videoId: String,
+    val position: Int,
+    val title: String,
+    val channelId: String?,
+    val channelName: String?,
+    val thumbnailUrl: String?,
+    val durationSeconds: Long?,
+    val addedAt: Long,
+)
+
+/** One of the viewer's lists as the Library shows it: how many videos it holds and the picture of its first one. */
+data class UserPlaylistSummary(
+    val id: Long,
+    val name: String,
+    val itemCount: Int,
+    val coverUrl: String?,
 )

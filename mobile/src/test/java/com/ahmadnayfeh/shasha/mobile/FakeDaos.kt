@@ -12,11 +12,16 @@ import com.ahmadnayfeh.shasha.mobile.data.db.SearchHistoryDao
 import com.ahmadnayfeh.shasha.mobile.data.db.SearchHistoryEntity
 import com.ahmadnayfeh.shasha.mobile.data.db.SubscriptionDao
 import com.ahmadnayfeh.shasha.mobile.data.db.SubscriptionEntity
+import com.ahmadnayfeh.shasha.mobile.data.db.UserPlaylistDao
+import com.ahmadnayfeh.shasha.mobile.data.db.UserPlaylistEntity
+import com.ahmadnayfeh.shasha.mobile.data.db.UserPlaylistItemEntity
+import com.ahmadnayfeh.shasha.mobile.data.db.UserPlaylistSummary
 import com.ahmadnayfeh.shasha.mobile.data.db.WatchLaterDao
 import com.ahmadnayfeh.shasha.mobile.data.db.WatchLaterEntity
 import com.ahmadnayfeh.shasha.mobile.data.db.WatchProgressEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 /*
@@ -185,4 +190,62 @@ class FakeDownloadDao : DownloadDao {
     }
 
     override suspend fun pendingCount(): Int = rows.value.count { it.status == DownloadStatus.QUEUED || it.status == DownloadStatus.RUNNING }
+}
+
+/** The viewer's playlists in memory; [delete] and [append] are the real DAO's own (default) methods over these. */
+class FakeUserPlaylistDao : UserPlaylistDao {
+    val lists = MutableStateFlow<List<UserPlaylistEntity>>(emptyList())
+    val rows = MutableStateFlow<List<UserPlaylistItemEntity>>(emptyList())
+    private var nextId = 1L
+
+    override fun observeSummaries(): Flow<List<UserPlaylistSummary>> = combine(lists, rows) { playlists, items ->
+        playlists.sortedWith(compareBy<UserPlaylistEntity> { it.createdAt }.thenBy { it.id }).map { playlist ->
+            val mine = items.filter { it.playlistId == playlist.id }.sortedBy { it.position }
+            UserPlaylistSummary(playlist.id, playlist.name, mine.size, mine.firstOrNull()?.thumbnailUrl)
+        }
+    }
+
+    override fun observe(id: Long): Flow<UserPlaylistEntity?> = lists.map { all -> all.firstOrNull { it.id == id } }
+    override suspend fun get(id: Long): UserPlaylistEntity? = lists.value.firstOrNull { it.id == id }
+
+    override suspend fun insert(playlist: UserPlaylistEntity): Long {
+        val id = nextId++
+        lists.value = lists.value + playlist.copy(id = id)
+        return id
+    }
+
+    override suspend fun rename(id: Long, name: String): Int {
+        val found = lists.value.any { it.id == id }
+        lists.value = lists.value.map { if (it.id == id) it.copy(name = name) else it }
+        return if (found) 1 else 0
+    }
+
+    override suspend fun deleteRow(id: Long) {
+        lists.value = lists.value.filterNot { it.id == id }
+    }
+
+    override suspend fun deleteItems(playlistId: Long) {
+        rows.value = rows.value.filterNot { it.playlistId == playlistId }
+    }
+
+    override fun observeItems(playlistId: Long): Flow<List<UserPlaylistItemEntity>> =
+        rows.map { all -> all.filter { it.playlistId == playlistId }.sortedBy { it.position } }
+
+    override suspend fun items(playlistId: Long): List<UserPlaylistItemEntity> =
+        rows.value.filter { it.playlistId == playlistId }.sortedBy { it.position }
+
+    override fun observeContaining(videoId: String): Flow<List<Long>> =
+        rows.map { all -> all.filter { it.videoId == videoId }.map { it.playlistId } }
+
+    override suspend fun nextPosition(playlistId: Long): Int = (rows.value.filter { it.playlistId == playlistId }.maxOfOrNull { it.position } ?: -1) + 1
+
+    override suspend fun insertItem(item: UserPlaylistItemEntity): Long {
+        if (rows.value.any { it.playlistId == item.playlistId && it.videoId == item.videoId }) return -1
+        rows.value = rows.value + item
+        return rows.value.size.toLong()
+    }
+
+    override suspend fun removeItem(playlistId: Long, videoId: String) {
+        rows.value = rows.value.filterNot { it.playlistId == playlistId && it.videoId == videoId }
+    }
 }

@@ -30,6 +30,7 @@ import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.ShashaApp
 import com.ahmadnayfeh.shasha.appContainer
 import com.ahmadnayfeh.shasha.lock.LockController
+import com.ahmadnayfeh.shasha.player.ShortsQueues
 import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.ui.components.CardMenuHost
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
@@ -57,6 +58,7 @@ import com.ahmadnayfeh.shasha.ui.screens.library.SubscriptionsRoute
 import com.ahmadnayfeh.shasha.ui.screens.library.WatchLaterRoute
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerScreen
 import com.ahmadnayfeh.shasha.ui.screens.playlist.PlaylistRoute
+import com.ahmadnayfeh.shasha.ui.screens.shorts.ShortsScreen
 import com.ahmadnayfeh.shasha.ui.screens.search.SearchRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.AllowlistRoute
 import com.ahmadnayfeh.shasha.ui.screens.settings.BlocklistRoute
@@ -113,7 +115,9 @@ fun ProfileNavHost(
     lock: LockController? = null,
 ) {
     val kids = profile.isChild
-    val actions = remember(nav) { browseActions(nav) }
+    // The lists the Shorts player flips through (nothing outside the app: tests with a plain Application).
+    val queues = (LocalContext.current.applicationContext as? ShashaApp)?.container?.shortsQueues ?: remember { ShortsQueues() }
+    val actions = remember(nav, queues) { browseActions(nav, queues) }
     val settings = remember(nav) { settingsActions(nav) }
     val railActions = remember(kids, profile.avatar, profile.name) {
         if (kids) {
@@ -142,7 +146,7 @@ fun ProfileNavHost(
                 val tabs = tabsNav ?: rememberNavController()
                 MainScreen(if (kids) Tab.Kids else Tab.Adult, entry.savedStateHandle, railActions, tabs, content)
             }
-            browsingDestinations(nav, actions, profile, lock)
+            browsingDestinations(nav, actions, profile, lock, queues)
             if (!kids) adultDestinations(nav, actions, settings)
         }
         if (lock != null) KeepLockedVideoOnScreen(lock.lock, profile.id, nav)
@@ -172,8 +176,8 @@ fun ProfileNavHost(
     }
 }
 
-/** Channel and playlist pages, the player and the updater: every profile has them. */
-private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions: BrowseActions, profile: Profile, lock: LockController?) {
+/** Channel and playlist pages, the player, the Shorts player and the updater: every profile has them. */
+private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions: BrowseActions, profile: Profile, lock: LockController?, queues: ShortsQueues) {
     val adult = profile.isAdult
     composable<Screen.Channel> { entry ->
         val route = entry.toRoute<Screen.Channel>()
@@ -182,6 +186,7 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
             nameHint = route.name,
             adult = adult,
             onPlay = actions.play,
+            onPlayShorts = actions.playShorts,
             // Its Playlists section: the playlist opens knowing whose it is (a child may open its channel's playlists).
             onOpenPlaylist = { playlistId ->
                 nav.navigate(Screen.Playlist(playlistId, ownerChannelId = route.channelId)) { launchSingleTop = true }
@@ -236,6 +241,32 @@ private fun NavGraphBuilder.browsingDestinations(nav: NavHostController, actions
             onPairPhone = if (adult) dropUnlessResumed { nav.navigate(Screen.RemoteControl) { popUpTo<Screen.Player> { inclusive = true } } } else null,
             // «مقترحة»: the suggestion replaces this player (BACK returns to where the first video was chosen).
             onPlaySuggestion = { video -> nav.navigate(Screen.Player(video.videoId)) { popUpTo<Screen.Player> { inclusive = true } } },
+            // ...and a suggested Short opens the Shorts player over the Shorts among the suggestions, the same way.
+            onPlayShorts = { shorts, index ->
+                nav.navigate(Screen.Shorts(shorts[index].videoId, queues.put(shorts))) { popUpTo<Screen.Player> { inclusive = true } }
+            },
+        )
+    }
+    composable<Screen.Shorts>(
+        // The video is on a SurfaceView, which cannot fade or scale: leave the player with a quick cut.
+        exitTransition = { fadeOut(tween(120)) },
+        popExitTransition = { fadeOut(tween(120)) },
+    ) { entry ->
+        val route = entry.toRoute<Screen.Shorts>()
+        ShortsScreen(
+            videoId = route.videoId,
+            onBack = dropUnlessResumed { nav.popBackStack() },
+            onCheckUpdates = dropUnlessResumed { nav.navigate(Screen.Updates) { launchSingleTop = true } },
+            queueKey = route.queue,
+            fromLink = route.fromLink,
+            phoneApproved = route.phoneApproved,
+            profile = profile,
+            lock = lock,
+            // v1.1.1: a replay that needs the phone's «تأكيد» is a fresh start of the same Short.
+            onRestart = dropUnlessResumed {
+                nav.navigate(route.copy(phoneApproved = false)) { popUpTo<Screen.Shorts> { inclusive = true } }
+            },
+            onPairPhone = if (adult) dropUnlessResumed { nav.navigate(Screen.RemoteControl) { popUpTo<Screen.Shorts> { inclusive = true } } } else null,
         )
     }
     composable<Screen.Updates> {
@@ -311,7 +342,14 @@ private fun NavGraphBuilder.adultDestinations(nav: NavHostController, actions: B
 @Composable
 private fun AdultTabContent(tab: Tab, focus: ContentFocus, actions: BrowseActions, settings: SettingsActions, select: (Tab) -> Unit) {
     when (tab) {
-        Tab.HOME -> HomeRoute(focus, actions.play, actions.openImport, onSearch = { select(Tab.SEARCH) }, onCheckUpdates = actions.checkUpdates)
+        Tab.HOME -> HomeRoute(
+            focus,
+            actions.play,
+            actions.playShorts,
+            actions.openImport,
+            onSearch = { select(Tab.SEARCH) },
+            onCheckUpdates = actions.checkUpdates,
+        )
         Tab.SEARCH -> SearchRoute(focus, actions)
         Tab.SUBSCRIPTIONS -> SubscriptionsRoute(focus, actions.openChannel, actions.openImport, onSearch = { select(Tab.SEARCH) })
         Tab.WATCH_LATER -> WatchLaterRoute(focus, actions.play)
@@ -330,12 +368,15 @@ private fun KidsTabContent(tab: Tab, focus: ContentFocus, actions: BrowseActions
     }
 }
 
-private fun browseActions(nav: NavHostController) = BrowseActions(
+private fun browseActions(nav: NavHostController, queues: ShortsQueues) = BrowseActions(
     play = { video -> nav.navigate(Screen.Player(video.videoId)) { launchSingleTop = true } },
     openChannel = { channelId, name -> nav.navigate(Screen.Channel(channelId, name)) { launchSingleTop = true } },
     openPlaylist = { playlistId -> nav.navigate(Screen.Playlist(playlistId)) { launchSingleTop = true } },
     openImport = { nav.navigate(Screen.ImportSubscriptions) { launchSingleTop = true } },
     checkUpdates = { nav.navigate(Screen.Updates) { launchSingleTop = true } },
+    playShorts = { shorts, index ->
+        shorts.getOrNull(index)?.let { chosen -> nav.navigate(Screen.Shorts(chosen.videoId, queues.put(shorts))) { launchSingleTop = true } }
+    },
 )
 
 private fun settingsActions(nav: NavHostController) = SettingsActions(

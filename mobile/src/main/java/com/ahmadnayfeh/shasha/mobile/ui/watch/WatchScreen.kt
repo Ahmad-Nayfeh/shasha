@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,9 +27,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
@@ -54,6 +57,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
@@ -81,6 +86,7 @@ import com.ahmadnayfeh.shasha.mobile.player.PlaybackSpeeds
 import com.ahmadnayfeh.shasha.mobile.player.PlayerController
 import com.ahmadnayfeh.shasha.mobile.player.PlayerPhase
 import com.ahmadnayfeh.shasha.mobile.player.PlayerUiState
+import com.ahmadnayfeh.shasha.mobile.player.VideoFit
 import com.ahmadnayfeh.shasha.mobile.ui.LocalActivityBridge
 import com.ahmadnayfeh.shasha.mobile.ui.OrientationMode
 import com.ahmadnayfeh.shasha.mobile.ui.components.Avatar
@@ -91,6 +97,7 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
 import com.ahmadnayfeh.shasha.mobile.ui.nav.WatchRoute
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 /**
@@ -116,6 +123,8 @@ fun WatchScreen(
     val controller = container.player
     val state by vm.player.collectAsStateWithLifecycle()
     val settings by container.settingsFlow.collectAsStateWithLifecycle()
+    // How the picture sits in its frame (pinch to zoom): kept for the run of the app, so the next video is as the viewer left it.
+    val fit by container.videoFit.collectAsStateWithLifecycle()
     val bridge = LocalActivityBridge.current
     val inPip by bridge.inPictureInPicture.collectAsStateWithLifecycle()
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -174,8 +183,12 @@ fun WatchScreen(
             null
         },
         onVideoBounds = { videoBounds = it },
-        onOpenVideo = { onOpenVideo(it, null) },
+        // What the details list under the player holds is the playlist being played, or (without one) the related videos: a video taken
+        // from the playlist stays in it, the next one still follows.
+        onOpenVideo = { onOpenVideo(it, vm.playlistId) },
         onOpenChannel = onOpenChannel,
+        fit = fit,
+        onFitChange = { container.videoFit.value = it },
     )
 }
 
@@ -200,8 +213,19 @@ internal fun WatchContent(
     onVideoBounds: (Rect) -> Unit,
     onOpenVideo: (VideoItem) -> Unit,
     onOpenChannel: (ChannelItem) -> Unit,
+    /** How the picture sits in its frame; pinching it asks for the other ([onFitChange]). */
+    fit: VideoFit = VideoFit.FIT,
+    onFitChange: (VideoFit) -> Unit = {},
 ) {
     var showSettings by remember { mutableStateOf(false) }
+    // «Zoomed to fill» / «Original», for a moment after a pinch changed the fit.
+    var zoomHint by remember { mutableStateOf<VideoFit?>(null) }
+    LaunchedEffect(zoomHint) {
+        if (zoomHint != null) {
+            delay(ZOOM_HINT_MS)
+            zoomHint = null
+        }
+    }
     val playerModifier = when {
         inPip || isFullscreen -> Modifier.fillMaxSize()
         else -> Modifier.fillMaxWidth().statusBarsPadding().aspectRatio(state.aspectRatio.coerceIn(0.8f, 16f / 9f))
@@ -210,10 +234,13 @@ internal fun WatchContent(
     Column(Modifier.fillMaxSize().background(if (isFullscreen || inPip) Color.Black else MaterialTheme.colorScheme.surface)) {
         Box(Modifier.then(if (isFullscreen || inPip) Modifier.fillMaxSize() else Modifier.fillMaxWidth().background(Color.Black))) {
             Box(
-                playerModifier.background(Color.Black).onGloballyPositioned { coordinates ->
-                    val bounds = coordinates.boundsInWindow()
-                    onVideoBounds(Rect(bounds.left.roundToInt(), bounds.top.roundToInt(), bounds.right.roundToInt(), bounds.bottom.roundToInt()))
-                },
+                playerModifier.background(Color.Black)
+                    .onGloballyPositioned { coordinates ->
+                        val bounds = coordinates.boundsInWindow()
+                        onVideoBounds(Rect(bounds.left.roundToInt(), bounds.top.roundToInt(), bounds.right.roundToInt(), bounds.bottom.roundToInt()))
+                    }
+                    // A picture of a file that has no video (audio only) has nothing to zoom; in the floating window the system owns the touches.
+                    .then(if (state.isAudioOnly || inPip) Modifier else Modifier.pinchToFit(fit) { next -> onFitChange(next); zoomHint = next }),
             ) {
                 if (state.isAudioOnly) {
                     AsyncImage(
@@ -225,16 +252,17 @@ internal fun WatchContent(
                 } else {
                     ContentFrame(
                         player = player,
-                        modifier = Modifier.fillMaxSize(),
+                        // Filling the frame overflows it: what is cropped must not be drawn outside.
+                        modifier = Modifier.fillMaxSize().clipToBounds(),
                         surfaceType = SURFACE_TYPE_SURFACE_VIEW,
-                        contentScale = ContentScale.Fit,
+                        contentScale = fit.contentScale,
                         // Until the first frame is drawn the video's own picture stands in for it, not a black one.
                         shutter = {
                             AsyncImage(
                                 model = state.video?.thumbnailUrl,
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit,
+                                contentScale = fit.contentScale,
                             )
                         },
                     )
@@ -244,7 +272,7 @@ internal fun WatchContent(
                         model = state.video?.thumbnailUrl,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit,
+                        contentScale = fit.contentScale,
                     )
                 }
                 if (state.phase == PlayerPhase.ERROR && state.error != null) {
@@ -262,6 +290,16 @@ internal fun WatchContent(
                         onToggleFullscreen = onToggleFullscreen,
                         onPictureInPicture = onEnterPictureInPicture,
                         onOpenSettings = { showSettings = true },
+                    )
+                }
+                zoomHint?.let { shown ->
+                    Text(
+                        stringResource(if (shown == VideoFit.FILL) R.string.player_zoom_fill else R.string.player_zoom_fit),
+                        // Between the row of buttons at the top and the play button in the middle.
+                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 50.dp)
+                            .clip(RoundedCornerShape(16.dp)).background(Color(0xB3000000)).padding(horizontal = 14.dp, vertical = 4.dp),
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge,
                     )
                 }
             }
@@ -336,12 +374,14 @@ private fun Details(
         }
         if (video != null) {
             item(key = "actions") {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Scrolls sideways where the buttons do not fit (a narrow phone, a long Arabic label).
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ActionButton(
                         icon = if (saved) Icons.Filled.WatchLater else Icons.Outlined.WatchLater,
                         label = stringResource(if (saved) R.string.action_saved else R.string.action_watch_later),
                         onClick = { actions.toggleWatchLater(video) },
                     )
+                    ActionButton(Icons.AutoMirrored.Filled.PlaylistAdd, stringResource(R.string.action_save_to_playlist)) { actions.addToPlaylist(video) }
                     if (!state.isOffline && !video.isLive) {
                         ActionButton(Icons.Filled.Download, stringResource(R.string.menu_download)) { actions.download(video) }
                     }
@@ -407,11 +447,12 @@ private fun Details(
     }
 }
 
+/** One of the buttons under the player. Snug, so that the four of them (Watch later, Save, Download, Share) fit a phone's width in Arabic too. */
 @Composable
 private fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
-    OutlinedButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)) {
+    OutlinedButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(4.dp))
         Text(label, style = MaterialTheme.typography.labelLarge)
     }
 }
@@ -467,3 +508,6 @@ private fun QualityRow(label: String, selected: Boolean, onClick: () -> Unit) {
         if (selected) Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
     }
 }
+
+/** How long «Zoomed to fill» / «Original» stays on the picture after a pinch. */
+private const val ZOOM_HINT_MS = 1_400L

@@ -1,0 +1,419 @@
+{
+ "estimatedResults": "31000000",
+ "contents": {
+  "twoColumnSearchResultsRenderer": {
+   "primaryContents": {
+    "sectionListRenderer": {
+     "contents": [
+      {
+       "itemSectionRenderer": {
+        "contents": [
+         {
+          "gridShelfViewModel": {
+           "contents": [
+            {
+             "shortsLockupViewModel": {
+              "entityId": "shorts-shelf-item-COFRdtIcLzc",
+              "accessibilityText": "Minecraft, But You Have to Break One Color…, 24 thousand views – play Short",
+              "onTap": {
+               "innertubeCommand": {
+                "commandMetadata": {
+                 "webCommandMetadata": {
+                  "url": "/shorts/COFRdtIcLzc",
+                  "webPageType": "WEB_PAGE_TYPE_SHORTS"
+                 }
+                },
+                "reelWatchEndpoint": {
+                 "videoId": "COFRdtIcLzc",
+                 "thumbnail": {
+                  "thumbnails": [
+                   {
+                    "url": "https://i.ytimg.com/vi/COFRdtIcLzc/frame0.jpg",
+                    "width": 1080,
+                    "height": 1920
+                   }
+                  ],
+                  "isOriginalAspectRatio": true
+                 },
+                 "sequenceProvider": "REEL_WATCH_SEQUENCE_PROVIDER_RPC"
+                }
+               }
+              },
+              "overlayMetadata": {
+               "primaryText": {
+                "content": "Minecraft, But You Have to Break One Color…"
+               },
+               "secondaryText": {
+                "content": "24k views"
+               }
+              },
+              "thumbnailViewModel": {
+               "thumbnailViewModel": {
+                "image": {
+                 "sources": [
+                  {
+                   "url": "https://i.ytimg.com/vi/COFRdtIcLzc/hq720.jpg?sqp=-oaymwEdCJUDENAFSFXyq4qpAw8IARUAAIhCcAHAAQbQAQE=&rs=AOn4CLBU0g0ny-JsJdwi5cLrOkvqkvy4kg",
+                   "width": 405,
+                   "height": 720
+                  }
+                 ]
+                }
+               }
+              },
+              "indexInCollection": 0
+             }
+            },
+            {
+             "shortsLockupViewModel": {
+              "entityId": "shorts-shelf-item-aBR8xrg2YXs",
+              "accessibilityText": "VILLAGER Statue Build Battle In Minecraft — NOOB VS PRO CHALLENGE — Maizen Parody, 19 thousand views – play Short",
+              "onTap": {
+               "innertubeCommand": {
+                "commandMetadata": {
+                 "webCommandMetadata": {
+                  "url": "/shorts/aBR8xrg2YXs",
+                  "webPageType": "WEB_PAGE_TYPE_SHORTS"
+                 }
+                },
+                "reelWatchEndpoint": {
+                 "videoId": "aBR8xrg2YXs",
+                 "thumbnail": {
+                  "thumbnails": [
+                   {
+                    "url": "https://i.ytimg.com/vi/aBR8xrg2YXs/frame0.jpg",
+                    "width": 1080,
+                    "height": 1920
+                   }
+                  ],
+                  "isOriginalAspectRatio": true
+                 },
+                 "sequenceProvider": "REEL_WATCH_SEQUENCE_PROVIDER_RPC"
+                }
+               }
+              },
+              "overlayMetadata": {
+               "primaryText": {
+                "content": "VILLAGER Statue Build Battle In Minecraft — NOOB VS PRO CHALLENGE — Maizen Parody"
+               },
+               "secondaryText": {
+                "content": "19k views"
+               }
+              },
+              "thumbnailViewModel": {
+               "thumbnailViewModel": {
+                "image": {
+                 "sources": [
+                  {
+                   "url": "https://i.ytimg.com/vi/aBR8xrg2YXs/sardefault.jpg?sqp=-oaymwEdCJUDENAFSFWQAgHyq4qpAwwIARUAAIhCcAHAAQY=&rs=AOn4CLDsZe5kfXAgMEyP8pdyHoI0LXERdw",
+                   "width": 405,
+                   "height": 720
+                  },
+                  {
+                   "url": "https://i.ytimg.com/vi/aBR8xrg2YXs/sardefault.jpg?sqp=-oaymwEgCJUDEOAESFWQAgHyq4qpAw8IARUAAIhCcAHAAQbIAQE=&rs=AOn4CLBqV3Gnwo63fpoJ4Wg2OgAvZtR0lA",
+                   "width": 405,
+                   "height": 608
+                  }
+                 ]
+                }
+               }
+              },
+              "indexInCollection": 0
+             }
+            },
+            {
+             "shortsLockupViewModel": {
+              "entityId": "shorts-shelf-item--UEw591X_RY",
+              "accessibilityText": "How to make a water lift elevator in Minecraft super easy and simple #minecraft #elevator #system, 68 thousand views – play Short",
+              "onTap": {
+               "innertubeCommand": {
+                "commandMetadata": {
+                 "webCommandMetadata": {
+                  "url": "/shorts/-UEw591X_RY",
+                  "webPageType": "WEB_PAGE_TYPE_SHORTS"
+                 }
+                },
+                "reelWatchEndpoint": {
+                 "videoId": "-UEw591X_RY",
+                 "thumbnail": {
+                  "thumbnails": [
+                   {
+                    "url": "https://i.ytimg.com/vi/-UEw591X_RY/frame0.jpg",
+                    "width": 1080,
+                    "height": 1440
+                   }
+                  ],
+                  "isOriginalAspectRatio": true
+                 },
+                 "sequenceProvider": "REEL_WATCH_SEQUENCE_PROVIDER_RPC"
+                }
+               }
+              },
+              "overlayMetadata": {
+               "primaryText": {
+                "content": "How to make a water lift elevator in Minecraft super easy and simple #minecraft #elevator #system"
+               },
+               "secondaryText": {
+                "content": "68k views"
+               }
+              },
+              "thumbnailViewModel": {
+               "thumbnailViewModel": {
+                "image": {
+                 "sources": [
+                  {
+                   "url": "https://i.ytimg.com/vi/-UEw591X_RY/oar2.jpg?sqp=-oaymwEdCJwEENAFSFWQAgHyq4qpAwwIARUAAIhCcAHAAQY=&rs=AOn4CLDE-lakHR6-BDkoKPKts0DVuypQQQ&usqp=CCk",
+                   "width": 540,
+                   "height": 720
+                  }
+                 ]
+                }
+               }
+              },
+              "indexInCollection": 0
+             }
+            }
+           ],
+           "header": {
+            "sectionHeaderViewModel": {
+             "headline": {
+              "content": "Shorts"
+             },
+             "leadingAccessory": {
+              "image": {
+               "sources": [
+                {
+                 "clientResource": {
+                  "imageName": "YOUTUBE_SHORTS_BRAND_24"
+                 }
+                }
+               ]
+              }
+             }
+            }
+           },
+           "contentAspectRatio": "GRID_SHELF_CONTENT_ASPECT_RATIO_TWO_BY_THREE",
+           "enableVerticalExpansion": true,
+           "minCollapsedItemCount": 10
+          }
+         },
+         {
+          "gridShelfViewModel": {
+           "contents": [
+            {
+             "shortsLockupViewModel": {
+              "entityId": "shorts-shelf-item-4y9gMpJ3R1c",
+              "accessibilityText": "verity vs little girl #minecraft, 182 thousand views – play Short",
+              "onTap": {
+               "innertubeCommand": {
+                "commandMetadata": {
+                 "webCommandMetadata": {
+                  "url": "/shorts/4y9gMpJ3R1c",
+                  "webPageType": "WEB_PAGE_TYPE_SHORTS"
+                 }
+                },
+                "reelWatchEndpoint": {
+                 "videoId": "4y9gMpJ3R1c",
+                 "thumbnail": {
+                  "thumbnails": [
+                   {
+                    "url": "https://i.ytimg.com/vi/4y9gMpJ3R1c/frame0.jpg",
+                    "width": 1080,
+                    "height": 1920
+                   }
+                  ],
+                  "isOriginalAspectRatio": true
+                 },
+                 "sequenceProvider": "REEL_WATCH_SEQUENCE_PROVIDER_RPC"
+                }
+               }
+              },
+              "overlayMetadata": {
+               "primaryText": {
+                "content": "verity vs little girl #minecraft"
+               },
+               "secondaryText": {
+                "content": "182k views"
+               }
+              },
+              "thumbnailViewModel": {
+               "thumbnailViewModel": {
+                "image": {
+                 "sources": [
+                  {
+                   "url": "https://i.ytimg.com/vi/4y9gMpJ3R1c/sardefault.jpg?sqp=-oaymwEdCJUDENAFSFWQAgHyq4qpAwwIARUAAIhCcAHAAQY=&rs=AOn4CLBB9zruzQRk7xYvlCMxArP9_lhh7w",
+                   "width": 405,
+                   "height": 720
+                  },
+                  {
+                   "url": "https://i.ytimg.com/vi/4y9gMpJ3R1c/sardefault.jpg?sqp=-oaymwEgCJUDEOAESFWQAgHyq4qpAw8IARUAAIhCcAHAAQbIAQE=&rs=AOn4CLAcNbcsy68PuuQ5VfeibeFIlbPCcA",
+                   "width": 405,
+                   "height": 608
+                  }
+                 ]
+                }
+               }
+              },
+              "indexInCollection": 0
+             }
+            },
+            {
+             "shortsLockupViewModel": {
+              "entityId": "shorts-shelf-item-kf94_VF0ZeQ",
+              "accessibilityText": "Realistic Minecraft - Minecraft RTX (NO AI) Animation #minecraft #RTX, 195 thousand views – play Short",
+              "onTap": {
+               "innertubeCommand": {
+                "commandMetadata": {
+                 "webCommandMetadata": {
+                  "url": "/shorts/kf94_VF0ZeQ",
+                  "webPageType": "WEB_PAGE_TYPE_SHORTS"
+                 }
+                },
+                "reelWatchEndpoint": {
+                 "videoId": "kf94_VF0ZeQ",
+                 "thumbnail": {
+                  "thumbnails": [
+                   {
+                    "url": "https://i.ytimg.com/vi/kf94_VF0ZeQ/frame0.jpg",
+                    "width": 1080,
+                    "height": 1920
+                   }
+                  ],
+                  "isOriginalAspectRatio": true
+                 },
+                 "sequenceProvider": "REEL_WATCH_SEQUENCE_PROVIDER_RPC"
+                }
+               }
+              },
+              "overlayMetadata": {
+               "primaryText": {
+                "content": "Realistic Minecraft - Minecraft RTX (NO AI) Animation #minecraft #RTX"
+               },
+               "secondaryText": {
+                "content": "195k views"
+               }
+              },
+              "thumbnailViewModel": {
+               "thumbnailViewModel": {
+                "image": {
+                 "sources": [
+                  {
+                   "url": "https://i.ytimg.com/vi/kf94_VF0ZeQ/sardefault.jpg?sqp=-oaymwEdCJUDENAFSFWQAgHyq4qpAwwIARUAAIhCcAHAAQY=&rs=AOn4CLBDwOed8u4vw5mi-xd7UgCrcKFmXA",
+                   "width": 405,
+                   "height": 720
+                  },
+                  {
+                   "url": "https://i.ytimg.com/vi/kf94_VF0ZeQ/sardefault.jpg?sqp=-oaymwEgCJUDEOAESFWQAgHyq4qpAw8IARUAAIhCcAHAAQbIAQE=&rs=AOn4CLCldacwy0Avr8L0GzJ2WQrLp0QpHg",
+                   "width": 405,
+                   "height": 608
+                  }
+                 ]
+                }
+               }
+              },
+              "indexInCollection": 0
+             }
+            },
+            {
+             "shortsLockupViewModel": {
+              "entityId": "shorts-shelf-item-e96oPMyZcfY",
+              "accessibilityText": "Working AC in Minecraft....🤔 (INSANE) #minecraft #shorts, 235 thousand views – play Short",
+              "onTap": {
+               "innertubeCommand": {
+                "commandMetadata": {
+                 "webCommandMetadata": {
+                  "url": "/shorts/e96oPMyZcfY",
+                  "webPageType": "WEB_PAGE_TYPE_SHORTS"
+                 }
+                },
+                "reelWatchEndpoint": {
+                 "videoId": "e96oPMyZcfY",
+                 "thumbnail": {
+                  "thumbnails": [
+                   {
+                    "url": "https://i.ytimg.com/vi/e96oPMyZcfY/frame0.jpg",
+                    "width": 1080,
+                    "height": 1440
+                   }
+                  ],
+                  "isOriginalAspectRatio": true
+                 },
+                 "sequenceProvider": "REEL_WATCH_SEQUENCE_PROVIDER_RPC"
+                }
+               }
+              },
+              "overlayMetadata": {
+               "primaryText": {
+                "content": "Working AC in Minecraft....🤔 (INSANE) #minecraft #shorts"
+               },
+               "secondaryText": {
+                "content": "235k views"
+               }
+              },
+              "thumbnailViewModel": {
+               "thumbnailViewModel": {
+                "image": {
+                 "sources": [
+                  {
+                   "url": "https://i.ytimg.com/vi/e96oPMyZcfY/sardefault.jpg?sqp=-oaymwEdCJUDENAFSFWQAgHyq4qpAwwIARUAAIhCcAHAAQY=&rs=AOn4CLDfJHtT8hXuu2h91cxh3eR8Vny19g",
+                   "width": 405,
+                   "height": 720
+                  },
+                  {
+                   "url": "https://i.ytimg.com/vi/e96oPMyZcfY/sardefault.jpg?sqp=-oaymwEgCJUDEOAESFWQAgHyq4qpAw8IARUAAIhCcAHAAQbIAQE=&rs=AOn4CLACP15V31Jh4coTt_8-OI__MKNchA",
+                   "width": 405,
+                   "height": 608
+                  }
+                 ]
+                }
+               }
+              },
+              "indexInCollection": 0
+             }
+            }
+           ],
+           "header": {
+            "sectionHeaderViewModel": {
+             "headline": {
+              "content": "Shorts"
+             },
+             "leadingAccessory": {
+              "image": {
+               "sources": [
+                {
+                 "clientResource": {
+                  "imageName": "YOUTUBE_SHORTS_BRAND_24"
+                 }
+                }
+               ]
+              }
+             }
+            }
+           },
+           "contentAspectRatio": "GRID_SHELF_CONTENT_ASPECT_RATIO_TWO_BY_THREE",
+           "enableVerticalExpansion": true,
+           "minCollapsedItemCount": 10
+          }
+         }
+        ]
+       }
+      },
+      {
+       "continuationItemRenderer": {
+        "trigger": "CONTINUATION_TRIGGER_ON_ITEM_SHOWN",
+        "continuationEndpoint": {
+         "continuationCommand": {
+          "token": "EjESCW1pbmVjcmFmdBokRWdJUUNVZ1VzZ0VHQ2dRSUFoQUM2",
+          "request": "CONTINUATION_REQUEST_TYPE_SEARCH"
+         }
+        },
+        "loggingDirectives": {
+         "trackingParams": "CDsQt6kLGAEiEwi6zJj4sJ6XAxW6mAoIHVj8HeU="
+        }
+       }
+      }
+     ]
+    }
+   }
+  }
+ }
+}

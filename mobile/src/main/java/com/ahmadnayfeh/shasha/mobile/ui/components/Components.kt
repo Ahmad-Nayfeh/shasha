@@ -15,10 +15,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
@@ -248,7 +252,7 @@ fun videoMeta(video: VideoItem, showChannel: Boolean = true): String {
     return parts.joinToString(" · ")
 }
 
-/** The menu of a video: watch later, download, share, its channel. */
+/** The menu of a video: watch later, a playlist of the viewer's own, download, share, its channel. */
 @Composable
 fun VideoMenuButton(video: VideoItem, modifier: Modifier = Modifier) {
     val actions = LocalVideoActions.current
@@ -263,6 +267,11 @@ fun VideoMenuButton(video: VideoItem, modifier: Modifier = Modifier) {
                 text = { Text(stringResource(if (saved) R.string.menu_remove_watch_later else R.string.menu_add_watch_later)) },
                 leadingIcon = { Icon(if (saved) Icons.Filled.WatchLater else Icons.Outlined.WatchLater, contentDescription = null) },
                 onClick = { open = false; actions.toggleWatchLater(video) },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.menu_add_to_playlist)) },
+                leadingIcon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, contentDescription = null) },
+                onClick = { open = false; actions.addToPlaylist(video) },
             )
             if (!video.isLive) {
                 DropdownMenuItem(
@@ -352,6 +361,65 @@ fun VideoListItem(
             }
         }
         if (trailing != null) trailing() else VideoMenuButton(video)
+    }
+}
+
+/** A video as a card of a row that scrolls sideways (the Home's suggestions): the picture over the title and the details. Give it a width. */
+@Composable
+fun VideoTile(video: VideoItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier.clickable(onClick = onClick)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp))) {
+            Thumbnail(video.thumbnailUrl, Modifier.fillMaxSize())
+            DurationBadge(video, Modifier.align(Alignment.BottomEnd).padding(6.dp))
+            WatchedBar(LocalWatchProgress.current[video.videoId], Modifier.align(Alignment.BottomCenter))
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) {
+                Text(video.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                val meta = videoMeta(video)
+                if (meta.isNotEmpty()) {
+                    Text(
+                        meta,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            VideoMenuButton(video)
+        }
+    }
+}
+
+/** A Short as a tall picture over its title: the Shorts rows and the channel's Shorts tab. Give it a width. */
+@Composable
+fun ShortTile(video: VideoItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier.clickable(onClick = onClick)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(9f / 14f).clip(RoundedCornerShape(10.dp))) {
+            Thumbnail(video.thumbnailUrl, Modifier.fillMaxSize())
+            DurationBadge(video, Modifier.align(Alignment.BottomEnd).padding(4.dp))
+        }
+        Text(video.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+    }
+}
+
+/** The title of a section of a screen («Suggested for you», «Shorts»). */
+@Composable
+fun SectionTitle(text: String, modifier: Modifier = Modifier) {
+    Text(text, modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp), style = MaterialTheme.typography.titleMedium)
+}
+
+/**
+ * A row of Shorts that scrolls sideways (the Home's, the search results'). A tap opens the Shorts viewer on [shorts], the list
+ * the row shows, at the tapped one: swiping in the viewer goes through this row.
+ */
+@Composable
+fun ShortsRow(shorts: List<VideoItem>, onOpen: (List<VideoItem>, Int) -> Unit, modifier: Modifier = Modifier) {
+    LazyRow(modifier, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        itemsIndexed(shorts, key = { _, short -> "short:" + short.videoId }) { index, short ->
+            ShortTile(short, onClick = { onOpen(shorts, index) }, modifier = Modifier.width(124.dp))
+        }
     }
 }
 

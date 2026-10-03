@@ -1,8 +1,10 @@
 package com.ahmadnayfeh.shasha.ui.screens.search
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ahmadnayfeh.shasha.data.BehaviorKeys
+import com.ahmadnayfeh.shasha.data.asSourceException
 import com.ahmadnayfeh.shasha.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.data.WatchRepository
 import com.ahmadnayfeh.shasha.policy.ContentFilter
@@ -17,9 +19,11 @@ import com.ahmadnayfeh.shasha.ui.paging.PagedState
 import com.ahmadnayfeh.shasha.ui.screens.watchedFractions
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
+import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -44,6 +48,9 @@ import kotlinx.coroutines.launch
  * last key, the newest request only, recent answers cached), the profile's recent searches while the box is empty
  * ([history]), and the microphone's other readings as choices ([voiceAlternatives]). All of it exists only for a
  * profile with search ([ContentFilter.features]), and every text passes the profile's blocked words first.
+ *
+ * v1.4: a «الكل» search of a profile that shows Shorts has a row of Shorts beside its results ([shorts]): YouTube's search finds
+ * Shorts too, which its plain results leave out (VideoSource.searchShorts). They arrive beside the results, never before them.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModel(
@@ -73,6 +80,19 @@ class SearchViewModel(
     val results: StateFlow<PagedState<ItemUi>> = combine(loader.state, contentRules) { state, rules ->
         state.copy(items = state.items.filter { rules.items(listOf(it.source())).isNotEmpty() })
     }.stateIn(viewModelScope, SharingStarted.Eagerly, loader.state.value)
+
+    /** The Shorts the search found, as YouTube gave them (before the profile's rules); empty when none were asked for or found. */
+    private val foundShorts = MutableStateFlow<List<VideoItem>>(emptyList())
+    private var shortsJob: Job? = null
+
+    /**
+     * «Shorts»: the row beside the results of a «الكل» search, as the profile's rules allow (none where it hides Shorts, a blocked
+     * word's title, a blocked channel). Empty while they are on their way, when YouTube found none, and when asking failed: the
+     * results never wait for them and never fail for them.
+     */
+    val shorts: StateFlow<List<VideoUi>> = combine(foundShorts, contentRules) { found, rules ->
+        if (!rules.showsShorts || rules.features?.search != true) emptyList() else rules.videos(found).take(MAX_SHORTS).map { it.toUi() }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** Ids of subscribed channels, for the subscribe buttons on channel results. */
     val subscribed: StateFlow<Set<String>> = subscriptions.observe()
@@ -177,12 +197,35 @@ class SearchViewModel(
         if (q == _query.value && results.value.error == null && !results.value.loadingFirst && results.value.items.isNotEmpty()) return
         _query.value = q
         loader.start()
+        startShorts()
     }
 
     fun setFilter(filter: SearchFilter) {
         if (filter == _filter.value) return
         _filter.value = filter
         if (_query.value.isNotEmpty()) loader.start()
+        startShorts()
+    }
+
+    /**
+     * Asks for the Shorts of the query that is searched, beside its results: only for «الكل» (the other filters name what they
+     * want), only where the profile shows Shorts and searches. What an earlier search was asking for is dropped.
+     */
+    private fun startShorts() {
+        shortsJob?.cancel()
+        foundShorts.value = emptyList()
+        val query = _query.value
+        if (query.isEmpty() || _filter.value != SearchFilter.ALL || !searchAllowed || !contentRules.value.showsShorts) return
+        shortsJob = viewModelScope.launch {
+            try {
+                foundShorts.value = source.searchShorts(query).shorts.distinctBy { it.videoId }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // An extra beside the results: no row, never the error screen.
+                Log.w(TAG, "No Shorts for the search: ${e.asSourceException().technicalName}")
+            }
+        }
     }
 
     fun loadMore() = loader.loadMore()
@@ -193,12 +236,17 @@ class SearchViewModel(
     fun clearResults() {
         _query.value = ""
         loader.reset()
+        startShorts()
     }
 
     companion object {
         /** Wait this long after the last key before asking YouTube (typing on a remote is slow; this is one pause). */
         const val SUGGEST_DEBOUNCE_MS = 250L
         private const val CACHE_SIZE = 64
+
+        /** The Shorts row's length: YouTube's first page of Shorts is about 25. */
+        const val MAX_SHORTS = 24
+        private const val TAG = "SearchViewModel"
 
         /** Arabic letters ask for Arabic suggestions, anything else for English ones. */
         fun languageOf(text: String): String = if (text.any { it in '\u0600'..'\u06FF' }) "ar" else "en"

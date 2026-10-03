@@ -9,6 +9,9 @@ import com.ahmadnayfeh.shasha.youtube.VideoItem
 interface VideoActions {
     fun toggleWatchLater(video: VideoItem)
 
+    /** Opens the «Save to» sheet for [video]: «Watch later» and the viewer's own playlists, each with a checkmark. */
+    fun addToPlaylist(video: VideoItem)
+
     /** Opens the download sheet for [video]. */
     fun download(video: VideoItem)
 
@@ -20,6 +23,7 @@ interface VideoActions {
 
 private object NoVideoActions : VideoActions {
     override fun toggleWatchLater(video: VideoItem) = Unit
+    override fun addToPlaylist(video: VideoItem) = Unit
     override fun download(video: VideoItem) = Unit
     override fun share(video: VideoItem) = Unit
     override fun openChannel(channel: ChannelItem) = Unit

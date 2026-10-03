@@ -2,15 +2,22 @@ package com.ahmadnayfeh.shasha.data
 
 import android.util.Log
 import com.ahmadnayfeh.shasha.player.PlaybackActivity
+import com.ahmadnayfeh.shasha.youtube.Recommendations
+import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
 import com.ahmadnayfeh.shasha.youtube.safety.ExplicitFilter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
@@ -22,15 +29,22 @@ import java.io.File
 import java.io.IOException
 
 /**
- * «مقترحة لك» on the home screens: what YouTube suggests beside the last few videos the current profile watched
- * (VideoSource.related of each), taken in turns ([merge]). Each watched video's list is kept [FRESH_MS] (a few hours),
- * in [file] (the app's cache folder), so the row shows at once after a restart and YouTube is not asked again for hours.
+ * «مقترحة لك» on the home screens, from the watch history (the owner's design: the newer a viewing, the more it counts).
+ * What YouTube suggests beside each of the last [SEEDS] videos the current profile watched (VideoSource.related) is ranked by
+ * [Recommendations.rank], which the phone's home uses too: a video watched today weighs fully, one watched a week ago half, and a
+ * suggestion that comes back beside several of them climbs. The ranking makes two rows: the videos, and the Shorts ([rank]).
  *
- * The home screen never waits for it: [kept] is what is known now (nothing at first, then the file's lists), and
- * [refresh] runs beside the screen, gently: one video at a time, at low priority, and only while nothing plays
- * ([playing]). A video the player has just extracted costs no request at all (VideoSource.related answers from that
- * extraction). Who may see which suggestion is the policy's: what [merge] gives still goes through
- * ContentFilter.suggestions.
+ * YouTube's suggestions beside a video hold no Shorts (none in the seven watch pages looked at, 18 to 24 suggestions each), so the
+ * Shorts row is made from the newest Shorts of the channels the viewer watched from lately (VideoSource.channelShorts, at most
+ * [SHORTS_CHANNELS] of them): through the same ranking, a channel's Shorts are suggested beside every video watched from it, and
+ * the more recently and the more often the viewer watched that channel, the higher they come.
+ *
+ * Each list is kept [FRESH_MS] (a few hours), in [file] (the app's cache folder), so the rows show at once after a restart and
+ * YouTube is not asked again for hours. The home screen never waits for any of it: [kept] and [shorts] are what is known now
+ * (nothing at first, then the file's lists, then each fresh answer), and [refresh] runs beside the screen, gently: one request at a
+ * time, at low priority, [pauseMs] apart (a burst is what makes YouTube answer 403), only while nothing plays ([playing]) and not at
+ * all after YouTube said to slow down. A video the player has just extracted costs no request (VideoSource.related answers from that
+ * extraction). Who may see which suggestion is the policy's: what [rank] gives still goes through ContentFilter.suggestions.
  */
 class HomeSuggestions(
     private val source: VideoSource,
@@ -39,51 +53,110 @@ class HomeSuggestions(
     private val playing: StateFlow<Boolean> = PlaybackActivity.isPlaying,
     private val lowPriority: suspend (suspend () -> List<VideoItem>) -> List<VideoItem> = { block -> BackgroundThreads.lowPriorityIo { block() } },
     private val io: CoroutineDispatcher = Dispatchers.IO,
+    private val pauseMs: Long = PAUSE_MS,
 ) {
-    /** One watched video's suggestions, and when they were fetched. */
+    /** One list (the suggestions beside a watched video, or a channel's newest Shorts), and when it was fetched. */
     data class Kept(val videos: List<VideoItem>, val atMs: Long)
+
+    /** A watched video, as the history has it (its newest viewing): what the suggestions are beside. */
+    data class Watched(val videoId: String, val watchedAtMs: Long, val channelId: String?)
+
+    /**
+     * What the home shows before the profile's rules: the suggested [videos] and [shorts], best first. [working]: lists are being
+     * fetched now (an empty row may still fill).
+     */
+    data class Suggested(val videos: List<VideoItem> = emptyList(), val shorts: List<VideoItem> = emptyList(), val working: Boolean = false)
 
     private val _kept = MutableStateFlow<Map<String, Kept>>(emptyMap())
 
     /** Watched video id → its suggestions, as known now (the file's, once read; then each fresh answer). */
     val kept: StateFlow<Map<String, Kept>> = _kept.asStateFlow()
 
+    private val _shorts = MutableStateFlow<Map<String, Kept>>(emptyMap())
+
+    /** Channel id → its newest Shorts, as known now. */
+    val shorts: StateFlow<Map<String, Kept>> = _shorts.asStateFlow()
+
+    private val _working = MutableStateFlow(false)
+
+    /** A [refresh] is asking YouTube now (the home says it is getting suggestions ready, instead of nothing). */
+    val working: StateFlow<Boolean> = _working.asStateFlow()
+
     private val lock = Mutex()
     private var loaded = false
 
     /**
-     * Asks for the suggestions of each of [seeds] (watched videos, newest first) that has none kept, or older than
-     * [FRESH_MS]. Reads [file] first (once). Each request waits while a video plays; a failure keeps what was there (the
-     * next visit tries again).
+     * The ranking of what is known now, again whenever the history, a list or [showsShorts] changes. [history]: everything the
+     * profile watched, newest first (none where suggestions are off): the first [SEEDS] are what the suggestions are beside, and
+     * none of it is suggested again.
      */
-    suspend fun refresh(seeds: List<String>) = lock.withLock {
+    fun suggested(history: Flow<List<Watched>>, showsShorts: Flow<Boolean>): Flow<Suggested> =
+        combine(history, _kept, _shorts, showsShorts, _working) { watched, kept, shorts, withShorts, working ->
+            rank(watched, kept, shorts, clock(), withShorts).copy(working = working)
+        }
+
+    /**
+     * Keeps the lists of what [history] says is newest fresh for as long as it runs (the home's coroutine): now, and again when
+     * the newest watched videos change. A run for videos that are no longer the newest is dropped for the new one.
+     */
+    suspend fun keepFresh(history: Flow<List<Watched>>, showsShorts: Flow<Boolean>) {
+        combine(history, showsShorts) { watched, withShorts ->
+            val newest = watched.take(SEEDS)
+            Wanted(newest.map { it.videoId }, if (withShorts) newest.mapNotNull { it.channelId }.distinct().take(SHORTS_CHANNELS) else emptyList())
+        }
+            .distinctUntilChanged()
+            .collectLatest { refresh(it.seeds, it.shortsOf) }
+    }
+
+    private data class Wanted(val seeds: List<String>, val shortsOf: List<String>)
+
+    /**
+     * Asks for the suggestions of each of [seeds] (watched videos, newest first), and for the newest Shorts of each channel of
+     * [shortsOf], that has none kept or only a list older than [FRESH_MS]. Reads [file] first (once). Each request waits while a
+     * video plays; a failure keeps what was there (the next visit tries again); an answer that means "slower, please" (a rate limit,
+     * a check, a 403) ends the round without asking for the rest.
+     */
+    suspend fun refresh(seeds: List<String>, shortsOf: List<String> = emptyList()) = lock.withLock {
         load()
-        for (seed in seeds.distinct()) {
-            if (isFresh(seed)) continue
-            playing.first { !it }
-            val videos = try {
-                lowPriority { source.related(seed) }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(TAG, "Suggestions beside $seed: ${e.asSourceException().technicalName}")
-                continue
+        val wanted = seeds.distinct().filterNot { isFresh(_kept.value[it]) }.map { Ask(it, shorts = false) } +
+            shortsOf.distinct().filterNot { isFresh(_shorts.value[it]) }.map { Ask(it, shorts = true) }
+        if (wanted.isEmpty()) return@withLock
+        _working.value = true
+        try {
+            for ((i, ask) in wanted.withIndex()) {
+                if (i > 0) delay(pauseMs)
+                playing.first { !it }
+                val videos = try {
+                    lowPriority { if (ask.shorts) source.channelShorts(ask.id) else source.related(ask.id) }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    val failure = e.asSourceException()
+                    Log.w(TAG, "Suggestions beside ${ask.id}: ${failure.technicalName}")
+                    if (failure.kind in SLOW_DOWN) break
+                    continue
+                }
+                val list = Kept(videos, clock())
+                if (ask.shorts) _shorts.update { trimmed(it + (ask.id to list), MAX_KEPT_SHORTS) } else _kept.update { trimmed(it + (ask.id to list), MAX_KEPT) }
+                save()
             }
-            _kept.update { trimmed(it + (seed to Kept(videos, clock()))) }
-            save()
+        } finally {
+            _working.value = false
         }
     }
 
-    private fun isFresh(seed: String): Boolean = _kept.value[seed]?.let { clock() - it.atMs in 0 until FRESH_MS } == true
+    /** One request of a round: the suggestions beside the watched video [id], or the Shorts of the channel [id]. */
+    private data class Ask(val id: String, val shorts: Boolean)
+
+    private fun isFresh(list: Kept?): Boolean = list?.let { clock() - it.atMs in 0 until FRESH_MS } == true
 
     private suspend fun load() {
         if (loaded) return
         loaded = true
         val stored = withContext(io) { read() } ?: return
         val now = clock()
-        val fromFile = stored.entries
-            .filter { now - it.atMs in 0 until SHOWN_FOR_MS }
-            // The file may be from before the built-in filter (or an older version): what it holds back is not shown from it either.
+        // The file may be from before the built-in filter (or an older version): what it holds back is not shown from it either.
+        fun List<StoredEntry>.shown() = filter { now - it.atMs in 0 until SHOWN_FOR_MS }
             .associate { entry ->
                 entry.seed to Kept(
                     entry.videos.map(StoredVideo::toItem).filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) },
@@ -91,7 +164,8 @@ class HomeSuggestions(
                 )
             }
         // What was fetched meanwhile (nothing, normally) wins over the file.
-        _kept.update { trimmed(fromFile + it) }
+        _kept.update { trimmed(stored.entries.shown() + it, MAX_KEPT) }
+        _shorts.update { trimmed(stored.shorts.shown() + it, MAX_KEPT_SHORTS) }
     }
 
     private fun read(): StoredFile? {
@@ -108,7 +182,8 @@ class HomeSuggestions(
 
     private suspend fun save() {
         val f = file ?: return
-        val snapshot = StoredFile(_kept.value.map { (seed, kept) -> StoredEntry(seed, kept.atMs, kept.videos.map(StoredVideo::of)) })
+        fun Map<String, Kept>.stored() = map { (id, kept) -> StoredEntry(id, kept.atMs, kept.videos.map(StoredVideo::of)) }
+        val snapshot = StoredFile(_kept.value.stored(), _shorts.value.stored())
         withContext(io) {
             try {
                 f.parentFile?.mkdirs()
@@ -127,51 +202,86 @@ class HomeSuggestions(
     companion object {
         private const val TAG = "HomeSuggestions"
 
-        /** The newest watched videos the row is made from. */
-        const val SEEDS = 3
+        /** The newest watched videos the rows are made from (the phone's home takes as many). */
+        const val SEEDS = 12
 
-        /** How long one video's suggestions are kept before they are asked for again: a few hours. */
+        /** Of them, the Shorts of at most this many channels are asked for: a request each, so a few. */
+        const val SHORTS_CHANNELS = 4
+
+        /** How long one list is kept before it is asked for again: a few hours. */
         const val FRESH_MS = 4L * 60 * 60 * 1000
 
         /** Older lists still show (until the new answer arrives, or when there is no network), up to this age. */
         const val SHOWN_FOR_MS = 2L * 24 * 60 * 60 * 1000
 
-        /** At most this many watched videos' lists are kept. */
-        const val MAX_KEPT = 12
+        /** At most this many watched videos' lists are kept (a few more than the seeds: the file stays small), and this many channels' Shorts. */
+        const val MAX_KEPT = 16
+        const val MAX_KEPT_SHORTS = 8
 
-        /** At most this many cards in the row (after the profile's rules). */
+        /** At most this many cards in the suggested videos' row (after the profile's rules), and in the Shorts row. */
         const val ROW_LIMIT = 20
+        const val SHORTS_ROW_LIMIT = 24
+
+        /** What [Recommendations.rank] keeps before the profile's rules take their share. */
+        private const val RANK_LIMIT = 60
+
+        /** A Short row is the Shorts player's list, so one channel may bring more of its Shorts than it brings videos to the other row. */
+        private const val SHORTS_PER_CHANNEL = 5
+
+        /** The gap between two requests of one round. */
+        const val PAUSE_MS = 400L
 
         const val FILE_NAME = "home_suggestions.json"
 
+        /** The answers that mean "slower, please": a round that gets one asks for nothing more. */
+        private val SLOW_DOWN = setOf(SourceErrorKind.RATE_LIMITED, SourceErrorKind.BOT_CHECK, SourceErrorKind.BLOCKED_403)
+
         private val JSON = Json { ignoreUnknownKeys = true }
 
-        private fun trimmed(map: Map<String, Kept>): Map<String, Kept> =
-            if (map.size <= MAX_KEPT) map else map.entries.sortedByDescending { it.value.atMs }.take(MAX_KEPT).associate { it.key to it.value }
+        private fun trimmed(map: Map<String, Kept>, max: Int): Map<String, Kept> =
+            if (map.size <= max) map else map.entries.sortedByDescending { it.value.atMs }.take(max).associate { it.key to it.value }
 
         /**
-         * The row before the profile's rules: the kept suggestions of [seeds] (newest watched first) taken in turns, the
-         * first of each, then the second of each…, so the last video watched leads without filling the row alone. No
-         * repeats, none of [seeds], nothing of [exclude] (what the profile already watched).
+         * The two rows before the profile's rules. [history] is everything watched, newest first: its first [SEEDS] are the seeds
+         * (each with the time it was watched, so a newer viewing counts more), and none of it comes back as a suggestion.
+         *
+         * The videos are [Recommendations.rank] of the lists [kept] beside the seeds. The Shorts, when [showShorts], are ranked the
+         * same way from the lists of each seed's Shorts: those among its suggestions, and its channel's newest ([channelShorts]).
          */
-        fun merge(seeds: List<String>, kept: Map<String, Kept>, exclude: Set<String> = emptySet()): List<VideoItem> {
-            val lists = seeds.distinct().mapNotNull { kept[it]?.videos }
-            val skip = exclude + seeds
-            val row = LinkedHashMap<String, VideoItem>()
-            val longest = lists.maxOfOrNull { it.size } ?: 0
-            for (i in 0 until longest) {
-                for (list in lists) {
-                    val video = list.getOrNull(i) ?: continue
-                    if (video.videoId !in skip) row.putIfAbsent(video.videoId, video)
-                }
+        fun rank(
+            history: List<Watched>,
+            kept: Map<String, Kept>,
+            channelShorts: Map<String, Kept>,
+            nowMs: Long,
+            showShorts: Boolean = true,
+        ): Suggested {
+            val newest = history.take(SEEDS)
+            val seeds = newest.map { Recommendations.Seed(it.videoId, it.watchedAtMs) }
+            val watched = history.mapTo(HashSet()) { it.videoId }
+            val lists = kept.mapValues { it.value.videos }
+            val videos = Recommendations.rank(seeds, lists, nowMs, exclude = watched, shorts = false, limit = RANK_LIMIT)
+            if (!showShorts) return Suggested(videos)
+            val shortLists = newest.associate { seed ->
+                val ofChannel = seed.channelId?.let { channelShorts[it]?.videos }.orEmpty()
+                seed.videoId to lists[seed.videoId].orEmpty().filter { it.isShortForm } + ofChannel
             }
-            return row.values.toList()
+            val shorts = Recommendations.rank(
+                seeds,
+                shortLists,
+                nowMs,
+                exclude = watched,
+                shorts = true,
+                limit = RANK_LIMIT,
+                perChannel = SHORTS_PER_CHANNEL,
+            )
+            return Suggested(videos, shorts)
         }
     }
 }
 
+/** [entries]: the suggestions beside watched videos (the entry's `seed` is the video's id); [shorts]: the same for a channel's Shorts (its id). */
 @Serializable
-private data class StoredFile(val entries: List<StoredEntry> = emptyList())
+private data class StoredFile(val entries: List<StoredEntry> = emptyList(), val shorts: List<StoredEntry> = emptyList())
 
 @Serializable
 private data class StoredEntry(val seed: String, val atMs: Long, val videos: List<StoredVideo> = emptyList())

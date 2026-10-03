@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -44,7 +42,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -57,13 +54,12 @@ import com.ahmadnayfeh.shasha.mobile.R
 import com.ahmadnayfeh.shasha.mobile.common.Formatters
 import com.ahmadnayfeh.shasha.mobile.common.Loadable
 import com.ahmadnayfeh.shasha.mobile.ui.components.Avatar
-import com.ahmadnayfeh.shasha.mobile.ui.components.DurationBadge
 import com.ahmadnayfeh.shasha.mobile.ui.components.ErrorState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LoadingBox
 import com.ahmadnayfeh.shasha.mobile.ui.components.OnNearEnd
 import com.ahmadnayfeh.shasha.mobile.ui.components.PagedFooter
 import com.ahmadnayfeh.shasha.mobile.ui.components.PlaylistListItem
-import com.ahmadnayfeh.shasha.mobile.ui.components.Thumbnail
+import com.ahmadnayfeh.shasha.mobile.ui.components.ShortTile
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
 import com.ahmadnayfeh.shasha.mobile.ui.nav.ChannelRoute
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
@@ -83,6 +79,8 @@ fun ChannelScreen(
     onBack: () -> Unit,
     onOpenVideo: (VideoItem) -> Unit,
     onOpenPlaylist: (String) -> Unit,
+    /** The Shorts viewer, on the channel's Shorts (the list) at the tapped one (its place in it). */
+    onOpenShorts: (List<VideoItem>, Int) -> Unit,
 ) {
     val vm: ChannelViewModel = viewModel(key = "channel:${route.channelId}", factory = ChannelViewModel.factory(container, route.channelId, route.known()))
     val header by vm.header.collectAsStateWithLifecycle()
@@ -90,17 +88,22 @@ fun ChannelScreen(
     val videos by vm.videoState.collectAsStateWithLifecycle()
     val playlists by vm.playlistState.collectAsStateWithLifecycle()
     val shorts by vm.shorts.collectAsStateWithLifecycle()
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    val settings by container.settingsFlow.collectAsStateWithLifecycle()
+    // Without Shorts (the setting is off) the channel has no Shorts tab at all; a tab chosen before the setting changed gives way to Videos.
+    val tabs = if (settings.showShorts) ChannelTab.entries else ChannelTab.entries - ChannelTab.SHORTS
+    var chosen by rememberSaveable { mutableIntStateOf(ChannelTab.VIDEOS.ordinal) }
+    val tab = ChannelTab.entries[chosen].takeIf { it in tabs } ?: ChannelTab.VIDEOS
     val listState = rememberLazyListState()
 
     LaunchedEffect(tab) {
         when (tab) {
-            1 -> vm.loadShorts()
-            2 -> vm.loadPlaylists()
+            ChannelTab.SHORTS -> vm.loadShorts()
+            ChannelTab.PLAYLISTS -> vm.loadPlaylists()
+            ChannelTab.VIDEOS -> Unit
         }
     }
-    if (tab == 0) listState.OnNearEnd { vm.loadMoreVideos() }
-    if (tab == 2) listState.OnNearEnd { vm.loadMorePlaylists() }
+    if (tab == ChannelTab.VIDEOS) listState.OnNearEnd { vm.loadMoreVideos() }
+    if (tab == ChannelTab.PLAYLISTS) listState.OnNearEnd { vm.loadMorePlaylists() }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -123,14 +126,14 @@ fun ChannelScreen(
                 is ChannelHeader.Ready -> LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 16.dp)) {
                     item(key = "header") { Header(top, subscribed, onToggle = vm::toggleSubscribe, onRetry = vm::retryHeader) }
                     stickyHeader(key = "tabs") {
-                        PrimaryTabRow(selectedTabIndex = tab, containerColor = MaterialTheme.colorScheme.surface) {
-                            listOf(R.string.tab_videos, R.string.tab_shorts, R.string.tab_playlists).forEachIndexed { index, label ->
-                                Tab(selected = tab == index, onClick = { tab = index }, text = { Text(stringResource(label)) })
+                        PrimaryTabRow(selectedTabIndex = tabs.indexOf(tab), containerColor = MaterialTheme.colorScheme.surface) {
+                            tabs.forEach { option ->
+                                Tab(selected = tab == option, onClick = { chosen = option.ordinal }, text = { Text(stringResource(option.label)) })
                             }
                         }
                     }
                     when (tab) {
-                        0 -> {
+                        ChannelTab.VIDEOS -> {
                             items(videos.items, key = { "v:${it.videoId}" }) { video -> VideoListItem(video, onClick = { onOpenVideo(video) }, showChannel = false) }
                             item(key = "videos-footer") {
                                 if (videos.started && videos.items.isEmpty() && videos.error == null) {
@@ -140,8 +143,8 @@ fun ChannelScreen(
                                 }
                             }
                         }
-                        1 -> shortsTab(shorts, onOpenVideo, retry = { vm.loadShorts(force = true) })
-                        else -> {
+                        ChannelTab.SHORTS -> shortsTab(shorts, onOpenShorts, retry = { vm.loadShorts(force = true) })
+                        ChannelTab.PLAYLISTS -> {
                             items(playlists.items, key = { "p:${it.playlistId}" }) { playlist -> PlaylistListItem(playlist, onClick = { onOpenPlaylist(playlist.playlistId) }) }
                             item(key = "playlists-footer") {
                                 when {
@@ -158,6 +161,13 @@ fun ChannelScreen(
             }
         }
     }
+}
+
+/** The sections of a channel's page this screen shows, in their order. */
+private enum class ChannelTab(val label: Int) {
+    VIDEOS(R.string.tab_videos),
+    SHORTS(R.string.tab_shorts),
+    PLAYLISTS(R.string.tab_playlists),
 }
 
 /** What the screen that opened the page passed about the channel, if anything. */
@@ -209,10 +219,10 @@ private fun Header(header: ChannelHeader.Ready, subscribed: Boolean, onToggle: (
     }
 }
 
-/** Shorts as a grid of three tall pictures per row. */
+/** Shorts as a grid of three tall pictures per row; a tap opens the Shorts viewer on the whole list, at the tapped one. */
 private fun androidx.compose.foundation.lazy.LazyListScope.shortsTab(
     shorts: Loadable<List<VideoItem>>,
-    onOpenVideo: (VideoItem) -> Unit,
+    onOpenShorts: (List<VideoItem>, Int) -> Unit,
     retry: () -> Unit,
 ) {
     when (shorts) {
@@ -224,13 +234,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.shortsTab(
             items(shorts.value.chunked(3), key = { row -> "s:" + row.first().videoId }) { row ->
                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     for (video in row) {
-                        Column(Modifier.weight(1f).clickable { onOpenVideo(video) }) {
-                            Box(Modifier.fillMaxWidth().aspectRatio(9f / 14f).clip(RoundedCornerShape(10.dp))) {
-                                Thumbnail(video.thumbnailUrl, Modifier.fillMaxSize())
-                                DurationBadge(video, Modifier.align(Alignment.BottomEnd).padding(4.dp))
-                            }
-                            Text(video.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
-                        }
+                        ShortTile(video, onClick = { onOpenShorts(shorts.value, shorts.value.indexOf(video)) }, modifier = Modifier.weight(1f))
                     }
                     repeat(3 - row.size) { Box(Modifier.weight(1f)) }
                 }

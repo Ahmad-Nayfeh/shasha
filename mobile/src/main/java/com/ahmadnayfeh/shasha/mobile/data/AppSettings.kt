@@ -65,6 +65,11 @@ data class AppSettings(
     val backgroundPlayback: Boolean = true,
     /** Leaving the app while a video plays turns it into a floating window. */
     val pictureInPicture: Boolean = true,
+    /**
+     * Shorts (the vertical videos): their rows on Home and in search, their tab on a channel's page and their place among the
+     * suggestions. Off hides them everywhere on the phone, so a family that does not want them never meets one.
+     */
+    val showShorts: Boolean = true,
 ) {
     companion object {
         val DEFAULT_THEME = AppTheme.SYSTEM
@@ -116,6 +121,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
 
     suspend fun setPictureInPicture(enabled: Boolean) = store.edit { it[PICTURE_IN_PICTURE] = enabled }.let {}
 
+    suspend fun setShowShorts(enabled: Boolean) = store.edit { it[SHOW_SHORTS] = enabled }.let {}
+
     suspend fun resetLanguage() = store.edit { it.remove(LANGUAGE) }.let {}
 
     suspend fun resetTheme() = store.edit { it.remove(THEME) }.let {}
@@ -136,8 +143,11 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         it.remove(PICTURE_IN_PICTURE)
     }.let {}
 
+    /** Shorts: shown. */
+    suspend fun resetShorts() = store.edit { it.remove(SHOW_SHORTS) }.let {}
+
     suspend fun resetAll() = store.edit {
-        for (key in listOf(LANGUAGE, THEME, DEFAULT_QUALITY, DOWNLOAD_QUALITY, SPONSORBLOCK_ENABLED, BACKGROUND_PLAYBACK, PICTURE_IN_PICTURE)) {
+        for (key in listOf(LANGUAGE, THEME, DEFAULT_QUALITY, DOWNLOAD_QUALITY, SPONSORBLOCK_ENABLED, BACKGROUND_PLAYBACK, PICTURE_IN_PICTURE, SHOW_SHORTS)) {
             it.remove(key)
         }
         it.remove(SPONSORBLOCK_CATEGORIES)
@@ -156,6 +166,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
                 ?: defaults.sponsorCategories,
             backgroundPlayback = this[BACKGROUND_PLAYBACK] ?: defaults.backgroundPlayback,
             pictureInPicture = this[PICTURE_IN_PICTURE] ?: defaults.pictureInPicture,
+            showShorts = this[SHOW_SHORTS] ?: defaults.showShorts,
         )
     }
 
@@ -168,6 +179,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         private val SPONSORBLOCK_CATEGORIES = stringSetPreferencesKey("sponsorblock_categories")
         private val BACKGROUND_PLAYBACK = booleanPreferencesKey("background_playback")
         private val PICTURE_IN_PICTURE = booleanPreferencesKey("picture_in_picture")
+        private val SHOW_SHORTS = booleanPreferencesKey("show_shorts")
         private val FEED_REFRESHED_AT = longPreferencesKey("feed_refreshed_at")
 
         /** The settings file (`settings.preferences_pb`); a damaged one starts empty. */

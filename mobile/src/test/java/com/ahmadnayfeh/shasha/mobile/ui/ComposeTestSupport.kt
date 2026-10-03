@@ -32,3 +32,16 @@ fun ComposeTestRule.awaitText(text: String, timeoutMillis: Long = 10_000, substr
         }
     }
 }
+
+/**
+ * Waits, in real time, until [condition] holds: for what Room, DataStore and the player's loader do on their own threads. The
+ * test clock's `waitUntil` counts frames, which pass faster than a database transaction does.
+ */
+fun ComposeTestRule.awaitCondition(timeoutMillis: Long = 10_000, condition: () -> Boolean) {
+    val deadline = System.currentTimeMillis() + timeoutMillis
+    while (!condition()) {
+        check(System.currentTimeMillis() < deadline) { "Condition still not satisfied after $timeoutMillis ms" }
+        Thread.sleep(20)
+        waitForIdle()
+    }
+}

@@ -1,0 +1,361 @@
+{
+ "estimatedResults": "31000000",
+ "onResponseReceivedCommands": [
+  {
+   "appendContinuationItemsAction": {
+    "continuationItems": [
+     {
+      "itemSectionRenderer": {
+       "contents": [
+        {
+         "gridShelfViewModel": {
+          "contents": [
+           {
+            "shortsLockupViewModel": {
+             "entityId": "shorts-shelf-item-CtkbksrylwY",
+             "accessibilityText": "When a Spider gets inside your Minecraft house (Animated #shorts), 120 million views – play Short",
+             "onTap": {
+              "innertubeCommand": {
+               "commandMetadata": {
+                "webCommandMetadata": {
+                 "url": "/shorts/CtkbksrylwY",
+                 "webPageType": "WEB_PAGE_TYPE_SHORTS"
+                }
+               },
+               "reelWatchEndpoint": {
+                "videoId": "CtkbksrylwY",
+                "thumbnail": {
+                 "thumbnails": [
+                  {
+                   "url": "https://i.ytimg.com/vi/CtkbksrylwY/frame0.jpg",
+                   "width": 720,
+                   "height": 1280
+                  }
+                 ],
+                 "isOriginalAspectRatio": true
+                },
+                "sequenceProvider": "REEL_WATCH_SEQUENCE_PROVIDER_RPC"
+               }
+              }
+             },
+             "overlayMetadata": {
+              "primaryText": {
+               "content": "When a Spider gets inside your Minecraft house (Animated #shorts)"
+              },
+              "secondaryText": {
+               "content": "120m views"
+              }
+             },
+             "thumbnailViewModel": {
+              "thumbnailViewModel": {
+               "image": {
+                "sources": [
+                 {
+                  "url": "https://i.ytimg.com/vi/CtkbksrylwY/oardefault.jpg?sqp=-oaymwEdCJUDENAFSFWQAgHyq4qpAwwIARUAAIhCcAHAAQY=&rs=AOn4CLAA298CFbflcU4SZ_keZnx-e24iSA&usqp=CCk",
+                  "width": 405,
+                  "height": 720
+                 },
+                 {
+                  "url": "https://i.ytimg.com/vi/CtkbksrylwY/oardefault.jpg?sqp=-oaymwEgCJUDEOAESFWQAgHyq4qpAw8IARUAAIhCcAHAAQbIAQE=&rs=AOn4CLAEXUtqh9k6N-WtpABeapOPhUnqfg&usqp=CCk",
+                  "width": 405,
+                  "height": 608
+                 }
+                ]
+               }
+              }
+             },
+             "indexInCollection": 0
+            }
+           },
+           {
+            "shortsLockupViewModel": {
+             "entityId": "shorts-shelf-item-R7HjcKK1G_o",
+             "accessibilityText": "Minecraft Mason got LOADED #minecraft #minecraftshorts #minecraftsteve #minecraftvillager, 543 thousand views – play Short",
+             "onTap": {
+              "innertubeCommand": {
+               "commandMetadata": {
+                "webCommandMetadata": {
+                 "url": "/shorts/R7HjcKK1G_o",
+                 "webPageType": "WEB_PAGE_TYPE_SHORTS"
+                }
+               },
+               "reelWatchEndpoint": {
+                "videoId": "R7HjcKK1G_o",
+                "thumbnail": {
+                 "thumbnails": [
+                  {
+                   "url": "https://i.ytimg.com/vi/R7HjcKK1G_o/frame0.jpg",
+                   "width": 1080,
+                   "height": 1920
+                  }
+                 ],
+                 "isOriginalAspectRatio": true
+                },
+                "sequenceProvider": "REEL_WATCH_SEQUENCE_PROVIDER_RPC"
+               }
+              }
+             },
+             "overlayMetadata": {
+              "primaryText": {
+               "content": "Minecraft Mason got LOADED #minecraft #minecraftshorts #minecraftsteve #minecraftvillager"
+              },
+              "secondaryText": {
+               "content": "543k views"
+              }
+             },
+             "thumbnailViewModel": {
+              "thumbnailViewModel": {
+               "image": {
+                "sources": [
+                 {
+                  "url": "https://i.ytimg.com/vi/R7HjcKK1G_o/hq720.jpg?sqp=-oaymwEdCJUDENAFSFXyq4qpAw8IARUAAIhCcAHAAQbQAQE=&rs=AOn4CLBu9QSKeUxMiF2NXWTxfh97zi9JbQ",
+                  "width": 405,
+                  "height": 720
+                 }
+                ]
+               }
+              }
+             },
+             "indexInCollection": 0
+            }
+           },
+           {
+            "shortsLockupViewModel": {
+             "entityId": "shorts-shelf-item-COFRdtIcLzc",
+             "accessibilityText": "Minecraft, But You Have to Break One Color…, 24 thousand views – play Short",
+             "onTap": {
+              "innertubeCommand": {
+               "commandMetadata": {
+                "webCommandMetadata": {
+                 "url": "/shorts/COFRdtIcLzc",
+                 "webPageType": "WEB_PAGE_TYPE_SHORTS"
+                }
+               },
+               "reelWatchEndpoint": {
+                "videoId": "COFRdtIcLzc",
+                "thumbnail": {
+                 "thumbnails": [
+                  {
+                   "url": "https://i.ytimg.com/vi/COFRdtIcLzc/frame0.jpg",
+                   "width": 1080,
+                   "height": 1920
+                  }
+                 ],
+                 "isOriginalAspectRatio": true
+                },
+                "sequenceProvider": "REEL_WATCH_SEQUENCE_PROVIDER_RPC"
+               }
+              }
+             },
+             "overlayMetadata": {
+              "primaryText": {
+               "content": "Minecraft, But You Have to Break One Color…"
+              },
+              "secondaryText": {
+               "content": "24k views"
+              }
+             },
+             "thumbnailViewModel": {
+              "thumbnailViewModel": {
+               "image": {
+                "sources": [
+                 {
+                  "url": "https://i.ytimg.com/vi/COFRdtIcLzc/hq720.jpg?sqp=-oaymwEdCJUDENAFSFXyq4qpAw8IARUAAIhCcAHAAQbQAQE=&rs=AOn4CLBU0g0ny-JsJdwi5cLrOkvqkvy4kg",
+                  "width": 405,
+                  "height": 720
+                 }
+                ]
+               }
+              }
+             },
+             "indexInCollection": 0
+            }
+           }
+          ],
+          "header": {
+           "sectionHeaderViewModel": {
+            "headline": {
+             "content": "Shorts"
+            },
+            "leadingAccessory": {
+             "image": {
+              "sources": [
+               {
+                "clientResource": {
+                 "imageName": "YOUTUBE_SHORTS_BRAND_24"
+                }
+               }
+              ]
+             }
+            }
+           }
+          },
+          "contentAspectRatio": "GRID_SHELF_CONTENT_ASPECT_RATIO_TWO_BY_THREE",
+          "enableVerticalExpansion": true,
+          "minCollapsedItemCount": 10
+         }
+        },
+        {
+         "gridShelfViewModel": {
+          "contents": [
+           {
+            "shortsLockupViewModel": {
+             "entityId": "shorts-shelf-item-StRpPVS2IwA",
+             "accessibilityText": "3 Features I Find Annoying in Minecraft #minecraft, 174 thousand views – play Short",
+             "onTap": {
+              "innertubeCommand": {
+               "commandMetadata": {
+                "webCommandMetadata": {
+                 "url": "/shorts/StRpPVS2IwA",
+                 "webPageType": "WEB_PAGE_TYPE_SHORTS"
+                }
+               },
+               "reelWatchEndpoint": {
+                "videoId": "StRpPVS2IwA",
+                "thumbnail": {
+                 "thumbnails": [
+                  {
+                   "url": "https://i.ytimg.com/vi/StRpPVS2IwA/frame0.jpg",
+                   "width": 1080,
+                   "height": 1920
+                  }
+                 ],
+                 "isOriginalAspectRatio": true
+                },
+                "sequenceProvider": "REEL_WATCH_SEQUENCE_PROVIDER_RPC"
+               }
+              }
+             },
+             "overlayMetadata": {
+              "primaryText": {
+               "content": "3 Features I Find Annoying in Minecraft #minecraft"
+              },
+              "secondaryText": {
+               "content": "174k views"
+              }
+             },
+             "thumbnailViewModel": {
+              "thumbnailViewModel": {
+               "image": {
+                "sources": [
+                 {
+                  "url": "https://i.ytimg.com/vi/StRpPVS2IwA/oar2.jpg?sqp=-oaymwEdCJUDENAFSFWQAgHyq4qpAwwIARUAAIhCcAHAAQY=&rs=AOn4CLB7KTBH2S46bGrnEzUT_nLDhwD0lw&usqp=CCk",
+                  "width": 405,
+                  "height": 720
+                 },
+                 {
+                  "url": "https://i.ytimg.com/vi/StRpPVS2IwA/oar2.jpg?sqp=-oaymwEgCJUDEOAESFWQAgHyq4qpAw8IARUAAIhCcAHAAQbIAQE=&rs=AOn4CLA3TVsVHl1LkoX0BH1nWtTd0D8fYw&usqp=CCk",
+                  "width": 405,
+                  "height": 608
+                 }
+                ]
+               }
+              }
+             },
+             "indexInCollection": 0
+            }
+           },
+           {
+            "shortsLockupViewModel": {
+             "entityId": "shorts-shelf-item-TAoMPnHfhbQ",
+             "accessibilityText": "This Minecraft Update is UNHINGED, 325 thousand views – play Short",
+             "onTap": {
+              "innertubeCommand": {
+               "commandMetadata": {
+                "webCommandMetadata": {
+                 "url": "/shorts/TAoMPnHfhbQ",
+                 "webPageType": "WEB_PAGE_TYPE_SHORTS"
+                }
+               },
+               "reelWatchEndpoint": {
+                "videoId": "TAoMPnHfhbQ",
+                "thumbnail": {
+                 "thumbnails": [
+                  {
+                   "url": "https://i.ytimg.com/vi/TAoMPnHfhbQ/frame0.jpg",
+                   "width": 1080,
+                   "height": 1920
+                  }
+                 ],
+                 "isOriginalAspectRatio": true
+                },
+                "sequenceProvider": "REEL_WATCH_SEQUENCE_PROVIDER_RPC"
+               }
+              }
+             },
+             "overlayMetadata": {
+              "primaryText": {
+               "content": "This Minecraft Update is UNHINGED"
+              },
+              "secondaryText": {
+               "content": "325k views"
+              }
+             },
+             "thumbnailViewModel": {
+              "thumbnailViewModel": {
+               "image": {
+                "sources": [
+                 {
+                  "url": "https://i.ytimg.com/vi/TAoMPnHfhbQ/oardefault.jpg?sqp=-oaymwEdCJUDENAFSFWQAgHyq4qpAwwIARUAAIhCcAHAAQY=&rs=AOn4CLDYNiUkoa1mxAzZmbPRLA_vVM0jPw&usqp=CCk",
+                  "width": 405,
+                  "height": 720
+                 },
+                 {
+                  "url": "https://i.ytimg.com/vi/TAoMPnHfhbQ/oardefault.jpg?sqp=-oaymwEgCJUDEOAESFWQAgHyq4qpAw8IARUAAIhCcAHAAQbIAQE=&rs=AOn4CLCk8IregxPt6d8kir2GIBC0BTYKSg&usqp=CCk",
+                  "width": 405,
+                  "height": 608
+                 }
+                ]
+               }
+              }
+             },
+             "indexInCollection": 0
+            }
+           }
+          ],
+          "header": {
+           "sectionHeaderViewModel": {
+            "headline": {
+             "content": "Shorts"
+            },
+            "leadingAccessory": {
+             "image": {
+              "sources": [
+               {
+                "clientResource": {
+                 "imageName": "YOUTUBE_SHORTS_BRAND_24"
+                }
+               }
+              ]
+             }
+            }
+           }
+          },
+          "contentAspectRatio": "GRID_SHELF_CONTENT_ASPECT_RATIO_TWO_BY_THREE",
+          "enableVerticalExpansion": true,
+          "minCollapsedItemCount": 10
+         }
+        }
+       ]
+      }
+     },
+     {
+      "continuationItemRenderer": {
+       "trigger": "CONTINUATION_TRIGGER_ON_ITEM_SHOWN",
+       "continuationEndpoint": {
+        "continuationCommand": {
+         "token": "EjESCW1pbmVjcmFmdBokRWdJUUNVZ29zZ0VHQ2dRSUJCQUQ2",
+         "request": "CONTINUATION_REQUEST_TYPE_SEARCH"
+        }
+       },
+       "loggingDirectives": {
+        "trackingParams": "CAEQt6kLGAIiEwih0vfhtZ6XAxVhK7MFHewgLiI="
+       }
+      }
+     }
+    ],
+    "targetId": "search-feed"
+   }
+  }
+ ]
+}

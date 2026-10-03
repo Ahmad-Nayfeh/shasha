@@ -14,12 +14,14 @@
     <string name="action_clear">مسح</string>
     <string name="action_clear_all">مسح الكل</string>
     <string name="action_delete">حذف</string>
+    <string name="action_done">تم</string>
     <string name="action_more">خيارات أخرى</string>
     <string name="action_ok">حسناً</string>
     <string name="action_remove">إزالة</string>
     <string name="action_reset">إرجاع الأصل</string>
     <string name="action_retry">حاول مرة أخرى</string>
     <string name="action_saved">تم الحفظ</string>
+    <string name="action_save_to_playlist">حفظ</string>
     <string name="action_subscribe">اشتراك</string>
     <string name="action_unsubscribe">إلغاء الاشتراك</string>
     <string name="action_watch_later">المشاهدة لاحقاً</string>
@@ -104,10 +106,14 @@
     <string name="home_empty_action">ابحث</string>
     <string name="home_no_videos_title">لا جديد حتى الآن</string>
     <string name="home_no_videos_body">اسحب للأسفل للتحديث. تظهر هنا أحدث فيديوهات قنواتك.</string>
+    <string name="home_suggested">مقترحة لك</string>
+    <string name="home_shorts">Shorts</string>
+    <string name="home_from_channels">من قنواتك</string>
 
     <!-- البحث -->
     <string name="search_hint">ابحث عن فيديوهات وقنوات</string>
     <string name="search_recent">عمليات البحث الأخيرة</string>
+    <string name="search_shorts">Shorts</string>
     <string name="search_no_results">لا توجد نتائج</string>
     <string name="search_no_results_body">جرّب كلمات أخرى أو تصفية أخرى.</string>
     <string name="filter_all">الكل</string>
@@ -129,6 +135,7 @@
     <!-- قائمة الفيديو -->
     <string name="menu_add_watch_later">المشاهدة لاحقاً</string>
     <string name="menu_remove_watch_later">إزالة من المشاهدة لاحقاً</string>
+    <string name="menu_add_to_playlist">حفظ في قائمة</string>
     <string name="menu_download">تنزيل</string>
     <string name="menu_share">مشاركة</string>
     <string name="menu_open_channel">فتح القناة</string>
@@ -155,6 +162,8 @@
     <string name="seek_back_seconds">-%1$s ث</string>
     <string name="skip_notice">تم تخطي: %1$s</string>
     <string name="skip_undo">تراجع</string>
+    <string name="player_zoom_fill">تم التكبير لملء الشاشة</string>
+    <string name="player_zoom_fit">الحجم الأصلي</string>
     <string name="watch_related">فيديوهات مقترحة</string>
     <string name="watch_playlist">قائمة التشغيل</string>
 
@@ -171,6 +180,21 @@
     <string name="watch_later_empty_body">احفظ فيديو من قائمته ليظهر هنا.</string>
     <string name="watch_later_clear_title">إفراغ المشاهدة لاحقاً؟</string>
     <string name="subscriptions_empty">لا اشتراكات بعد</string>
+
+    <!-- قوائم التشغيل الخاصة بك -->
+    <string name="library_my_playlists">قوائمي</string>
+    <string name="playlists_empty_body">أنشئ قائمة لتجمع فيها فيديوهاتك، ثم أضف إليها من قائمة أي فيديو.</string>
+    <string name="playlist_new">قائمة جديدة</string>
+    <string name="playlist_create">إنشاء</string>
+    <string name="playlist_name_hint">اسم القائمة</string>
+    <string name="playlist_rename">إعادة التسمية</string>
+    <string name="playlist_rename_title">إعادة تسمية القائمة</string>
+    <string name="playlist_delete">حذف القائمة</string>
+    <string name="playlist_delete_title">حذف هذه القائمة؟</string>
+    <string name="playlist_delete_body">ستُحذف «%1$s» وقائمة فيديوهاتها. الفيديوهات نفسها لا تتأثر.</string>
+    <string name="playlist_user_empty">لا فيديوهات بعد</string>
+    <string name="playlist_user_empty_body">أضف فيديو من قائمته، أو من زر «حفظ» في شاشة التشغيل، ليظهر هنا.</string>
+    <string name="playlist_picker_title">حفظ في…</string>
 
     <!-- التنزيلات -->
     <string name="download_title">تنزيل</string>
@@ -211,13 +235,16 @@
     <string name="settings_background_hint">يستمر الصوت عند مغادرة التطبيق أو إطفاء الشاشة.</string>
     <string name="settings_pip">صورة داخل صورة</string>
     <string name="settings_pip_hint">عند مغادرة التطبيق أثناء تشغيل فيديو يتحوّل إلى نافذة صغيرة عائمة.</string>
+    <string name="settings_shorts">Shorts</string>
+    <string name="settings_shorts_show">إظهار Shorts</string>
+    <string name="settings_shorts_hint">مقاطع عمودية قصيرة: صف في الرئيسية ونتائج البحث، وتبويب في صفحة القناة، ومكان بين المقترحات. اسحب للأعلى للانتقال إلى التالي.</string>
     <string name="settings_download_quality">جودة التنزيل</string>
     <string name="settings_download_quality_hint">تُظهر قائمة التنزيل أفضل جودة في الفيديو حتى هذا الحد.</string>
     <string name="settings_sponsorblock">SponsorBlock</string>
     <string name="settings_sponsorblock_hint">يتخطى وحده الأجزاء الإعلانية وما يشبهها من الفيديو، ببيانات يصنعها مجتمع من المتطوعين.</string>
     <string name="settings_sponsorblock_enabled">تخطي المقاطع تلقائياً</string>
     <string name="settings_reset_all">إرجاع كل الإعدادات</string>
-    <string name="settings_reset_all_body">ترجع اللغة والمظهر والجودة والتشغيل وSponsorBlock إلى حالتها الأصلية.</string>
+    <string name="settings_reset_all_body">ترجع اللغة والمظهر والجودة والتشغيل وShorts وSponsorBlock إلى حالتها الأصلية.</string>
     <string name="sponsorblock_attribution_short">بيانات التخطي: SponsorBlock (sponsor.ajay.app)، رخصة CC BY-NC-SA 4.0.</string>
 
     <string name="sb_category_sponsor">راعٍ</string>

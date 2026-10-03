@@ -41,6 +41,19 @@ sealed interface Screen {
     ) : Screen
 
     /**
+     * The Shorts player: [videoId] plays first, and UP and DOWN go through the list it was chosen from ([queue]: its key in
+     * [com.ahmadnayfeh.shasha.player.ShortsQueues]; a list that is gone leaves the one Short). [fromLink] and [phoneApproved] are
+     * [Player]'s: a Short that came as a link, and one the TV accepted from the phone.
+     */
+    @Serializable
+    data class Shorts(
+        val videoId: String,
+        val queue: String? = null,
+        val fromLink: Boolean = false,
+        val phoneApproved: Boolean = false,
+    ) : Screen
+
+    /**
      * «فحص التحديثات» (SPEC §6): checks at once and, when a newer version is out, downloads and installs it. Reached
      * from Settings and from the error screens; a child's graph has it too, but shows only who can update the app.
      */

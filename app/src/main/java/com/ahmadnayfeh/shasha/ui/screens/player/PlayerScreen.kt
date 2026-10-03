@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -111,7 +112,8 @@ import kotlinx.coroutines.flow.map
  * [phoneApproved]: a link the phone sent and the TV accepted (the phone is there: no «تأكيد» on top). [onRestart]
  * opens this video afresh (a «إعادة التشغيل» that needs the «تأكيد» again); [onPairPhone]: the pairing screen.
  * «الفيديوهات المقترحة» (where the profile shows them): what YouTube lists beside this video, from its own extraction and
- * through the profile's rules, in the «مقترحة» row under the controls and on the end card; [onPlaySuggestion] opens one.
+ * through the profile's rules, in the «مقترحة» row under the controls and on the end card; [onPlaySuggestion] opens one, and
+ * [onPlayShorts] (when given) a suggested Short, with the suggested Shorts as its list.
  */
 @Composable
 fun PlayerScreen(
@@ -130,6 +132,7 @@ fun PlayerScreen(
     onRestart: () -> Unit = {},
     onPairPhone: (() -> Unit)? = null,
     onPlaySuggestion: (VideoItem) -> Unit = {},
+    onPlayShorts: ((shorts: List<VideoItem>, index: Int) -> Unit)? = null,
 ) {
     val container = LocalContext.current.appContainer
     val locking = if (lock != null && profile != null) lock else null
@@ -200,14 +203,67 @@ fun PlayerScreen(
             }
         },
     )
-    val method = if (locking != null && profile != null) {
+    PlayerHost(
+        vm = vm,
+        videoId = videoId,
+        playlistId = playlistId,
+        profile = profile,
+        lock = locking,
+        onBack = onBack,
+        onCheckUpdates = onCheckUpdates,
+        onPlayNext = { next, index -> onPlayNext(next.videoId, if (index >= 0) index else playlistIndex + 1) },
+        onKidsHome = onKidsHome,
+        skipper = sponsor.skipper,
+        onRestart = onRestart,
+        onPairPhone = onPairPhone,
+        onPlaySuggestion = { chosen ->
+            // A suggested Short is played by the Shorts player, with the other suggested Shorts to flip to.
+            if (chosen.isShortForm && onPlayShorts != null) {
+                val shorts = vm.suggestions.value.filter { it.isShortForm }
+                onPlayShorts(shorts, shorts.indexOfFirst { it.videoId == chosen.videoId }.coerceAtLeast(0))
+            } else {
+                onPlaySuggestion(chosen)
+            }
+        },
+        suggestionsWatched = { suggestionsWatched.value },
+    )
+}
+
+/**
+ * [PlayerContent] with everything around it that is the same for every screen that plays a video, the player's and the Shorts
+ * player's: the lock as it is now for [videoId] and how it holds this screen, the quality the viewer chose, a failure for the
+ * lack of a network going on by itself once it is back, the phone's «تأكيد» (what is shown while it is awaited, what a refusal
+ * says), and «ربط الجوال» behind the parent PIN. [lock] is null where nothing is ever locked (no profile, or a test).
+ * [loading] and [ready] are [PlayerContent]'s: another look for the loader and the playing video.
+ */
+@Composable
+internal fun PlayerHost(
+    vm: PlayerViewModel,
+    videoId: String,
+    playlistId: String?,
+    profile: Profile?,
+    lock: LockController?,
+    onBack: () -> Unit,
+    onCheckUpdates: () -> Unit,
+    onPlayNext: (VideoItem, index: Int) -> Unit,
+    onKidsHome: (() -> Unit)?,
+    skipper: SkipController?,
+    onRestart: () -> Unit,
+    onPairPhone: (() -> Unit)?,
+    onPlaySuggestion: (VideoItem) -> Unit = {},
+    suggestionsWatched: () -> Map<String, Float> = { emptyMap() },
+    loading: (@Composable () -> Unit)? = null,
+    ready: (@Composable (PlayerViewModel.Load.Ready, LockedPlaybackState) -> Unit)? = null,
+) {
+    val container = LocalContext.current.appContainer
+    val method = if (lock != null && profile != null) {
         // The lock as it is now (a StateFlow: its current value from the first frame), and how it holds this screen.
-        val current by locking.lock.collectAsStateWithLifecycle()
+        val current by lock.lock.collectAsStateWithLifecycle()
         lockMethodFor(current, profile.id, videoId, playlistId)
     } else {
         null
     }
-    val actions = remember(locking) { locking?.playerActions() ?: NoLockActions }
+    val actions = remember(lock) { lock?.playerActions() ?: NoLockActions }
     // SPEC §7 «الجودة الافتراضية»: read (from its small file) while the video is extracted, used when the player starts.
     val playback = container.playbackSettings
     // A video that failed for the lack of a network (its lock stays) goes on by itself once the TV is online.
@@ -235,12 +291,12 @@ fun PlayerScreen(
         meterFor = { video -> container.usageTracker.playbackMeter(video.channelId, video.channelName) },
         onBack = onBack,
         onCheckUpdates = onCheckUpdates,
-        onPlayNext = { next, index -> onPlayNext(next.videoId, if (index >= 0) index else playlistIndex + 1) },
+        onPlayNext = onPlayNext,
         lockMethod = method,
         lockActions = actions,
         onSurrendered = { messages?.show(surrendered, ShashaIcons.Lock) },
         onKidsHome = onKidsHome,
-        skipper = sponsor.skipper,
+        skipper = skipper,
         maxQuality = { playback.maxQuality.value },
         offerLowQuality = profile?.isChild != true,
         escape = container.policyEngine.config().escape,
@@ -249,7 +305,9 @@ fun PlayerScreen(
         onPairPhone = pair,
         onNotConfirmed = { answer -> messages?.show(if (answer == ConfirmAnswer.REFUSED) refusedText else timedOutText, ShashaIcons.Info) },
         onPlaySuggestion = onPlaySuggestion,
-        suggestionsWatched = { suggestionsWatched.value },
+        suggestionsWatched = suggestionsWatched,
+        loading = loading,
+        ready = ready,
     )
     if (askingPin && unlock != null && onPairPhone != null) {
         PinDialog(onDismiss = { askingPin = false }) {
@@ -289,6 +347,9 @@ internal fun playOrigin(fromLink: Boolean, playlistId: String?): PlayOrigin = wh
  * A suggestion chosen ([onPlaySuggestion]) leaves this video like «رجوع» does: at once when nothing holds it; while a
  * child's video is locked, through the parent PIN pad, after which the suggestion plays; while the adult's is, the
  * reminder of the way out (the video stays).
+ *
+ * [loading] and [ready] replace what shows while the video is loaded and once it is (the loader, and [VideoPlayer] with its
+ * controls and end card): the Shorts player's own, over the same checks, errors, lock and phone confirmation.
  */
 @Composable
 internal fun PlayerContent(
@@ -313,6 +374,8 @@ internal fun PlayerContent(
     onNotConfirmed: (ConfirmAnswer) -> Unit = {},
     onPlaySuggestion: (VideoItem) -> Unit = {},
     suggestionsWatched: () -> Map<String, Float> = { emptyMap() },
+    loading: (@Composable () -> Unit)? = null,
+    ready: (@Composable (PlayerViewModel.Load.Ready, LockedPlaybackState) -> Unit)? = null,
 ) {
     val load by vm.load.collectAsStateWithLifecycle()
     // A suggestion a child chose in a locked video: it plays once the parent PIN has let the child out of this one.
@@ -343,8 +406,10 @@ internal fun PlayerContent(
             label = "player",
         ) { state ->
             when (state) {
-                PlayerViewModel.Load.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    ShashaLoaderWithText(stringResource(R.string.player_loading))
+                PlayerViewModel.Load.Loading -> if (loading != null) {
+                    loading()
+                } else {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ShashaLoaderWithText(stringResource(R.string.player_loading)) }
                 }
                 is PlayerViewModel.Load.Failed -> PlayerErrorScreen(
                     error = state.error,
@@ -372,21 +437,25 @@ internal fun PlayerContent(
                     }
                     Box(Modifier.fillMaxSize())
                 }
-                is PlayerViewModel.Load.Ready -> VideoPlayer(
-                    state,
-                    vm,
-                    factory,
-                    meterFor,
-                    lock,
-                    onPlayNext = onPlayNext,
-                    onKidsHome = onKidsHome,
-                    locked = lockMethod != null,
-                    skipper = skipper,
-                    maxQuality = maxQuality,
-                    onRestart = onRestart,
-                    onPlaySuggestion = playSuggestion,
-                    suggestionsWatched = suggestionsWatched,
-                )
+                is PlayerViewModel.Load.Ready -> if (ready != null) {
+                    ready(state, lock)
+                } else {
+                    VideoPlayer(
+                        state,
+                        vm,
+                        factory,
+                        meterFor,
+                        lock,
+                        onPlayNext = onPlayNext,
+                        onKidsHome = onKidsHome,
+                        locked = lockMethod != null,
+                        skipper = skipper,
+                        maxQuality = maxQuality,
+                        onRestart = onRestart,
+                        onPlaySuggestion = playSuggestion,
+                        suggestionsWatched = suggestionsWatched,
+                    )
+                }
             }
         }
     }
@@ -430,51 +499,48 @@ internal fun PlayerErrorScreen(
 }
 
 /**
+ * The ExoPlayer of one video with the meter of what it really plays: what [rememberActivePlayback] makes of a
+ * [PlayerViewModel.Load.Ready].
+ */
+@Stable
+internal class ActivePlayback(val controller: PlaybackController, val meter: PlaybackMeter)
+
+/**
  * Owns the ExoPlayer for as long as this screen is started: created on ON_START, released on ON_STOP
  * (Home pressed, screen covered) and when leaving the screen. Stale URLs (hours later) are replaced by
- * a fresh extraction first, and playback continues where it was.
+ * a fresh extraction first, and playback continues where it was. A failing decoder gets its one more try with the safe plan
+ * ([PlayerViewModel.onPlaybackError]). The same for every screen that plays a video (the player's and the Shorts player's);
+ * null until the player has started.
  */
 @OptIn(UnstableApi::class)
 @Composable
-private fun VideoPlayer(
+internal fun rememberActivePlayback(
     ready: PlayerViewModel.Load.Ready,
     vm: PlayerViewModel,
     factory: () -> YouTubeMediaSourceFactory,
     meterFor: (VideoItem) -> PlaybackMeter,
-    lock: LockedPlaybackState,
-    onPlayNext: (VideoItem, index: Int) -> Unit,
-    onKidsHome: (() -> Unit)?,
-    locked: Boolean,
-    skipper: SkipController? = null,
-    maxQuality: () -> Int = { MAX_AUTO_HEIGHT },
-    onRestart: () -> Unit = {},
-    onPlaySuggestion: (VideoItem) -> Unit = {},
-    suggestionsWatched: () -> Map<String, Float> = { emptyMap() },
-) {
+    maxQuality: () -> Int,
+): ActivePlayback? {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val seekStepMs = LocalBehavior.current.seekStepSeconds * 1000L
-    var controller by remember { mutableStateOf<PlaybackController?>(null) }
-    // The time this player really plays, for the stats (most watched channels).
-    var meter by remember { mutableStateOf<PlaybackMeter?>(null) }
+    // The player and the time it really plays, for the stats (most watched channels).
+    var active by remember { mutableStateOf<ActivePlayback?>(null) }
 
     DisposableEffect(lifecycleOwner, ready) {
         fun stop() {
-            meter?.let {
-                it.setPlaying(false)
-                it.flush()
-            }
-            meter = null
-            controller?.let {
+            active?.let { playing ->
+                playing.meter.setPlaying(false)
+                playing.meter.flush()
                 // Leaving (BACK, Home, standby): remember where this profile stopped.
-                vm.saveProgress(it.progress())
-                vm.onReleased(it.release())
+                vm.saveProgress(playing.controller.progress())
+                vm.onReleased(playing.controller.release())
             }
-            controller = null
+            active = null
         }
 
         fun start() {
-            if (controller != null) return
+            if (active != null) return
             if (!vm.canStart(ready)) return // a fresh extraction replaces this one; its player starts then
             lateinit var created: PlaybackController
             created = PlaybackController(
@@ -493,13 +559,12 @@ private fun VideoPlayer(
                 } finally {
                     // The failed player goes now, not when the screen has faded to the error (or to the loader of the retry):
                     // its decoder is free, and the TV's hardware is not shared with a player that can no longer play.
-                    if (controller === created) stop()
+                    if (active?.controller === created) stop()
                 }
             }
             try {
                 created.start(vm.resume)
-                controller = created
-                meter = meterFor(ready.stream.video)
+                active = ActivePlayback(created, meterFor(ready.stream.video))
                 vm.onPlaybackStarted(ready.stream.video)
             } catch (e: Exception) {
                 created.release()
@@ -520,33 +585,36 @@ private fun VideoPlayer(
             stop()
         }
     }
+    return active
+}
 
-    val current = controller ?: return
-    // SPEC §5: the phone sees this video and plays, pauses and seeks it; its «إيقاف» leaves like «رجوع» (the lock decides).
+/**
+ * What goes with a video that plays, whichever screen shows it: the phone sees this video and plays, pauses and seeks it (its
+ * «إيقاف» leaves like «رجوع»: the lock decides), the screen stays on, the progress is saved every 10 s while playing and at every
+ * pause (the release saves the last position), the stats hear when it really plays, the end is told, and a lock screen in front
+ * (the parent PIN, the exit phrase) pauses it and lets it go on when it closes.
+ */
+@Composable
+internal fun PlaybackEffects(active: ActivePlayback, ready: PlayerViewModel.Load.Ready, vm: PlayerViewModel, lock: LockedPlaybackState) {
+    val current = active.controller
     AttachToPlayerHub(current, ready.stream.video, leave = lock::requestExit, covered = { lock.covered })
     val ui by current.state.collectAsStateWithLifecycle()
-    val end by vm.end.collectAsStateWithLifecycle()
-    val skipped by vm.skippedToEnd.collectAsStateWithLifecycle()
-    val savedForLater by vm.savedForLater.collectAsStateWithLifecycle()
-    val resumedFrom by vm.resumedFromMs.collectAsStateWithLifecycle()
-    val suggestions by vm.suggestions.collectAsStateWithLifecycle()
     KeepScreenOn(ui.playWhenReady && !ui.isEnded)
-    // Progress: every 10 s while playing, and at every pause (the release saves the last position).
     LaunchedEffect(current) {
         while (true) {
             delay(WatchSession.SAVE_EVERY_MS)
             if (current.state.value.playWhenReady) vm.saveProgress(current.progress())
-            meter?.flush()
+            active.meter.flush()
         }
     }
-    LaunchedEffect(current, ui.isPlaying) { meter?.setPlaying(ui.isPlaying) }
+    LaunchedEffect(current, ui.isPlaying) { active.meter.setPlaying(ui.isPlaying) }
     LaunchedEffect(current, ui.playWhenReady) {
         if (!ui.playWhenReady) vm.saveProgress(current.progress())
     }
     LaunchedEffect(current, ui.isEnded) {
         if (ui.isEnded) vm.onEnded(current.progress())
     }
-    // A lock screen in front (the parent PIN, the exit phrase): the video waits, and goes on if it closes.
+    // A lock screen in front: the video waits, and goes on if it closes.
     var pausedForLock by remember { mutableStateOf(false) }
     LaunchedEffect(current, lock.covered) {
         val playing = current.state.value.let { it.playWhenReady && !it.isEnded }
@@ -558,6 +626,34 @@ private fun VideoPlayer(
             current.onAction(PlayerAction.Play)
         }
     }
+}
+
+/** The player of one video: the loader's successor, with its controls, its end card and SponsorBlock. */
+@Composable
+private fun VideoPlayer(
+    ready: PlayerViewModel.Load.Ready,
+    vm: PlayerViewModel,
+    factory: () -> YouTubeMediaSourceFactory,
+    meterFor: (VideoItem) -> PlaybackMeter,
+    lock: LockedPlaybackState,
+    onPlayNext: (VideoItem, index: Int) -> Unit,
+    onKidsHome: (() -> Unit)?,
+    locked: Boolean,
+    skipper: SkipController? = null,
+    maxQuality: () -> Int = { MAX_AUTO_HEIGHT },
+    onRestart: () -> Unit = {},
+    onPlaySuggestion: (VideoItem) -> Unit = {},
+    suggestionsWatched: () -> Map<String, Float> = { emptyMap() },
+) {
+    val active = rememberActivePlayback(ready, vm, factory, meterFor, maxQuality) ?: return
+    val current = active.controller
+    PlaybackEffects(active, ready, vm, lock)
+    val ui by current.state.collectAsStateWithLifecycle()
+    val end by vm.end.collectAsStateWithLifecycle()
+    val skipped by vm.skippedToEnd.collectAsStateWithLifecycle()
+    val savedForLater by vm.savedForLater.collectAsStateWithLifecycle()
+    val resumedFrom by vm.resumedFromMs.collectAsStateWithLifecycle()
+    val suggestions by vm.suggestions.collectAsStateWithLifecycle()
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         // SurfaceView: the video goes straight to the hardware composer, the cheapest path on a weak TV.
         ContentFrame(

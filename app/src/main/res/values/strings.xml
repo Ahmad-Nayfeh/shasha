@@ -173,8 +173,8 @@
     <string name="home_syncing">جارٍ التحديث…</string>
     <string name="home_last_sync">آخر تحديث: %1$s</string>
     <string name="home_never_synced">لم يُحدَّث بعد</string>
-    <string name="home_empty_title">اشتراكاتك تظهر هنا</string>
-    <string name="home_empty_body">شاشة لا تسجّل الدخول إلى يوتيوب. انقل قائمة اشتراكاتك مرة واحدة من Google Takeout، أو ابحث عن قناة واشترك فيها، وتظهر هنا أحدث فيديوهاتها.</string>
+    <string name="home_empty_title">لنملأ الرئيسية معاً</string>
+    <string name="home_empty_body">شاهد أي فيديو أو اشترك في قناة، فتمتلئ الرئيسية بمقترحات تناسبك وبأحدث ما تنشره قنواتك. وإن كانت لك اشتراكات على يوتيوب فانقلها مرة واحدة بهذه الخطوات.</string>
     <string name="home_step_1">صدّر «الاشتراكات» من takeout.google.com</string>
     <string name="home_step_2">انقل ملف subscriptions.csv إلى الشاشة</string>
     <string name="home_step_3">استورده، وتصل الفيديوهات خلال دقائق</string>

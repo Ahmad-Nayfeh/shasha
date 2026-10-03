@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_shorts_subtitle">About your search</string>
+
+    <string name="shorts_position">%1$s of %2$s</string>
+    <string name="shorts_next">Next</string>
+    <string name="shorts_previous">Previous</string>
+    <string name="shorts_pause">Pause</string>
+    <string name="shorts_play">Play</string>
+    <string name="shorts_replay">Replay</string>
+    <string name="shorts_ended">The clip ended</string>
+    <string name="shorts_first">This is the first clip</string>
+    <string name="shorts_last">This is the last clip</string>
+    <string name="shorts_locked">Serious Mode: finish this clip first</string>
+    <string name="shorts_loading">Getting the clip ready…</string>
+
+    <string name="home_subtitle_history">Suggestions from what you watched last</string>
+    <string name="home_suggesting">Getting suggestions ready…</string>
+    <string name="home_shorts_suggested_title">Suggested Shorts</string>
+    <string name="home_shorts_suggested_subtitle">From channels you watched lately</string>
+    <string name="home_recent_title">Watched recently</string>
+    <string name="home_recent_subtitle">From your history</string>
+</resources>

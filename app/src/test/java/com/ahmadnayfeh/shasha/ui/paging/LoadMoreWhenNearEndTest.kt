@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
@@ -94,6 +95,49 @@ class LoadMoreWhenNearEndTest {
         repeat(10) { press(Key.DirectionDown) } // to row 17 (cell 68): the last in view reaches 71 = 79 - 8
         compose.onNodeWithTag("cell_68").assertIsFocused()
         assertThat(loads).isEqualTo(2)
+    }
+
+    @Test
+    fun aGrid_asksAgainWhenALoadIsOverAndTheEndIsStillNear_notWhileItRuns() {
+        var busy by mutableStateOf(false)
+        compose.setContent {
+            val state = rememberLazyGridState()
+            LoadMoreWhenNearEnd(state, busy = busy) { loads++ }
+            LazyVerticalGrid(GridCells.Fixed(4), Modifier.size(width = 800.dp, height = 360.dp), state = state) {
+                items(count) { index -> Box(Modifier.height(90.dp).fillMaxWidth().testTag("cell_$index").focusable()) }
+            }
+        }
+        focus("cell_0")
+        repeat(8) { press(Key.DirectionDown) } // row 8 (cell 32): the last in view is 35, within 8 of the end of 40
+        assertThat(loads).isEqualTo(1)
+
+        // The loader took the request and is loading. The focus waits on the last rows (nothing below to scroll to), and a
+        // page of one card arrives: still near the end. A loader ignores a request made while it loads, so none is made.
+        busy = true
+        compose.waitForIdle()
+        count = 41
+        compose.waitForIdle()
+        assertThat(loads).isEqualTo(1)
+
+        // The load is over and the end is still near: the request is made again, by itself (the viewer need not move).
+        busy = false
+        compose.waitForIdle()
+        assertThat(loads).isEqualTo(2)
+
+        // A load that brought nothing new (the same size) is followed by another request too, so a list never stands still.
+        busy = true
+        compose.waitForIdle()
+        busy = false
+        compose.waitForIdle()
+        assertThat(loads).isEqualTo(3)
+
+        // The page that arrives is a whole one: the end is far again, and nothing is asked until the focus nears it.
+        busy = true
+        compose.waitForIdle()
+        count = 80
+        busy = false
+        compose.waitForIdle()
+        assertThat(loads).isEqualTo(3)
     }
 
     @Test

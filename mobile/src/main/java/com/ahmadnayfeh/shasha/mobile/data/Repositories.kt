@@ -14,6 +14,7 @@ import com.ahmadnayfeh.shasha.mobile.data.db.WatchLaterDao
 import com.ahmadnayfeh.shasha.mobile.data.db.WatchLaterEntity
 import com.ahmadnayfeh.shasha.mobile.data.db.WatchProgressEntity
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.youtube.Recommendations
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
 import com.ahmadnayfeh.shasha.youtube.safety.ExplicitFilter
@@ -203,6 +204,12 @@ class FeedRepository(
 
 // --- history, watch later, resume positions ------------------------------------------------------------------------
 
+/**
+ * What the history says for «مقترحة لك» ([HomeSuggestions]): the newest watched videos with when each was watched ([seeds], newest
+ * first), and every id in the history ([allIds]), which is not suggested again.
+ */
+data class WatchedVideos(val seeds: List<Recommendations.Seed>, val allIds: Set<String>)
+
 /** What was watched, what is saved for later, and where each video stopped. */
 class LibraryRepository(
     private val history: HistoryDao,
@@ -216,6 +223,21 @@ class LibraryRepository(
     }
     val watchLaterItems: Flow<List<VideoItem>> = watchLater.observeAll().map { rows ->
         rows.filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) }.map { it.toVideoItem() }
+    }
+
+    /**
+     * The newest [SEED_LIMIT] distinct videos of the history, each with its newest viewing (the history keeps one row per video:
+     * watching a video again moves it up), and every watched id. A video the built-in filter holds back is no seed.
+     */
+    val watched: Flow<WatchedVideos> = history.observe(HISTORY_LIMIT).map { rows ->
+        WatchedVideos(
+            seeds = rows.asSequence()
+                .filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) }
+                .take(SEED_LIMIT)
+                .map { Recommendations.Seed(it.videoId, it.watchedAt) }
+                .toList(),
+            allIds = rows.mapTo(HashSet()) { it.videoId },
+        )
     }
 
     /** Video id → how much of it was watched (0..1), for the bar under its thumbnail. */
@@ -265,6 +287,9 @@ class LibraryRepository(
 
     companion object {
         const val HISTORY_LIMIT = 300
+
+        /** «مقترحة لك» is made from this many of the newest watched videos. */
+        const val SEED_LIMIT = 15
 
         /** Watching less than this is not worth resuming from. */
         const val RESUME_MIN_MS = 10_000L

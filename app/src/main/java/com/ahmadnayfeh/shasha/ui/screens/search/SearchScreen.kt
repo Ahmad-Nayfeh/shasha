@@ -3,6 +3,7 @@ package com.ahmadnayfeh.shasha.ui.screens.search
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -48,21 +49,26 @@ import com.ahmadnayfeh.shasha.ui.components.PagingFooter
 import com.ahmadnayfeh.shasha.ui.components.ShashaChip
 import com.ahmadnayfeh.shasha.ui.components.ShashaGrid
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
+import com.ahmadnayfeh.shasha.ui.components.ShortsShelf
 import com.ahmadnayfeh.shasha.ui.components.ShashaLoaderWithText
 import com.ahmadnayfeh.shasha.ui.components.TakeFocusWhenReady
 import com.ahmadnayfeh.shasha.ui.components.containerViewModel
 import com.ahmadnayfeh.shasha.ui.components.contentFocus
 import com.ahmadnayfeh.shasha.ui.components.fullWidthItem
+import com.ahmadnayfeh.shasha.ui.components.gridColumns
+import com.ahmadnayfeh.shasha.ui.components.shortCardWidth
 import com.ahmadnayfeh.shasha.ui.components.rememberNow
 import com.ahmadnayfeh.shasha.ui.components.resultCards
 import com.ahmadnayfeh.shasha.ui.format.rememberFormats
 import com.ahmadnayfeh.shasha.ui.model.ItemUi
+import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.ui.navigation.BrowseActions
 import com.ahmadnayfeh.shasha.ui.paging.LoadMoreWhenNearEnd
 import com.ahmadnayfeh.shasha.ui.paging.PagedState
 import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
+import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 @Composable
 fun SearchRoute(focus: ContentFocus, actions: BrowseActions) {
@@ -78,6 +84,7 @@ fun SearchRoute(focus: ContentFocus, actions: BrowseActions) {
     val query by vm.query.collectAsStateWithLifecycle()
     val filter by vm.filter.collectAsStateWithLifecycle()
     val results by vm.results.collectAsStateWithLifecycle()
+    val shorts by vm.shorts.collectAsStateWithLifecycle()
     val suggestions by vm.suggestions.collectAsStateWithLifecycle()
     val recent by vm.recent.collectAsStateWithLifecycle()
     val alternatives by vm.voiceAlternatives.collectAsStateWithLifecycle()
@@ -99,6 +106,7 @@ fun SearchRoute(focus: ContentFocus, actions: BrowseActions) {
         query = query,
         filter = filter,
         results = results,
+        shorts = shorts,
         subscribed = vm.subscribed.collectAsStateWithLifecycle(),
         watched = vm.watched.collectAsStateWithLifecycle(),
         nowMs = rememberNow(),
@@ -113,6 +121,7 @@ fun SearchRoute(focus: ContentFocus, actions: BrowseActions) {
             onToggleSubscription = vm::toggleSubscription,
             onOpen = actions::open,
             onCheckUpdates = actions.checkUpdates,
+            onOpenShort = actions.playShorts,
         ),
         text = text,
         onTextChange = {
@@ -155,11 +164,14 @@ class SearchCallbacks(
     val onToggleSubscription: (ChannelItem) -> Unit,
     val onOpen: (ItemUi) -> Unit,
     val onCheckUpdates: () -> Unit,
+    /** A Short of the Shorts row was chosen: the Shorts player opens at [Int] of the row's Shorts. */
+    val onOpenShort: (shorts: List<VideoItem>, index: Int) -> Unit = { _, _ -> },
 )
 
 /**
- * The search box and filter chips on top, results below in the usual grid. Focus enters on the box the
- * first time; after a search it moves to the first result.
+ * The search box and filter chips on top, results below in the usual grid, with the row of Shorts the search found ([shorts])
+ * after the grid's first line (the home's way: the best results stay on top). Focus enters on the box the first time; after a
+ * search it moves to the first result.
  */
 @Composable
 fun SearchScreen(
@@ -179,6 +191,8 @@ fun SearchScreen(
     voice: VoiceCallbacks = VoiceCallbacks(),
     /** Grows with each search started from outside the box (the microphone): focus then goes to the results. */
     searches: Int = 0,
+    /** «Shorts»: the row of Shorts the search found, after the first line of the results (none: no row). */
+    shorts: List<VideoUi> = emptyList(),
 ) {
     val error = results.error
     if (error != null && query.isNotEmpty()) {
@@ -262,15 +276,15 @@ fun SearchScreen(
                     }
                     results.loadingFirst -> Centered { ShashaLoaderWithText(stringResource(R.string.search_loading)) }
                     // Nothing of the pages so far is shown, but more are on their way: still searching, not "no results".
-                    results.items.isEmpty() && results.loadingMore -> Centered { ShashaLoaderWithText(stringResource(R.string.search_loading)) }
-                    results.items.isEmpty() -> Centered {
+                    results.items.isEmpty() && shorts.isEmpty() && results.loadingMore -> Centered { ShashaLoaderWithText(stringResource(R.string.search_loading)) }
+                    results.items.isEmpty() && shorts.isEmpty() -> Centered {
                         EmptyState(
                             ShashaIcons.Search,
                             stringResource(R.string.search_no_results, query),
                             stringResource(R.string.search_no_results_body),
                         )
                     }
-                    else -> Results(results, subscribed, watched, nowMs, firstResult, extractorVersion, callbacks)
+                    else -> Results(results, shorts, subscribed, watched, nowMs, firstResult, extractorVersion, callbacks)
                 }
             }
         }
@@ -281,6 +295,7 @@ fun SearchScreen(
 @Composable
 private fun Results(
     results: PagedState<ItemUi>,
+    shorts: List<VideoUi>,
     subscribed: State<Set<String>>,
     watched: State<Map<String, Float>>,
     nowMs: Long,
@@ -290,17 +305,44 @@ private fun Results(
 ) {
     val formats = rememberFormats()
     val gridState = rememberLazyGridState()
-    LoadMoreWhenNearEnd(gridState, onLoadMore = callbacks.onLoadMore)
-    ShashaGrid(
-        gridState,
-        focus = null,
-        firstItem = firstResult,
-        modifier = Modifier.fillMaxSize().testTag("search_results"),
-        contentPadding = PaddingValues(start = 24.dp, end = 48.dp, top = 24.dp, bottom = 48.dp),
-    ) {
-        resultCards(results.items, watched, subscribed, formats, nowMs, firstResult, callbacks.onOpen, callbacks.onToggleSubscription)
-        if (results.loadingMore || results.moreError != null) {
-            fullWidthItem("footer") { PagingFooter(results.loadingMore, results.moreError, callbacks.onRetryMore, extractorVersion, callbacks.onCheckUpdates) }
+    LoadMoreWhenNearEnd(gridState, busy = results.loadingMore, onLoadMore = callbacks.onLoadMore)
+    val padding = PaddingValues(start = 24.dp, end = 48.dp, top = 24.dp, bottom = 48.dp)
+    val shortsTitle = stringResource(R.string.home_shorts_title)
+    val shortsSubtitle = stringResource(R.string.search_shorts_subtitle)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // The Shorts come after the grid's first line: the results the search is for stay on top.
+        val columns = if (shorts.isEmpty()) results.items.size else gridColumns(maxWidth, padding)
+        val firstLine = results.items.take(columns)
+        val rest = results.items.drop(columns)
+        ShashaGrid(
+            gridState,
+            focus = null,
+            firstItem = firstResult,
+            modifier = Modifier.fillMaxSize().testTag("search_results"),
+            contentPadding = padding,
+        ) {
+            resultCards(firstLine, watched, subscribed, formats, nowMs, firstResult, callbacks.onOpen, callbacks.onToggleSubscription)
+            if (shorts.isNotEmpty()) {
+                fullWidthItem("shorts") {
+                    ShortsShelf(
+                        title = shortsTitle,
+                        subtitle = shortsSubtitle,
+                        items = shorts,
+                        watched = watched,
+                        cardWidth = shortCardWidth(maxWidth, padding),
+                        onPlay = { chosen -> callbacks.onOpenShort(shorts.map { it.video }, shorts.indexOf(chosen)) },
+                        // Where the Shorts are the first thing in the grid (nothing else was found), they take the focus.
+                        first = firstResult.takeIf { firstLine.isEmpty() },
+                        modifier = Modifier.testTag("search_shorts"),
+                    )
+                }
+            }
+            if (rest.isNotEmpty()) {
+                resultCards(rest, watched, subscribed, formats, nowMs, null, callbacks.onOpen, callbacks.onToggleSubscription)
+            }
+            if (results.loadingMore || results.moreError != null) {
+                fullWidthItem("footer") { PagingFooter(results.loadingMore, results.moreError, callbacks.onRetryMore, extractorVersion, callbacks.onCheckUpdates) }
+            }
         }
     }
 }
