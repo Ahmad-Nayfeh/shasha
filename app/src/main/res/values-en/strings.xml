@@ -165,8 +165,8 @@
     <string name="home_syncing">Refreshing…</string>
     <string name="home_last_sync">Last refreshed: %1$s</string>
     <string name="home_never_synced">Not refreshed yet</string>
-    <string name="home_empty_title">Your subscriptions show up here</string>
-    <string name="home_empty_body">Shasha doesn\'t sign in to YouTube. Bring your subscriptions over once from Google Takeout, or search for a channel and subscribe, and its latest videos show up here.</string>
+    <string name="home_empty_title">Let\'s fill your home</string>
+    <string name="home_empty_body">Watch any video or subscribe to a channel, and your home fills with suggestions that fit you and the newest from your channels. If you already have subscriptions on YouTube, bring them over once with these steps.</string>
     <string name="home_step_1">Export “Subscriptions” from takeout.google.com</string>
     <string name="home_step_2">Copy subscriptions.csv to the TV</string>
     <string name="home_step_3">Import it; the videos arrive within minutes</string>

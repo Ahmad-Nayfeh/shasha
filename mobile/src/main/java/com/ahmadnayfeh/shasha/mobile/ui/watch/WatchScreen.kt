@@ -183,7 +183,9 @@ fun WatchScreen(
             null
         },
         onVideoBounds = { videoBounds = it },
-        onOpenVideo = { onOpenVideo(it, null) },
+        // What the details list under the player holds is the playlist being played, or (without one) the related videos: a video taken
+        // from the playlist stays in it, the next one still follows.
+        onOpenVideo = { onOpenVideo(it, vm.playlistId) },
         onOpenChannel = onOpenChannel,
         fit = fit,
         onFitChange = { container.videoFit.value = it },
@@ -293,8 +295,9 @@ internal fun WatchContent(
                 zoomHint?.let { shown ->
                     Text(
                         stringResource(if (shown == VideoFit.FILL) R.string.player_zoom_fill else R.string.player_zoom_fit),
-                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 56.dp)
-                            .clip(RoundedCornerShape(16.dp)).background(Color(0xB3000000)).padding(horizontal = 14.dp, vertical = 6.dp),
+                        // Between the row of buttons at the top and the play button in the middle.
+                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 50.dp)
+                            .clip(RoundedCornerShape(16.dp)).background(Color(0xB3000000)).padding(horizontal = 14.dp, vertical = 4.dp),
                         color = Color.White,
                         style = MaterialTheme.typography.labelLarge,
                     )
@@ -444,11 +447,12 @@ private fun Details(
     }
 }
 
+/** One of the buttons under the player. Snug, so that the four of them (Watch later, Save, Download, Share) fit a phone's width in Arabic too. */
 @Composable
 private fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
-    OutlinedButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)) {
+    OutlinedButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
+        Spacer(Modifier.width(4.dp))
         Text(label, style = MaterialTheme.typography.labelLarge)
     }
 }

@@ -362,7 +362,8 @@ class HomeSuggestionsTest {
         val suggestions = suggestions()
         for (i in 1..15) watch("w$i", daysAgo = 10.0 + i)
         suggestions.refreshNow()
-        // Fifteen newer videos are watched: they are the seeds now, and the older lists are still in the cache.
+        // A minute later fifteen newer videos are watched: they are the seeds now, and the older lists are still in the cache.
+        now += 60_000
         for (i in 1..15) watch("v$i", daysAgo = i / 10.0)
         suggestions.refreshNow()
 

@@ -45,6 +45,8 @@ data class PlayerUiState(
      * videos): its height, shown as a badge. Null normally.
      */
     val lowQualityHeight: Int? = null,
+    /** Width over height of the picture being shown now (a Short's is about 9:16), when known: the Shorts player sizes its stage by it. */
+    val videoAspect: Float? = null,
 )
 
 /** [isLive]: a live stream, whose [durationMs] is only the live window Media3 can seek in (DVR). */

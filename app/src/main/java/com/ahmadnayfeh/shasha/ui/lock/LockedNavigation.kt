@@ -16,7 +16,8 @@ import kotlinx.coroutines.flow.map
  * video comes back on screen after a restart or a reboot, after the adult typed his PIN again (coming back
  * to the TV rebuilds the profile's screens), and whenever anything tried to navigate elsewhere meanwhile (a
  * deep link, a stray BACK, a screen opened from the player). A player of another video on top of it (one
- * the lock refused) may stay: leaving it returns to the locked one.
+ * the lock refused) may stay: leaving it returns to the locked one. The Shorts player is a player too: a Short that is locked
+ * there stays there; one the lock brings back after a restart plays in the player.
  *
  * Inside a playlist the video's position is not known here: the player looks it up itself.
  */
@@ -25,7 +26,7 @@ fun KeepLockedVideoOnScreen(locks: StateFlow<PlaybackLock?>, profileId: String, 
     LaunchedEffect(nav, locks, profileId) {
         val locked = locks.map { lock -> lock?.takeIf { it.profileId == profileId } }.distinctUntilChanged()
         combine(locked, nav.currentBackStackEntryFlow) { lock, entry -> lock to entry }.collect { (lock, entry) ->
-            if (lock == null || entry.destination.hasRoute<Screen.Player>()) return@collect
+            if (lock == null || entry.destination.hasRoute<Screen.Player>() || entry.destination.hasRoute<Screen.Shorts>()) return@collect
             nav.navigate(Screen.Player(lock.videoId, lock.playlistId)) { launchSingleTop = true }
         }
     }

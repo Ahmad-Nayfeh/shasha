@@ -39,9 +39,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -179,7 +181,13 @@ private fun ShortPage(
     val own = current && state.video?.videoId == short.videoId
     val shown = state.video.takeIf { own } ?: short
     Box(
-        Modifier.fillMaxSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, enabled = own, onClick = onTogglePlay),
+        Modifier.fillMaxSize().clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            enabled = own,
+            onClickLabel = stringResource(if (state.isPlaying) R.string.player_pause else R.string.player_play),
+            onClick = onTogglePlay,
+        ),
     ) {
         if (own && state.phase != PlayerPhase.ERROR) {
             // Until the first picture is drawn the Short's own picture stands in for it, not a black one.
@@ -252,12 +260,14 @@ private fun Picture(short: VideoItem) {
     AsyncImage(model = short.thumbnailUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
 }
 
-/** A hairline along the bottom edge: how far the Short has played. */
+/** A hairline along the bottom edge: how far the Short has played. It runs left to right in every language, like the video itself. */
 @Composable
 private fun Hairline(player: Player, modifier: Modifier = Modifier) {
     val progress by rememberProgress(player)
     val fraction = if (progress.durationMs > 0) (progress.positionMs.toFloat() / progress.durationMs).coerceIn(0f, 1f) else 0f
-    Box(modifier.fillMaxWidth().height(2.dp).background(Color(0x4DFFFFFF))) {
-        Box(Modifier.fillMaxWidth(fraction).height(2.dp).background(MaterialTheme.colorScheme.primary))
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Box(modifier.fillMaxWidth().height(2.dp).background(Color(0x4DFFFFFF))) {
+            Box(Modifier.fillMaxWidth(fraction).height(2.dp).background(MaterialTheme.colorScheme.primary))
+        }
     }
 }

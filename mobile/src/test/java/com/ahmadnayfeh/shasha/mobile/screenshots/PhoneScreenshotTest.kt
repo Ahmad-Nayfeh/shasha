@@ -2,6 +2,7 @@ package com.ahmadnayfeh.shasha.mobile.screenshots
 
 import android.content.Context
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -23,11 +24,14 @@ import com.ahmadnayfeh.shasha.mobile.container
 import com.ahmadnayfeh.shasha.mobile.data.db.DownloadKind
 import com.ahmadnayfeh.shasha.mobile.data.db.WatchProgressEntity
 import com.ahmadnayfeh.shasha.mobile.data.toFeedEntity
+import com.ahmadnayfeh.shasha.mobile.data.toHistoryEntity
 import com.ahmadnayfeh.shasha.mobile.data.toSubscription
 import com.ahmadnayfeh.shasha.mobile.ui.PHONE
 import com.ahmadnayfeh.shasha.mobile.ui.PHONE_NIGHT
 import com.ahmadnayfeh.shasha.mobile.ui.ShashaRoot
 import com.ahmadnayfeh.shasha.mobile.ui.awaitText
+import com.ahmadnayfeh.shasha.mobile.ui.shorts.ShortsContent
+import com.ahmadnayfeh.shasha.mobile.ui.shorts.ShortsQueue
 import com.ahmadnayfeh.shasha.mobile.ui.tab
 import com.ahmadnayfeh.shasha.mobile.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.mobile.ui.watch.WatchContent
@@ -85,8 +89,12 @@ abstract class ScreenshotCases(private val suffix: String) {
     private fun show(content: @Composable () -> Unit) {
         val pictures = AsyncImagePreviewHandler { request ->
             val key = request.data.toString()
-            // Avatars are square, thumbnails are 16:9.
-            (if ("ggpht" in key) Samples.picture(key, 240, 240) else Samples.picture(key)).asImage()
+            // Avatars are square, thumbnails are 16:9, and a Short's picture is tall.
+            when {
+                "ggpht" in key -> Samples.picture(key, 240, 240)
+                "/vi/sh" in key -> Samples.picture(key, 360, 640)
+                else -> Samples.picture(key)
+            }.asImage()
         }
         compose.setContent {
             CompositionLocalProvider(LocalInspectionMode provides true, LocalAsyncImagePreviewHandler provides pictures) { content() }
@@ -144,6 +152,82 @@ abstract class ScreenshotCases(private val suffix: String) {
         }
         repeat(5) { compose.mainClock.advanceTimeByFrame() }
         capture("player")
+    }
+
+    @Test
+    fun homeSuggested() {
+        val now = System.currentTimeMillis()
+        runBlocking {
+            // Two videos were watched lately: what YouTube suggests beside them is «مقترحة لك», and its Shorts are the Shorts row.
+            container.database.history().upsert(Samples.blackHoles.toHistoryEntity(now - 2 * 24 * 3_600_000L))
+            container.database.history().upsert(Samples.kabsa.toHistoryEntity(now - 3_600_000L))
+        }
+        show { ShashaRoot(container) }
+        compose.awaitText("مقترحة لك")
+        compose.awaitText(Samples.shorts.first().title)
+        compose.awaitText(Samples.related.first().title)
+        capture("home_suggested")
+    }
+
+    @Test
+    fun searchShorts() {
+        container.launch.value = LaunchRequest.Search(Samples.SHORTS_QUERY)
+        show { ShashaRoot(container) }
+        compose.awaitText(Samples.shorts.first().title)
+        capture("search_shorts")
+    }
+
+    @Test
+    fun shorts() {
+        // The pager and the hairline draw once, and nothing moves.
+        compose.mainClock.autoAdvance = false
+        val queue = ShortsQueue.of(Samples.shorts, Samples.shorts[1].videoId)
+        show {
+            ShashaTheme(AppTheme.SYSTEM) {
+                ShortsContent(
+                    state = Samples.shortState,
+                    player = FakePlayer(durationSeconds = Samples.shorts[1].durationSeconds!!, positionMs = 11_000, bufferedMs = 24_000),
+                    queue = queue,
+                    pagerState = rememberPagerState(initialPage = queue.startIndex) { queue.size },
+                    onTogglePlay = {},
+                    onRetry = {},
+                    onBack = {},
+                    onOpenChannel = {},
+                )
+            }
+        }
+        repeat(5) { compose.mainClock.advanceTimeByFrame() }
+        capture("shorts")
+    }
+
+    @Test
+    fun library() {
+        seedPlaylists()
+        show { ShashaRoot(container) }
+        compose.awaitText(Samples.blackHoles.title)
+        compose.tab("مكتبتي").performClick()
+        compose.awaitText(Samples.userPlaylists.first().first)
+        capture("library")
+    }
+
+    @Test
+    fun playlist() {
+        seedPlaylists()
+        show { ShashaRoot(container) }
+        compose.awaitText(Samples.blackHoles.title)
+        compose.tab("مكتبتي").performClick()
+        compose.awaitText(Samples.userPlaylists[1].first)
+        compose.onNodeWithText(Samples.userPlaylists[1].first).performClick()
+        compose.awaitText(Samples.userPlaylists[1].second.last().title)
+        capture("playlist")
+    }
+
+    /** The viewer's three lists, each with its videos in order. */
+    private fun seedPlaylists() = runBlocking {
+        for ((name, videos) in Samples.userPlaylists) {
+            val id = checkNotNull(container.userPlaylists.create(name))
+            for (video in videos) container.userPlaylists.add(id, video)
+        }
     }
 
     @Test

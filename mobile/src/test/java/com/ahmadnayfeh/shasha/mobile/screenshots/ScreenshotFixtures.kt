@@ -106,9 +106,10 @@ private object Silent : DownloadNotifications {
 
 class ScreenshotSource : FakeVideoSource() {
     init {
-        onSearch = { _, filter, _ -> ItemsPage(Samples.searchResults(filter), null) }
+        onSearch = { query, filter, _ -> ItemsPage(Samples.searchResults(filter, withShorts = query == Samples.SHORTS_QUERY), null) }
         onSuggestions = { _, _ -> Samples.suggestions }
-        onRelated = { Samples.related }
+        // What YouTube suggests beside a watched video (the Home's «مقترحة لك»): videos, and Shorts for the Shorts row.
+        onRelated = { Samples.related + Samples.shorts }
         onChannel = { id -> ChannelDetails(Samples.channels.first { it.channelId == id }, null, null) }
     }
 }
@@ -129,7 +130,7 @@ object Samples {
 
     // --- videos ------------------------------------------------------------------------------------------------------
 
-    private fun video(id: String, title: String, channel: ChannelItem, seconds: Long, views: Long, hoursAgo: Double) = VideoItem(
+    private fun video(id: String, title: String, channel: ChannelItem, seconds: Long, views: Long, hoursAgo: Double, short: Boolean = false) = VideoItem(
         videoId = id,
         title = title,
         channelId = channel.channelId,
@@ -139,7 +140,7 @@ object Samples {
         thumbnailUrl = "https://i.ytimg.com/vi/$id/hqdefault.jpg",
         viewCount = views,
         isLive = false,
-        isShortForm = false,
+        isShortForm = short,
         url = "https://www.youtube.com/watch?v=$id",
     )
 
@@ -159,6 +160,21 @@ object Samples {
         video("rl000000014", "كيف تُصنع النجوم وتموت؟", science, 968, 430_000, 21 * 24.0),
     )
 
+    // --- Shorts ------------------------------------------------------------------------------------------------------
+
+    val shorts = listOf(
+        video("sh000000001", "٣ حقائق مدهشة عن الفضاء", academy, 38, 1_800_000, 5.0, short = true),
+        video("sh000000002", "أسرع طريقة لتحضير القهوة المختصة", chef, 27, 920_000, 9.0, short = true),
+        video("sh000000003", "خدعة بسيطة توفّر بطارية هاتفك", tech, 44, 2_300_000, 14.0, short = true),
+        video("sh000000004", "منظر خلاب في جبال عسير", travel, 31, 640_000, 30.0, short = true),
+    )
+
+    /** What the Shorts viewer shows while the Short at the top of [shorts] plays (the picture of the fake player stands for the video). */
+    val shortState = PlayerUiState(phase = PlayerPhase.READY, video = shorts[1], isPlaying = true)
+
+    /** What a search for this finds Shorts among (the general results have a row of them). */
+    const val SHORTS_QUERY = "مقاطع قصيرة"
+
     // --- search ------------------------------------------------------------------------------------------------------
 
     val suggestions = listOf("الثقوب السوداء", "الثقوب السوداء وثائقي", "الثقوب السوداء للأطفال", "الثقوب الدودية", "الثقب الأسود في مركز المجرة")
@@ -171,10 +187,19 @@ object Samples {
     private val strangest = video("sr000000024", "أغرب ما اكتشفه العلماء عن الثقوب السوداء", science, 1180, 640_000, 130 * 24.0)
     private val forKids = video("sr000000025", "الثقوب السوداء للأطفال بطريقة مبسّطة", kids, 421, 1_500_000, 200 * 24.0)
 
-    fun searchResults(filter: SearchFilter): List<SourceItem> = when (filter) {
+    // --- the viewer's own playlists (after the videos they hold) -------------------------------------------------------
+
+    /** The lists of the viewer, with the videos in them in order. */
+    val userPlaylists = listOf(
+        "للمشاهدة مع العائلة" to listOf(blackHoles, kabsa),
+        "علوم وفضاء" to listOf(documentary, inside, firstPhoto),
+        "طبخ" to listOf(kabsa),
+    )
+
+    fun searchResults(filter: SearchFilter, withShorts: Boolean = false): List<SourceItem> = when (filter) {
         SearchFilter.CHANNELS -> listOf(academy, science)
         SearchFilter.PLAYLISTS -> listOf(astronomy)
-        else -> listOf(blackHoles, academy, documentary, astronomy, inside, firstPhoto, strangest, forKids)
+        else -> listOf(blackHoles, academy, documentary, astronomy, inside, firstPhoto, strangest, forKids) + if (withShorts) shorts else emptyList()
     }
 
     // --- downloads ---------------------------------------------------------------------------------------------------
@@ -248,6 +273,8 @@ object Samples {
         "rl000000011", "rl000000012", "rl000000013", "rl000000014",
         "sr000000021", "sr000000022", "sr000000023", "sr000000024", "sr000000025", "pl1",
         "ggpht.com/academy", "ggpht.com/chef", "ggpht.com/tech", "ggpht.com/travel", "ggpht.com/kids", "ggpht.com/science",
+        // Added last: a look is chosen by its place in this list, and the pictures of the older screens keep theirs.
+        "sh000000001", "sh000000002", "sh000000003", "sh000000004",
     )
 
     private fun paletteFor(key: String): IntArray {
@@ -320,16 +347,20 @@ class FakeDetails : WatchDetailsSource {
     override fun toggleSubscribe() = Unit
 }
 
-/** A player that is "playing" 7:15 into an 18:42 video, for the timeline and the clock; it plays nothing. */
+/** A player that is "playing" 7:15 into an 18:42 video, for the timeline and the clock (or wherever it is told to be); it plays nothing. */
 @androidx.annotation.OptIn(UnstableApi::class)
-class FakePlayer : SimpleBasePlayer(Looper.getMainLooper()) {
+class FakePlayer(
+    private val durationSeconds: Long = Samples.blackHoles.durationSeconds!!,
+    private val positionMs: Long = Samples.POSITION_MS,
+    private val bufferedMs: Long = Samples.BUFFERED_MS,
+) : SimpleBasePlayer(Looper.getMainLooper()) {
     override fun getState(): SimpleBasePlayer.State = SimpleBasePlayer.State.Builder()
         .setAvailableCommands(Player.Commands.EMPTY)
         .setPlayWhenReady(true, Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
         .setPlaybackState(Player.STATE_READY)
-        .setPlaylist(listOf(SimpleBasePlayer.MediaItemData.Builder("video").setDurationUs(Samples.blackHoles.durationSeconds!! * 1_000_000).build()))
+        .setPlaylist(listOf(SimpleBasePlayer.MediaItemData.Builder("video").setDurationUs(durationSeconds * 1_000_000).build()))
         .setCurrentMediaItemIndex(0)
-        .setContentPositionMs(Samples.POSITION_MS)
-        .setContentBufferedPositionMs { Samples.BUFFERED_MS }
+        .setContentPositionMs(positionMs)
+        .setContentBufferedPositionMs { bufferedMs }
         .build()
 }

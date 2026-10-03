@@ -1,0 +1,43 @@
+{
+ "estimatedResults": "31000000",
+ "contents": {
+  "twoColumnSearchResultsRenderer": {
+   "primaryContents": {
+    "sectionListRenderer": {
+     "contents": [
+      {
+       "itemSectionRenderer": {
+        "contents": [
+         {
+          "backgroundPromoRenderer": {
+           "title": {
+            "runs": [
+             {
+              "text": "Confirm your age"
+             }
+            ]
+           },
+           "bodyText": {
+            "runs": [
+             {
+              "text": "These results may be inappropriate for some users."
+             }
+            ]
+           },
+           "icon": {
+            "iconType": "EMPTY_SEARCH"
+           },
+           "style": {
+            "value": "BACKGROUND_PROMO_STYLE_TYPE_FULL_HEIGHT"
+           }
+          }
+         }
+        ]
+       }
+      }
+     ]
+    }
+   }
+  }
+ }
+}

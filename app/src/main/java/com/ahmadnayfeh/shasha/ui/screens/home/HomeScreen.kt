@@ -61,7 +61,14 @@ import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 @Composable
-fun HomeRoute(focus: ContentFocus, onPlay: (VideoItem) -> Unit, onImport: () -> Unit, onSearch: () -> Unit, onCheckUpdates: () -> Unit) {
+fun HomeRoute(
+    focus: ContentFocus,
+    onPlay: (VideoItem) -> Unit,
+    onPlayShorts: (shorts: List<VideoItem>, index: Int) -> Unit,
+    onImport: () -> Unit,
+    onSearch: () -> Unit,
+    onCheckUpdates: () -> Unit,
+) {
     val vm = containerViewModel {
         HomeViewModel(it.feed, it.subscriptions, it.watch, it.network.online, it.feedSyncScheduler::syncNow, it.policy.filter, it.homeSuggestions)
     }
@@ -80,6 +87,7 @@ fun HomeRoute(focus: ContentFocus, onPlay: (VideoItem) -> Unit, onImport: () -> 
         onImport = onImport,
         onSearch = onSearch,
         onCheckUpdates = onCheckUpdates,
+        onPlayShorts = onPlayShorts,
     )
 }
 
@@ -87,9 +95,15 @@ fun HomeRoute(focus: ContentFocus, onPlay: (VideoItem) -> Unit, onImport: () -> 
  * الرئيسية (SPEC §2): the subscribed channels' latest videos, newest first. When the sync fails for most channels, the
  * unified error says so (SPEC §1): above the feed, or in its place.
  *
- * Under the feed's first line come two shelves when the profile has them: «مقترحة لك» (suggestions beside the last videos
- * watched) and «Shorts» (the channels' newest Shorts, which then stay out of the grid); the rest of the feed follows
- * under «المزيد من قنواتك». Without them the screen is the plain grid.
+ * Under the feed's first line come the shelves the profile has: «مقترحة لك» (suggestions beside the last videos watched),
+ * «Shorts» (the channels' newest Shorts, which then stay out of the grid) and «Shorts» of the suggestions; the rest of the feed
+ * follows under «المزيد من قنواتك». Without them the screen is the plain grid. A Short opens the Shorts player over its shelf
+ * ([onPlayShorts]).
+ *
+ * **A history is a home.** The shelves do not wait for a feed: with no videos from channels (none subscribed, none synced yet, a
+ * failing sync) the suggestions come first and «شاهدتَها مؤخراً» (the history's newest) follows, so a viewer who has watched
+ * something never meets an empty page. The page that says what to do ([HomeForm.WELCOME]) is for a home with nothing to show:
+ * no history and no subscriptions.
  */
 @Composable
 fun HomeScreen(
@@ -105,13 +119,14 @@ fun HomeScreen(
     onSearch: () -> Unit,
     onCheckUpdates: () -> Unit,
     modifier: Modifier = Modifier,
+    onPlayShorts: (shorts: List<VideoItem>, index: Int) -> Unit = { shorts, index -> shorts.getOrNull(index)?.let(onPlay) },
 ) {
     val formats = rememberFormats()
     TakeFocusWhenReady(focus, ready = state.loaded)
     val failure = sync.failure
     val form = when {
         !state.loaded -> HomeForm.LOADING
-        state.hasFeed -> HomeForm.FEED
+        state.hasRows -> HomeForm.FEED
         state.subscriptionCount == 0 -> HomeForm.WELCOME
         sync.busy -> HomeForm.FETCHING
         failure != null -> HomeForm.FAILED
@@ -128,12 +143,27 @@ fun HomeScreen(
                 val columns = gridColumns(maxWidth)
                 val firstLine = state.videos.take(columns)
                 val rest = state.videos.drop(columns)
-                val shelves = state.suggested.isNotEmpty() || state.shorts.isNotEmpty()
+                val shelves = state.suggested.isNotEmpty() || state.shorts.isNotEmpty() || state.suggestedShorts.isNotEmpty()
+                // The grid focuses one card first: the first the screen has, in the order it shows them.
+                val firstShelf = when {
+                    firstLine.isNotEmpty() -> null
+                    state.suggested.isNotEmpty() -> Shelf.SUGGESTED
+                    state.shorts.isNotEmpty() -> Shelf.SHORTS
+                    state.suggestedShorts.isNotEmpty() -> Shelf.SUGGESTED_SHORTS
+                    else -> Shelf.RECENT
+                }
+                fun firstOf(shelf: Shelf) = firstCard.takeIf { firstShelf == shelf }
                 ShashaGrid(gridState, focus, firstCard, Modifier.fillMaxSize().testTag("home_grid")) {
                     fullWidthItem("header") {
-                        ScreenHeader(stringResource(R.string.home_title), stringResource(R.string.home_subtitle)) {
-                            SyncStatus(sync, nowMs, formats)
-                            ShashaButton(stringResource(R.string.home_refresh), onRefresh, icon = ShashaIcons.Refresh, modifier = Modifier.testTag("home_refresh"))
+                        // Without channels the feed has nothing to sync: the header's status and button would be for nothing.
+                        val subtitle = if (state.hasFeed) R.string.home_subtitle else R.string.home_subtitle_history
+                        ScreenHeader(stringResource(R.string.home_title), stringResource(subtitle)) {
+                            if (state.subscriptionCount > 0 || state.hasFeed) {
+                                SyncStatus(sync, nowMs, formats)
+                                ShashaButton(stringResource(R.string.home_refresh), onRefresh, icon = ShashaIcons.Refresh, modifier = Modifier.testTag("home_refresh"))
+                            } else if (state.suggesting) {
+                                SuggestingStatus()
+                            }
                         }
                     }
                     if (failure != null) fullWidthItem("sync_error") { SyncErrorBanner(failure, extractorVersion, onCheckUpdates) }
@@ -149,7 +179,7 @@ fun HomeScreen(
                                 nowMs = nowMs,
                                 cardWidth = gridCellWidth(maxWidth, columns),
                                 onPlay = { onPlay(it.video) },
-                                first = firstCard.takeIf { firstLine.isEmpty() },
+                                first = firstOf(Shelf.SUGGESTED),
                                 modifier = Modifier.testTag("home_suggested"),
                             )
                         }
@@ -162,9 +192,39 @@ fun HomeScreen(
                                 items = state.shorts,
                                 watched = watched,
                                 cardWidth = shortCardWidth(maxWidth),
-                                onPlay = { onPlay(it.video) },
-                                first = firstCard.takeIf { firstLine.isEmpty() && state.suggested.isEmpty() },
+                                onPlay = { chosen -> onPlayShorts(state.shorts.map { it.video }, state.shorts.indexOf(chosen)) },
+                                first = firstOf(Shelf.SHORTS),
                                 modifier = Modifier.testTag("home_shorts"),
+                            )
+                        }
+                    }
+                    if (state.suggestedShorts.isNotEmpty()) {
+                        fullWidthItem("suggested_shorts") {
+                            ShortsShelf(
+                                title = stringResource(R.string.home_shorts_suggested_title),
+                                subtitle = stringResource(R.string.home_shorts_suggested_subtitle),
+                                items = state.suggestedShorts,
+                                watched = watched,
+                                cardWidth = shortCardWidth(maxWidth),
+                                onPlay = { chosen -> onPlayShorts(state.suggestedShorts.map { it.video }, state.suggestedShorts.indexOf(chosen)) },
+                                first = firstOf(Shelf.SUGGESTED_SHORTS),
+                                modifier = Modifier.testTag("home_suggested_shorts"),
+                            )
+                        }
+                    }
+                    if (state.recent.isNotEmpty()) {
+                        fullWidthItem("recent") {
+                            VideoShelf(
+                                title = stringResource(R.string.home_recent_title),
+                                subtitle = stringResource(R.string.home_recent_subtitle),
+                                items = state.recent,
+                                watched = watched,
+                                formats = formats,
+                                nowMs = nowMs,
+                                cardWidth = gridCellWidth(maxWidth, columns),
+                                onPlay = { onPlay(it.video) },
+                                first = firstOf(Shelf.RECENT),
+                                modifier = Modifier.testTag("home_recent"),
                             )
                         }
                     }
@@ -181,6 +241,9 @@ fun HomeScreen(
         HomeForm.NO_VIDEOS -> NoVideosYet(focus, busy = false, onRefresh, content)
     }
 }
+
+/** The shelves of the feed's form, in the order they come in: the one that holds the first card takes the grid's focus. */
+private enum class Shelf { SUGGESTED, SHORTS, SUGGESTED_SHORTS, RECENT }
 
 private enum class HomeForm { LOADING, FEED, WELCOME, FETCHING, FAILED, NO_VIDEOS }
 

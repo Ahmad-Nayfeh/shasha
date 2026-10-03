@@ -13,6 +13,7 @@ import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistPage
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
+import com.ahmadnayfeh.shasha.youtube.ShortsPage
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
 import com.ahmadnayfeh.shasha.youtube.VideoItem
@@ -63,6 +64,7 @@ internal class NewPipeVideoSource(
     private val service: StreamingService = ServiceList.YouTube
     private val pages = PageStore()
     private val channelTabs = ChannelTabLoader(service, downloader.browseTaps, pages)
+    private val shortsSearch = ShortsSearch(service, pages)
     private val fetchRelated: (String) -> List<InfoItem> = fetchRelated ?: ::relatedFromWatchPage
 
     override val extractorVersion: String = BuildConfig.EXTRACTOR_VERSION
@@ -87,6 +89,8 @@ internal class NewPipeVideoSource(
             ItemsPage(result.items.mapNotNull(ItemMapper::toSourceItem), pages.put(owner, result.nextPage))
         }
     }
+
+    override suspend fun searchShorts(query: String, page: PageKey?): ShortsPage = io { shortsSearch.load(query, page) }
 
     override suspend fun suggestions(query: String, language: String): List<String> {
         val q = query.trim()

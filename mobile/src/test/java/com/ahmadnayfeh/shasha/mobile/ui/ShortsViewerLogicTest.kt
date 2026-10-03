@@ -98,7 +98,7 @@ class ShortsQueueTest {
     }
 
     @Test
-    fun theListsAWaitingForTheViewerAreKeptByNumber_andOnlyTheLastFew() {
+    fun theListsWaitingForTheViewerAreKeptByNumber_andOnlyTheLastFew() {
         val queues = ShortsQueues()
 
         val first = queues.put(list)

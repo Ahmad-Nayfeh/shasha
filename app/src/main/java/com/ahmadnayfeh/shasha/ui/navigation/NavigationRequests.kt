@@ -3,6 +3,7 @@ package com.ahmadnayfeh.shasha.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import com.ahmadnayfeh.shasha.ShashaApp
 import kotlinx.coroutines.CompletableDeferred
@@ -67,8 +68,8 @@ class NavigationRequests {
  * Opens what [NavigationRequests] asks for in [nav], the nav host of [profileId] (the current profile). A
  * request allowed for another profile is refused ([OpenResult.OTHER_PROFILE]): the profile changed after the
  * policy checked it. A player in the back stack (its video ended or was unlocked: while one is locked no
- * request comes, SPEC §4) makes way for the new destination, so BACK returns to where the viewer was before
- * it. A destination this profile's graph does not have (an adult page in a child profile) fails. Does
+ * request comes, SPEC §4), the Shorts player included, makes way for the new destination, so BACK returns to where the viewer
+ * was before it. A destination this profile's graph does not have (an adult page in a child profile) fails. Does
  * nothing outside the app (tests with a plain Application).
  */
 @Composable
@@ -83,6 +84,8 @@ fun FollowNavigationRequests(nav: NavHostController, profileId: String) {
 internal fun follow(nav: NavHostController, profileId: String, request: NavigationRequests.Request): OpenResult {
     if (request.profileId != profileId) return OpenResult.OTHER_PROFILE
     return try {
+        // The Shorts player makes way as the player does (popUpTo names one route: a Shorts player on top is popped first).
+        if (nav.currentDestination?.hasRoute<Screen.Shorts>() == true) nav.popBackStack()
         nav.navigate(request.destination) { popUpTo<Screen.Player> { inclusive = true } }
         OpenResult.OPENED
     } catch (e: IllegalArgumentException) {

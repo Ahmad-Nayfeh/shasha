@@ -29,6 +29,7 @@ import com.ahmadnayfeh.shasha.lock.AppVisibility
 import com.ahmadnayfeh.shasha.lock.GuardReturnTimes
 import com.ahmadnayfeh.shasha.lock.LockController
 import com.ahmadnayfeh.shasha.player.PlayQueues
+import com.ahmadnayfeh.shasha.player.ShortsQueues
 import com.ahmadnayfeh.shasha.player.PlayerHub
 import com.ahmadnayfeh.shasha.policy.DenyReason
 import com.ahmadnayfeh.shasha.policy.DeviceClock
@@ -147,6 +148,9 @@ class AppContainer(context: Context) {
 
     /** Hands a playlist from its page to the player (the next video plays when one ends). */
     val playQueues: PlayQueues by lazy { PlayQueues() }
+
+    /** The lists the Shorts player flips through (a search's Shorts, a channel's, the home's), in memory. */
+    val shortsQueues: ShortsQueues by lazy { ShortsQueues() }
 
     /**
      * A child's home: the uploads of allowlisted channels, which the feed (subscriptions only) may not follow.

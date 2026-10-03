@@ -15,6 +15,8 @@ class BrowseActions(
     val openPlaylist: (playlistId: String) -> Unit,
     val openImport: () -> Unit,
     val checkUpdates: () -> Unit,
+    /** A Short was chosen in a row or a grid of Shorts: the Shorts player opens at [Int] of that list. */
+    val playShorts: (shorts: List<VideoItem>, index: Int) -> Unit = { shorts, index -> shorts.getOrNull(index)?.let(play) },
 ) {
     fun open(item: ItemUi) = when (item) {
         is VideoUi -> play(item.video)

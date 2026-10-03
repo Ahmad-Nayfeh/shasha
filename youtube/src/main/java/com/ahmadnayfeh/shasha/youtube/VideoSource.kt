@@ -21,10 +21,11 @@ interface VideoSource {
      * Shorts", about 25 a page), which the extractor cannot ask for. This asks for that and reads the Shorts itself, from
      * wherever in the answer YouTube lists them, so a change of its layout costs the Shorts, never a screen's results.
      *
-     * What YouTube says of a Short in a search is its id, title, view count and (vertical) picture: no channel
-     * ([VideoItem.channelId] and [VideoItem.channelName] are null), no duration, no date; [stream] has them. A rule that needs the
-     * channel (a block of the household, a child's allowlist) therefore judges a Short when it is opened, as the player's
-     * policy check does. The pages of one search overlap (a Short comes again a page later): a list drops what it already shows.
+     * What YouTube says of a Short in a search is its id, title, view count and (vertical) picture; for some queries also its
+     * channel and length, for most not ([VideoItem.channelId], [VideoItem.channelName] and [VideoItem.durationSeconds] are then
+     * null), and never its date; [stream] has them all. A rule that needs the channel (a block of the household, a child's
+     * allowlist) therefore judges such a Short when it is opened, as the player's policy check does. The pages of one search
+     * overlap (a Short comes again a page later): a list drops what it already shows.
      *
      * Unfiltered YouTube content: the app decides who may see it, the profile's Shorts rule first of all; the built-in explicit
      * filter ([com.ahmadnayfeh.shasha.youtube.safety.SafeVideoSource]) holds back an explicit [query] and explicit titles. A failure

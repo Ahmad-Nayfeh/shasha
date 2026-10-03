@@ -107,6 +107,9 @@ interface StartConfirmation {
  *
  * [suggestionsFor] («الفيديوهات المقترحة», null: none) is asked once the video is extracted, so it answers from that
  * same extraction (VideoSource.related): the player's «مقترحة» row and its end card. It applies the profile's rules.
+ *
+ * [resumesFromSaved] false: the video always starts from its beginning, whatever position was saved. The Shorts player's: a Short
+ * is watched whole, and one left at its middle starts again, as YouTube's do.
  */
 class PlayerViewModel(
     private val videoId: String,
@@ -125,6 +128,7 @@ class PlayerViewModel(
     /** The speed a video starts at (Settings → التشغيل, 1× by default). */
     defaultSpeed: Float = 1f,
     private val suggestionsFor: (suspend (videoId: String) -> List<VideoItem>)? = null,
+    private val resumesFromSaved: Boolean = true,
 ) : ViewModel() {
 
     sealed interface Load {
@@ -461,7 +465,7 @@ class PlayerViewModel(
             if (fresh) streams.invalidate(videoId)
             // The saved position is read while the stream is extracted (only once: later extractions
             // continue from where this visit got to).
-            val savedPosition = if (session != null && !resumeLookedUp && linkStartMs == null) {
+            val savedPosition = if (session != null && resumesFromSaved && !resumeLookedUp && linkStartMs == null) {
                 async { runCatching { session.resumePositionMs() }.getOrDefault(0L) }
             } else {
                 null

@@ -11,6 +11,7 @@ import com.ahmadnayfeh.shasha.youtube.PlaybackHandle
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistPage
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
+import com.ahmadnayfeh.shasha.youtube.ShortsPage
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.SourceItem
@@ -108,6 +109,50 @@ class SafeVideoSourceTest {
     fun theLastPageHasNoNextPage() = runBlocking<Unit> {
         fake.searchPage = ItemsPage(mixed, null)
         assertThat(source.search("dance").next).isNull()
+    }
+
+    // ---- the Shorts of a search ----
+
+    private fun short(id: String, title: String) = video(id, title, null).copy(
+        channelId = null, durationSeconds = null, isShortForm = true, url = "https://www.youtube.com/shorts/$id",
+    )
+
+    @Test
+    fun theShortsOfAnExplicitQueryAreNone_andTheExtractorIsNotAsked() = runBlocking<Unit> {
+        fake.shortsPage = ShortsPage(listOf(short("shortClean01", "Cute cat")), PageKey("next"))
+        for (query in listOf("Sexy twerking", "twerking", "belly dance", "رقص شرقي", "xxx videos")) {
+            assertThat(source.searchShorts(query, null).shorts).isEmpty()
+            assertThat(source.searchShorts(query, null).next).isNull()
+            assertThat(source.searchShorts(query, PageKey("next")).shorts).isEmpty()
+        }
+        assertThat(fake.calls).isEmpty()
+    }
+
+    @Test
+    fun theShortsOfAnOrdinaryQueryLoseTheExplicitOnes_andKeepTheirKey() = runBlocking<Unit> {
+        fake.shortsPage = ShortsPage(
+            listOf(short("shortClean01", "Cute cat"), short("shortBad0001", "Sexy twerking challenge"), short("shortClean02", "Cooking in 30 seconds")),
+            PageKey("page-2"),
+        )
+
+        val page = source.searchShorts("cats", null)
+
+        assertThat(page.shorts.map { it.videoId }).containsExactly("shortClean01", "shortClean02").inOrder()
+        assertThat(page.next).isEqualTo(PageKey("page-2"))
+        assertThat(fake.calls).containsExactly("searchShorts:cats:null")
+        // What was found explicit once stays out of every list, and cannot be played: the same video as a normal item.
+        assertThat(refusal { source.stream("shortBad0001") }.technicalName).isEqualTo("ContentFiltered")
+    }
+
+    @Test
+    fun aPageOfNothingButExplicitShortsStillGoesOn() = runBlocking<Unit> {
+        fake.shortsPage = ShortsPage(listOf(short("shortBad0001", "Sexy twerking challenge")), PageKey("page-3"))
+
+        val page = source.searchShorts("cats", PageKey("page-2"))
+
+        assertThat(page.shorts).isEmpty()
+        assertThat(page.next).isEqualTo(PageKey("page-3"))
+        assertThat(fake.calls).containsExactly("searchShorts:cats:page-2")
     }
 
     // ---- suggestions ----
@@ -270,6 +315,7 @@ class SafeVideoSourceTest {
         val calls = ArrayList<String>()
         var failure: SourceException? = null
         var searchPage = ItemsPage(emptyList(), null)
+        var shortsPage = ShortsPage(emptyList(), null)
         var suggestionList = emptyList<String>()
         var channelDetails: ChannelDetails? = null
         var channelVideosPage = ItemsPage(emptyList(), null)
@@ -291,6 +337,11 @@ class SafeVideoSourceTest {
         override suspend fun search(query: String, filter: SearchFilter, page: PageKey?): ItemsPage {
             note("search:$query:$filter:${page?.id}")
             return searchPage
+        }
+
+        override suspend fun searchShorts(query: String, page: PageKey?): ShortsPage {
+            note("searchShorts:$query:${page?.id}")
+            return shortsPage
         }
 
         override suspend fun suggestions(query: String, language: String): List<String> {

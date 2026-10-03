@@ -137,7 +137,8 @@ class PlaybackController(
 
         override fun onVideoSizeChanged(videoSize: VideoSize) {
             val side = minOf(videoSize.width, videoSize.height)
-            _state.update { it.copy(currentHeight = if (side > 0) qualityRung(side) else null) }
+            val aspect = if (videoSize.width > 0 && videoSize.height > 0) videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height else null
+            _state.update { it.copy(currentHeight = if (side > 0) qualityRung(side) else null, videoAspect = aspect) }
         }
 
         override fun onCues(cueGroup: CueGroup) {

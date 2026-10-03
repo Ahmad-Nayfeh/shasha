@@ -10,6 +10,7 @@ import com.ahmadnayfeh.shasha.youtube.PageKey
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistPage
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
+import com.ahmadnayfeh.shasha.youtube.ShortsPage
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.SourceItem
@@ -29,6 +30,8 @@ import java.util.Collections
  * default would reach the extractor unfiltered, and a test fails when one is missing):
  * - [search]: an explicit query gets an empty page without a next page (the screens show their ordinary "no results"; the
  *   extractor is not even asked); other pages lose their explicit items, and keep their next-page keys, so paging goes on.
+ * - [searchShorts]: like [search]: an explicit query gets an empty page, other pages lose their explicit Shorts (judged by their
+ *   title: a Short in a search has no channel or snippet) and keep their next-page keys.
  * - [suggestions]: none for an explicit prefix; explicit suggestions are dropped.
  * - [channelVideos], [channelShorts], [channelTab], [channelPlaylists], [recentVideos] (the subscription feeds, RSS included),
  *   [related], [playlist]'s videos: items lose what is explicit, judged by title, channel name and, where the item has one,
@@ -66,6 +69,11 @@ class SafeVideoSource internal constructor(
     override suspend fun search(query: String, filter: SearchFilter, page: PageKey?): ItemsPage {
         if (this.filter.isExplicit(query)) return ItemsPage(emptyList(), null)
         return delegate.search(query, filter, page).let { it.copy(items = it.items.safe()) }
+    }
+
+    override suspend fun searchShorts(query: String, page: PageKey?): ShortsPage {
+        if (this.filter.isExplicit(query)) return ShortsPage(emptyList(), null)
+        return delegate.searchShorts(query, page).let { it.copy(shorts = it.shorts.safe()) }
     }
 
     override suspend fun suggestions(query: String, language: String): List<String> {

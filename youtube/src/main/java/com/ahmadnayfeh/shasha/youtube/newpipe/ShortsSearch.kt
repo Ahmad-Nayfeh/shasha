@@ -25,7 +25,7 @@ internal class ShortsSearch(
     private val service: StreamingService,
     private val pages: PageStore,
     /** Posts a body to InnerTube's `search` and gives the answer's text; tests replace the HTTP. */
-    private val post: (body: ByteArray) -> String = ::postToSearch,
+    private val post: (body: ByteArray) -> String = { body -> postToSearch(body) },
 ) {
 
     fun load(query: String, page: PageKey?): ShortsPage {

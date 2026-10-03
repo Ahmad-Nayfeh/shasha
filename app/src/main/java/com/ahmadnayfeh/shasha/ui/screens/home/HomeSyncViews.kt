@@ -70,6 +70,21 @@ internal fun SyncStatus(sync: HomeSync, nowMs: Long, formats: Formats) {
     }
 }
 
+/** The header's status of a home made of suggestions (no channels to sync): they are being fetched, and show as they arrive. */
+@Composable
+internal fun SuggestingStatus() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        ShashaLoader(size = 22.dp)
+        Spacer(Modifier.width(10.dp))
+        Text(
+            stringResource(R.string.home_suggesting),
+            style = MaterialTheme.typography.labelLarge,
+            color = ShashaColors.Muted,
+            modifier = Modifier.testTag("home_suggesting"),
+        )
+    }
+}
+
 /** Above the feed while its sync is failing: the unified error in brief (SPEC §1), the feed stays usable. */
 @Composable
 internal fun SyncErrorBanner(error: SourceException, extractorVersion: String, onCheckUpdates: () -> Unit) {

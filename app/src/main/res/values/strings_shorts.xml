@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.4: the Shorts player (a vertical player with UP and DOWN to flip through a list), the Shorts in the search, and the home
+     built from the history. Same rules as strings.xml: Arabic, Western digits, numbers passed as ready-made text (%1$s), Latin
+     words wrapped in FSI/PDI. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="ar">
+    <!-- The search: the row of Shorts the query found, beside its results (its title is home_shorts_title). -->
+    <string name="search_shorts_subtitle">عن بحثك</string>
+
+    <!-- The Shorts player: which Short of how many (%1$s of %2$s), what UP, DOWN and OK do, and why one does not. -->
+    <string name="shorts_position">%1$s من %2$s</string>
+    <string name="shorts_next">التالي</string>
+    <string name="shorts_previous">السابق</string>
+    <string name="shorts_pause">إيقاف</string>
+    <string name="shorts_play">تشغيل</string>
+    <string name="shorts_replay">إعادة</string>
+    <string name="shorts_ended">انتهى المقطع</string>
+    <string name="shorts_first">هذا أول مقطع</string>
+    <string name="shorts_last">هذا آخر مقطع</string>
+    <string name="shorts_locked">الوضع الجاد: أكمل هذا المقطع أولاً</string>
+    <string name="shorts_loading">جارٍ تجهيز المقطع…</string>
+
+    <!-- The home: what a home without channels is made of (the suggestions' two rows and the history's newest), and its header. -->
+    <string name="home_subtitle_history">مقترحات من آخر ما شاهدته</string>
+    <string name="home_suggesting">نجهّز لك مقترحات…</string>
+    <string name="home_shorts_suggested_title">&#x2068;Shorts&#x2069; مقترحة</string>
+    <string name="home_shorts_suggested_subtitle">من قنوات شاهدتها مؤخراً</string>
+    <string name="home_recent_title">شاهدتَها مؤخراً</string>
+    <string name="home_recent_subtitle">من سجل مشاهدتك</string>
+</resources>
