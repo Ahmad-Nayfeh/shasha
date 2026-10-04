@@ -345,12 +345,25 @@ rem ---------------------------------------------------------------- endings
 :no_adb
 call :warn "The installer's adb was not found." "لم يُعثر على أداة adb الخاصة بالمثبّت."
 echo(    Expected / المتوقع: "%SCRIPT_DIR%tools\windows\adb.exe"
+rem Run from inside the zip (WinRAR's window, 7-Zip's, or Windows' own zip view): the program copied the installer
+rem alone to a temporary folder (Rar$DI..., 7zO..., TempN_...), without the tools beside it.
+echo("%SCRIPT_DIR%"| findstr /i /l /c:"Rar$" /c:"7zO" /c:"Temp1_" /c:"Temp2_" /c:"Temp3_" >nul && goto no_adb_in_zip
 call :info "- Extract the WHOLE Shasha-Setup.zip first: right-click it, then Extract All."
 call :info "  Then open the extracted Shasha-Setup folder and double-click the installer again."
 call :info "  فك ضغط Shasha-Setup.zip كاملاً أولاً: انقر عليه بالزر الأيمن ثم Extract All،"
 call :info "  ثم افتح مجلد Shasha-Setup الناتج وانقر المثبّت مرتين من جديد."
 call :info "- Keep the installer next to its tools folder and the .apk file; do not move it alone."
 call :info "  أبقِ المثبّت بجانب مجلد tools وملف التطبيق .apk، ولا تنقله وحده."
+set "INTERACTIVE=1"
+goto fail
+
+:no_adb_in_zip
+call :info "- The installer was opened from INSIDE the zip (WinRAR, 7-Zip or Windows), so it was copied out alone."
+call :info "  Close this window and the zip's window. Right-click Shasha-Setup.zip, then Extract All"
+call :info "  (with WinRAR: Extract to Shasha-Setup). Open the new Shasha-Setup folder and run the installer from there."
+call :info "  فُتح المثبّت من داخل الملف المضغوط (WinRAR أو 7-Zip أو ويندوز)، فنُسخ وحده إلى مجلد مؤقت."
+call :info "  أغلق هذه النافذة ونافذة الملف المضغوط، ثم انقر Shasha-Setup.zip بالزر الأيمن ثم Extract All"
+call :info "  (وفي WinRAR: Extract to Shasha-Setup)، ثم افتح مجلد Shasha-Setup الجديد وشغّل المثبّت منه."
 set "INTERACTIVE=1"
 goto fail
 
