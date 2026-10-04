@@ -49,7 +49,8 @@ const Switch: React.FC<{x: number; y: number; cover: [number, number, number, nu
 /** The switch's place on the capture: the manifest's track rect; the cover hides the capture's own switch and its word. */
 const switchAt = (key: string) => {
   const [x, y] = fr('profile_toggles', key);
-  return {x, y, cover: (isEnglishScreen('profile_toggles') ? [x - 130, y - 10, 250, 80] : [x - 16, y - 10, 250, 80]) as [number, number, number, number]};
+  // English: the word «Off» starts about 75 px left of the track, and the row's description ends just before it.
+  return {x, y, cover: (isEnglishScreen('profile_toggles') ? [x - 80, y - 10, 200, 80] : [x - 16, y - 10, 250, 80]) as [number, number, number, number]};
 };
 
 /** A capture shown small (a mini TV picture). */

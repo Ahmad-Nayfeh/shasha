@@ -1,4 +1,568 @@
 {
- "_readme": ["English captures of the screens in screens.json (same keys and shape; files in public/screens-en/). See lib/screens.ts."],
- "screens": {}
+  "_readme": [
+    "English captures of the screens in screens.json (same keys and shape; files in public/screens-en/). See lib/screens.ts.",
+    "Captures: ./gradlew :app:recordRoborazziDebug -PshashaPromoEnglish --tests '*ScreenshotTest' (app tests, PromoEnglish) -> promo/screens-en/.",
+    "Focus rects: each Arabic rect's margins around the element it outlines, put around the same element of the English capture",
+    "(app/build/promo-english/<golden>.json, written by the same run) and mirrored; rects of a group or of centred text measured on the capture."
+  ],
+  "screens": {
+    "home_adult": {
+      "file": "home_adult.png",
+      "source": "promo/screens-en/home.png",
+      "title": "Home · adults' profile",
+      "kind": "home",
+      "scenes": ["s01_intro", "s03_home_search", "s09_phone", "s13_first_run"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "firstCard": [251, 285, 372, 206],
+        "home": [97, 216, 111, 95],
+        "search": [97, 324, 111, 95],
+        "row1": [256, 286, 1568, 356],
+        "rows": [
+          [256, 286, 1568, 356],
+          [256, 708, 1568, 356]
+        ]
+      },
+      "patches": {
+        "unfocusFirstCard": [
+          {"op": "band", "x": 240, "y": 274, "w": 394, "h": 228, "r": 31, "width": 12, "color": "#0B0F14", "feather": 12}
+        ]
+      }
+    },
+    "search_adult": {
+      "file": "search_adult.png",
+      "source": "promo/screens-en/search_results.png",
+      "title": "Search",
+      "kind": "search",
+      "scenes": ["s03_home_search"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "query": [256, 88, 1568, 112],
+        "firstResult": [256, 357, 362, 204]
+      }
+    },
+    "player_overlay": {
+      "file": "player_overlay.png",
+      "source": "promo/screens-en/player_osd.png",
+      "title": "Player",
+      "kind": "player",
+      "scenes": ["s04_player", "s07_lock", "s09_phone", "s14_breaks"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "quality": [1500, 872, 308, 104],
+        "speed": [1280, 872, 195, 104],
+        "subtitles": [1026, 872, 229, 104],
+        "progress": [128, 812, 1664, 32],
+        "pause": [112, 865, 120, 118],
+        "title": [110, 95, 990, 120]
+      }
+    },
+    "player_loading": {
+      "file": "player_loading.png",
+      "source": "promo/screens-en/player_loading.png",
+      "title": "Player loading",
+      "kind": "player",
+      "scenes": ["s09_phone"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "logo": [892, 420, 135, 145]
+      }
+    },
+    "player_settings": {
+      "file": "player_settings.png",
+      "source": "promo/screens-en/player_osd_quality_menu.png",
+      "title": "Player settings: quality",
+      "kind": "menu",
+      "scenes": ["s04_player"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "panel": [113, 225, 678, 758],
+        "q1080": [140, 375, 624, 98]
+      }
+    },
+    "player_resume": {
+      "file": "player_resume.png",
+      "source": "promo/screens-en/player_osd_watch_later_resume.png",
+      "title": "Resume",
+      "kind": "resume",
+      "scenes": ["s04_player"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "resume": [1410, 97, 397, 71],
+        "progress": [128, 812, 1664, 32]
+      }
+    },
+    "player_sponsor_skipped": {
+      "file": "player_sponsor_skipped.png",
+      "source": "promo/screens-en/sponsor_skip_undo.png",
+      "title": "Sponsor segment skipped",
+      "kind": "toast",
+      "scenes": ["s04_player"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "toast": [113, 73, 698, 110],
+        "undo": [536, 87, 265, 81]
+      }
+    },
+    "profile_picker": {
+      "file": "profile_picker.png",
+      "source": "promo/screens-en/profile_picker.png",
+      "title": "Who's watching?",
+      "kind": "profiles",
+      "scenes": ["s05_profiles"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "adult": [455, 355, 283, 283],
+        "child": [827, 363, 267, 267],
+        "child2": [1191, 363, 267, 267]
+      }
+    },
+    "pin_entry": {
+      "file": "pin_entry.png",
+      "source": "promo/screens-en/pin_pad.png",
+      "title": "Parent PIN",
+      "kind": "pin",
+      "scenes": ["s05_profiles", "s06_time"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "dots": [562, 624, 252, 36],
+        "keypad": [1114, 161, 449, 757],
+        "panel": [241, 94, 1409, 891]
+      },
+      "patches": {
+        "base": [
+          {"op": "rect", "x": 484, "y": 700, "w": 412, "h": 56, "fill": "#151B24"}
+        ],
+        "_note": "base hides the capture's red 'Wrong PIN. 4 attempts left' line; the scenes draw the 4 dots filling (PinDotsOverlay)."
+      }
+    },
+    "kids_home": {
+      "file": "kids_home.png",
+      "source": "promo/screens-en/kids_home.png",
+      "title": "Kids' home",
+      "kind": "kids",
+      "scenes": ["s01_intro", "s05_profiles", "s09_phone"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "firstCard": [251, 397, 426, 236],
+        "grid": [240, 290, 900, 420]
+      }
+    },
+    "settings_quota": {
+      "file": "settings_quota.png",
+      "source": "promo/screens-en/profile_edit.png",
+      "title": "Profile: daily time",
+      "kind": "settings",
+      "scenes": ["s06_time"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "name": [704, 132, 1104, 128],
+        "minutes": [704, 428, 1104, 128],
+        "schedule": [704, 576, 1104, 128]
+      },
+      "patches": {
+        "base": [
+          {"op": "rect", "x": 643, "y": 90, "w": 1227, "h": 190, "fill": "#0B0F14"},
+          {"op": "rect", "x": 1808, "y": 280, "w": 62, "h": 30, "fill": "#0B0F14"},
+          {"op": "rect", "x": 643, "y": 280, "w": 62, "h": 30, "fill": "#0B0F14"},
+          {"op": "rect", "x": 704, "y": 280, "w": 1104, "h": 24, "r": "32px 32px 0 0", "fill": "#151B24"},
+          {"op": "rect", "x": 704, "y": 132, "w": 1104, "h": 128, "r": 32, "fill": "#151B24"},
+          {"op": "crop", "src": [704, 136, 1104, 120], "r": 30, "levels": ["#28323F", "#151B24"]}
+        ],
+        "_note": "base turns the capture's focused (yellow-ringed) 'name' row into a normal row: our ring takes the focus (the Arabic patch, mirrored)."
+      }
+    },
+    "quota_warning": {
+      "file": "quota_warning.png",
+      "source": "promo/screens-en/time_warning.png",
+      "title": "Time warning",
+      "kind": "warning",
+      "scenes": ["s01_intro", "s06_time"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "toast": [500, 57, 920, 142]
+      }
+    },
+    "time_up": {
+      "file": "time_up.png",
+      "source": "promo/screens-en/time_up.png",
+      "title": "Time's up",
+      "kind": "timeup",
+      "scenes": ["s06_time", "s09_phone"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "pin": [737, 782, 446, 110],
+        "title": [808, 442, 304, 70],
+        "phoneLine": [726, 916, 467, 37]
+      }
+    },
+    "kids_video": {
+      "file": "kids_video.png",
+      "source": "promo/screens-en/player_subtitle_controls_hidden.png",
+      "title": "Kids' video",
+      "kind": "kidsplayer",
+      "scenes": ["s07_lock", "s08_guard"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "subtitle": [430, 816, 1061, 152]
+      }
+    },
+    "kids_player_locked": {
+      "file": "kids_player_locked.png",
+      "source": "promo/screens-en/lock_child_pin.png",
+      "title": "Leaving needs the PIN",
+      "kind": "kidsplayer",
+      "scenes": ["s01_intro", "s07_lock", "s08_guard"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "lockHint": [725, 946, 475, 58],
+        "title": [391, 385, 596, 47],
+        "dots": [562, 613, 252, 36]
+      }
+    },
+    "lock_hold": {
+      "file": "lock_hold.png",
+      "source": "promo/screens-en/lock_hold_ring.png",
+      "title": "Hold Back",
+      "kind": "hold",
+      "scenes": ["s07_lock"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "ring": [749, 295, 422, 422],
+        "count": [880, 400, 160, 150],
+        "button": [784, 142, 354, 83]
+      }
+    },
+    "lock_phrase": {
+      "file": "lock_phrase.png",
+      "source": "promo/screens-en/lock_phrase_keyboard.png",
+      "title": "Serious Mode phrase",
+      "kind": "phrase",
+      "scenes": ["s07_lock"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "phrase": [388, 130, 1144, 150],
+        "input": [388, 286, 1144, 112],
+        "keys": [
+          [1199, 457, 102, 102],
+          [1431, 457, 102, 102],
+          [851, 457, 102, 102],
+          [503, 689, 102, 102],
+          [1431, 457, 102, 102],
+          [1199, 689, 102, 102],
+          [387, 573, 102, 102],
+          [387, 457, 102, 102],
+          [967, 457, 102, 102]
+        ]
+      },
+      "patches": {
+        "base": [
+          {"op": "rect", "x": 1412, "y": 438, "w": 140, "h": 140, "r": 36, "fill": "#0D1B20", "feather": 6},
+          {"op": "rect", "x": 1431, "y": 457, "w": 102, "h": 102, "r": 24, "fill": "#1E2632", "stroke": "#2E3947", "strokeWidth": 2},
+          {"op": "text", "text": "ا", "x": 1482, "y": 508, "size": 46, "weight": 500, "color": "#EAF0F6", "anchor": "middle"}
+        ],
+        "_note": "base draws the capture's focused (teal) ا key as a normal key. The Arabic keyboard keeps its right-to-left layout in the English interface, so its keys are where they are in the Arabic capture."
+      },
+      "_keys": "the letters still to type after the capture's «الصبر مف»: ت ا ح (space) ا ل ف ر ج"
+    },
+    "protection_status": {
+      "file": "protection_status.png",
+      "source": "promo/screens-en/protection_ok.png",
+      "title": "Protection status",
+      "kind": "status",
+      "scenes": ["s08_guard", "s12_install_pc"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "overlay": [112, 347, 1696, 160],
+        "usage": [112, 531, 1696, 160],
+        "install": [112, 715, 1696, 160],
+        "badge": [1475, 121, 333, 80]
+      }
+    },
+    "remote_qr": {
+      "file": "remote_qr.png",
+      "source": "promo/screens-en/remote_pairing.png",
+      "title": "Phone remote: QR",
+      "kind": "qr",
+      "scenes": ["s01_intro", "s09_phone"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "qr": [1208, 148, 600, 600],
+        "url": [1208, 772, 600, 108],
+        "toggle": [99, 304, 1050, 136]
+      },
+      "patches": {
+        "base": [
+          {"op": "qr", "x": 1277, "y": 217, "size": 462},
+          {"op": "rect", "x": 1226, "y": 786, "w": 470, "h": 40, "fill": "#070A0E"},
+          {"op": "text", "text": "http://192.168.1.50:8765/?t=", "x": 1235.6, "y": 816.2, "size": 26.6, "color": "#48DCCD", "font": "Capture Mono", "baseline": true}
+        ],
+        "_note": "same QR + address swap as the Arabic remote_qr, at the English layout's places (QR and address at the right)"
+      }
+    },
+    "first_run_phone": {
+      "file": "first_run_phone.png",
+      "source": "promo/screens-en/setup_phone.png",
+      "title": "First start: phone",
+      "kind": "qr",
+      "scenes": ["s13_first_run"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "qr": [1126, 218, 600, 600],
+        "url": [194, 584, 860, 107],
+        "done": [184, 784, 261, 110]
+      },
+      "patches": {
+        "base": [
+          {"op": "qr", "x": 1195, "y": 287, "size": 462},
+          {"op": "rect", "x": 212, "y": 598, "w": 470, "h": 40, "fill": "#070A0E"},
+          {"op": "text", "text": "http://192.168.1.50:8765/?t=", "x": 221.6, "y": 628.2, "size": 26.6, "color": "#48DCCD", "font": "Capture Mono", "baseline": true}
+        ],
+        "_note": "same QR + address swap as remote_qr"
+      }
+    },
+    "stats": {
+      "file": "stats.png",
+      "source": "promo/screens-en/stats.png",
+      "title": "Statistics",
+      "kind": "stats",
+      "scenes": ["s10_stats"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "chart": [112, 274, 980, 744],
+        "channels": [1132, 537, 676, 481],
+        "week": [1132, 274, 676, 239],
+        "compare": [1164, 436, 412, 56],
+        "profiles": [1222, 120, 587, 82]
+      }
+    },
+    "first_run_pin": {
+      "file": "first_run_pin.png",
+      "source": "promo/screens-en/setup_pin.png",
+      "title": "First start: PIN",
+      "kind": "pin",
+      "scenes": ["s13_first_run"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "dots": [562, 550, 252, 36],
+        "keypad": [1114, 139, 449, 757]
+      }
+    },
+    "profiles_setup": {
+      "file": "profiles_setup.png",
+      "source": "promo/screens-en/setup_child.png",
+      "title": "First start: profiles",
+      "kind": "profiles",
+      "scenes": ["s13_first_run"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "name": [500, 353, 920, 112],
+        "avatar": [285, 504, 134, 134],
+        "add": [701, 828, 307, 96],
+        "adult": [701, 828, 307, 96],
+        "child": [500, 353, 920, 112]
+      }
+    },
+    "error_youtube_changed": {
+      "file": "error_youtube_changed.png",
+      "source": "promo/screens-en/error_blocked_403.png",
+      "title": "YouTube changed",
+      "kind": "error",
+      "scenes": ["s14_breaks"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "title": [316, 420, 1285, 68],
+        "details": [709, 612, 502, 182],
+        "version": [982, 612, 229, 182],
+        "errorName": [709, 612, 273, 182],
+        "updateButton": [876, 849, 447, 104],
+        "back": [591, 849, 256, 104]
+      },
+      "patches": {
+        "base": [
+          {"op": "rect", "x": 563, "y": 820, "w": 310, "h": 162, "r": 70, "fill": "#0F1116", "feather": 10},
+          {"op": "rect", "x": 590, "y": 849, "w": 256, "h": 104, "r": 52, "fill": "#153133", "stroke": "#2E3947", "strokeWidth": 2},
+          {"op": "icon", "name": "arrowLeft", "x": 657, "y": 902, "size": 40, "color": "#2EC4B6", "stroke": 2.6},
+          {"op": "text", "text": "Back", "x": 702, "y": 900, "size": 40, "weight": 600, "color": "#2EC4B6", "anchor": "left"}
+        ],
+        "_note": "base draws the capture's focused «Back» as an unfocused button: our ring moves to «Check for updates»."
+      }
+    },
+    "update_downloading": {
+      "file": "update_downloading.png",
+      "source": "promo/screens-en/updates_downloading.png",
+      "title": "Update downloading",
+      "kind": "update",
+      "scenes": ["s14_breaks"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "bar": [321, 477, 1280, 24],
+        "bytes": [829, 526, 265, 48],
+        "versions": [673, 603, 574, 142],
+        "cancel": [816, 781, 289, 110],
+        "release": [673, 603, 574, 142],
+        "progress": [321, 477, 1280, 24]
+      },
+      "_note": "S14 re-draws the bar fill (from the left) and the «x of 18.0 MB» line as the download runs (UpdateProgressOverlay)."
+    },
+    "serious_settings": {
+      "file": "serious_settings.png",
+      "source": "promo/screens-en/behavior_serious.png",
+      "title": "Serious Mode",
+      "kind": "settings",
+      "scenes": ["s06_serious"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "kidsToggle": [1674, 310, 106, 62],
+        "adultToggle": [1668, 513, 104, 62]
+      }
+    },
+    "channel_videos": {
+      "file": "channel_videos.png",
+      "source": "promo/screens-en/channel.png",
+      "title": "Channel: videos",
+      "kind": "channel",
+      "scenes": ["s09_channel"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "tabVideos": [111, 553, 191, 90],
+        "tabShorts": [330, 553, 187, 90],
+        "tabLive": [544, 553, 152, 90],
+        "tabLists": [723, 553, 214, 90],
+        "sortNewest": [1008, 553, 208, 78],
+        "sortViewed": [1243, 553, 264, 78],
+        "sortOldest": [1534, 553, 180, 78]
+      }
+    },
+    "channel_shorts": {
+      "file": "channel_shorts.png",
+      "source": "promo/screens-en/channel_shorts.png",
+      "title": "Channel: Shorts",
+      "kind": "channel",
+      "scenes": ["s09_channel"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "tabVideos": [111, 487, 191, 90],
+        "tabShorts": [330, 487, 187, 90],
+        "tabLive": [544, 487, 152, 90],
+        "tabLists": [723, 487, 214, 90],
+        "sortNewest": [1008, 487, 208, 78],
+        "sortViewed": [1243, 487, 264, 78],
+        "sortOldest": [1534, 487, 180, 78]
+      }
+    },
+    "search_mic": {
+      "file": "search_mic.png",
+      "source": "promo/screens-en/search_idle_mic.png",
+      "title": "Voice search",
+      "kind": "search",
+      "scenes": ["s10_search"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "mic": [1565, 81, 126, 126],
+        "lang": [1707, 88, 118, 112],
+        "field": [256, 88, 1284, 112]
+      }
+    },
+    "search_listening": {
+      "file": "search_listening.png",
+      "source": "promo/screens-en/search_listening.png",
+      "title": "Listening",
+      "kind": "search",
+      "scenes": ["s10_search"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "card": [444, 103, 1240, 874]
+      }
+    },
+    "profile_toggles": {
+      "file": "profile_toggles.png",
+      "source": "promo/screens-en/profile_edit_shorts.png",
+      "title": "Profile: Shorts and suggestions",
+      "kind": "settings",
+      "scenes": ["s08_suggest"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "shorts": [704, 102, 1104, 240],
+        "suggestions": [704, 362, 1104, 238],
+        "shortsToggle": [1664, 192, 104, 60],
+        "suggestionsToggle": [1672, 452, 106, 60]
+      }
+    },
+    "home_suggested": {
+      "file": "home_suggested.png",
+      "source": "promo/screens-en/home_suggestions.png",
+      "title": "Home: suggested for you",
+      "kind": "home",
+      "scenes": ["s08_suggest"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "row": [256, 690, 1568, 356]
+      }
+    },
+    "updates_hub": {
+      "file": "updates_hub.png",
+      "source": "promo/screens-en/settings_hub_updates.png",
+      "title": "Settings: updates",
+      "kind": "update",
+      "scenes": ["s15_updates"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {
+        "button": [843, 392, 479, 110]
+      }
+    },
+    "updates_checking": {
+      "file": "updates_checking.png",
+      "source": "promo/screens-en/updates_checking.png",
+      "title": "Checking for updates",
+      "kind": "update",
+      "scenes": ["s15_updates"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {}
+    },
+    "updates_installing": {
+      "file": "updates_installing.png",
+      "source": "promo/screens-en/updates_installing.png",
+      "title": "Installing the update",
+      "kind": "update",
+      "scenes": ["s15_updates"],
+      "units": "px",
+      "size": [1920, 1080],
+      "focus": {}
+    }
+  }
 }

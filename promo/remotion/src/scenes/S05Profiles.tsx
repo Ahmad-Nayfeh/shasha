@@ -79,7 +79,8 @@ const NoTile: React.FC<{icon: IconName; label: string; t: number; lock?: boolean
         <Icon name={lock ? 'lock' : 'x'} size={26} color="#2B1A00" stroke={3} />
       </div>
     </div>
-    <div style={{fontSize: 36, fontWeight: 600, color: brand.text}}>{label}</div>
+    {/* English runs longer: two lines, so it stops before the TV */}
+    <div style={{fontSize: 36, fontWeight: 600, color: brand.text, ...(isEn ? {maxWidth: 420, lineHeight: 1.25} : {})}}>{label}</div>
   </div>
 );
 
