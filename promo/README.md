@@ -9,6 +9,8 @@
 |---|---|---|
 | `docs/video/shasha-explainer.mp4` (التلفاز) | **6:13** (11187 إطاراً، 30 إطاراً في الثانية، 1920×1080) | للأهل: يوتيوب هادئ لتلفاز العائلة بلا إعلانات ولا تسجيل دخول؛ ملفات الأطفال (القنوات المسموحة، والحصة اليومية، وساعات المشاهدة)؛ «الوضع الجاد» للأطفال وللكبار كلٌّ على حدة؛ الحارس؛ المقترحة وShorts لكل ملف؛ صفحة القناة وترتيبها؛ البحث بالصوت؛ الجوال ريموتاً و«قبول / رفض»؛ التحديث بضغطة؛ أي تلفاز يصلح؛ ثم التثبيت بحقيبة الكمبيوتر في ثماني خطوات. |
 | `docs/video/shasha-mobile.mp4` (الجوال) | **2:03** (3691 إطاراً) | تنزيل ملف التطبيق والسماح بالتثبيت مرة واحدة؛ البحث؛ صفحات القنوات؛ التشغيل في الخلفية؛ صورة داخل صورة؛ السرعة؛ تخطي فقرات الرعاية؛ التنزيل (فيديو أو صوت)؛ الاشتراكات؛ السجل؛ التحديث بضغطة. شاشات التطبيق مرسومة من جديد بنصوص `mobile/src/main/res/values-ar/strings.xml`. |
+| `docs/video/shasha-explainer-en.mp4` (التلفاز، بالإنجليزية) | **4:53** (8801 إطار) | فيديو التلفاز نفسه بالإنجليزية: التعليق بصوت Christopher، والمسرح معكوس من اليسار إلى اليمين، ولقطات التطبيق من واجهته الإنجليزية. صفحة التحكم من الجوال تبقى عربية كما هي في التطبيق. |
+| `docs/video/shasha-mobile-en.mp4` (الجوال، بالإنجليزية) | **1:40** (3005 إطارات) | فيديو الجوال نفسه بالإنجليزية. |
 
 - **الصوت: ElevenLabs، الصوت «Abdullah - Professional, and Energetic»** (`voice_id` = `pCKbQ4EPGE06zpEPGNvS`، النموذج
   `eleven_multilingual_v2`، بلا `language_code`، الإخراج `mp3_44100_192`). يُولَّد **حصراً** عبر سير العمل
@@ -22,7 +24,7 @@
 |---|---|
 | `narration/scenes.json` | **مصدر نص التلفاز** (28 مشهداً): لكل مشهد ثلاث صيغ متوازية: `display` (ما يُكتب في الترجمة)، و`tts` (المنطوق بلا تشكيل، والمصطلحات مكتوبة كما تُلفظ)، و`tts_diac` (المنطوق مشكولاً كاملاً مع الوقف بالسكون، للصوت البديل). أرقام المشاهد فيها فجوات عمداً (`s11`، `s14`، `s20`، وفي الجوال `m04`): مشاهد حُذفت بعد توليد الصوت، وأسماء ملفاته مبنية على الرقم. |
 | `narration/scenes-mobile.json` | مصدر نص الجوال (14 مشهداً، معرّفاتها `m01`…`m15`) بالصيغ الثلاث نفسها. |
-| `narration/scenes-en.json` و`scenes-mobile-en.json` | نسخة إنجليزية من النصين (المعرّفات والأقسام نفسها؛ `display` و`tts` فقط) لتعليق صوتي إنجليزي لاحقاً. |
+| `narration/scenes-en.json` و`scenes-mobile-en.json` | النسخة الإنجليزية من النصين (المعرّفات والأقسام نفسها؛ `display` و`tts` فقط)، ومنها التعليق الإنجليزي: انظر «النسخة الإنجليزية» أدناه. |
 | `narration/narration_tts_diac.md` و`narration_mobile_tts_diac.md` | النص كاملاً مشهداً مشهداً بصيغه الثلاث، والعبارات كما أُرسلت إلى الصوت، ومدة كل مشهد (يولّدهما `make_script_md.py`). |
 | `narration/narration.m4a` و`narration-mobile.m4a` | التعليق الصوتي النهائي (AAC، مضغوط) مطابق لتوقيت كل فيديو. |
 | `voice/` | `run.py` (يشغّله سير العمل)، و`request-first-run.json` (**الطلب الأول**: 222 عبارة للفيديوهين، منه وُلِّد معظم الصوت المرفق)، و`request.json` (الطلب الثاني: سبع عبارات صُحّحت بعده في خطوتَي ماك وتصحيح الشبكة)، و`samples-en/` (عيّنات خمسة أصوات إنجليزية: Jon وChristopher وPeter وAllison وAmelia، مع أوصافها ومعرّفاتها). |
@@ -98,20 +100,37 @@ node tools/stills.mjs out --comp=Poster poster:0                          # صو
 - المصطلحات اللاتينية تُكتب في `tts` كما تُلفظ («جوجل تي في»، «كيو آر»، «يو إس بي»، «آي بي»)، والأعداد بالحروف، والأقواس
   وعلامات التنصيص تُحذف قبل الإرسال (للعين فقط).
 
-## الصوت الإنجليزي (لاحقاً)
+## النسخة الإنجليزية
 
-النصان `scenes-en.json` و`scenes-mobile-en.json` جاهزان. اختر صوتاً من عيّنات `voice/samples-en/` (الأرقام والأسماء في ملفّي
-JSON هناك؛ العيّنة نفسها جملة تعريفية واحدة)، ثم:
+الفيديوهان بالإنجليزية من المشاهد نفسها، وتختار اللغةَ خاصيةُ الإدخال `lang` (انظر `remotion/src/lib/lang.ts`). العربية تبقى
+الافتراضية، فلا يتغير شيء في رسم الفيديوهين العربيين.
+
+- **الصوت:** ElevenLabs، الصوت «Christopher - Gentle and Trustworthy» (`voice_id` = `G17SuINrv2H9FC6nvetn`، العيّنة
+  `voice/samples-en/en-male-02`)، عبر سير العمل نفسه. النصان `narration/scenes-en.json` و`scenes-mobile-en.json`، والصوت
+  المركّب `narration/narration-en.m4a` و`narration-mobile-en.m4a`، والخطان الزمنيان `timeline-en.json` و`timeline-mobile-en.json`.
+- **النصوص المرسومة:** كل نص عربي يُرسم يمرّ عبر `t()`، ومقابله الإنجليزي في `remotion/src/i18n/en-*.json`؛ والعبارات المنطوقة
+  التي تتوقّت بها المشاهد مقابلها في `remotion/src/i18n/anchors-en-*.json`. السكربت `node tools/check_i18n.mjs` يسمّي كل نص أو
+  عبارة بلا مقابل.
+- **لقطات التطبيق:** تُصوَّر من اختبارات لقطات الشاشة بواجهة التطبيق الإنجليزية إلى `promo/screens-en/`، وتكتب معها حدود كل عنصر
+  في `app/build/promo-english/<اللقطة>.json`. منها قيست مستطيلات `remotion/src/screens-en.json`: هوامش كل مستطيل عربي حول
+  عنصره، معكوسةً حول العنصر نفسه في اللقطة الإنجليزية، وما يحيط بمجموعة أو بنص في الوسط قيس على اللقطة. اللقطة التي ليس لها
+  مقابل إنجليزي تُرسم بلقطتها العربية، كصفحة التحكم من الجوال، وهي عربية في التطبيق أيضاً.
 
 ```sh
-.venv/bin/python tts/scripts/eleven_narration.py request --script tv-en,mobile-en --voice <voice_id> --no-samples
-# ادفع voice/request.json، ثم بعد انتهاء سير العمل:
-.venv/bin/python tts/scripts/eleven_narration.py assemble /path/to/voice-output --script tv-en,mobile-en
+# في جذر المستودع: لقطات التطبيق الإنجليزية
+./gradlew :app:recordRoborazziDebug -PshashaPromoEnglish --tests '*ScreenshotTest'
+# في remotion/
+./sync-assets.sh && npm run words -- --en && npm run words:mobile -- --en
+npm run music -- --en && npm run music:mobile -- --en && ./sync-screens.sh ../..
+node tools/check_i18n.mjs
+node tools/stills.mjs out/stills --lang=en s06_serious@300               # لقطة من مشهد
+node tools/stills.mjs out/dbg --comp=ScreensDebug --lang=en home_adult:0  # مستطيلات لقطة إنجليزية
+VIDEO_LANG=en GRAIN=0 ./render-final.sh out/shasha_explainer_en.mp4
+VIDEO_LANG=en COMP=Mobile GRAIN=0 ./render-final.sh out/shasha_mobile_en.mp4
+./compress.sh out/shasha_explainer_en.mp4 ../../docs/video/shasha-explainer-en.mp4 21.5   # معدل الفيديو العربي نفسه
+./compress.sh out/shasha_mobile_en.mp4 ../../docs/video/shasha-mobile-en.mp4 9.8
+./make-app720.sh out/shasha_explainer_en.mp4 ../../app/src/main/assets/video/explainer-en.mp4 10.8   # نسخة التطبيق باللغة الإنجليزية
 ```
-
-الأصوات الخمسة أُضيفت إلى حساب ElevenLabs أثناء توليد العيّنات، فتعمل بمعرّفها مباشرة. يكتب `assemble` الملفات
-`timeline-en.json` و`timeline-mobile-en.json` و`audio-en/` و`audio-mobile-en/`؛ ويلزم لعرضها في Remotion تركيبتان إنجليزيتان
-تقرآن هذه الملفات (لم تُبنَيا بعد).
 
 ## الصوت البديل: edge-tts (التلفاز فقط)
 

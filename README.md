@@ -17,6 +17,8 @@
 
 **[▶ شاهد فيديو الشرح كاملاً بالصوت (٦ دقائق)](docs/video/shasha-explainer.mp4)** · **[📱 فيديو تطبيق الجوال (دقيقتان)](docs/video/shasha-mobile.mp4)**
 
+🇬🇧 **English:** [TV explainer (5 min)](docs/video/shasha-explainer-en.mp4) · [Phone app video (under 2 min)](docs/video/shasha-mobile-en.mp4)
+
 </div>
 
 <div dir="rtl">
@@ -77,6 +79,8 @@
 | 📗 **Shasha Guide** (English) | [docs/Shasha-Guide.pdf](docs/Shasha-Guide.pdf) |
 | 🎬 **فيديو الشرح** (الشاشة) | [docs/video/shasha-explainer.mp4](docs/video/shasha-explainer.mp4) |
 | 📱 **فيديو تطبيق الجوال** | [docs/video/shasha-mobile.mp4](docs/video/shasha-mobile.mp4) |
+| 🎬 **Explainer video** (English) | [docs/video/shasha-explainer-en.mp4](docs/video/shasha-explainer-en.mp4) |
+| 📱 **Phone app video** (English) | [docs/video/shasha-mobile-en.mp4](docs/video/shasha-mobile-en.mp4) |
 
 > الدليل والفيديو موجودان أيضاً داخل التطبيق: «الإعدادات ← الدليل والفيديو».
 

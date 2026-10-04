@@ -755,7 +755,7 @@ gh secret set UPDATE_TOKEN --repo Ahmad-Nayfeh/shasha
 | الملف | ما فيه |
 |---|---|
 | [docs/دليل-شاشة.pdf](../دليل-شاشة.pdf) | «دليل شاشة»: الدليل الوحيد للبيت (التثبيت، والاستخدام، والوالدين، والإعدادات، وحل المشاكل). مصدره [docs/guide/](../guide/)، ويُبنى بـ `bash docs/guide/build.sh` فيُنسخ أيضاً إلى الحقيبة باسم «دليل شاشة.pdf». |
-| [docs/video/shasha-explainer.mp4](../video/shasha-explainer.mp4) | فيديو الشرح. |
+| [docs/video/shasha-explainer.mp4](../video/shasha-explainer.mp4) | فيديو الشرح، ومعه فيديو الجوال `shasha-mobile.mp4` والنسختان الإنجليزيتان `shasha-explainer-en.mp4` و`shasha-mobile-en.mp4`. مصدرها كلها [promo/](../../promo/README.md). |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | خريطة الشيفرة (بالإنجليزية): الوحدات والحزم، والتخزين، والحارس، وخادم الجوال، والمحدِّث، وCI، وأين الاختبارات. |
 | [acceptance.md](acceptance.md) | معايير القبول، وحالة كل معيار ودليله، وخطوات تجربته على الشاشة. |
 | [youtube-test-results.md](youtube-test-results.md) | نتائج اختبارات `:youtube` على يوتيوب الحقيقي. |
