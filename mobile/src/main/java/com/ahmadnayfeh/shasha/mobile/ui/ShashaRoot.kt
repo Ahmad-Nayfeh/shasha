@@ -6,6 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.LocalActivity
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -38,7 +41,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavDestination
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -51,6 +54,8 @@ import com.ahmadnayfeh.shasha.mobile.R
 import com.ahmadnayfeh.shasha.mobile.data.watchUrl
 import com.ahmadnayfeh.shasha.mobile.ui.about.AboutScreen
 import com.ahmadnayfeh.shasha.mobile.ui.channel.ChannelScreen
+import com.ahmadnayfeh.shasha.mobile.ui.components.LocalSavedPlaylistIds
+import com.ahmadnayfeh.shasha.mobile.ui.components.LocalTabReselections
 import com.ahmadnayfeh.shasha.mobile.ui.components.LocalVideoActions
 import com.ahmadnayfeh.shasha.mobile.ui.components.LocalWatchLaterIds
 import com.ahmadnayfeh.shasha.mobile.ui.components.LocalWatchProgress
@@ -88,12 +93,20 @@ import com.ahmadnayfeh.shasha.mobile.ui.theme.isDark
 import com.ahmadnayfeh.shasha.mobile.ui.update.UpdateScreen
 import com.ahmadnayfeh.shasha.mobile.ui.watch.WatchScreen
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 
 private class Tab(val route: Any, val routeClass: KClass<*>, val label: Int, val icon: ImageVector)
+
+/** The tab whose first page [destination] is; null for every other page. */
+private fun tabOf(destination: NavDestination): Tab? = tabs.firstOrNull { destination.hasRoute(it.routeClass) }
+
+private const val NAV_FADE_IN_MS = 180
+private const val NAV_FADE_OUT_MS = 120
 
 private val tabs = listOf(
     Tab(HomeRoute, HomeRoute::class, R.string.nav_home, Icons.Filled.Home),
@@ -128,11 +141,16 @@ fun ShashaRoot(container: AppContainer) {
         val progress by container.library.watchedFractions.collectAsStateWithLifecycle(initialValue = emptyMap())
         val savedIds by remember { container.library.watchLaterItems.map { list -> list.mapTo(HashSet<String>()) { it.videoId } as Set<String> } }
             .collectAsStateWithLifecycle(initialValue = emptySet())
+        val savedPlaylistIds by container.savedPlaylists.savedIds.collectAsStateWithLifecycle(initialValue = emptySet())
         var downloadTarget by remember { mutableStateOf<VideoItem?>(null) }
         var playlistTarget by remember { mutableStateOf<VideoItem?>(null) }
         val request by container.launch.collectAsStateWithLifecycle()
         val backStack by navController.currentBackStackEntryAsState()
         val destination = backStack?.destination
+        // The tab whose pages are on top: the bar marks it also on a page opened from it (a channel, a playlist).
+        val stack by navController.currentBackStack.collectAsStateWithLifecycle()
+        val currentTab = stack.lastOrNull { tabOf(it.destination) != null }?.destination?.let(::tabOf)
+        val reselections = remember { MutableSharedFlow<KClass<*>>(extraBufferCapacity = 1) }
 
         /**
          * The Shorts viewer, on [videos] (the list the viewer opens from: a channel's Shorts, the Home's row, the search results'),
@@ -161,11 +179,33 @@ fun ShashaRoot(container: AppContainer) {
             }
         }
 
+        /**
+         * A tab always opens at its own first page, never at the page inside it the viewer was on before: everything above the
+         * home is dropped (not saved for later) and the tab's page starts fresh. Back from a tab goes to the home.
+         */
         fun openTab(route: Any) {
             navController.navigate(route) {
-                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                popUpTo(navController.graph.findStartDestination().id) { saveState = false }
                 launchSingleTop = true
-                restoreState = route !is SearchRoute || route.query == null
+                restoreState = false
+            }
+        }
+
+        /**
+         * A tap on a tab in the bar: another tab opens at its first page ([openTab]); the tab the viewer is in goes back to its
+         * first page, and when it is there already its list scrolls back to the top ([LocalTabReselections]).
+         */
+        fun onTabTapped(tab: Tab) {
+            val stack = navController.currentBackStack.value
+            val owner = stack.lastOrNull { entry -> tabOf(entry.destination) != null }
+            if (owner == null || !owner.destination.hasRoute(tab.routeClass)) {
+                openTab(tab.route)
+                return
+            }
+            if (stack.lastOrNull() === owner) {
+                scope.launch { reselections.emit(tab.routeClass) }
+            } else {
+                navController.popBackStack(owner.destination.id, inclusive = false)
             }
         }
 
@@ -201,6 +241,13 @@ fun ShashaRoot(container: AppContainer) {
                 override fun openChannel(channel: ChannelItem) {
                     openChannelPage(channel)
                 }
+
+                override fun toggleSavedPlaylist(playlist: PlaylistItem) {
+                    scope.launch {
+                        val saved = container.savedPlaylists.toggle(playlist)
+                        snackbar.showSnackbar(resources.getString(if (saved) R.string.snack_playlist_saved else R.string.snack_playlist_removed))
+                    }
+                }
             }
         }
 
@@ -221,6 +268,8 @@ fun ShashaRoot(container: AppContainer) {
             LocalVideoActions provides actions,
             LocalWatchProgress provides progress,
             LocalWatchLaterIds provides savedIds,
+            LocalSavedPlaylistIds provides savedPlaylistIds,
+            LocalTabReselections provides reselections,
         ) {
             Scaffold(
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -231,8 +280,8 @@ fun ShashaRoot(container: AppContainer) {
                         NavigationBar {
                             for (tab in tabs) {
                                 NavigationBarItem(
-                                    selected = destination?.hierarchy?.any { it.hasRoute(tab.routeClass) } == true,
-                                    onClick = { openTab(tab.route) },
+                                    selected = currentTab === tab,
+                                    onClick = { onTabTapped(tab) },
                                     icon = { Icon(tab.icon, contentDescription = null) },
                                     label = { Text(stringResource(tab.label)) },
                                 )
@@ -241,7 +290,16 @@ fun ShashaRoot(container: AppContainer) {
                     }
                 },
             ) { padding ->
-                NavHost(navController, startDestination = HomeRoute, modifier = Modifier.padding(padding)) {
+                // Short fades: Navigation's own (0.7 s) made every tap on a tab or a video feel slow.
+                NavHost(
+                    navController,
+                    startDestination = HomeRoute,
+                    modifier = Modifier.padding(padding),
+                    enterTransition = { fadeIn(tween(NAV_FADE_IN_MS)) },
+                    exitTransition = { fadeOut(tween(NAV_FADE_OUT_MS)) },
+                    popEnterTransition = { fadeIn(tween(NAV_FADE_IN_MS)) },
+                    popExitTransition = { fadeOut(tween(NAV_FADE_OUT_MS)) },
+                ) {
                     composable<HomeRoute> {
                         HomeScreen(
                             container,
@@ -269,6 +327,7 @@ fun ShashaRoot(container: AppContainer) {
                             onOpenWatchLater = { navController.navigate(WatchLaterRoute) },
                             onOpenSubscriptions = { navController.navigate(SubscriptionsRoute) },
                             onOpenPlaylist = { navController.navigate(UserPlaylistRoute(it)) },
+                            onOpenSavedPlaylist = { navController.navigate(PlaylistRoute(it)) },
                         )
                     }
                     composable<SettingsRoute> {

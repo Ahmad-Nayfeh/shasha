@@ -3,6 +3,7 @@ package com.ahmadnayfeh.shasha.mobile.ui.components
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 /** What the menu of a video offers; the root screen provides the implementation ([LocalVideoActions]). */
@@ -19,6 +20,9 @@ interface VideoActions {
 
     /** Opens the page of [channel]: the video's own channel, with the name the video gave (its page shows it until it has more). */
     fun openChannel(channel: ChannelItem)
+
+    /** Saves a YouTube playlist to the Library, or takes it out when it is there ([LocalSavedPlaylistIds]). */
+    fun toggleSavedPlaylist(playlist: PlaylistItem) = Unit
 }
 
 private object NoVideoActions : VideoActions {
@@ -36,3 +40,6 @@ val LocalWatchProgress = compositionLocalOf<Map<String, Float>> { emptyMap() }
 
 /** The ids of the videos saved for later: the menu says «Remove from Watch later» for those. */
 val LocalWatchLaterIds = compositionLocalOf<Set<String>> { emptySet() }
+
+/** The ids of the YouTube playlists saved to the Library: a playlist's «Save» button shows «Saved» for those. */
+val LocalSavedPlaylistIds = compositionLocalOf<Set<String>> { emptySet() }

@@ -6,24 +6,32 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.ahmadnayfeh.shasha.mobile.AppContainer
 import com.ahmadnayfeh.shasha.mobile.data.LibraryRepository
+import com.ahmadnayfeh.shasha.mobile.data.SavedPlaylistRepository
 import com.ahmadnayfeh.shasha.mobile.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.mobile.data.db.SubscriptionEntity
+import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** History, watch later and the subscriptions list: what the viewer keeps, with the actions on it. */
+/** History, watch later, the subscriptions list and the saved YouTube playlists: what the viewer keeps, with the actions on it. */
 class LibraryViewModel(
     private val library: LibraryRepository,
     private val subscriptions: SubscriptionRepository,
+    savedPlaylists: SavedPlaylistRepository? = null,
 ) : ViewModel() {
 
     /** Null until the stored list has been read (before that, no "empty" message). */
     val history: StateFlow<List<VideoItem>?> = library.historyItems.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     val watchLater: StateFlow<List<VideoItem>?> = library.watchLaterItems.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     val channels: StateFlow<List<SubscriptionEntity>?> = subscriptions.subscriptions.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** The YouTube playlists saved to the Library, the newest first. */
+    val saved: StateFlow<List<PlaylistItem>> = (savedPlaylists?.playlists ?: flowOf(emptyList()))
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun removeFromHistory(videoId: String) {
         viewModelScope.launch { library.removeFromHistory(videoId) }
@@ -47,7 +55,7 @@ class LibraryViewModel(
 
     companion object {
         fun factory(container: AppContainer) = viewModelFactory {
-            initializer { LibraryViewModel(container.library, container.subscriptions) }
+            initializer { LibraryViewModel(container.library, container.subscriptions, container.savedPlaylists) }
         }
     }
 }

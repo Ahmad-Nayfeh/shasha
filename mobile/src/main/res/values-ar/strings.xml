@@ -155,6 +155,11 @@
     <string name="player_speed">السرعة</string>
     <string name="player_quality">الجودة</string>
     <string name="player_quality_none">تظهر الجودات بعد أن يبدأ الفيديو.</string>
+    <string name="player_captions">الترجمة</string>
+    <string name="player_captions_off">إيقاف</string>
+    <!-- لغة ترجمتها أنشأها يوتيوب بنفسه، مثل «الإنجليزية (تلقائية)». -->
+    <string name="player_captions_auto">%1$s (تلقائية)</string>
+    <string name="player_captions_none">لا ترجمة لهذا الفيديو.</string>
     <string name="quality_auto">تلقائي</string>
     <string name="quality_auto_playing">تلقائي (%1$sp)</string>
     <string name="player_low_quality">هذا الفيديو متاح بجودة %1$sp فقط.</string>
@@ -183,6 +188,12 @@
 
     <!-- قوائم التشغيل الخاصة بك -->
     <string name="library_my_playlists">قوائمي</string>
+    <string name="library_saved_playlists">قوائم محفوظة</string>
+    <string name="playlist_save">حفظ في المكتبة</string>
+    <string name="playlist_saved">محفوظة</string>
+    <string name="playlist_unsave">إزالة من المكتبة</string>
+    <string name="snack_playlist_saved">حُفظت قائمة التشغيل في مكتبتك</string>
+    <string name="snack_playlist_removed">أُزيلت قائمة التشغيل من مكتبتك</string>
     <string name="playlists_empty_body">أنشئ قائمة لتجمع فيها فيديوهاتك، ثم أضف إليها من قائمة أي فيديو.</string>
     <string name="playlist_new">قائمة جديدة</string>
     <string name="playlist_create">إنشاء</string>

@@ -49,6 +49,8 @@ import com.ahmadnayfeh.shasha.mobile.data.AppTheme
 import com.ahmadnayfeh.shasha.mobile.data.QualityChoices
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.mobile.ui.components.ConfirmDialog
+import com.ahmadnayfeh.shasha.mobile.ui.components.OnTabReselected
+import com.ahmadnayfeh.shasha.mobile.ui.nav.SettingsRoute
 
 /**
  * Settings: language, theme, playback (default quality, background playback, picture-in-picture), Shorts (on/off), downloads
@@ -66,7 +68,9 @@ fun SettingsScreen(container: AppContainer, onOpenAbout: () -> Unit, onOpenUpdat
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_settings)) }) },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
+        val scroll = rememberScrollState()
+        OnTabReselected(SettingsRoute::class) { scroll.animateScrollTo(0) }
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(scroll).padding(bottom = 24.dp)) {
             Section(stringResource(R.string.settings_language), resettable = settings.language != defaults.language, onReset = vm::resetLanguage) {
                 ChoiceRow(stringResource(R.string.language_system), settings.language == AppLanguage.SYSTEM) { vm.setLanguage(AppLanguage.SYSTEM) }
                 // Each language is named in itself, whatever the app's language is now.

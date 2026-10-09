@@ -77,6 +77,24 @@ class SettingsRepositoryTest {
     }
 
     @Test
+    fun theCaptionsChosenInThePlayerAreKept_untilTurnedOffOrReset() = runBlocking<Unit> {
+        val repository = repository()
+        assertThat(repository.current().subtitleLanguage).isNull()
+
+        repository.setSubtitleLanguage("en")
+        assertThat(repository.current().subtitleLanguage).isEqualTo("en")
+        repository.setSubtitleLanguage(null)
+        assertThat(repository.current().subtitleLanguage).isNull()
+
+        repository.setSubtitleLanguage("ar")
+        repository.resetPlayback()
+        assertThat(repository.current().subtitleLanguage).isNull()
+        repository.setSubtitleLanguage("ar")
+        repository.resetAll()
+        assertThat(repository.current()).isEqualTo(AppSettings())
+    }
+
+    @Test
     fun theSettingsSurviveARestartOfTheStore() = runBlocking<Unit> {
         val file = File(folder.root, "again.preferences_pb")
         val first = CoroutineScope(SupervisorJob() + Dispatchers.IO)

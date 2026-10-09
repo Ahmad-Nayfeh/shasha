@@ -258,6 +258,58 @@ class HomeSuggestionsTest {
         showing.cancel()
     }
 
+    // --- the Shorts row: the newest Shorts of the channels watched from ---------------------------------------------
+
+    @Test
+    fun theShortsRowIsMadeOfTheNewestShortsOfTheChannelsWatchedFrom_whenTheSuggestionsHaveNone() = runBlocking<Unit> {
+        // YouTube's suggestions beside a video hold no Shorts: before 1.4.1 the phone's row stayed empty.
+        watch("a")
+        val channel = checkNotNull(video("a").channelId)
+        source.onRelated = { listOf(video("x"), video("y")) }
+        // The channel's tab may not mark its Shorts: they are marked here.
+        source.onChannelShorts = { id -> if (id == channel) listOf(video("s1", channelId = channel), video("s2", channelId = channel)) else emptyList() }
+        val suggestions = suggestions()
+
+        suggestions.refreshNow(showShorts = true)
+
+        val row = suggestions.row(shorts = true)
+        assertThat(row.shorts.map { it.videoId }).containsExactly("s1", "s2").inOrder()
+        assertThat(row.shorts.all { it.isShortForm }).isTrue()
+        assertThat(row.videos.map { it.videoId }).containsExactly("x", "y")
+    }
+
+    @Test
+    fun withShortsOffNoChannelIsAskedForItsShorts_andTheRowStaysEmpty() = runBlocking<Unit> {
+        watch("a")
+        val askedShorts = ConcurrentLinkedQueue<String>()
+        source.onRelated = { listOf(video("x"), short("s-related")) }
+        source.onChannelShorts = { id -> askedShorts += id; listOf(short("s1")) }
+        val suggestions = suggestions()
+
+        suggestions.refreshNow(showShorts = false)
+
+        assertThat(askedShorts).isEmpty()
+        assertThat(suggestions.row(shorts = false).shorts).isEmpty()
+        assertThat(suggestions.row(shorts = false).videos.map { it.videoId }).containsExactly("x")
+    }
+
+    @Test
+    fun aChannelsShortsAreAskedForOnce_andKeptInTheFileForTheNextStart() = runBlocking<Unit> {
+        watch("a")
+        watch("b")
+        val askedShorts = ConcurrentLinkedQueue<String>()
+        source.onChannelShorts = { id -> askedShorts += id; listOf(short("s-$id")) }
+        suggestions().refreshNow()
+        assertThat(askedShorts.toSet()).containsExactly(video("a").channelId, video("b").channelId)
+
+        askedShorts.clear()
+        val restarted = suggestions()
+        restarted.refreshNow()
+
+        assertThat(askedShorts).isEmpty()
+        assertThat(restarted.row().shorts).hasSize(2)
+    }
+
     // --- the file ---------------------------------------------------------------------------------------------------
 
     @Test

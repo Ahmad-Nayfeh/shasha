@@ -163,3 +163,18 @@ data class UserPlaylistSummary(
     val itemCount: Int,
     val coverUrl: String?,
 )
+
+/**
+ * A YouTube playlist the viewer saved to the Library («Save to library» on a playlist's page, or beside it in a list): what the
+ * Library shows of it, as YouTube described it when it was saved. Its videos are not kept: the playlist's page reads them from
+ * YouTube, so it stays the owner's list as it changes.
+ */
+@Entity(tableName = "saved_playlists", indices = [Index("savedAt")])
+data class SavedPlaylistEntity(
+    @PrimaryKey val playlistId: String,
+    val title: String,
+    val channelName: String?,
+    val thumbnailUrl: String?,
+    val videoCount: Long?,
+    val savedAt: Long,
+)

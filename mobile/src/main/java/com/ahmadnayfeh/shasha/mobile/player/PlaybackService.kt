@@ -13,6 +13,12 @@ import com.ahmadnayfeh.shasha.mobile.container
  * media notification (play/pause, a seek bar), the lock-screen controls and the Bluetooth and headset buttons. Media3
  * promotes this service to the foreground while the player plays, and takes the notification down when it stops.
  *
+ * The session is added to the service here, in [onCreate] ([addSession]). Media3 adds a session by itself only when a
+ * MediaController connects to the service, and the app never makes one (the screens use the player directly): without
+ * this call the service had no notification and never became a foreground service, so about a minute after the app was
+ * left (the screen off, another app) Android stopped it as an idle background service, the app's process was cached and
+ * frozen, and the video stopped until the viewer came back and pressed «Try again».
+ *
  * The player itself lives in the app, not here: the screen and this service share it. Releasing the session never
  * releases the player.
  */
@@ -28,7 +34,10 @@ class PlaybackService : MediaSessionService() {
             Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        session = MediaSession.Builder(this, player).setId(SESSION_ID).setSessionActivity(open).build()
+        val created = MediaSession.Builder(this, player).setId(SESSION_ID).setSessionActivity(open).build()
+        session = created
+        // The media notification, and with it the foreground service, follow the player from now on (see the class comment).
+        addSession(created)
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session

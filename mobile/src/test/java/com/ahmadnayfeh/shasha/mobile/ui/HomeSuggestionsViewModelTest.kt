@@ -118,6 +118,22 @@ class HomeSuggestionsViewModelTest {
     }
 
     @Test
+    fun theHomeHasAShortsRowFromTheChannelsWatchedFrom_onlyWhileShortsAreShown() = runTest(main.dispatcher) {
+        watch("seen")
+        val channel = checkNotNull(video("seen").channelId)
+        source.onRelated = { listOf(video("r1")) }
+        source.onChannelShorts = { id -> if (id == channel) listOf(short("sh1", channel), short("sh2", channel)) else emptyList() }
+        val vm = open()
+
+        vm.awaitSuggestions { it.shorts.isNotEmpty() }
+        assertThat(vm.state.value.shorts.map { it.videoId }).containsExactly("sh1", "sh2").inOrder()
+
+        showShorts.value = false
+        awaitReal { vm.state.value.shorts.isEmpty() }
+        assertThat(vm.state.value.suggestions.map { it.videoId }).containsExactly("r1")
+    }
+
+    @Test
     fun theNewerTheViewingTheHigherItsSuggestionsStand() = runTest(main.dispatcher) {
         watch("old", daysAgo = 20.0)
         watch("new", daysAgo = 0.0)

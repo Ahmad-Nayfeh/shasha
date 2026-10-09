@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -60,7 +61,7 @@ class HomeViewModel(
     subscriptions: SubscriptionRepository,
     private val feed: FeedRepository,
     private val suggestions: HomeSuggestions,
-    showShorts: Flow<Boolean> = flowOf(true),
+    private val showShorts: Flow<Boolean> = flowOf(true),
 ) : ViewModel() {
 
     private val refreshing = MutableStateFlow(false)
@@ -94,7 +95,7 @@ class HomeViewModel(
     init {
         refresh(force = false)
         // The suggestions' lists are looked up beside everything else, now and whenever the viewer watches something new.
-        viewModelScope.launch { guarded("keeping the suggestions fresh") { suggestions.keepFresh() } }
+        viewModelScope.launch { guarded("keeping the suggestions fresh") { suggestions.keepFresh(showShorts) } }
     }
 
     /** [force]: the viewer asked; otherwise only when the feed is stale. */
@@ -115,7 +116,7 @@ class HomeViewModel(
             }
         }
         // The pull-down also asks again for the suggestions that are missing (a failed lookup); it does not wait for them.
-        if (force) viewModelScope.launch { guarded("refreshing the suggestions") { suggestions.refreshNow() } }
+        if (force) viewModelScope.launch { guarded("refreshing the suggestions") { suggestions.refreshNow(showShorts.first()) } }
     }
 
     /** A failure of the suggestions is not the home's: it is logged, and the home keeps what it shows. */

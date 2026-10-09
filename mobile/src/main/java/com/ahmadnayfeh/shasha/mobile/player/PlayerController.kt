@@ -15,6 +15,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Tracks
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.VideoSize
+import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
@@ -30,9 +31,12 @@ import com.ahmadnayfeh.shasha.mobile.sponsorblock.SkipTarget
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorBlockRepository
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorSegment
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
+import com.ahmadnayfeh.shasha.youtube.SourceException
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
+import com.ahmadnayfeh.shasha.youtube.matching
+import com.ahmadnayfeh.shasha.youtube.perLanguage
 import com.ahmadnayfeh.shasha.youtube.playback.DecoderRetry
 import com.ahmadnayfeh.shasha.youtube.playback.YouTubeMediaSourceFactory
 import kotlinx.coroutines.CancellationException
@@ -73,6 +77,8 @@ class PlayerController(
     private val library: LibraryRepository,
     private val scope: CoroutineScope,
     private val elapsedClock: () -> Long = SystemClock::elapsedRealtime,
+    /** Keeps the captions the viewer chose ([selectSubtitles]) for the next videos (the settings' [AppSettings.subtitleLanguage]). */
+    private val saveSubtitleLanguage: (String?) -> Unit = {},
 ) : ShortsPlayer {
     private var created = false
 
@@ -100,14 +106,23 @@ class PlayerController(
         while (previews.size > MAX_PREVIEWS) previews.remove(previews.keys.first())
     }
 
-    /** A 403 from googlevideo after the URLs expired is cured once by extracting again. */
-    private var expiryRetried = false
+    /**
+     * A stream that stops working while it plays (its addresses expired, the connection broke, the download stalled) is extracted
+     * again and goes on from the same second, a few times ([StreamRecovery]).
+     */
+    private val recovery = StreamRecovery(elapsedClock)
+
+    /** How long the player has been waiting for data while it should play (the ticker's steps): a stall at [StreamRecovery.STALL_MS]. */
+    private var stalledMs = 0L
 
     /**
      * This phone's decoder failing on a video is answered once with another try of the same video, with the safe plan
      * (H.264, small pictures); the second failure is the error. One for each video.
      */
     private var decoderRetry = DecoderRetry()
+
+    /** The captions' language the current media source was built with ([YouTubeMediaSourceFactory.create] merges one); null: none. */
+    private var sourceSubtitle: String? = null
 
     /** The default quality applies once per video, when its tracks are known. */
     private var defaultQualityApplied = false
@@ -197,7 +212,15 @@ class PlayerController(
         startLoad(video.videoId, video, position, isReload = false)
     }
 
-    private fun startLoad(videoId: String, preview: VideoItem?, startMs: Long?, isReload: Boolean, newMode: PlaybackMode = mode) {
+    /** [afterMs]: wait this long before asking for the streams (a recovery's pause, while the screen already says it is loading). */
+    private fun startLoad(
+        videoId: String,
+        preview: VideoItem?,
+        startMs: Long?,
+        isReload: Boolean,
+        newMode: PlaybackMode = mode,
+        afterMs: Long = 0L,
+    ) {
         loadJob?.cancel()
         stopTickers()
         // Under the mode of what was playing: a video leaves its resume point behind, a Short does not.
@@ -209,10 +232,12 @@ class PlayerController(
             player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
                 .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
                 .setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, false)
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
                 .build()
         }
+        sourceSubtitle = null
         if (!isReload) {
-            expiryRetried = false
+            recovery.reset()
             // The same video again («Try again») keeps what its decoder failure taught: it plays the safe plan, and does not
             // retry by itself a second time. Another video starts afresh.
             if (_state.value.video?.videoId != videoId) decoderRetry = DecoderRetry()
@@ -221,6 +246,7 @@ class PlayerController(
         historyRecorded = false
         backgroundDisabledVideo = false
         shortPlayedMs = 0
+        stalledMs = 0
         resumeShortOnStart = false
         val item = preview ?: placeholder(videoId)
         _state.value = PlayerUiState(phase = PlayerPhase.LOADING, video = item, speed = _state.value.speed)
@@ -236,8 +262,13 @@ class PlayerController(
             val segments: Deferred<List<SponsorSegment>>? =
                 if (mode == PlaybackMode.VIDEO && settings().sponsorBlockEnabled) async { sponsorBlock.segments(videoId) } else null
             try {
+                if (afterMs > 0) delay(afterMs)
                 val details = streamDetails(videoId, reload = isReload)
-                val source = mediaSources.create(details, maxHeight = 0, subtitleLanguage = null, safe = decoderRetry.safe)
+                // The captions the viewer chose last, when this video has them in that language (a Short has none).
+                val captions = if (mode == PlaybackMode.VIDEO && !details.video.isLive) details.subtitles.perLanguage() else emptyList()
+                val subtitle = captions.matching(settings().subtitleLanguage)?.languageCode
+                val source = mediaSources.create(details, maxHeight = 0, subtitleLanguage = subtitle, safe = decoderRetry.safe)
+                sourceSubtitle = subtitle
                 val video = details.video.fillFrom(item)
                 withArtwork(source, video)
                 val resume = startMs ?: if (mode == PlaybackMode.SHORT) null else library.resumePosition(videoId)
@@ -247,8 +278,11 @@ class PlayerController(
                 player.playWhenReady = true
                 _state.update {
                     it.copy(
+                        playWhenReady = true,
                         video = video,
                         details = details,
+                        subtitles = captions,
+                        subtitleLanguage = subtitle,
                         description = details.description,
                         lowQualityHeight = details.lowQualityHeight,
                         isLive = video.isLive,
@@ -275,7 +309,8 @@ class PlayerController(
         loadJob?.cancel()
         stopTickers()
         saveProgressNow()
-        expiryRetried = false
+        recovery.reset()
+        stalledMs = 0
         defaultQualityApplied = true // a file has one quality
         historyRecorded = false
         backgroundDisabledVideo = false
@@ -306,6 +341,7 @@ class PlayerController(
                 player.setMediaItem(item, resume ?: C.TIME_UNSET)
                 player.prepare()
                 player.playWhenReady = true
+                _state.update { it.copy(playWhenReady = true) }
                 startTicker()
                 if (segments != null) launch { applySegments(segments.await()) }
             } catch (e: CancellationException) {
@@ -338,7 +374,7 @@ class PlayerController(
 
     private fun fail(error: Throwable) {
         if (created) player.stop()
-        _state.update { it.copy(phase = PlayerPhase.ERROR, error = UiError.of(error), isPlaying = false, isBuffering = false) }
+        _state.update { it.copy(phase = PlayerPhase.ERROR, error = UiError.of(error), isPlaying = false, playWhenReady = false, isBuffering = false) }
     }
 
     // --- the viewer's controls ------------------------------------------------------------------------------------
@@ -402,6 +438,43 @@ class PlayerController(
         _state.update { it.copy(pinnedQuality = height) }
     }
 
+    /**
+     * Shows the captions in [languageCode] (one of [PlayerUiState.subtitles]), or none for null, and keeps the choice for the next
+     * videos. The media source holds one language: another one is a new source from the same extraction (nothing is asked of
+     * YouTube but the captions' file), taken up at the same second.
+     */
+    fun selectSubtitles(languageCode: String?) {
+        val state = _state.value
+        saveSubtitleLanguage(languageCode)
+        val details = state.details ?: return
+        val code = state.subtitles.matching(languageCode)?.languageCode
+        _state.update { it.copy(subtitleLanguage = code, cueText = null) }
+        when {
+            code == null -> setCaptionsShown(false)
+            code == sourceSubtitle -> setCaptionsShown(true)
+            else -> try {
+                val source = mediaSources.create(details, maxHeight = 0, subtitleLanguage = code, safe = decoderRetry.safe)
+                withArtwork(source, state.video ?: details.video)
+                val position = player.currentPosition
+                val playWhenReady = player.playWhenReady
+                sourceSubtitle = code
+                // The new source's tracks take the quality the viewer pinned (or the default one) again.
+                defaultQualityApplied = false
+                player.setMediaSource(source, position)
+                player.prepare()
+                player.playWhenReady = playWhenReady
+                setCaptionsShown(true)
+            } catch (e: SourceException) {
+                // This extraction cannot be planned again (it played, so this is rare): the captions stay as they were.
+                _state.update { it.copy(subtitleLanguage = sourceSubtitle) }
+            }
+        }
+    }
+
+    private fun setCaptionsShown(shown: Boolean) {
+        player.trackSelectionParameters = player.trackSelectionParameters.buildUpon().setTrackTypeDisabled(C.TRACK_TYPE_TEXT, !shown).build()
+    }
+
     /** «Undo» on the SponsorBlock notice: back to where the skipped part began. */
     fun undoSkip() {
         skip?.undo(skipTarget)
@@ -450,6 +523,9 @@ class PlayerController(
 
     // --- internals ------------------------------------------------------------------------------------------------
 
+    /** A playback failure as the player reports it (tests; Robolectric cannot play a stream to the point of failing). */
+    internal fun onPlaybackError(error: PlaybackException) = listener.onPlayerError(error)
+
     private val listener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) {
             when (playbackState) {
@@ -467,6 +543,10 @@ class PlayerController(
             }
         }
 
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            _state.update { if (it.phase == PlayerPhase.IDLE) it else it.copy(playWhenReady = playWhenReady) }
+        }
+
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             _state.update { it.copy(isPlaying = isPlaying) }
             if (!isPlaying) saveProgressNow()
@@ -481,9 +561,16 @@ class PlayerController(
             _state.update { it.copy(qualities = qualities) }
             if (!defaultQualityApplied && qualities.isNotEmpty()) {
                 defaultQualityApplied = true
-                val preferred = defaultQualityFor(qualities.map { it.height }, settings().defaultQuality)
+                // A quality the viewer pinned on this video stays pinned when its source is rebuilt (other captions).
+                val preferred = _state.value.pinnedQuality?.takeIf { pinned -> qualities.any { it.height == pinned } }
+                    ?: defaultQualityFor(qualities.map { it.height }, settings().defaultQuality)
                 if (preferred != null) selectQuality(preferred)
             }
+        }
+
+        override fun onCues(cueGroup: CueGroup) {
+            val text = cueGroup.cues.mapNotNull { it.text?.toString()?.trim() }.filter { it.isNotEmpty() }.joinToString("\n")
+            _state.update { it.copy(cueText = text.ifEmpty { null }) }
         }
 
         override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -509,18 +596,40 @@ class PlayerController(
                     // Not remembered; the next plan may offer the picture again.
                 }
             }
-            if (classified.kind == SourceErrorKind.BLOCKED_403 && !expiryRetried && !state.isOffline && state.video != null) {
-                // The stream's URLs expire after about six hours: extract again and go on from the same second.
-                expiryRetried = true
-                startLoad(state.video.videoId, state.video, player.currentPosition.takeIf { it > 0 }, isReload = true)
-                return
-            }
+            if (!state.isOffline && state.video != null && recover(classified.kind)) return
             if (!state.isOffline && state.video != null && decoderRetry.retryAfter(classified)) {
                 // The decoder failed on the picture: the same video starts again, safely, from the same second.
                 startLoad(state.video.videoId, state.video, player.currentPosition.takeIf { it > 0 }, isReload = true)
                 return
             }
             fail(if (state.isOffline) error else classified)
+        }
+    }
+
+    /**
+     * A stream that failed with [kind] while it played is extracted again and goes on from the same second, when [recovery] says
+     * so: the stream's addresses expire after about six hours (403), and a connection breaks (the phone changed networks, or
+     * slept with the screen off). True when the reload is under way.
+     */
+    private fun recover(kind: SourceErrorKind): Boolean {
+        val video = _state.value.video ?: return false
+        val wait = recovery.next(kind) ?: return false
+        startLoad(video.videoId, video, player.currentPosition.takeIf { it > 0 }, isReload = true, afterMs = wait)
+        return true
+    }
+
+    /**
+     * Called by the ticker: a video (not a Short, a file or a live stream) that has waited for data for [StreamRecovery.STALL_MS]
+     * while it should play has a stalled stream, which never fails by itself; it is recovered like a broken connection.
+     */
+    private fun checkStall() {
+        val state = _state.value
+        val waiting = mode == PlaybackMode.VIDEO && !state.isOffline && !state.isLive && state.phase == PlayerPhase.READY &&
+            player.playWhenReady && player.playbackState == Player.STATE_BUFFERING
+        stalledMs = if (waiting) stalledMs + SkipController.TICK_MS else 0
+        if (stalledMs >= StreamRecovery.STALL_MS) {
+            stalledMs = 0
+            recover(SourceErrorKind.NETWORK)
         }
     }
 
@@ -553,6 +662,7 @@ class PlayerController(
             while (isActive) {
                 delay(SkipController.TICK_MS)
                 skip?.tick(skipTarget)
+                checkStall()
                 if (mode == PlaybackMode.SHORT && !historyRecorded && player.isPlaying) {
                     shortPlayedMs += SkipController.TICK_MS
                     if (shortPlayedMs >= SHORT_WATCHED_MS) recordHistoryOnce()

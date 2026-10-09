@@ -52,7 +52,10 @@ class PlaylistsUiTest {
         compose.startAppOffline(container)
         compose.tab("Library").performClick()
         compose.awaitText("My playlists")
-        compose.onNodeWithText("Make a playlist to keep videos together, then add videos from their menu.").assertIsDisplayed()
+        // The hint follows Room's first answer, and the tab fades in: wait until it is on screen.
+        compose.awaitCondition {
+            runCatching { compose.onNodeWithText("Make a playlist to keep videos together, then add videos from their menu.").assertIsDisplayed() }.isSuccess
+        }
         compose.onNodeWithContentDescription("New playlist").assertIsDisplayed()
         // The built-in lists are still there above the viewer's own.
         compose.onNodeWithText("Watch later").assertIsDisplayed()

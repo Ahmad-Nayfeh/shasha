@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
@@ -122,6 +123,40 @@ class ShashaRootEnglishTest {
         for (text in listOf(attribution, "NewPipeExtractor", "GPL-3.0-or-later")) {
             compose.onNodeWithText(text).performScrollTo().assertIsDisplayed()
         }
+    }
+
+    @Test
+    fun aTabAlwaysOpensAtItsFirstPage_notAtThePageTheViewerLeftInIt() {
+        compose.startApp()
+        compose.tab("Library").performClick()
+        compose.onNodeWithText("History").performClick()
+        compose.awaitText("No history yet")
+
+        compose.tab("Settings").performClick()
+        compose.awaitText("Default quality")
+        compose.tab("Library").performClick()
+
+        compose.awaitText("Watch later")
+        compose.onNodeWithText("No history yet").assertDoesNotExist()
+        compose.onNodeWithText("Downloads").assertIsDisplayed()
+    }
+
+    @Test
+    fun tappingTheTabTheViewerIsInGoesBackToItsFirstPage() {
+        compose.startApp()
+        compose.tab("Library").performClick()
+        compose.onNodeWithText("History").performClick()
+        compose.awaitText("No history yet")
+        // The page opened from the Library still counts as the Library's.
+        compose.tab("Library").assertIsSelected()
+
+        compose.tab("Library").performClick()
+
+        compose.awaitText("Watch later")
+        compose.onNodeWithText("No history yet").assertDoesNotExist()
+        // Tapped again on its first page: it stays there.
+        compose.tab("Library").performClick()
+        compose.onNodeWithText("Downloads").assertIsDisplayed()
     }
 
     @Test

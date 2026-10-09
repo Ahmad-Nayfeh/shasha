@@ -1,9 +1,12 @@
 package com.ahmadnayfeh.shasha.mobile.data
 
+import com.ahmadnayfeh.shasha.mobile.data.db.SavedPlaylistDao
+import com.ahmadnayfeh.shasha.mobile.data.db.SavedPlaylistEntity
 import com.ahmadnayfeh.shasha.mobile.data.db.UserPlaylistDao
 import com.ahmadnayfeh.shasha.mobile.data.db.UserPlaylistEntity
 import com.ahmadnayfeh.shasha.mobile.data.db.UserPlaylistItemEntity
 import com.ahmadnayfeh.shasha.mobile.data.db.UserPlaylistSummary
+import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.safety.ExplicitFilter
 import kotlinx.coroutines.flow.Flow
@@ -100,5 +103,46 @@ class UserPlaylistRepository(
 
         /** [raw] as it is stored: trimmed and cut at [MAX_NAME]; null when nothing is left. */
         fun cleanName(raw: String): String? = raw.trim().take(MAX_NAME).trimEnd().takeIf { it.isNotEmpty() }
+    }
+}
+
+fun SavedPlaylistEntity.toPlaylistItem() = PlaylistItem(
+    playlistId = playlistId, title = title, channelName = channelName, thumbnailUrl = thumbnailUrl, videoCount = videoCount,
+)
+
+fun PlaylistItem.toSavedEntity(savedAt: Long) = SavedPlaylistEntity(
+    playlistId = playlistId, title = title, channelName = channelName, thumbnailUrl = thumbnailUrl, videoCount = videoCount, savedAt = savedAt,
+)
+
+/**
+ * YouTube playlists the viewer saved to the Library: the Library lists them (the newest first) and opens each one's page, which
+ * reads its videos from YouTube. Saving one that is saved already refreshes what is shown of it.
+ */
+class SavedPlaylistRepository(
+    private val dao: SavedPlaylistDao,
+    private val now: () -> Long = System::currentTimeMillis,
+) {
+    /** The saved playlists, the newest first, without one whose title the built-in filter holds back. */
+    val playlists: Flow<List<PlaylistItem>> = dao.observeAll().map { rows ->
+        rows.filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) }.map { it.toPlaylistItem() }
+    }
+
+    /** The ids of the saved playlists: the «Saved» marks beside playlists in any list. */
+    val savedIds: Flow<Set<String>> = dao.observeIds().map { it.toSet() }
+
+    fun isSaved(playlistId: String): Flow<Boolean> = savedIds.map { playlistId in it }
+
+    suspend fun save(playlist: PlaylistItem) = dao.upsert(playlist.toSavedEntity(now()))
+
+    suspend fun remove(playlistId: String) = dao.delete(playlistId)
+
+    /** Saves [playlist], or takes it out of the Library when it is there; true when it is saved afterwards. */
+    suspend fun toggle(playlist: PlaylistItem): Boolean {
+        if (dao.contains(playlist.playlistId)) {
+            remove(playlist.playlistId)
+            return false
+        }
+        save(playlist)
+        return true
     }
 }

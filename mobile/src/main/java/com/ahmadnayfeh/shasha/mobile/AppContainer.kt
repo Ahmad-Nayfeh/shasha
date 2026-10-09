@@ -4,9 +4,11 @@ import android.app.Application
 import android.content.Context
 import com.ahmadnayfeh.shasha.mobile.common.ShortsQueues
 import com.ahmadnayfeh.shasha.mobile.data.AppSettings
+import com.ahmadnayfeh.shasha.mobile.data.ChannelUploads
 import com.ahmadnayfeh.shasha.mobile.data.FeedRepository
 import com.ahmadnayfeh.shasha.mobile.data.HomeSuggestions
 import com.ahmadnayfeh.shasha.mobile.data.LibraryRepository
+import com.ahmadnayfeh.shasha.mobile.data.SavedPlaylistRepository
 import com.ahmadnayfeh.shasha.mobile.data.SearchHistoryRepository
 import com.ahmadnayfeh.shasha.mobile.data.SettingsRepository
 import com.ahmadnayfeh.shasha.mobile.data.SubscriptionRepository
@@ -111,8 +113,19 @@ open class AppContainer(private val app: Application) {
     /** The viewer's own playlists («Watch later» is the built-in one, [library]). */
     val userPlaylists: UserPlaylistRepository by lazy { UserPlaylistRepository(database.userPlaylists()) }
 
+    /** YouTube playlists saved to the Library. */
+    val savedPlaylists: SavedPlaylistRepository by lazy { SavedPlaylistRepository(database.savedPlaylists()) }
+
     /** «مقترحة لك» on the home screen: the lists kept in the cache folder, refreshed beside the screen. */
-    val suggestions: HomeSuggestions by lazy { HomeSuggestions(library, videoSource, File(app.cacheDir, HomeSuggestions.FILE_NAME)) }
+    val suggestions: HomeSuggestions by lazy {
+        HomeSuggestions(
+            library,
+            videoSource,
+            File(app.cacheDir, HomeSuggestions.FILE_NAME),
+            // The Shorts row: a channel's Shorts tab, else the playlist YouTube keeps of them («UUSH…»).
+            channelShorts = ChannelUploads(videoSource)::shorts,
+        )
+    }
 
     /** The lists the Shorts viewer was opened from, by the number its route carries. */
     val shortsQueues = ShortsQueues()
@@ -133,6 +146,7 @@ open class AppContainer(private val app: Application) {
             sponsorBlock = sponsorBlock,
             library = library,
             scope = mainScope,
+            saveSubtitleLanguage = { code -> appScope.launch { settings.setSubtitleLanguage(code) } },
         )
     }
 
