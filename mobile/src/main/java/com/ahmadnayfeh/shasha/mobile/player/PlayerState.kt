@@ -5,6 +5,7 @@ import com.ahmadnayfeh.shasha.mobile.common.UiError
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SkipNotice
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorSegment
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
+import com.ahmadnayfeh.shasha.youtube.SubtitleTrack
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 enum class PlayerPhase {
@@ -50,6 +51,11 @@ data class PlayerUiState(
     /** The offline file has no picture (an audio download). */
     val isAudioOnly: Boolean = false,
     val isPlaying: Boolean = false,
+    /**
+     * The video is meant to play: it plays, or waits for data to go on playing ([isBuffering]). Unlike [isPlaying] it does not
+     * blink off while the player buffers, so what follows the viewer's intent (picture-in-picture) does not either.
+     */
+    val playWhenReady: Boolean = false,
     val isBuffering: Boolean = false,
     val isLive: Boolean = false,
     val speed: Float = 1f,
@@ -65,6 +71,12 @@ data class PlayerUiState(
     val skipNotice: SkipNotice? = null,
     /** Width / height of the picture. */
     val aspectRatio: Float = DEFAULT_ASPECT,
+    /** The captions the video offers, one per language ([com.ahmadnayfeh.shasha.youtube.perLanguage]); none for a Short, a file or a live stream. */
+    val subtitles: List<SubtitleTrack> = emptyList(),
+    /** The language of the captions shown ([SubtitleTrack.languageCode]); null: off. */
+    val subtitleLanguage: String? = null,
+    /** The captions' text on screen now (its lines joined); null when nothing is said. */
+    val cueText: String? = null,
     val error: UiError? = null,
 ) {
     val isVideoShown: Boolean get() = phase == PlayerPhase.READY || phase == PlayerPhase.ENDED

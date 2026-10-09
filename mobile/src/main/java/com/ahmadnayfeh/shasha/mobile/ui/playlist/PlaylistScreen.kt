@@ -1,6 +1,8 @@
 package com.ahmadnayfeh.shasha.mobile.ui.playlist
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -12,12 +14,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.LibraryAdd
+import androidx.compose.material.icons.filled.LibraryAddCheck
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -36,6 +41,8 @@ import com.ahmadnayfeh.shasha.mobile.common.Formatters
 import com.ahmadnayfeh.shasha.mobile.ui.components.EmptyState
 import com.ahmadnayfeh.shasha.mobile.ui.components.ErrorState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LoadingBox
+import com.ahmadnayfeh.shasha.mobile.ui.components.LocalSavedPlaylistIds
+import com.ahmadnayfeh.shasha.mobile.ui.components.LocalVideoActions
 import com.ahmadnayfeh.shasha.mobile.ui.components.OnNearEnd
 import com.ahmadnayfeh.shasha.mobile.ui.components.PagedFooter
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
@@ -56,6 +63,8 @@ fun PlaylistScreen(
     val listState = rememberLazyListState()
     listState.OnNearEnd { vm.loadMore() }
     val context = LocalContext.current
+    val actions = LocalVideoActions.current
+    val savedIds = LocalSavedPlaylistIds.current
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -87,9 +96,22 @@ fun PlaylistScreen(
                             if (owner.isNotEmpty()) {
                                 Text(owner, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Button(onClick = { onOpenVideo(videos.items.first(), playlistId) }, modifier = Modifier.padding(top = 12.dp)) {
-                                Icon(Icons.Filled.PlayArrow, contentDescription = null)
-                                Text(stringResource(R.string.playlist_play_all), Modifier.padding(start = 8.dp))
+                            Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(onClick = { onOpenVideo(videos.items.first(), playlistId) }) {
+                                    Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                                    Text(stringResource(R.string.playlist_play_all), Modifier.padding(start = 8.dp))
+                                }
+                                // «Save to library» / «Saved»: the Library lists it and opens this page again.
+                                details?.let { playlist ->
+                                    val saved = playlistId in savedIds
+                                    OutlinedButton(onClick = { actions.toggleSavedPlaylist(playlist.copy(playlistId = playlistId)) }) {
+                                        Icon(if (saved) Icons.Filled.LibraryAddCheck else Icons.Filled.LibraryAdd, contentDescription = null)
+                                        Text(
+                                            stringResource(if (saved) R.string.playlist_saved else R.string.playlist_save),
+                                            Modifier.padding(start = 8.dp),
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

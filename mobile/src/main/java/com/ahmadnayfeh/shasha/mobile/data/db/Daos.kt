@@ -263,3 +263,22 @@ interface UserPlaylistDao {
     @Query("DELETE FROM user_playlist_items WHERE playlistId = :playlistId AND videoId = :videoId")
     suspend fun removeItem(playlistId: Long, videoId: String)
 }
+
+@Dao
+interface SavedPlaylistDao {
+    /** The saved playlists, the newest first. */
+    @Query("SELECT * FROM saved_playlists ORDER BY savedAt DESC")
+    fun observeAll(): Flow<List<SavedPlaylistEntity>>
+
+    @Query("SELECT playlistId FROM saved_playlists")
+    fun observeIds(): Flow<List<String>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM saved_playlists WHERE playlistId = :playlistId)")
+    suspend fun contains(playlistId: String): Boolean
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(playlist: SavedPlaylistEntity)
+
+    @Query("DELETE FROM saved_playlists WHERE playlistId = :playlistId")
+    suspend fun delete(playlistId: String)
+}

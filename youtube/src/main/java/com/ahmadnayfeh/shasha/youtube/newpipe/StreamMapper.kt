@@ -3,6 +3,7 @@ package com.ahmadnayfeh.shasha.youtube.newpipe
 import com.ahmadnayfeh.shasha.youtube.PlaybackHandle
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
+import com.ahmadnayfeh.shasha.youtube.Storyboard
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
 import com.ahmadnayfeh.shasha.youtube.SubtitleTrack
 import com.ahmadnayfeh.shasha.youtube.VideoItem
@@ -16,6 +17,7 @@ import com.ahmadnayfeh.shasha.youtube.playback.LOW_QUALITY_MAX_HEIGHT
 import com.ahmadnayfeh.shasha.youtube.playback.heightOrResolution
 import com.ahmadnayfeh.shasha.youtube.playback.lowQualityOnly
 import org.schabi.newpipe.extractor.stream.Description
+import org.schabi.newpipe.extractor.stream.Frameset
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.SubtitlesStream
 import org.schabi.newpipe.extractor.stream.VideoStream
@@ -68,8 +70,25 @@ internal object StreamMapper {
             playback = PlaybackHandle(info, allowLowQuality = lowQualityHeight != null),
             lowQualityHeight = lowQualityHeight,
             uploaderAvatarUrl = ItemMapper.avatar(info.uploaderAvatars),
+            storyboards = storyboards(info.previewFrames.orEmpty()),
         )
     }
+
+    /** NewPipe's frame sets as [Storyboard]s, smallest frames first; the ones that cannot be drawn are left out. */
+    internal fun storyboards(frames: List<Frameset>): List<Storyboard> = frames
+        .map { f ->
+            Storyboard(
+                urls = f.urls.orEmpty().filter { it.isNotBlank() },
+                frameWidth = f.frameWidth,
+                frameHeight = f.frameHeight,
+                framesPerPageX = f.framesPerPageX,
+                framesPerPageY = f.framesPerPageY,
+                totalCount = f.totalCount,
+                durationPerFrameMs = f.durationPerFrame,
+            )
+        }
+        .filter { it.isUsable }
+        .sortedBy { it.frameWidth }
 
     internal data class StreamSummary(
         val isLive: Boolean,

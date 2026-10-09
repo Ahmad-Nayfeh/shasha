@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -61,6 +62,9 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.ChannelListItem
 import com.ahmadnayfeh.shasha.mobile.ui.components.ConfirmDialog
 import com.ahmadnayfeh.shasha.mobile.ui.components.EmptyState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LoadingBox
+import com.ahmadnayfeh.shasha.mobile.ui.components.OnTabReselected
+import com.ahmadnayfeh.shasha.mobile.ui.components.PlaylistListItem
+import com.ahmadnayfeh.shasha.mobile.ui.nav.LibraryRoute
 import com.ahmadnayfeh.shasha.mobile.ui.components.SubScreen
 import com.ahmadnayfeh.shasha.mobile.ui.components.Thumbnail
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
@@ -80,6 +84,8 @@ fun LibraryScreen(
     onOpenSubscriptions: () -> Unit,
     /** One of the viewer's own playlists, by its id. */
     onOpenPlaylist: (Long) -> Unit,
+    /** A YouTube playlist saved to the Library: its page, by its id. */
+    onOpenSavedPlaylist: (String) -> Unit = {},
 ) {
     val vm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container))
     val playlistsVm: PlaylistsViewModel = viewModel(factory = PlaylistsViewModel.factory(container))
@@ -87,6 +93,7 @@ fun LibraryScreen(
     val watchLater by vm.watchLater.collectAsStateWithLifecycle()
     val channels by vm.channels.collectAsStateWithLifecycle()
     val playlists by playlistsVm.lists.collectAsStateWithLifecycle()
+    val saved by vm.saved.collectAsStateWithLifecycle()
     val downloads by container.downloads.downloads.collectAsStateWithLifecycle(initialValue = emptyList())
     val finished = downloads.count { it.status == DownloadStatus.DONE }
     var creating by remember { mutableStateOf(false) }
@@ -97,7 +104,9 @@ fun LibraryScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_library)) }) },
     ) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding)) {
+        val listState = rememberLazyListState()
+        OnTabReselected(LibraryRoute::class) { listState.animateScrollToItem(0) }
+        LazyColumn(Modifier.fillMaxSize().padding(padding), state = listState) {
             item { Entry(Icons.Filled.Download, stringResource(R.string.library_downloads), finished, onOpenDownloads) }
             item { Entry(Icons.Filled.WatchLater, stringResource(R.string.library_watch_later), watchLater?.size, onOpenWatchLater) }
             item { Entry(Icons.Filled.History, stringResource(R.string.library_history), history?.size, onOpenHistory) }
@@ -122,6 +131,21 @@ fun LibraryScreen(
             }
             items(lists.orEmpty(), key = { "playlist:" + it.id }) { playlist ->
                 PlaylistEntry(playlist, onClick = { onOpenPlaylist(playlist.id) }, onRename = { renaming = playlist }, onDelete = { deleting = playlist })
+            }
+            // The YouTube playlists saved from their page or a list: shown once there is one (each row's button takes it out again).
+            if (saved.isNotEmpty()) {
+                item(key = "saved-divider") { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+                item(key = "saved-title") {
+                    Text(
+                        stringResource(R.string.library_saved_playlists),
+                        Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                items(saved, key = { "saved:" + it.playlistId }) { playlist ->
+                    PlaylistListItem(playlist, onClick = { onOpenSavedPlaylist(playlist.playlistId) })
+                }
             }
         }
     }

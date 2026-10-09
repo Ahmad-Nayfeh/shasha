@@ -67,6 +67,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -96,8 +97,10 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.PagedFooter
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
 import com.ahmadnayfeh.shasha.mobile.ui.nav.WatchRoute
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.youtube.SubtitleTrack
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import kotlinx.coroutines.delay
+import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
@@ -152,13 +155,11 @@ fun WatchScreen(
             bridge.setPictureInPicture(autoEnter = false, aspect = 16f / 9f, sourceRect = null)
         }
     }
-    // Leaving the app while a video plays turns it into a floating window.
-    LaunchedEffect(state.isPlaying, state.aspectRatio, state.isAudioOnly, settings.pictureInPicture, videoBounds) {
-        bridge.setPictureInPicture(
-            autoEnter = settings.pictureInPicture && state.isPlaying && !state.isAudioOnly && state.isVideoShown,
-            aspect = state.aspectRatio,
-            sourceRect = videoBounds,
-        )
+    // Leaving the app while a video plays turns it into a floating window. The window's parameters are kept current all along
+    // (not set when the viewer leaves, which is too late for Android 12's automatic entry).
+    val autoEnterPip = pictureInPictureOnLeave(state, settings.pictureInPicture)
+    LaunchedEffect(autoEnterPip, state.aspectRatio, videoBounds) {
+        bridge.setPictureInPicture(autoEnter = autoEnterPip, aspect = state.aspectRatio, sourceRect = videoBounds)
     }
     // The screen stays on while the video plays.
     DisposableEffect(state.isPlaying) {
@@ -279,7 +280,10 @@ internal fun WatchContent(
                     Box(Modifier.fillMaxSize().background(Color(0xE6000000)), contentAlignment = Alignment.Center) {
                         ErrorState(state.error!!, onRetry = onRetry)
                     }
-                } else if (!inPip) {
+                } else if (inPip) {
+                    // The floating window has no controls, only the picture and what is said.
+                    state.cueText?.let { CaptionText(it, small = true, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 6.dp)) }
+                } else {
                     PlayerOverlay(
                         state = state,
                         player = player,
@@ -314,6 +318,7 @@ internal fun WatchContent(
             state = state,
             onSelectQuality = { controller.selectQuality(it) },
             onSelectSpeed = { controller.setSpeed(it) },
+            onSelectSubtitles = { controller.selectSubtitles(it) },
             onDismiss = { showSettings = false },
         )
     }
@@ -457,13 +462,14 @@ private fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, 
     }
 }
 
-/** Quality (automatic, or one of the video's) and speed (0.5× to 4×). */
+/** Speed (0.5× to 4×), captions (off, or one of the video's languages) and quality (automatic, or one of the video's). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PlayerSettingsSheet(
     state: PlayerUiState,
     onSelectQuality: (Int?) -> Unit,
     onSelectSpeed: (Float) -> Unit,
+    onSelectSubtitles: (String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
@@ -472,6 +478,25 @@ private fun PlayerSettingsSheet(
             androidx.compose.foundation.lazy.LazyRow(contentPadding = PaddingValues(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(PlaybackSpeeds.ALL) { speed ->
                     FilterChip(selected = speed == state.speed, onClick = { onSelectSpeed(speed) }, label = { Text(PlaybackSpeeds.label(speed)) })
+                }
+            }
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+            Text(stringResource(R.string.player_captions), Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.titleSmall)
+            if (state.subtitles.isEmpty()) {
+                Text(stringResource(R.string.player_captions_none), Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                val locale = LocalConfiguration.current.locales[0]
+                QualityRow(stringResource(R.string.player_captions_off), selected = state.subtitleLanguage == null) {
+                    onSelectSubtitles(null)
+                    onDismiss()
+                }
+                for (track in state.subtitles) {
+                    val name = captionName(track, locale)
+                    QualityRow(
+                        label = if (track.isAutoGenerated) stringResource(R.string.player_captions_auto, name) else name,
+                        selected = state.subtitleLanguage == track.languageCode,
+                        onClick = { onSelectSubtitles(track.languageCode); onDismiss() },
+                    )
                 }
             }
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
@@ -507,6 +532,40 @@ private fun QualityRow(label: String, selected: Boolean, onClick: () -> Unit) {
         Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
         if (selected) Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
     }
+}
+
+/**
+ * Whether leaving the app now (Home, the gesture, the recent apps) turns the player into a floating window: when the setting is
+ * on and a video with a picture is meant to play. Meant to, not playing this very moment: a video that waits for data
+ * ([PlayerUiState.isBuffering]) is still the one the viewer is watching, and leaving it then used to keep only its sound.
+ */
+internal fun pictureInPictureOnLeave(state: PlayerUiState, setting: Boolean): Boolean =
+    setting && !state.isAudioOnly && state.playWhenReady && state.phase == PlayerPhase.READY
+
+/**
+ * A captions language as the viewer reads it: its name in the app's own language (YouTube's label is in Arabic for every viewer),
+ * else YouTube's label.
+ */
+internal fun captionName(track: SubtitleTrack, locale: Locale): String {
+    val name = Locale.forLanguageTag(track.languageCode).getDisplayName(locale)
+    return if (name.isNotBlank() && !name.equals(track.languageCode, ignoreCase = true)) {
+        name.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+    } else {
+        track.label.ifBlank { track.languageCode }
+    }
+}
+
+/** What is said in the video, over its picture: white on a dark band, readable over any picture. */
+@Composable
+internal fun CaptionText(text: String, modifier: Modifier = Modifier, small: Boolean = false) {
+    Text(
+        text,
+        modifier = modifier.padding(horizontal = 12.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xB3000000))
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        color = Color.White,
+        style = if (small) MaterialTheme.typography.labelSmall else MaterialTheme.typography.bodyLarge,
+        textAlign = TextAlign.Center,
+    )
 }
 
 /** How long «Zoomed to fill» / «Original» stays on the picture after a pinch. */

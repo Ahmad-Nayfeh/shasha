@@ -52,6 +52,8 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.EmptyState
 import com.ahmadnayfeh.shasha.mobile.ui.components.ErrorState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LoadingBox
 import com.ahmadnayfeh.shasha.mobile.ui.components.OnNearEnd
+import com.ahmadnayfeh.shasha.mobile.ui.components.OnTabReselected
+import com.ahmadnayfeh.shasha.mobile.ui.nav.SearchRoute
 import com.ahmadnayfeh.shasha.mobile.ui.components.PagedFooter
 import com.ahmadnayfeh.shasha.mobile.ui.components.PlaylistListItem
 import com.ahmadnayfeh.shasha.mobile.ui.components.SectionTitle
@@ -211,6 +213,7 @@ private fun Results(
 ) {
     val listState = rememberLazyListState()
     listState.OnNearEnd { vm.loadMore() }
+    OnTabReselected(SearchRoute::class) { listState.animateScrollToItem(0) }
     when {
         !results.started && results.error == null -> LoadingBox()
         rows.items.isEmpty() && rows.shorts.isEmpty() && results.error != null -> ErrorState(results.error, onRetry = vm::retry)

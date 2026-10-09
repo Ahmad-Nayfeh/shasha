@@ -131,6 +131,11 @@
     <string name="player_speed">Speed</string>
     <string name="player_quality">Quality</string>
     <string name="player_quality_none">The qualities appear once the video starts.</string>
+    <string name="player_captions">Captions</string>
+    <string name="player_captions_off">Off</string>
+    <!-- A language whose captions YouTube made itself, e.g. "English (auto-generated)". -->
+    <string name="player_captions_auto">%1$s (auto-generated)</string>
+    <string name="player_captions_none">This video has no captions.</string>
     <string name="quality_auto">Auto</string>
     <string name="quality_auto_playing">Auto (%1$sp)</string>
     <string name="player_low_quality">Only %1$sp is available for this video.</string>
@@ -159,6 +164,12 @@
 
     <!-- The viewer's own playlists -->
     <string name="library_my_playlists">My playlists</string>
+    <string name="library_saved_playlists">Saved playlists</string>
+    <string name="playlist_save">Save to library</string>
+    <string name="playlist_saved">Saved</string>
+    <string name="playlist_unsave">Remove from library</string>
+    <string name="snack_playlist_saved">Playlist saved to your library</string>
+    <string name="snack_playlist_removed">Playlist removed from your library</string>
     <string name="playlists_empty_body">Make a playlist to keep videos together, then add videos from their menu.</string>
     <string name="playlist_new">New playlist</string>
     <string name="playlist_create">Create</string>

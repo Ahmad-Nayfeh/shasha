@@ -44,10 +44,12 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.Avatar
 import com.ahmadnayfeh.shasha.mobile.ui.components.EmptyState
 import com.ahmadnayfeh.shasha.mobile.ui.components.ErrorState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LoadingBox
+import com.ahmadnayfeh.shasha.mobile.ui.components.OnTabReselected
 import com.ahmadnayfeh.shasha.mobile.ui.components.SectionTitle
 import com.ahmadnayfeh.shasha.mobile.ui.components.ShortsRow
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoCard
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoTile
+import com.ahmadnayfeh.shasha.mobile.ui.nav.HomeRoute
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 
@@ -110,9 +112,11 @@ private fun FeedGrid(
     onOpenShorts: (List<VideoItem>, Int) -> Unit,
     onSearch: () -> Unit,
 ) {
+    val gridState = rememberLazyGridState()
+    OnTabReselected(HomeRoute::class) { gridState.animateScrollToItem(0) }
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 320.dp),
-        state = rememberLazyGridState(),
+        state = gridState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),

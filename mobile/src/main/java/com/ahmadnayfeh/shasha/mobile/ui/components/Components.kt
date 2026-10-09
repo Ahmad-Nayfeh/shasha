@@ -25,6 +25,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.LibraryAdd
+import androidx.compose.material.icons.filled.LibraryAddCheck
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
@@ -482,9 +484,15 @@ fun ChannelListItem(channel: ChannelItem, onClick: () -> Unit, modifier: Modifie
     }
 }
 
+/**
+ * A YouTube playlist in a list (search results, a channel's playlists, the Library's saved ones), with the button that saves it to
+ * the Library or takes it out ([VideoActions.toggleSavedPlaylist]).
+ */
 @Composable
 fun PlaylistListItem(playlist: PlaylistItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val saved = playlist.playlistId in LocalSavedPlaylistIds.current
+    val actions = LocalVideoActions.current
     Row(
         modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 12.dp, top = 6.dp, bottom = 6.dp, end = 12.dp),
         verticalAlignment = Alignment.Top,
@@ -505,6 +513,13 @@ fun PlaylistListItem(playlist: PlaylistItem, onClick: () -> Unit, modifier: Modi
             playlist.channelName?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+        }
+        IconButton(onClick = { actions.toggleSavedPlaylist(playlist) }) {
+            Icon(
+                if (saved) Icons.Filled.LibraryAddCheck else Icons.Filled.LibraryAdd,
+                contentDescription = stringResource(if (saved) R.string.playlist_unsave else R.string.playlist_save),
+                tint = if (saved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

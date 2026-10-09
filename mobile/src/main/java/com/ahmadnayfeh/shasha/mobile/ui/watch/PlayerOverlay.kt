@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ClosedCaption
+import androidx.compose.material.icons.filled.ClosedCaptionOff
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -71,6 +73,7 @@ import com.ahmadnayfeh.shasha.mobile.player.PlayerPhase
 import com.ahmadnayfeh.shasha.mobile.player.PlayerUiState
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorSegment
+import com.ahmadnayfeh.shasha.youtube.forPreview
 import kotlinx.coroutines.delay
 
 /** Where playback is, polled while the screen is up (the player has no event for the position). */
@@ -100,7 +103,8 @@ internal fun categoryColor(category: SponsorCategory): Color = when (category) {
 
 /**
  * The timeline: buffered part, played part, a thumb, and the SponsorBlock segments in their colours. Tap to jump, drag
- * to scrub ([onSeek] once, when the finger lifts). It runs left to right in every language, like the video itself.
+ * to scrub ([onSeek] once, when the finger lifts; [onScrub] all along, with where the finger is, then null). It runs left to
+ * right in every language, like the video itself.
  */
 @Composable
 fun SeekBar(
@@ -111,6 +115,7 @@ fun SeekBar(
     onSeek: (Long) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    onScrub: (Float?) -> Unit = {},
 ) {
     var dragFraction by remember { mutableStateOf<Float?>(null) }
     val duration = durationMs.coerceAtLeast(1)
@@ -127,13 +132,17 @@ fun SeekBar(
                 .pointerInput(durationMs, enabled) {
                     if (enabled) {
                         detectHorizontalDragGestures(
-                            onDragStart = { offset -> dragFraction = (offset.x / size.width).coerceIn(0f, 1f) },
-                            onHorizontalDrag = { change, _ -> dragFraction = (change.position.x / size.width).coerceIn(0f, 1f) },
+                            onDragStart = { offset -> dragFraction = (offset.x / size.width).coerceIn(0f, 1f).also(onScrub) },
+                            onHorizontalDrag = { change, _ -> dragFraction = (change.position.x / size.width).coerceIn(0f, 1f).also(onScrub) },
                             onDragEnd = {
                                 dragFraction?.let { onSeek((it * duration).toLong()) }
                                 dragFraction = null
+                                onScrub(null)
                             },
-                            onDragCancel = { dragFraction = null },
+                            onDragCancel = {
+                                dragFraction = null
+                                onScrub(null)
+                            },
                         )
                     }
                 },
@@ -184,10 +193,13 @@ fun PlayerOverlay(
     var feedback by remember { mutableStateOf<SeekFeedback?>(null) }
     var lastSeekAt by remember { mutableLongStateOf(0L) }
     val progress by rememberProgress(player)
+    // Where the finger is on the seek bar while it drags (0..1), for the frame shown above it.
+    var scrub by remember { mutableStateOf<Float?>(null) }
+    val storyboard = remember(state.details) { state.details?.storyboards?.forPreview(PREVIEW_MAX_FRAME_WIDTH) }
 
-    // The controls fade away three and a half seconds after the last touch, while the video plays.
-    LaunchedEffect(visible, state.isPlaying, interactions) {
-        if (visible && state.isPlaying) {
+    // The controls fade away three and a half seconds after the last touch, while the video plays (not while the bar is dragged).
+    LaunchedEffect(visible, state.isPlaying, interactions, scrub) {
+        if (visible && state.isPlaying && scrub == null) {
             delay(CONTROLS_HIDE_MS)
             visible = false
         }
@@ -259,6 +271,15 @@ fun PlayerOverlay(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        // Captions: the button says whether they are on, and opens the settings where they are chosen.
+                        if (state.subtitles.isNotEmpty()) {
+                            IconButton(onClick = onOpenSettings) {
+                                Icon(
+                                    if (state.subtitleLanguage != null) Icons.Filled.ClosedCaption else Icons.Filled.ClosedCaptionOff,
+                                    contentDescription = stringResource(R.string.player_captions),
+                                )
+                            }
+                        }
                         if (onPictureInPicture != null) {
                             IconButton(onClick = onPictureInPicture) {
                                 Icon(Icons.Filled.PictureInPictureAlt, contentDescription = stringResource(R.string.player_pip))
@@ -323,6 +344,18 @@ fun PlayerOverlay(
                             onSeek = { controller.seekTo(it); interactions++ },
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !state.isLive && progress.durationMs > 0,
+                            onScrub = { scrub = it },
+                        )
+                    }
+
+                    // While the bar is dragged: the frame at the finger, with its time, just above the bar.
+                    scrub?.let { fraction ->
+                        SeekPreview(
+                            storyboard = storyboard,
+                            positionMs = (fraction * progress.durationMs).toLong(),
+                            durationMs = progress.durationMs,
+                            modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(bottom = SEEK_PREVIEW_ABOVE_BAR)
+                                .aboveThumb(fraction, barInset = 12.dp),
                         )
                     }
                 }
@@ -333,6 +366,11 @@ fun PlayerOverlay(
                 Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(2.dp).background(Color(0x4DFFFFFF))) {
                     Box(Modifier.fillMaxWidth((progress.positionMs.toFloat() / progress.durationMs).coerceIn(0f, 1f)).height(2.dp).background(MaterialTheme.colorScheme.primary))
                 }
+            }
+
+            // What is said, above the controls when they show.
+            state.cueText?.let { text ->
+                CaptionText(text, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = if (visible) 84.dp else 20.dp))
             }
 
             // «Skipped: sponsor» with its undo.
@@ -353,6 +391,9 @@ fun PlayerOverlay(
         }
     }
 }
+
+/** The preview's bottom edge: above the seek bar (32 dp), clear of the finger on it. */
+private val SEEK_PREVIEW_ABOVE_BAR = 40.dp
 
 private const val CONTROLS_HIDE_MS = 3_500L
 private const val SEEK_FEEDBACK_MS = 900L

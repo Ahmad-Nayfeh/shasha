@@ -117,6 +117,11 @@ data class StreamDetails(
      * [VideoSource.channel] fails for the same channel (a network that answers the channel's page with an error).
      */
     val uploaderAvatarUrl: String? = null,
+    /**
+     * The pictures of the video's frames for the seek bar ([Storyboard], smallest frames first; [forPreview] picks one). Empty
+     * when YouTube has none for it (a live stream, a very new video): the seek bar then shows the time only.
+     */
+    val storyboards: List<Storyboard> = emptyList(),
 )
 
 data class VideoTrack(val height: Int, val fps: Int, val codec: String, val bitrate: Int)

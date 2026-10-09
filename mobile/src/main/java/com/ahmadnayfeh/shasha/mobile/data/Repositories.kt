@@ -206,9 +206,14 @@ class FeedRepository(
 
 /**
  * What the history says for «مقترحة لك» ([HomeSuggestions]): the newest watched videos with when each was watched ([seeds], newest
- * first), and every id in the history ([allIds]), which is not suggested again.
+ * first), every id in the history ([allIds]), which is not suggested again, and the channel of each seed that has one ([channels]:
+ * seed id → channel id), whose newest Shorts make the Shorts row.
  */
-data class WatchedVideos(val seeds: List<Recommendations.Seed>, val allIds: Set<String>)
+data class WatchedVideos(
+    val seeds: List<Recommendations.Seed>,
+    val allIds: Set<String>,
+    val channels: Map<String, String> = emptyMap(),
+)
 
 /** What was watched, what is saved for later, and where each video stopped. */
 class LibraryRepository(
@@ -230,13 +235,14 @@ class LibraryRepository(
      * watching a video again moves it up), and every watched id. A video the built-in filter holds back is no seed.
      */
     val watched: Flow<WatchedVideos> = history.observe(HISTORY_LIMIT).map { rows ->
+        val newest = rows.asSequence()
+            .filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) }
+            .take(SEED_LIMIT)
+            .toList()
         WatchedVideos(
-            seeds = rows.asSequence()
-                .filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) }
-                .take(SEED_LIMIT)
-                .map { Recommendations.Seed(it.videoId, it.watchedAt) }
-                .toList(),
+            seeds = newest.map { Recommendations.Seed(it.videoId, it.watchedAt) },
             allIds = rows.mapTo(HashSet()) { it.videoId },
+            channels = newest.mapNotNull { row -> row.channelId?.let { row.videoId to it } }.toMap(),
         )
     }
 

@@ -70,6 +70,11 @@ data class AppSettings(
      * suggestions. Off hides them everywhere on the phone, so a family that does not want them never meets one.
      */
     val showShorts: Boolean = true,
+    /**
+     * The captions last chosen in the player (a subtitle language code, such as "ar" or "en"), shown on every video that has them;
+     * null: off. Choosing in the player changes it.
+     */
+    val subtitleLanguage: String? = null,
 ) {
     companion object {
         val DEFAULT_THEME = AppTheme.SYSTEM
@@ -123,6 +128,12 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
 
     suspend fun setShowShorts(enabled: Boolean) = store.edit { it[SHOW_SHORTS] = enabled }.let {}
 
+    /** The captions' language, or null for none. */
+    suspend fun setSubtitleLanguage(language: String?) = store.edit {
+        val code = language?.trim()
+        if (code.isNullOrEmpty()) it.remove(SUBTITLE_LANGUAGE) else it[SUBTITLE_LANGUAGE] = code
+    }.let {}
+
     suspend fun resetLanguage() = store.edit { it.remove(LANGUAGE) }.let {}
 
     suspend fun resetTheme() = store.edit { it.remove(THEME) }.let {}
@@ -137,10 +148,11 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         it.remove(SPONSORBLOCK_CATEGORIES)
     }.let {}
 
-    /** Background playback and picture-in-picture. */
+    /** Background playback, picture-in-picture and the captions (off). */
     suspend fun resetPlayback() = store.edit {
         it.remove(BACKGROUND_PLAYBACK)
         it.remove(PICTURE_IN_PICTURE)
+        it.remove(SUBTITLE_LANGUAGE)
     }.let {}
 
     /** Shorts: shown. */
@@ -151,6 +163,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             it.remove(key)
         }
         it.remove(SPONSORBLOCK_CATEGORIES)
+        it.remove(SUBTITLE_LANGUAGE)
     }.let {}
 
     private fun Preferences.toSettings(): AppSettings {
@@ -167,6 +180,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             backgroundPlayback = this[BACKGROUND_PLAYBACK] ?: defaults.backgroundPlayback,
             pictureInPicture = this[PICTURE_IN_PICTURE] ?: defaults.pictureInPicture,
             showShorts = this[SHOW_SHORTS] ?: defaults.showShorts,
+            subtitleLanguage = this[SUBTITLE_LANGUAGE]?.takeIf { it.isNotBlank() } ?: defaults.subtitleLanguage,
         )
     }
 
@@ -180,6 +194,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         private val BACKGROUND_PLAYBACK = booleanPreferencesKey("background_playback")
         private val PICTURE_IN_PICTURE = booleanPreferencesKey("picture_in_picture")
         private val SHOW_SHORTS = booleanPreferencesKey("show_shorts")
+        private val SUBTITLE_LANGUAGE = stringPreferencesKey("subtitle_language")
         private val FEED_REFRESHED_AT = longPreferencesKey("feed_refreshed_at")
 
         /** The settings file (`settings.preferences_pb`); a damaged one starts empty. */
