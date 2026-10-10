@@ -53,7 +53,7 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.OnTabReselected
 import com.ahmadnayfeh.shasha.mobile.ui.nav.SettingsRoute
 
 /**
- * Settings: language, theme, playback (default quality, background playback, picture-in-picture), Shorts (on/off), downloads
+ * Settings: language, theme, playback (default quality, background playback, picture-in-picture), Shorts (on/off), comments (on/off), downloads
  * (quality) and SponsorBlock (on/off and its categories). Each group has «Reset», and so does the whole page.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -105,6 +105,15 @@ fun SettingsScreen(container: AppContainer, onOpenAbout: () -> Unit, onOpenUpdat
                 hint = stringResource(R.string.settings_shorts_hint),
             ) {
                 SwitchRow(stringResource(R.string.settings_shorts_show), null, settings.showShorts, vm::setShowShorts)
+            }
+
+            Section(
+                stringResource(R.string.settings_comments),
+                resettable = settings.showComments != defaults.showComments || settings.commentSort != defaults.commentSort,
+                onReset = vm::resetComments,
+                hint = stringResource(R.string.settings_comments_hint),
+            ) {
+                SwitchRow(stringResource(R.string.settings_comments_show), null, settings.showComments, vm::setShowComments)
             }
 
             Section(

@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -31,9 +33,11 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.WatchLater
@@ -42,6 +46,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -52,7 +57,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -64,16 +71,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.compose.ContentFrame
@@ -90,12 +97,14 @@ import com.ahmadnayfeh.shasha.mobile.player.PlayerUiState
 import com.ahmadnayfeh.shasha.mobile.player.VideoFit
 import com.ahmadnayfeh.shasha.mobile.ui.LocalActivityBridge
 import com.ahmadnayfeh.shasha.mobile.ui.OrientationMode
+import com.ahmadnayfeh.shasha.mobile.ui.comments.CommentsSheet
+import com.ahmadnayfeh.shasha.mobile.ui.comments.CommentsTeaser
+import com.ahmadnayfeh.shasha.mobile.ui.comments.CommentsViewModel
 import com.ahmadnayfeh.shasha.mobile.ui.components.Avatar
 import com.ahmadnayfeh.shasha.mobile.ui.components.ErrorState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LocalVideoActions
 import com.ahmadnayfeh.shasha.mobile.ui.components.PagedFooter
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
-import com.ahmadnayfeh.shasha.mobile.ui.nav.WatchRoute
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.SubtitleTrack
 import com.ahmadnayfeh.shasha.youtube.VideoItem
@@ -104,93 +113,79 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 /**
- * The player screen. Everything that belongs to the window happens here (rotation, the system bars, picture-in-picture,
- * the screen staying on) around [WatchContent], which draws it. The player (one ExoPlayer for the whole app) is attached
- * to the same place in the tree in every layout, so a rotation does not restart the video.
+ * The watch page: the expanded view of the app's one video ([NowPlaying]), drawn over the pages of the app. Everything that
+ * belongs to the window and to this page happens here (rotation, the system bars in full screen) around [WatchContent], which
+ * draws it; picture-in-picture and the screen staying on follow the video wherever it shows (`ShashaRoot`), the mini player too.
+ * Back, and a drag down on the picture, collapse it into the mini player ([onCollapse]) instead of stopping it; in full screen
+ * they come back upright first. The player (one ExoPlayer for the whole app) is attached to the same place in the tree in every
+ * layout, so a rotation does not restart the video.
  */
 @Composable
-fun WatchScreen(
+internal fun WatchScreen(
     container: AppContainer,
-    route: WatchRoute,
-    onBack: () -> Unit,
+    vm: WatchViewModel,
+    onCollapse: () -> Unit,
     /** Opens another video in place of this one (a related video, the next in the playlist). */
     onOpenVideo: (VideoItem, String?) -> Unit,
     onOpenChannel: (ChannelItem) -> Unit,
+    /** Where the video is in the window: picture-in-picture grows its floating window out of it. */
+    onVideoBounds: (Rect) -> Unit = {},
+    /** The video's comments; null: none shown (the setting is off, or a downloaded file plays). */
+    comments: CommentsViewModel? = null,
 ) {
-    val vm: WatchViewModel = viewModel(
-        key = "watch:${route.videoId}:${route.downloadId}:${route.playlistId}",
-        factory = WatchViewModel.factory(
-            container, route.videoId, route.playlistId, route.downloadId.takeIf { it >= 0 }, route.startSeconds.takeIf { it > 0 }?.times(1000),
-        ),
-    )
     val controller = container.player
     val state by vm.player.collectAsStateWithLifecycle()
-    val settings by container.settingsFlow.collectAsStateWithLifecycle()
     // How the picture sits in its frame (pinch to zoom): kept for the run of the app, so the next video is as the viewer left it.
     val fit by container.videoFit.collectAsStateWithLifecycle()
     val bridge = LocalActivityBridge.current
     val inPip by bridge.inPictureInPicture.collectAsStateWithLifecycle()
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val isFullscreen = isLandscape && !inPip
-    // Where the video is in the window: picture-in-picture grows its floating window out of it.
     var videoBounds by remember { mutableStateOf<Rect?>(null) }
-    val view = LocalView.current
 
-    // Back from a detour (this video's channel, then another video): the player may have been let go meanwhile.
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.onShown() }
-    // Playlists go on by themselves.
-    LaunchedEffect(vm) {
-        vm.eventFlow.collect { event ->
-            if (event is WatchEvent.PlayNext) onOpenVideo(event.video, vm.playlistId)
-        }
-    }
-    // Full screen hides the system bars; leaving the screen puts everything back.
+    // Full screen hides the system bars; leaving the page puts everything back.
     DisposableEffect(isFullscreen) {
         bridge.setSystemBarsHidden(isFullscreen)
         onDispose { bridge.setSystemBarsHidden(false) }
     }
     DisposableEffect(Unit) {
-        onDispose {
-            bridge.requestOrientation(OrientationMode.AUTO)
-            bridge.setPictureInPicture(autoEnter = false, aspect = 16f / 9f, sourceRect = null)
-        }
-    }
-    // Leaving the app while a video plays turns it into a floating window. The window's parameters are kept current all along
-    // (not set when the viewer leaves, which is too late for Android 12's automatic entry).
-    val autoEnterPip = pictureInPictureOnLeave(state, settings.pictureInPicture)
-    LaunchedEffect(autoEnterPip, state.aspectRatio, videoBounds) {
-        bridge.setPictureInPicture(autoEnter = autoEnterPip, aspect = state.aspectRatio, sourceRect = videoBounds)
-    }
-    // The screen stays on while the video plays.
-    DisposableEffect(state.isPlaying) {
-        view.keepScreenOn = state.isPlaying
-        onDispose { view.keepScreenOn = false }
+        onDispose { bridge.requestOrientation(OrientationMode.AUTO) }
     }
     BackHandler(enabled = isFullscreen) { bridge.requestOrientation(OrientationMode.PORTRAIT) }
+    // Back does not stop the video: it goes on in the mini player while the viewer goes on through the app.
+    BackHandler(enabled = !isFullscreen && !inPip) { onCollapse() }
 
-    WatchContent(
-        state = state,
-        player = controller.player,
-        controller = controller,
-        details = vm,
-        isFullscreen = isFullscreen,
-        inPip = inPip,
-        onRetry = vm::retry,
-        onBack = { if (isFullscreen) bridge.requestOrientation(OrientationMode.PORTRAIT) else onBack() },
-        onToggleFullscreen = { bridge.requestOrientation(if (isFullscreen) OrientationMode.PORTRAIT else OrientationMode.LANDSCAPE) },
-        onEnterPictureInPicture = if (bridge.supportsPictureInPicture && !state.isAudioOnly) {
-            { bridge.enterPictureInPicture(state.aspectRatio, videoBounds) }
-        } else {
-            null
-        },
-        onVideoBounds = { videoBounds = it },
-        // What the details list under the player holds is the playlist being played, or (without one) the related videos: a video taken
-        // from the playlist stays in it, the next one still follows.
-        onOpenVideo = { onOpenVideo(it, vm.playlistId) },
-        onOpenChannel = onOpenChannel,
-        fit = fit,
-        onFitChange = { container.videoFit.value = it },
-    )
+    // The page covers the app's pages under it: they get no touches while it is up (they stay composed, as the viewer left them).
+    Box(Modifier.fillMaxSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } }) {
+        WatchContent(
+            state = state,
+            player = controller.player,
+            controller = controller,
+            details = vm,
+            isFullscreen = isFullscreen,
+            inPip = inPip,
+            onRetry = vm::retry,
+            onBack = { if (isFullscreen) bridge.requestOrientation(OrientationMode.PORTRAIT) else onCollapse() },
+            onToggleFullscreen = { bridge.requestOrientation(if (isFullscreen) OrientationMode.PORTRAIT else OrientationMode.LANDSCAPE) },
+            onEnterPictureInPicture = if (bridge.supportsPictureInPicture && !state.isAudioOnly) {
+                { bridge.enterPictureInPicture(state.aspectRatio, videoBounds) }
+            } else {
+                null
+            },
+            onVideoBounds = {
+                videoBounds = it
+                onVideoBounds(it)
+            },
+            // What the details list under the player holds is the playlist being played, or (without one) the related videos: a video taken
+            // from the playlist stays in it, the next one still follows.
+            onOpenVideo = { onOpenVideo(it, vm.playlistId) },
+            onOpenChannel = onOpenChannel,
+            fit = fit,
+            onFitChange = { container.videoFit.value = it },
+            onCollapse = onCollapse,
+            comments = comments,
+        )
+    }
 }
 
 /**
@@ -217,8 +212,43 @@ internal fun WatchContent(
     /** How the picture sits in its frame; pinching it asks for the other ([onFitChange]). */
     fit: VideoFit = VideoFit.FIT,
     onFitChange: (VideoFit) -> Unit = {},
+    /**
+     * Collapses the page into the mini player: a drag down on the picture (the page follows the finger) asks for it. Null: no
+     * dragging. In full screen the same drag comes back upright ([onToggleFullscreen]).
+     */
+    onCollapse: (() -> Unit)? = null,
+    /** The video's comments (a section under its details, all of them in a sheet); null: none. */
+    comments: CommentsViewModel? = null,
 ) {
     var showSettings by remember { mutableStateOf(false) }
+    var showComments by remember { mutableStateOf(false) }
+    // How far the page has been dragged down by its picture (px), while the finger is on it.
+    var dragged by remember { mutableFloatStateOf(0f) }
+    val collapse by rememberUpdatedState(onCollapse)
+    val exitFullscreen by rememberUpdatedState(onToggleFullscreen)
+    val collapseDistance = with(LocalDensity.current) { COLLAPSE_DRAG.toPx() }
+    val dragToCollapse = when {
+        inPip || onCollapse == null -> Modifier
+        isFullscreen -> Modifier.pointerInput(Unit) {
+            var total = 0f
+            detectVerticalDragGestures(onDragStart = { total = 0f }, onDragEnd = { if (total > collapseDistance) exitFullscreen() }) { change, dy ->
+                total += dy
+                change.consume()
+            }
+        }
+        else -> Modifier.pointerInput(Unit) {
+            detectVerticalDragGestures(
+                onDragEnd = {
+                    if (dragged > collapseDistance) collapse?.invoke()
+                    dragged = 0f
+                },
+                onDragCancel = { dragged = 0f },
+            ) { change, dy ->
+                dragged = (dragged + dy).coerceAtLeast(0f)
+                change.consume()
+            }
+        }
+    }
     // «Zoomed to fill» / «Original», for a moment after a pinch changed the fit.
     var zoomHint by remember { mutableStateOf<VideoFit?>(null) }
     LaunchedEffect(zoomHint) {
@@ -232,14 +262,19 @@ internal fun WatchContent(
         else -> Modifier.fillMaxWidth().statusBarsPadding().aspectRatio(state.aspectRatio.coerceIn(0.8f, 16f / 9f))
     }
 
-    Column(Modifier.fillMaxSize().background(if (isFullscreen || inPip) Color.Black else MaterialTheme.colorScheme.surface)) {
+    Column(
+        Modifier.fillMaxSize().offset { IntOffset(0, dragged.roundToInt()) }
+            .background(if (isFullscreen || inPip) Color.Black else MaterialTheme.colorScheme.surface),
+    ) {
         Box(Modifier.then(if (isFullscreen || inPip) Modifier.fillMaxSize() else Modifier.fillMaxWidth().background(Color.Black))) {
             Box(
                 playerModifier.background(Color.Black)
+                    .testTag(WATCH_VIDEO_TAG)
                     .onGloballyPositioned { coordinates ->
                         val bounds = coordinates.boundsInWindow()
                         onVideoBounds(Rect(bounds.left.roundToInt(), bounds.top.roundToInt(), bounds.right.roundToInt(), bounds.bottom.roundToInt()))
                     }
+                    .then(dragToCollapse)
                     // A picture of a file that has no video (audio only) has nothing to zoom; in the floating window the system owns the touches.
                     .then(if (state.isAudioOnly || inPip) Modifier else Modifier.pinchToFit(fit) { next -> onFitChange(next); zoomHint = next }),
             ) {
@@ -280,6 +315,16 @@ internal fun WatchContent(
                     Box(Modifier.fillMaxSize().background(Color(0xE6000000)), contentAlignment = Alignment.Center) {
                         ErrorState(state.error!!, onRetry = onRetry)
                     }
+                    // The way out stays where the controls have it: collapse into the mini player (upright), or upright (full screen).
+                    if (!inPip) {
+                        IconButton(onClick = onBack, Modifier.align(Alignment.TopStart).padding(horizontal = 4.dp)) {
+                            if (isFullscreen) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = Color.White)
+                            } else {
+                                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.player_minimize), tint = Color.White)
+                            }
+                        }
+                    }
                 } else if (inPip) {
                     // The floating window has no controls, only the picture and what is said.
                     state.cueText?.let { CaptionText(it, small = true, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 6.dp)) }
@@ -309,10 +354,21 @@ internal fun WatchContent(
             }
         }
         if (!isFullscreen && !inPip) {
-            Details(details, state, onOpenVideo = onOpenVideo, onOpenChannel = onOpenChannel, modifier = Modifier.weight(1f))
+            Details(
+                details,
+                state,
+                onOpenVideo = onOpenVideo,
+                onOpenChannel = onOpenChannel,
+                comments = comments,
+                onOpenComments = { showComments = true },
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 
+    if (showComments && comments != null && !inPip) {
+        CommentsSheet(comments, onDismiss = { showComments = false })
+    }
     if (showSettings) {
         PlayerSettingsSheet(
             state = state,
@@ -331,6 +387,8 @@ private fun Details(
     state: PlayerUiState,
     onOpenVideo: (VideoItem) -> Unit,
     onOpenChannel: (ChannelItem) -> Unit,
+    comments: CommentsViewModel?,
+    onOpenComments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -419,6 +477,9 @@ private fun Details(
                 }
             }
         }
+        if (comments != null && !state.isOffline) {
+            item(key = "comments") { CommentsTeaser(comments, onOpen = onOpenComments, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) }
+        }
         item(key = "divider") { HorizontalDivider(Modifier.padding(vertical = 4.dp)) }
         if (vm.playlistId != null) {
             item(key = "queue-title") {
@@ -462,10 +523,13 @@ private fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, 
     }
 }
 
-/** Speed (0.5× to 4×), captions (off, or one of the video's languages) and quality (automatic, or one of the video's). */
+/**
+ * Speed (0.5× to 4×), captions (off, or one of the video's languages) and quality (automatic, or one of the video's): the player
+ * screen's and the Shorts viewer's.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PlayerSettingsSheet(
+internal fun PlayerSettingsSheet(
     state: PlayerUiState,
     onSelectQuality: (Int?) -> Unit,
     onSelectSpeed: (Float) -> Unit,
@@ -567,6 +631,12 @@ internal fun CaptionText(text: String, modifier: Modifier = Modifier, small: Boo
         textAlign = TextAlign.Center,
     )
 }
+
+/** The watch page's picture, for the tests. */
+internal const val WATCH_VIDEO_TAG = "watch_video"
+
+/** How far the picture is dragged down to collapse the page into the mini player (or to leave full screen). */
+private val COLLAPSE_DRAG = 96.dp
 
 /** How long «Zoomed to fill» / «Original» stays on the picture after a pinch. */
 private const val ZOOM_HINT_MS = 1_400L

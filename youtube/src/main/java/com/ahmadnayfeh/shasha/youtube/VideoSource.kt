@@ -67,6 +67,22 @@ interface VideoSource {
      */
     suspend fun related(videoId: String): List<VideoItem> = emptyList()
 
+    /**
+     * One page of [videoId]'s comments (null [page]: the first) in the order [sort]: YouTube's «Top comments» or «Newest first»
+     * (it has no other). A video whose uploader turned comments off answers an empty page marked [CommentsPage.disabled]. A
+     * [PageKey] belongs to the [videoId] and [sort] that returned it; an unknown or expired one ends the list (an empty page).
+     * A Short's comments are asked for the same way. Unfiltered YouTube content, as YouTube shows it.
+     *
+     * The default answers nothing, so other implementations need not know it.
+     */
+    suspend fun comments(videoId: String, sort: CommentSort = CommentSort.TOP, page: PageKey? = null): CommentsPage = CommentsPage(emptyList(), null)
+
+    /**
+     * A page of the replies to one of [videoId]'s comments: [page] is the comment's [Comment.replies] (its first page), then the
+     * [CommentsPage.next] of the page before. Oldest first, as YouTube lists replies.
+     */
+    suspend fun commentReplies(videoId: String, page: PageKey): CommentsPage = CommentsPage(emptyList(), null)
+
     /** The first page of a channel's Shorts tab, newest first, every item marked short-form; empty when it has none. */
     suspend fun channelShorts(channelId: String): List<VideoItem> = emptyList()
 

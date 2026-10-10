@@ -14,6 +14,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorCategory
+import com.ahmadnayfeh.shasha.youtube.CommentSort
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -70,6 +71,10 @@ data class AppSettings(
      * suggestions. Off hides them everywhere on the phone, so a family that does not want them never meets one.
      */
     val showShorts: Boolean = true,
+    /** Comments: the section under a video and the button of the Shorts viewer. Off hides them entirely. */
+    val showComments: Boolean = true,
+    /** The order comments were last shown in (YouTube's «Top» or «Newest first»): the next video opens its comments in it. */
+    val commentSort: CommentSort = CommentSort.TOP,
     /**
      * The captions last chosen in the player (a subtitle language code, such as "ar" or "en"), shown on every video that has them;
      * null: off. Choosing in the player changes it.
@@ -128,6 +133,10 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
 
     suspend fun setShowShorts(enabled: Boolean) = store.edit { it[SHOW_SHORTS] = enabled }.let {}
 
+    suspend fun setShowComments(enabled: Boolean) = store.edit { it[SHOW_COMMENTS] = enabled }.let {}
+
+    suspend fun setCommentSort(sort: CommentSort) = store.edit { it[COMMENT_SORT] = sort.name }.let {}
+
     /** The captions' language, or null for none. */
     suspend fun setSubtitleLanguage(language: String?) = store.edit {
         val code = language?.trim()
@@ -158,10 +167,17 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
     /** Shorts: shown. */
     suspend fun resetShorts() = store.edit { it.remove(SHOW_SHORTS) }.let {}
 
+    /** Comments: shown, in YouTube's «Top» order. */
+    suspend fun resetComments() = store.edit {
+        it.remove(SHOW_COMMENTS)
+        it.remove(COMMENT_SORT)
+    }.let {}
+
     suspend fun resetAll() = store.edit {
-        for (key in listOf(LANGUAGE, THEME, DEFAULT_QUALITY, DOWNLOAD_QUALITY, SPONSORBLOCK_ENABLED, BACKGROUND_PLAYBACK, PICTURE_IN_PICTURE, SHOW_SHORTS)) {
+        for (key in listOf(LANGUAGE, THEME, DEFAULT_QUALITY, DOWNLOAD_QUALITY, SPONSORBLOCK_ENABLED, BACKGROUND_PLAYBACK, PICTURE_IN_PICTURE, SHOW_SHORTS, SHOW_COMMENTS)) {
             it.remove(key)
         }
+        it.remove(COMMENT_SORT)
         it.remove(SPONSORBLOCK_CATEGORIES)
         it.remove(SUBTITLE_LANGUAGE)
     }.let {}
@@ -180,6 +196,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             backgroundPlayback = this[BACKGROUND_PLAYBACK] ?: defaults.backgroundPlayback,
             pictureInPicture = this[PICTURE_IN_PICTURE] ?: defaults.pictureInPicture,
             showShorts = this[SHOW_SHORTS] ?: defaults.showShorts,
+            showComments = this[SHOW_COMMENTS] ?: defaults.showComments,
+            commentSort = this[COMMENT_SORT]?.let { name -> CommentSort.entries.firstOrNull { it.name == name } } ?: defaults.commentSort,
             subtitleLanguage = this[SUBTITLE_LANGUAGE]?.takeIf { it.isNotBlank() } ?: defaults.subtitleLanguage,
         )
     }
@@ -194,6 +212,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         private val BACKGROUND_PLAYBACK = booleanPreferencesKey("background_playback")
         private val PICTURE_IN_PICTURE = booleanPreferencesKey("picture_in_picture")
         private val SHOW_SHORTS = booleanPreferencesKey("show_shorts")
+        private val SHOW_COMMENTS = booleanPreferencesKey("show_comments")
+        private val COMMENT_SORT = stringPreferencesKey("comment_sort")
         private val SUBTITLE_LANGUAGE = stringPreferencesKey("subtitle_language")
         private val FEED_REFRESHED_AT = longPreferencesKey("feed_refreshed_at")
 

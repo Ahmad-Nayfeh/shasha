@@ -31,7 +31,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -40,6 +39,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -86,11 +86,8 @@ fun SearchScreen(
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = remember { FocusRequester() }
 
-    // A fresh search tab is ready to type in.
-    LaunchedEffect(Unit) {
-        if (submitted == null) focus.requestFocus()
-    }
-
+    // Opening the tab does not focus the field (and so does not pop the keyboard up over the recent searches): the keyboard
+    // comes when the viewer taps the field. Only «Clear» puts the focus back in it, since the viewer is typing then.
     Column(Modifier.fillMaxSize()) {
         TextField(
             value = query,
@@ -100,6 +97,7 @@ fun SearchScreen(
                 .statusBarsPadding()
                 .padding(horizontal = 12.dp, vertical = 8.dp)
                 .focusRequester(focus)
+                .testTag(SEARCH_FIELD_TAG)
                 .onFocusChanged { if (it.isFocused) vm.startEditing() },
             singleLine = true,
             shape = CircleShape,
@@ -145,6 +143,9 @@ fun SearchScreen(
         }
     }
 }
+
+/** The search field, for the tests. */
+internal const val SEARCH_FIELD_TAG = "search_field"
 
 private fun filterLabel(filter: SearchFilter): Int = when (filter) {
     SearchFilter.ALL -> R.string.filter_all

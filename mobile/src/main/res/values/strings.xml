@@ -145,6 +145,10 @@
     <string name="skip_undo">Undo</string>
     <string name="player_zoom_fill">Zoomed to fill</string>
     <string name="player_zoom_fit">Original</string>
+    <string name="player_minimize">Minimize the player</string>
+    <string name="mini_player_expand">Open the video</string>
+    <string name="mini_player_close">Close the player</string>
+    <string name="shorts_settings">Settings</string>
     <string name="watch_related">Related videos</string>
     <string name="watch_playlist">Playlist</string>
 
@@ -225,6 +229,25 @@
     <string name="settings_shorts">Shorts</string>
     <string name="settings_shorts_show">Show Shorts</string>
     <string name="settings_shorts_hint">Short vertical videos: a row on Home and in search, a tab on a channel\'s page, and a place among the suggestions. Swipe up for the next one.</string>
+    <string name="settings_comments">Comments</string>
+    <string name="settings_comments_show">Show comments</string>
+    <string name="settings_comments_hint">Under every video, and a button in the Shorts viewer. Off hides them entirely.</string>
+    <string name="comments_title">Comments</string>
+    <string name="comments_count">Comments · %1$s</string>
+    <string name="comments_sort_top">Top</string>
+    <string name="comments_sort_newest">Newest first</string>
+    <string name="comments_disabled">Comments are turned off for this video.</string>
+    <string name="comments_empty">No comments yet.</string>
+    <string name="comments_error">The comments could not be loaded.</string>
+    <string name="comments_pinned">Pinned</string>
+    <string name="comments_hearted">Hearted by the creator</string>
+    <string name="comments_edited">(edited)</string>
+    <string name="comments_show_replies">%1$s replies</string>
+    <string name="comments_show_reply">1 reply</string>
+    <string name="comments_hide_replies">Hide replies</string>
+    <string name="comments_more_replies">More replies</string>
+    <string name="comments_open">Show the comments</string>
+    <string name="comments_likes">%1$s likes</string>
     <string name="settings_download_quality">Download quality</string>
     <string name="settings_download_quality_hint">The download sheet marks the best quality the video has up to this one.</string>
     <string name="settings_sponsorblock">SponsorBlock</string>

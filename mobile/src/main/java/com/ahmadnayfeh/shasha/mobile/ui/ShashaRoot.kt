@@ -9,7 +9,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import android.graphics.Rect
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -29,17 +34,24 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -51,7 +63,7 @@ import androidx.navigation.toRoute
 import com.ahmadnayfeh.shasha.mobile.AppContainer
 import com.ahmadnayfeh.shasha.mobile.LaunchRequest
 import com.ahmadnayfeh.shasha.mobile.R
-import com.ahmadnayfeh.shasha.mobile.data.watchUrl
+import com.ahmadnayfeh.shasha.mobile.data.shareUrl
 import com.ahmadnayfeh.shasha.mobile.ui.about.AboutScreen
 import com.ahmadnayfeh.shasha.mobile.ui.channel.ChannelScreen
 import com.ahmadnayfeh.shasha.mobile.ui.components.LocalSavedPlaylistIds
@@ -81,7 +93,6 @@ import com.ahmadnayfeh.shasha.mobile.ui.nav.SubscriptionsRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.UpdateRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.UserPlaylistRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.WatchLaterRoute
-import com.ahmadnayfeh.shasha.mobile.ui.nav.WatchRoute
 import com.ahmadnayfeh.shasha.mobile.ui.playlist.PlaylistPickerSheet
 import com.ahmadnayfeh.shasha.mobile.ui.playlist.PlaylistScreen
 import com.ahmadnayfeh.shasha.mobile.ui.playlist.UserPlaylistScreen
@@ -91,7 +102,15 @@ import com.ahmadnayfeh.shasha.mobile.ui.shorts.ShortsScreen
 import com.ahmadnayfeh.shasha.mobile.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.mobile.ui.theme.isDark
 import com.ahmadnayfeh.shasha.mobile.ui.update.UpdateScreen
+import com.ahmadnayfeh.shasha.mobile.player.PlayerUiState
+import com.ahmadnayfeh.shasha.mobile.ui.comments.CommentsViewModel
+import com.ahmadnayfeh.shasha.mobile.ui.watch.MiniPlayer
+import com.ahmadnayfeh.shasha.mobile.ui.watch.NowPlaying
+import com.ahmadnayfeh.shasha.mobile.ui.watch.WatchEvent
+import com.ahmadnayfeh.shasha.mobile.ui.watch.WatchRequest
 import com.ahmadnayfeh.shasha.mobile.ui.watch.WatchScreen
+import com.ahmadnayfeh.shasha.mobile.ui.watch.pictureInPictureOnLeave
+import com.ahmadnayfeh.shasha.mobile.ui.watch.rememberWatchViewModel
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
@@ -151,32 +170,50 @@ fun ShashaRoot(container: AppContainer) {
         val stack by navController.currentBackStack.collectAsStateWithLifecycle()
         val currentTab = stack.lastOrNull { tabOf(it.destination) != null }?.destination?.let(::tabOf)
         val reselections = remember { MutableSharedFlow<KClass<*>>(extraBufferCapacity = 1) }
+        // The app's one video, above the navigation: the watch page expanded, or the mini player above the bar.
+        val nowPlaying: NowPlaying = viewModel(factory = NowPlaying.factory(container))
+        val session = nowPlaying.session
+        val bridge = LocalActivityBridge.current
+        val inPip by bridge.inPictureInPicture.collectAsStateWithLifecycle()
+        val playerState by container.player.state.collectAsStateWithLifecycle()
+        // Where the video is in the window (the watch page's picture, or the mini player's): picture-in-picture grows out of it.
+        var videoBounds by remember { mutableStateOf<Rect?>(null) }
+        // The floating window shows the watch page's picture, and the page is what the viewer comes back to from it.
+        LaunchedEffect(inPip) { if (inPip) nowPlaying.expand() }
+        val watchShown = session != null && (nowPlaying.expanded || inPip)
+        val miniShown = session != null && !watchShown
+        val onShorts = destination?.hasRoute(ShortsRoute::class) == true
+        // The Shorts viewer takes the player for itself (also when the viewer comes back to it from a detour): the video goes.
+        LaunchedEffect(onShorts) { if (onShorts) nowPlaying.dismiss() }
 
         /**
          * The Shorts viewer, on [videos] (the list the viewer opens from: a channel's Shorts, the Home's row, the search results'),
-         * at [index]. [replace]: it takes the place of the player screen it was opened from.
+         * at [index]. It takes the player over: the video that was open (expanded or in the mini player) goes.
          */
-        fun openShorts(videos: List<VideoItem>, index: Int, replace: Boolean = false) {
+        fun openShorts(videos: List<VideoItem>, index: Int) {
             val short = videos.getOrNull(index) ?: return
             val queueId = container.shortsQueues.put(videos)
-            navController.navigate(ShortsRoute(short.videoId, queueId)) {
-                if (replace) popUpTo<WatchRoute> { inclusive = true }
-                launchSingleTop = true
-            }
+            nowPlaying.dismiss()
+            navController.navigate(ShortsRoute(short.videoId, queueId)) { launchSingleTop = true }
         }
 
-        fun openVideo(video: VideoItem, playlistId: String? = null, replace: Boolean = false) {
+        /**
+         * Opens [request] on the watch page, over whatever page the viewer is on, in place of the video that was open ([expand]
+         * false: in the mini player, where the video before was). The Shorts viewer, when it is in front, makes way for it.
+         */
+        fun play(request: WatchRequest, expand: Boolean = true) {
+            if (navController.currentDestination?.hasRoute(ShortsRoute::class) == true) navController.popBackStack()
+            nowPlaying.open(request, expand)
+        }
+
+        fun openVideo(video: VideoItem, playlistId: String? = null, expand: Boolean = true) {
             // A Short has a player of its own, wherever it was tapped (a related video, a list that knows no better): its own queue of one.
             if (video.isShortForm && playlistId == null && settings.showShorts) {
-                openShorts(listOf(video), 0, replace)
+                openShorts(listOf(video), 0)
                 return
             }
             container.player.remember(video)
-            navController.navigate(WatchRoute(video.videoId, playlistId)) {
-                // The next video replaces this one: back goes to where the viewer came from, not through every video.
-                if (replace) popUpTo<WatchRoute> { inclusive = true }
-                launchSingleTop = true
-            }
+            play(WatchRequest(video.videoId, playlistId), expand)
         }
 
         /**
@@ -209,8 +246,12 @@ fun ShashaRoot(container: AppContainer) {
             }
         }
 
-        /** The channel's page with the name and picture the opener knows: it shows them when YouTube's own page for the channel cannot be read. */
+        /**
+         * The channel's page with the name and picture the opener knows: it shows them when YouTube's own page for the channel cannot be
+         * read. Opened from the watch page, the video goes on in the mini player under it.
+         */
         fun openChannelPage(channel: ChannelItem) {
+            nowPlaying.collapse()
             navController.navigate(ChannelRoute.of(channel))
         }
 
@@ -234,7 +275,7 @@ fun ShashaRoot(container: AppContainer) {
                 override fun share(video: VideoItem) {
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain")
                         .putExtra(Intent.EXTRA_SUBJECT, video.title)
-                        .putExtra(Intent.EXTRA_TEXT, "${video.title}\n${watchUrl(video.videoId)}")
+                        .putExtra(Intent.EXTRA_TEXT, "${video.title}\n${shareUrl(video)}")
                     runCatching { context.startActivity(Intent.createChooser(send, null)) }
                 }
 
@@ -255,8 +296,10 @@ fun ShashaRoot(container: AppContainer) {
         LaunchedEffect(request) {
             val r = request ?: return@LaunchedEffect
             container.launch.value = null
+            // Another page asked for: the video that is open goes on in the mini player.
+            if (r !is LaunchRequest.Video) nowPlaying.collapse()
             when (r) {
-                is LaunchRequest.Video -> navController.navigate(WatchRoute(r.id, r.playlistId, r.startSeconds ?: 0))
+                is LaunchRequest.Video -> play(WatchRequest(r.id, r.playlistId, r.startSeconds ?: 0))
                 is LaunchRequest.Playlist -> navController.navigate(PlaylistRoute(r.id))
                 is LaunchRequest.Channel -> navController.navigate(ChannelRoute(r.raw))
                 is LaunchRequest.Search -> openTab(SearchRoute(r.query))
@@ -271,132 +314,183 @@ fun ShashaRoot(container: AppContainer) {
             LocalSavedPlaylistIds provides savedPlaylistIds,
             LocalTabReselections provides reselections,
         ) {
-            Scaffold(
-                contentWindowInsets = WindowInsets(0, 0, 0, 0),
-                snackbarHost = { SnackbarHost(snackbar) },
-                bottomBar = {
-                    // The player screen and the Shorts viewer are the whole screen.
-                    if (destination?.hasRoute(WatchRoute::class) != true && destination?.hasRoute(ShortsRoute::class) != true) {
-                        NavigationBar {
-                            for (tab in tabs) {
-                                NavigationBarItem(
-                                    selected = currentTab === tab,
-                                    onClick = { onTabTapped(tab) },
-                                    icon = { Icon(tab.icon, contentDescription = null) },
-                                    label = { Text(stringResource(tab.label)) },
-                                )
-                            }
+            val watchVm = session?.let { key(it) { rememberWatchViewModel(container, it) } }
+            // The video's comments live as long as the video (a downloaded file has none); the setting can take them away.
+            val commentsVm = session?.takeIf { settings.showComments && it.request.downloadId < 0 }?.let { s ->
+                key(s) { viewModel<CommentsViewModel>(viewModelStoreOwner = s, key = "comments", factory = CommentsViewModel.factory(container, s.request.videoId)) }
+            }
+            if (session != null && watchVm != null) {
+                key(session) {
+                    // The app comes back to the front: if the player was let go meanwhile, the open video plays again.
+                    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { watchVm.onShown() }
+                    // Playlists go on by themselves, also in the mini player.
+                    LaunchedEffect(watchVm) {
+                        watchVm.eventFlow.collect { event ->
+                            if (event is WatchEvent.PlayNext) openVideo(event.video, watchVm.playlistId, expand = nowPlaying.expanded)
                         }
                     }
-                },
-            ) { padding ->
-                // Short fades: Navigation's own (0.7 s) made every tap on a tab or a video feel slow.
-                NavHost(
-                    navController,
-                    startDestination = HomeRoute,
-                    modifier = Modifier.padding(padding),
-                    enterTransition = { fadeIn(tween(NAV_FADE_IN_MS)) },
-                    exitTransition = { fadeOut(tween(NAV_FADE_OUT_MS)) },
-                    popEnterTransition = { fadeIn(tween(NAV_FADE_IN_MS)) },
-                    popExitTransition = { fadeOut(tween(NAV_FADE_OUT_MS)) },
-                ) {
-                    composable<HomeRoute> {
-                        HomeScreen(
-                            container,
-                            onOpenVideo = { openVideo(it) },
-                            onOpenChannel = { openChannelPage(it) },
-                            onOpenShorts = { videos, index -> openShorts(videos, index) },
-                            onSearch = { openTab(SearchRoute()) },
-                        )
+                }
+                // Leaving the app while the video plays (on the watch page or in the mini player) turns it into a floating window. The
+                // window's parameters are kept current all along (not set when the viewer leaves, which is too late for Android 12's
+                // automatic entry); the video's going takes them back.
+                val autoEnterPip = pictureInPictureOnLeave(playerState, settings.pictureInPicture)
+                LaunchedEffect(autoEnterPip, playerState.aspectRatio, videoBounds) {
+                    bridge.setPictureInPicture(autoEnter = autoEnterPip, aspect = playerState.aspectRatio, sourceRect = videoBounds)
+                }
+                DisposableEffect(Unit) {
+                    onDispose { bridge.setPictureInPicture(autoEnter = false, aspect = PlayerUiState.DEFAULT_ASPECT, sourceRect = null) }
+                }
+                // The screen stays on while the video plays.
+                val view = LocalView.current
+                DisposableEffect(playerState.isPlaying) {
+                    view.keepScreenOn = playerState.isPlaying
+                    onDispose { view.keepScreenOn = false }
+                }
+            }
+
+            Box(Modifier.fillMaxSize()) {
+                Scaffold(
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    // Over the watch page while it is up (below), else above the bar.
+                    snackbarHost = { if (!watchShown) SnackbarHost(snackbar) },
+                    bottomBar = {
+                        // The watch page and the Shorts viewer are the whole screen; the mini player sits on the bar.
+                        if (!watchShown && !onShorts) Column {
+                            if (miniShown && session != null) {
+                                MiniPlayer(
+                                    state = playerState,
+                                    player = container.player.player,
+                                    videoId = session.request.videoId,
+                                    onExpand = nowPlaying::expand,
+                                    onTogglePlay = container.player::togglePlay,
+                                    onRetry = container.player::retry,
+                                    onClose = nowPlaying::close,
+                                    onVideoBounds = { videoBounds = it },
+                                )
+                            }
+                            NavigationBar {
+                                for (tab in tabs) {
+                                    NavigationBarItem(
+                                        selected = currentTab === tab,
+                                        onClick = { onTabTapped(tab) },
+                                        icon = { Icon(tab.icon, contentDescription = null) },
+                                        label = { Text(stringResource(tab.label)) },
+                                    )
+                                }
+                            }
+                        }
+                    },
+                ) { padding ->
+                    // Short fades: Navigation's own (0.7 s) made every tap on a tab or a video feel slow.
+                    NavHost(
+                        navController,
+                        startDestination = HomeRoute,
+                        // Under the watch page the pages stay as the viewer left them, out of reach (and out of the accessibility tree).
+                        modifier = Modifier.padding(padding).then(if (watchShown) Modifier.clearAndSetSemantics {} else Modifier),
+                        enterTransition = { fadeIn(tween(NAV_FADE_IN_MS)) },
+                        exitTransition = { fadeOut(tween(NAV_FADE_OUT_MS)) },
+                        popEnterTransition = { fadeIn(tween(NAV_FADE_IN_MS)) },
+                        popExitTransition = { fadeOut(tween(NAV_FADE_OUT_MS)) },
+                    ) {
+                        composable<HomeRoute> {
+                            HomeScreen(
+                                container,
+                                onOpenVideo = { openVideo(it) },
+                                onOpenChannel = { openChannelPage(it) },
+                                onOpenShorts = { videos, index -> openShorts(videos, index) },
+                                onSearch = { openTab(SearchRoute()) },
+                            )
+                        }
+                        composable<SearchRoute> { entry ->
+                            SearchScreen(
+                                container,
+                                initialQuery = entry.toRoute<SearchRoute>().query,
+                                onOpenVideo = { openVideo(it) },
+                                onOpenChannel = { openChannelPage(it) },
+                                onOpenPlaylist = { navController.navigate(PlaylistRoute(it)) },
+                                onOpenShorts = { videos, index -> openShorts(videos, index) },
+                            )
+                        }
+                        composable<LibraryRoute> {
+                            LibraryScreen(
+                                container,
+                                onOpenDownloads = { navController.navigate(DownloadsRoute) },
+                                onOpenHistory = { navController.navigate(HistoryRoute) },
+                                onOpenWatchLater = { navController.navigate(WatchLaterRoute) },
+                                onOpenSubscriptions = { navController.navigate(SubscriptionsRoute) },
+                                onOpenPlaylist = { navController.navigate(UserPlaylistRoute(it)) },
+                                onOpenSavedPlaylist = { navController.navigate(PlaylistRoute(it)) },
+                            )
+                        }
+                        composable<SettingsRoute> {
+                            SettingsScreen(container, onOpenAbout = { navController.navigate(AboutRoute) }, onOpenUpdate = { navController.navigate(UpdateRoute) })
+                        }
+                        composable<ChannelRoute> { entry ->
+                            ChannelScreen(
+                                container,
+                                route = entry.toRoute<ChannelRoute>(),
+                                onBack = { navController.popBackStack() },
+                                onOpenVideo = { openVideo(it) },
+                                onOpenPlaylist = { navController.navigate(PlaylistRoute(it)) },
+                                onOpenShorts = { videos, index -> openShorts(videos, index) },
+                            )
+                        }
+                        composable<PlaylistRoute> { entry ->
+                            PlaylistScreen(
+                                container,
+                                playlistId = entry.toRoute<PlaylistRoute>().playlistId,
+                                onBack = { navController.popBackStack() },
+                                onOpenVideo = { video, playlistId -> openVideo(video, playlistId) },
+                            )
+                        }
+                        composable<UserPlaylistRoute> { entry ->
+                            UserPlaylistScreen(
+                                container,
+                                playlistId = entry.toRoute<UserPlaylistRoute>().playlistId,
+                                onBack = { navController.popBackStack() },
+                                onPlay = { video, playlistId -> openVideo(video, playlistId) },
+                            )
+                        }
+                        composable<ShortsRoute> { entry ->
+                            ShortsScreen(
+                                container,
+                                route = entry.toRoute<ShortsRoute>(),
+                                onBack = { navController.popBackStack() },
+                                onOpenChannel = { openChannelPage(it) },
+                            )
+                        }
+                        composable<HistoryRoute> { HistoryScreen(container, onBack = { navController.popBackStack() }, onOpenVideo = { openVideo(it) }) }
+                        composable<WatchLaterRoute> { WatchLaterScreen(container, onBack = { navController.popBackStack() }, onOpenVideo = { openVideo(it) }) }
+                        composable<SubscriptionsRoute> {
+                            SubscriptionsScreen(
+                                container,
+                                onBack = { navController.popBackStack() },
+                                onOpenChannel = { openChannelPage(it) },
+                                onSearch = { openTab(SearchRoute()) },
+                            )
+                        }
+                        composable<DownloadsRoute> {
+                            DownloadsScreen(
+                                container,
+                                onBack = { navController.popBackStack() },
+                                onPlay = { download -> play(WatchRequest(videoId = download.videoId, downloadId = download.id)) },
+                            )
+                        }
+                        composable<AboutRoute> { AboutScreen(onBack = { navController.popBackStack() }) }
+                        composable<UpdateRoute> { UpdateScreen(container, onBack = { navController.popBackStack() }) }
                     }
-                    composable<SearchRoute> { entry ->
-                        SearchScreen(
-                            container,
-                            initialQuery = entry.toRoute<SearchRoute>().query,
-                            onOpenVideo = { openVideo(it) },
-                            onOpenChannel = { openChannelPage(it) },
-                            onOpenPlaylist = { navController.navigate(PlaylistRoute(it)) },
-                            onOpenShorts = { videos, index -> openShorts(videos, index) },
-                        )
-                    }
-                    composable<LibraryRoute> {
-                        LibraryScreen(
-                            container,
-                            onOpenDownloads = { navController.navigate(DownloadsRoute) },
-                            onOpenHistory = { navController.navigate(HistoryRoute) },
-                            onOpenWatchLater = { navController.navigate(WatchLaterRoute) },
-                            onOpenSubscriptions = { navController.navigate(SubscriptionsRoute) },
-                            onOpenPlaylist = { navController.navigate(UserPlaylistRoute(it)) },
-                            onOpenSavedPlaylist = { navController.navigate(PlaylistRoute(it)) },
-                        )
-                    }
-                    composable<SettingsRoute> {
-                        SettingsScreen(container, onOpenAbout = { navController.navigate(AboutRoute) }, onOpenUpdate = { navController.navigate(UpdateRoute) })
-                    }
-                    composable<ChannelRoute> { entry ->
-                        ChannelScreen(
-                            container,
-                            route = entry.toRoute<ChannelRoute>(),
-                            onBack = { navController.popBackStack() },
-                            onOpenVideo = { openVideo(it) },
-                            onOpenPlaylist = { navController.navigate(PlaylistRoute(it)) },
-                            onOpenShorts = { videos, index -> openShorts(videos, index) },
-                        )
-                    }
-                    composable<PlaylistRoute> { entry ->
-                        PlaylistScreen(
-                            container,
-                            playlistId = entry.toRoute<PlaylistRoute>().playlistId,
-                            onBack = { navController.popBackStack() },
-                            onOpenVideo = { video, playlistId -> openVideo(video, playlistId) },
-                        )
-                    }
-                    composable<UserPlaylistRoute> { entry ->
-                        UserPlaylistScreen(
-                            container,
-                            playlistId = entry.toRoute<UserPlaylistRoute>().playlistId,
-                            onBack = { navController.popBackStack() },
-                            onPlay = { video, playlistId -> openVideo(video, playlistId) },
-                        )
-                    }
-                    composable<ShortsRoute> { entry ->
-                        ShortsScreen(
-                            container,
-                            route = entry.toRoute<ShortsRoute>(),
-                            onBack = { navController.popBackStack() },
-                            onOpenChannel = { openChannelPage(it) },
-                        )
-                    }
-                    composable<WatchRoute> { entry ->
-                        WatchScreen(
-                            container,
-                            route = entry.toRoute<WatchRoute>(),
-                            onBack = { navController.popBackStack() },
-                            onOpenVideo = { video, playlistId -> openVideo(video, playlistId, replace = true) },
-                            onOpenChannel = { openChannelPage(it) },
-                        )
-                    }
-                    composable<HistoryRoute> { HistoryScreen(container, onBack = { navController.popBackStack() }, onOpenVideo = { openVideo(it) }) }
-                    composable<WatchLaterRoute> { WatchLaterScreen(container, onBack = { navController.popBackStack() }, onOpenVideo = { openVideo(it) }) }
-                    composable<SubscriptionsRoute> {
-                        SubscriptionsScreen(
-                            container,
-                            onBack = { navController.popBackStack() },
-                            onOpenChannel = { openChannelPage(it) },
-                            onSearch = { openTab(SearchRoute()) },
-                        )
-                    }
-                    composable<DownloadsRoute> {
-                        DownloadsScreen(
-                            container,
-                            onBack = { navController.popBackStack() },
-                            onPlay = { download ->
-                                navController.navigate(WatchRoute(videoId = download.videoId, downloadId = download.id))
-                            },
-                        )
-                    }
-                    composable<AboutRoute> { AboutScreen(onBack = { navController.popBackStack() }) }
-                    composable<UpdateRoute> { UpdateScreen(container, onBack = { navController.popBackStack() }) }
+                }
+                if (watchShown && watchVm != null) {
+                    WatchScreen(
+                        container,
+                        vm = watchVm,
+                        onCollapse = nowPlaying::collapse,
+                        onOpenVideo = { video, playlistId -> openVideo(video, playlistId) },
+                        onOpenChannel = { openChannelPage(it) },
+                        onVideoBounds = { videoBounds = it },
+                        comments = commentsVm,
+                    )
+                    SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
                 }
             }
 

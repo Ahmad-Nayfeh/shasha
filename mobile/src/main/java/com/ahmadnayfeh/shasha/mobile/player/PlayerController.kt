@@ -62,8 +62,8 @@ import kotlin.math.roundToInt
  * shows ([state]). The [PlaybackService] gives the same player a media session and a notification.
  *
  * The same player also serves the Shorts viewer ([ShortsPlayer], [PlaybackMode.SHORT]): what differs for a Short is listed in
- * [PlaybackMode] and kept to the few places that need it, so the extraction, the decoder-failure retry and the history are the
- * player screen's own.
+ * [PlaybackMode] and kept to the few places that need it, so the extraction, the decoder-failure retry, the history, the media
+ * session (background sound, picture-in-picture) and the quality, speed and captions are the player screen's own.
  *
  * Main thread only (it owns an ExoPlayer). Failures never throw: they become [PlayerUiState.error].
  */
@@ -132,7 +132,10 @@ class PlayerController(
     /** How long the Short on screen has played (in the ticker's steps): it enters the history once this reaches [SHORT_WATCHED_MS]. */
     private var shortPlayedMs = 0L
 
-    /** A Short was playing when the app was left (it paused): it plays on when the viewer comes back. */
+    /**
+     * A Short was playing when the app was left and the sound is not to go on in the background (Settings): it paused, and it
+     * plays on when the viewer comes back.
+     */
     private var resumeShortOnStart = false
 
     /** The streams of the Short after the current one, being looked up ahead ([prefetch]). */
@@ -225,6 +228,9 @@ class PlayerController(
         stopTickers()
         // Under the mode of what was playing: a video leaves its resume point behind, a Short does not.
         saveProgressNow()
+        // Into the Shorts from something else: they start at the normal speed (a speed chosen for a long video does not follow the
+        // viewer into them); from one Short to the next, the speed the viewer chose in the viewer stays.
+        val enteringShorts = newMode == PlaybackMode.SHORT && mode != PlaybackMode.SHORT
         mode = newMode
         if (created) {
             player.stop()
@@ -249,9 +255,13 @@ class PlayerController(
         stalledMs = 0
         resumeShortOnStart = false
         val item = preview ?: placeholder(videoId)
-        _state.value = PlayerUiState(phase = PlayerPhase.LOADING, video = item, speed = _state.value.speed)
-        // A Short is not played on in the background (the viewer leaves the app and it waits): no media notification for it.
-        if (mode == PlaybackMode.VIDEO) PlaybackService.start(context)
+        // The shape of the picture until the player has seen it: a Short is upright (9:16) from its first frame, so neither its frame
+        // nor the picture-in-picture window starts wide and turns upright a moment later; a video is 16:9.
+        val aspect = if (mode == PlaybackMode.SHORT) PlayerUiState.SHORT_ASPECT else PlayerUiState.DEFAULT_ASPECT
+        _state.value = PlayerUiState(phase = PlayerPhase.LOADING, video = item, speed = _state.value.speed, aspectRatio = aspect)
+        if (enteringShorts && _state.value.speed != 1f) setSpeed(1f)
+        // A Short plays on in the background like a video (the same media session and notification).
+        PlaybackService.start(context)
         val newSkip = SkipController(undoAllowed = true, clock = elapsedClock)
         skip = newSkip
         noticeJob?.cancel()
@@ -264,8 +274,8 @@ class PlayerController(
             try {
                 if (afterMs > 0) delay(afterMs)
                 val details = streamDetails(videoId, reload = isReload)
-                // The captions the viewer chose last, when this video has them in that language (a Short has none).
-                val captions = if (mode == PlaybackMode.VIDEO && !details.video.isLive) details.subtitles.perLanguage() else emptyList()
+                // The captions the viewer chose last, when this video (or Short) has them in that language.
+                val captions = if (!details.video.isLive) details.subtitles.perLanguage() else emptyList()
                 val subtitle = captions.matching(settings().subtitleLanguage)?.languageCode
                 val source = mediaSources.create(details, maxHeight = 0, subtitleLanguage = subtitle, safe = decoderRetry.safe)
                 sourceSubtitle = subtitle
@@ -487,19 +497,15 @@ class PlayerController(
     // --- the app going to and from the background -----------------------------------------------------------------
 
     /**
-     * The screen is no longer visible. Playing on as audio is the default (Settings); without it the video pauses.
-     * While the sound plays on, the picture is switched off so it does not cost data and battery.
+     * The screen is no longer visible. Playing on as audio is the default (Settings); without it the video pauses (a Short too,
+     * which then plays on when the viewer comes back to it). While the sound plays on, the picture is switched off so it does not
+     * cost data and battery. A video and a Short are alike here.
      */
     fun onAppStopped() {
         if (!created || _state.value.phase == PlayerPhase.IDLE) return
         val p = player
-        if (mode == PlaybackMode.SHORT) {
-            // A Short does not play on as audio: it waits where it is, and plays again when the viewer comes back to it.
-            resumeShortOnStart = p.playWhenReady
-            p.pause()
-            return
-        }
         if (!settings().backgroundPlayback) {
+            resumeShortOnStart = mode == PlaybackMode.SHORT && p.playWhenReady
             p.pause()
             return
         }
@@ -633,13 +639,9 @@ class PlayerController(
         }
     }
 
-    /**
-     * What differs on the player itself for [playMode], set before each media item: a Short loops, and plays at the normal speed
-     * (the Shorts viewer has no speed control, so a speed chosen for a long video must not follow the viewer into it).
-     */
+    /** What differs on the player itself for [playMode], set before each media item: a Short loops. */
     private fun prepareFor(playMode: PlaybackMode) {
         player.repeatMode = if (playMode == PlaybackMode.SHORT) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
-        if (playMode == PlaybackMode.SHORT && _state.value.speed != 1f) setSpeed(1f)
     }
 
     private fun recordHistoryOnce() {

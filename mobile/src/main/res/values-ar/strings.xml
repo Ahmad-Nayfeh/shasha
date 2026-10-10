@@ -169,6 +169,10 @@
     <string name="skip_undo">تراجع</string>
     <string name="player_zoom_fill">تم التكبير لملء الشاشة</string>
     <string name="player_zoom_fit">الحجم الأصلي</string>
+    <string name="player_minimize">تصغير المشغّل</string>
+    <string name="mini_player_expand">فتح الفيديو</string>
+    <string name="mini_player_close">إغلاق المشغّل</string>
+    <string name="shorts_settings">الإعدادات</string>
     <string name="watch_related">فيديوهات مقترحة</string>
     <string name="watch_playlist">قائمة التشغيل</string>
 
@@ -249,6 +253,25 @@
     <string name="settings_shorts">Shorts</string>
     <string name="settings_shorts_show">إظهار Shorts</string>
     <string name="settings_shorts_hint">مقاطع عمودية قصيرة: صف في الرئيسية ونتائج البحث، وتبويب في صفحة القناة، ومكان بين المقترحات. اسحب للأعلى للانتقال إلى التالي.</string>
+    <string name="settings_comments">التعليقات</string>
+    <string name="settings_comments_show">إظهار التعليقات</string>
+    <string name="settings_comments_hint">تحت كل فيديو، وزرّ في عارض القصيرة. إيقافها يخفيها تماماً.</string>
+    <string name="comments_title">التعليقات</string>
+    <string name="comments_count">التعليقات · %1$s</string>
+    <string name="comments_sort_top">الأبرز</string>
+    <string name="comments_sort_newest">الأحدث أولاً</string>
+    <string name="comments_disabled">التعليقات مغلقة على هذا الفيديو.</string>
+    <string name="comments_empty">لا تعليقات بعد.</string>
+    <string name="comments_error">تعذّر تحميل التعليقات.</string>
+    <string name="comments_pinned">مثبّت</string>
+    <string name="comments_hearted">أعجب صاحبَ القناة</string>
+    <string name="comments_edited">(معدَّل)</string>
+    <string name="comments_show_replies">%1$s ردود</string>
+    <string name="comments_show_reply">رد واحد</string>
+    <string name="comments_hide_replies">إخفاء الردود</string>
+    <string name="comments_more_replies">ردود أخرى</string>
+    <string name="comments_open">عرض التعليقات</string>
+    <string name="comments_likes">%1$s إعجاب</string>
     <string name="settings_download_quality">جودة التنزيل</string>
     <string name="settings_download_quality_hint">تُظهر قائمة التنزيل أفضل جودة في الفيديو حتى هذا الحد.</string>
     <string name="settings_sponsorblock">SponsorBlock</string>

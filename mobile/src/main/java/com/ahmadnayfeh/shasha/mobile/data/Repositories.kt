@@ -30,6 +30,12 @@ import kotlinx.coroutines.sync.withPermit
 /** The watch page of a video id: what a [VideoItem] built from stored data points at. */
 fun watchUrl(videoId: String) = "https://www.youtube.com/watch?v=$videoId"
 
+/** A Short's own link: it opens in YouTube's Shorts player (and in this app's Shorts viewer). */
+fun shortsUrl(videoId: String) = "https://www.youtube.com/shorts/$videoId"
+
+/** The link a video is shared with: a Short's own (`/shorts/`), else the watch page's. */
+fun shareUrl(video: VideoItem) = if (video.isShortForm) shortsUrl(video.videoId) else watchUrl(video.videoId)
+
 // --- conversions between YouTube's items and what is stored --------------------------------------------------------
 
 fun FeedItemEntity.toVideoItem() = VideoItem(

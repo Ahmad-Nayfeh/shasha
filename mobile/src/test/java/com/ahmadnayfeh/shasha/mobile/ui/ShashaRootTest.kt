@@ -5,6 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasText
@@ -12,6 +14,7 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -21,6 +24,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.mobile.BuildConfig
 import com.ahmadnayfeh.shasha.mobile.MobileApp
 import com.ahmadnayfeh.shasha.mobile.container
+import com.ahmadnayfeh.shasha.mobile.ui.search.SEARCH_FIELD_TAG
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -72,6 +76,34 @@ class ShashaRootEnglishTest {
 
         compose.awaitText("Search videos and channels")
         compose.onNodeWithText("Search videos and channels").assertIsDisplayed()
+        // Not focused: the keyboard does not cover the page the button opened.
+        compose.onNodeWithTag(SEARCH_FIELD_TAG).assertIsNotFocused()
+    }
+
+    @Test
+    fun theSearchTabOpensWithoutTheKeyboard_aTapOnTheFieldBringsIt() {
+        compose.startApp()
+        compose.awaitText("No subscriptions yet")
+
+        compose.tab("Search").performClick()
+
+        // The page is there, and the field waits for the viewer: no focus, so no keyboard over the recent searches.
+        compose.awaitText("Search videos and channels")
+        compose.onNodeWithTag(SEARCH_FIELD_TAG).assertIsDisplayed().assertIsNotFocused()
+        compose.waitForIdle()
+        compose.onNodeWithTag(SEARCH_FIELD_TAG).assertIsNotFocused()
+
+        // Another tab and back: the Search tab opens unfocused again.
+        compose.tab("Library").performClick()
+        compose.awaitText("Watch later")
+        compose.tab("Search").performClick()
+        compose.awaitText("Search videos and channels")
+        compose.waitForIdle()
+        compose.onNodeWithTag(SEARCH_FIELD_TAG).assertIsNotFocused()
+
+        // A tap on the field is what focuses it (and brings the keyboard).
+        compose.onNodeWithTag(SEARCH_FIELD_TAG).performClick()
+        compose.onNodeWithTag(SEARCH_FIELD_TAG).assertIsFocused()
     }
 
     @Test
