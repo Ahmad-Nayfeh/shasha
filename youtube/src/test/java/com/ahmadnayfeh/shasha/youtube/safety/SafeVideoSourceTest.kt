@@ -5,6 +5,9 @@ import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.ChannelSort
 import com.ahmadnayfeh.shasha.youtube.ChannelTab
 import com.ahmadnayfeh.shasha.youtube.ChannelTabPage
+import com.ahmadnayfeh.shasha.youtube.Comment
+import com.ahmadnayfeh.shasha.youtube.CommentSort
+import com.ahmadnayfeh.shasha.youtube.CommentsPage
 import com.ahmadnayfeh.shasha.youtube.ItemsPage
 import com.ahmadnayfeh.shasha.youtube.PageKey
 import com.ahmadnayfeh.shasha.youtube.PlaybackHandle
@@ -311,6 +314,19 @@ class SafeVideoSourceTest {
         assertThat(thrown).isSameInstanceAs(fake.failure)
     }
 
+    @Test
+    fun commentsPassAsYouTubeGivesThem_noneIsFilteredOrHeldBack() = runBlocking<Unit> {
+        val comments = listOf(
+            Comment("c1", "Pole dance fan", null, null, "striptease classes are the best", "1 day ago", null, 3, 0, null),
+            Comment("c2", "Someone", null, null, "Nice video", "2 days ago", null, null, 1, PageKey("r")),
+        )
+        fake.commentsPage = CommentsPage(comments, PageKey("next"), totalCount = 2)
+
+        assertThat(source.comments("abcdefghijk", CommentSort.NEWEST, PageKey("p"))).isEqualTo(fake.commentsPage)
+        assertThat(source.commentReplies("abcdefghijk", PageKey("r"))).isEqualTo(fake.commentsPage)
+        assertThat(fake.calls).containsExactly("comments:abcdefghijk:NEWEST:p", "replies:abcdefghijk:r").inOrder()
+    }
+
     // ---- the guard ----
 
     @Test
@@ -340,8 +356,19 @@ class SafeVideoSourceTest {
         var tabPage = ChannelTabPage(emptyList(), null)
         var playlistsPage = ItemsPage(emptyList(), null)
         var recent = emptyList<VideoItem>()
+        var commentsPage = CommentsPage(emptyList(), null)
 
         override val extractorVersion = "v-test"
+
+        override suspend fun comments(videoId: String, sort: CommentSort, page: PageKey?): CommentsPage {
+            note("comments:$videoId:$sort:${page?.id}")
+            return commentsPage
+        }
+
+        override suspend fun commentReplies(videoId: String, page: PageKey): CommentsPage {
+            note("replies:$videoId:${page.id}")
+            return commentsPage
+        }
 
         private fun note(call: String) {
             calls += call

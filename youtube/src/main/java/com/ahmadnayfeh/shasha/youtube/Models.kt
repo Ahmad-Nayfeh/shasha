@@ -139,3 +139,47 @@ sealed interface YouTubeLink {
      */
     data class Channel(val raw: String) : YouTubeLink
 }
+
+/**
+ * The orders YouTube offers a video's comments in ([VideoSource.comments]): its own «Top comments» and «Newest first». YouTube
+ * has no «oldest first» for comments, so neither does this.
+ */
+enum class CommentSort { TOP, NEWEST }
+
+/**
+ * One comment, as YouTube shows it. [text] is plain text (links and mentions as their text). [publishedText] is YouTube's own
+ * rounded text ("3 days ago", in the extractor's language); [publishedAtEpochMs] is the time read from it, when it could be read
+ * (approximate, like every date YouTube rounds). [likeCount] is null where YouTube does not say. [replies] continues into the
+ * comment's replies ([VideoSource.commentReplies]) when it has any ([replyCount]).
+ */
+data class Comment(
+    val id: String,
+    val authorName: String,
+    val authorAvatarUrl: String?,
+    val authorChannelId: String?,
+    val text: String,
+    val publishedText: String?,
+    val publishedAtEpochMs: Long?,
+    val likeCount: Long?,
+    val replyCount: Int,
+    val replies: PageKey?,
+    val isPinned: Boolean = false,
+    /** The video's uploader gave the comment a heart. */
+    val isHearted: Boolean = false,
+    /** Written by the video's own channel. */
+    val isByUploader: Boolean = false,
+    val isAuthorVerified: Boolean = false,
+    val isEdited: Boolean = false,
+)
+
+/**
+ * One page of a video's comments (or of a comment's replies): the [comments], where the list continues ([next]; null at its end),
+ * whether the uploader turned comments off ([disabled]: then there are none and never will be), and how many there are in all
+ * when YouTube says ([totalCount], the first page only).
+ */
+data class CommentsPage(
+    val comments: List<Comment>,
+    val next: PageKey?,
+    val disabled: Boolean = false,
+    val totalCount: Long? = null,
+)

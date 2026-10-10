@@ -71,9 +71,10 @@ internal interface WatchDetailsSource {
 }
 
 /**
- * One player screen. The player itself is the app's ([PlayerController]); this holds what belongs to the screen: the
+ * One video on the watch page. The player itself is the app's ([PlayerController]); this holds what belongs to the page: the
  * related videos (or the playlist being played), the channel and its subscribe button, «watch later», and the start of
- * playback. Leaving the screen stops the player, unless a newer screen already took it over.
+ * playback. It lives as long as the video is the app's one ([NowPlaying]: expanded or in the mini player); it does not stop the
+ * player when it goes, since what replaced it has the player already, and the mini player's ✕ stops it itself.
  *
  * [downloadId] set: a downloaded file plays (no streams, no related videos).
  *
@@ -167,8 +168,8 @@ class WatchViewModel(
     private var shownBefore = false
 
     /**
-     * The screen is in front (again). If the player was let go meanwhile, or another video has it, this screen's video
-     * plays again from where it stopped. That happens after a detour: video A, its channel, video B, back, back.
+     * The app is in front (again) with this video open. If the player was let go meanwhile, or something else has it, this video
+     * plays again from where it stopped.
      */
     fun onShown() {
         if (!shownBefore) {
@@ -287,16 +288,10 @@ class WatchViewModel(
         viewModelScope.launch { library.toggleWatchLater(video) }
     }
 
-    override fun onCleared() {
-        // A newer player screen (the next video) may already own the player: only stop what is still ours.
-        val current = controller.state.value
-        if (current.video?.videoId == videoId || current.phase == PlayerPhase.IDLE) controller.stop()
-    }
-
     companion object {
         private const val TAG = "WatchViewModel"
 
-        /** The player is idle (stopped by a screen that went away) or holds a different video than [videoId]. */
+        /** The player is idle (stopped meanwhile) or holds a different video than [videoId]. */
         internal fun playerNeedsReclaiming(current: PlayerUiState, videoId: String): Boolean =
             current.phase == PlayerPhase.IDLE || current.video?.videoId != videoId
 

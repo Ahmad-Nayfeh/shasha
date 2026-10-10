@@ -1,6 +1,9 @@
 package com.ahmadnayfeh.shasha.mobile
 
 import com.ahmadnayfeh.shasha.youtube.ChannelDetails
+import com.ahmadnayfeh.shasha.youtube.Comment
+import com.ahmadnayfeh.shasha.youtube.CommentSort
+import com.ahmadnayfeh.shasha.youtube.CommentsPage
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.ItemsPage
 import com.ahmadnayfeh.shasha.youtube.PageKey
@@ -91,6 +94,11 @@ open class FakeVideoSource : VideoSource {
     var onPlaylist: suspend (String, PageKey?) -> PlaylistPage = { id, _ -> PlaylistPage(com.ahmadnayfeh.shasha.mobile.playlist(id), emptyList(), null) }
     var onRecent: suspend (String) -> List<VideoItem> = { emptyList() }
     var onRelated: suspend (String) -> List<VideoItem> = { emptyList() }
+    var onComments: suspend (String, CommentSort, PageKey?) -> CommentsPage = { _, _, _ -> CommentsPage(emptyList(), null) }
+    var onReplies: suspend (String, PageKey) -> CommentsPage = { _, _ -> CommentsPage(emptyList(), null) }
+
+    /** What [comments] was asked: video id, order, page. */
+    val commentRequests = java.util.concurrent.CopyOnWriteArrayList<Triple<String, CommentSort, PageKey?>>()
 
     val searches = ArrayList<Triple<String, SearchFilter, PageKey?>>()
     val shortsSearches = ArrayList<Pair<String, PageKey?>>()
@@ -118,7 +126,27 @@ open class FakeVideoSource : VideoSource {
     override suspend fun playlist(playlistId: String, page: PageKey?): PlaylistPage = onPlaylist(playlistId, page)
     override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails = error("stream() is not part of this test")
     override suspend fun related(videoId: String): List<VideoItem> = onRelated(videoId)
+    override suspend fun comments(videoId: String, sort: CommentSort, page: PageKey?): CommentsPage {
+        commentRequests += Triple(videoId, sort, page)
+        return onComments(videoId, sort, page)
+    }
+    override suspend fun commentReplies(videoId: String, page: PageKey): CommentsPage = onReplies(videoId, page)
     override suspend fun recentVideos(channelId: String): List<VideoItem> = onRecent(channelId)
     override fun parseLink(text: String): YouTubeLink? = null
     override suspend fun resolveChannelId(link: YouTubeLink.Channel): String = link.raw
 }
+
+/** A comment for the tests. */
+fun comment(
+    id: String,
+    text: String = "Comment $id",
+    author: String = "Author $id",
+    likes: Long? = 3,
+    replies: Int = 0,
+    pinned: Boolean = false,
+    hearted: Boolean = false,
+) = Comment(
+    id = id, authorName = author, authorAvatarUrl = null, authorChannelId = null, text = text, publishedText = "1 day ago",
+    publishedAtEpochMs = null, likeCount = likes, replyCount = replies, replies = if (replies > 0) PageKey("replies:$id") else null,
+    isPinned = pinned, isHearted = hearted,
+)

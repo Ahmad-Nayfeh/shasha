@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ActivityScenario
@@ -18,6 +19,7 @@ import com.ahmadnayfeh.shasha.mobile.data.db.DownloadEntity
 import com.ahmadnayfeh.shasha.mobile.data.db.DownloadKind
 import com.ahmadnayfeh.shasha.mobile.data.db.DownloadStatus
 import com.ahmadnayfeh.shasha.mobile.player.PlayerPhase
+import com.ahmadnayfeh.shasha.mobile.ui.watch.MINI_PLAYER_TAG
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
@@ -65,7 +67,7 @@ class WatchOfflineTest {
     }
 
     @Test
-    fun aDownloadedVideoOpensInThePlayerScreenAndBackReturnsToTheList() {
+    fun aDownloadedVideoOpensInThePlayerScreen_backReturnsToTheListWithTheMiniPlayer_andItsCloseLetsThePlayerGo() {
         saveDownload("A saved video")
         val intent = Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN, MainActivity.OPEN_DOWNLOADS)
 
@@ -83,11 +85,18 @@ class WatchOfflineTest {
             compose.awaitText("Try again", timeoutMillis = 20_000)
             assertThat(context.container.player.state.value.phase).isEqualTo(PlayerPhase.ERROR)
 
-            // Back: the list again, and the player is let go.
+            // Back: the list again, with the video kept in the mini player (not let go).
             scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
             compose.awaitText("Downloads")
             compose.onNodeWithContentDescription("Back").assertIsDisplayed()
+            compose.onNodeWithTag(MINI_PLAYER_TAG).assertIsDisplayed()
+            assertThat(context.container.player.state.value.video?.videoId).isEqualTo("abcdefghijk")
+            assertThat(context.container.player.state.value.phase).isNotEqualTo(PlayerPhase.IDLE)
+
+            // Its ✕: the player is let go.
+            compose.onNodeWithContentDescription("Close the player").performClick()
             compose.waitUntil(10_000) { context.container.player.state.value.phase == PlayerPhase.IDLE }
+            compose.onNodeWithTag(MINI_PLAYER_TAG).assertDoesNotExist()
         }
     }
 }

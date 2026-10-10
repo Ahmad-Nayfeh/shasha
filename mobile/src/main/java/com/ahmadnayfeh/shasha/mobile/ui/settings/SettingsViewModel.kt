@@ -43,6 +43,9 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     fun setShowShorts(enabled: Boolean) = launch { repository.setShowShorts(enabled) }
     fun resetShorts() = launch { repository.resetShorts() }
 
+    fun setShowComments(enabled: Boolean) = launch { repository.setShowComments(enabled) }
+    fun resetComments() = launch { repository.resetComments() }
+
     fun resetAll() = launch { repository.resetAll() }
 
     private fun launch(block: suspend () -> Unit) {

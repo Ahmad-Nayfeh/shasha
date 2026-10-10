@@ -37,18 +37,6 @@ data class ChannelRoute(val channelId: String, val name: String? = null, val ava
 data class PlaylistRoute(val playlistId: String)
 
 /**
- * The player. [playlistId]: the playlist it is played from (the next video follows). [startSeconds]: from a link's `t=`.
- * [downloadId] ≥ 0: a downloaded file plays instead of a stream (then [videoId] is the video it was).
- */
-@Serializable
-data class WatchRoute(
-    val videoId: String,
-    val playlistId: String? = null,
-    val startSeconds: Long = 0,
-    val downloadId: Long = -1,
-)
-
-/**
  * The Shorts viewer, opened at [videoId] in the list that the screen it was opened from put in
  * [com.ahmadnayfeh.shasha.mobile.common.ShortsQueues] under [queueId] (-1 or a number nobody holds: the viewer shows the one Short).
  */

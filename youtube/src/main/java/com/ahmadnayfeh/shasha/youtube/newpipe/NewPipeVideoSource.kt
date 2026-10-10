@@ -6,6 +6,8 @@ import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.ChannelSort
 import com.ahmadnayfeh.shasha.youtube.ChannelTab
 import com.ahmadnayfeh.shasha.youtube.ChannelTabPage
+import com.ahmadnayfeh.shasha.youtube.CommentSort
+import com.ahmadnayfeh.shasha.youtube.CommentsPage
 import com.ahmadnayfeh.shasha.youtube.ItemsPage
 import com.ahmadnayfeh.shasha.youtube.MAX_SUGGESTIONS
 import com.ahmadnayfeh.shasha.youtube.PageKey
@@ -65,6 +67,7 @@ internal class NewPipeVideoSource(
     private val pages = PageStore()
     private val channelTabs = ChannelTabLoader(service, downloader.browseTaps, pages)
     private val shortsSearch = ShortsSearch(service, pages)
+    private val commentsLoader = CommentsLoader(service, pages)
     private val fetchRelated: (String) -> List<InfoItem> = fetchRelated ?: ::relatedFromWatchPage
 
     override val extractorVersion: String = BuildConfig.EXTRACTOR_VERSION
@@ -91,6 +94,10 @@ internal class NewPipeVideoSource(
     }
 
     override suspend fun searchShorts(query: String, page: PageKey?): ShortsPage = io { shortsSearch.load(query, page) }
+
+    override suspend fun comments(videoId: String, sort: CommentSort, page: PageKey?): CommentsPage = io { commentsLoader.load(videoId, sort, page) }
+
+    override suspend fun commentReplies(videoId: String, page: PageKey): CommentsPage = io { commentsLoader.replies(videoId, page) }
 
     override suspend fun suggestions(query: String, language: String): List<String> {
         val q = query.trim()

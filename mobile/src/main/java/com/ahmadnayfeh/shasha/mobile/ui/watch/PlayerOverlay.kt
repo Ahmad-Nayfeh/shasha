@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.ClosedCaptionOff
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
@@ -104,7 +105,8 @@ internal fun categoryColor(category: SponsorCategory): Color = when (category) {
 /**
  * The timeline: buffered part, played part, a thumb, and the SponsorBlock segments in their colours. Tap to jump, drag
  * to scrub ([onSeek] once, when the finger lifts; [onScrub] all along, with where the finger is, then null). It runs left to
- * right in every language, like the video itself.
+ * right in every language, like the video itself. [thumbAtRest] false: the thumb shows only while the bar is dragged (the Shorts
+ * viewer's thin bar).
  */
 @Composable
 fun SeekBar(
@@ -116,6 +118,7 @@ fun SeekBar(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     onScrub: (Float?) -> Unit = {},
+    thumbAtRest: Boolean = true,
 ) {
     var dragFraction by remember { mutableStateOf<Float?>(null) }
     val duration = durationMs.coerceAtLeast(1)
@@ -159,7 +162,7 @@ fun SeekBar(
                     val end = (segment.endMs.toFloat() / duration).coerceIn(0f, 1f)
                     if (end > start) drawRect(categoryColor(segment.category), Offset(size.width * start, top), Size(size.width * (end - start), track))
                 }
-                if (enabled) {
+                if (enabled && (thumbAtRest || dragFraction != null)) {
                     val radius = if (dragFraction != null) 9.dp.toPx() else 6.dp.toPx()
                     drawCircle(primary, radius, Offset(size.width * fraction, size.height / 2))
                 }
@@ -263,7 +266,14 @@ fun PlayerOverlay(
                 Box(Modifier.fillMaxSize().background(Color(0x73000000))) {
                     // Top: back, title, picture-in-picture, settings.
                     Row(Modifier.align(Alignment.TopCenter).fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
+                        // Upright, the button collapses the page into the mini player (the video goes on); in full screen it comes back upright.
+                        IconButton(onClick = onBack) {
+                            if (isFullscreen) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                            } else {
+                                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.player_minimize))
+                            }
+                        }
                         Text(
                             if (isFullscreen) title else "",
                             Modifier.weight(1f),

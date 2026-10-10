@@ -9,8 +9,9 @@ enum class PlaybackMode {
     VIDEO,
 
     /**
-     * A Short in the Shorts viewer: from its start, in a loop, with no resume point and no SponsorBlock, entered into the history
-     * only once it was watched a little, and paused (not played on as audio) when the app is left.
+     * A Short in the Shorts viewer: from its start, in a loop, upright (9:16) until its picture says otherwise, with no resume point
+     * and no SponsorBlock, entered into the history only once it was watched a little. Like a video it plays on in the background
+     * and in picture-in-picture (the same media session), and has quality, speed and captions.
      */
     SHORT,
 }

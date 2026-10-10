@@ -16,6 +16,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
+import com.ahmadnayfeh.shasha.youtube.CommentSort
 import org.junit.rules.TemporaryFolder
 import java.io.File
 
@@ -92,6 +93,26 @@ class SettingsRepositoryTest {
         repository.setSubtitleLanguage("ar")
         repository.resetAll()
         assertThat(repository.current()).isEqualTo(AppSettings())
+    }
+
+    @Test
+    fun commentsAreShownInTopOrderUntilChanged_theOrderIsKept_andTheirResetBringsBothBack() = runBlocking<Unit> {
+        val repo = repository()
+        assertThat(repo.current().showComments).isTrue()
+        assertThat(repo.current().commentSort).isEqualTo(CommentSort.TOP)
+
+        repo.setShowComments(false)
+        repo.setCommentSort(CommentSort.NEWEST)
+        assertThat(repo.current().showComments).isFalse()
+        assertThat(repo.current().commentSort).isEqualTo(CommentSort.NEWEST)
+
+        repo.resetComments()
+        assertThat(repo.current().showComments).isTrue()
+        assertThat(repo.current().commentSort).isEqualTo(CommentSort.TOP)
+
+        repo.setShowComments(false)
+        repo.resetAll()
+        assertThat(repo.current().showComments).isTrue()
     }
 
     @Test

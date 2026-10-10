@@ -99,6 +99,11 @@ open class AppContainer(private val app: Application) {
 
     fun latestSettings(): AppSettings = settingsState.value
 
+    /** Keeps the order the viewer chose for comments (the next video's comments open in it). */
+    fun saveCommentSort(sort: com.ahmadnayfeh.shasha.youtube.CommentSort) {
+        appScope.launch { settings.setCommentSort(sort) }
+    }
+
     /** The «Show Shorts» setting, as a flow that says only when it changes: every screen with Shorts on it follows it. */
     val showShorts: Flow<Boolean> get() = settings.settings.map { it.showShorts }.distinctUntilChanged()
 

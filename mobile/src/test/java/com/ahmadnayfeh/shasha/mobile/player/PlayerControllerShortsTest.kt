@@ -26,6 +26,7 @@ import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.util.concurrent.ConcurrentLinkedQueue
 
@@ -60,11 +61,13 @@ class PlayerControllerShortsTest {
         }
     }
 
+    private var appSettings = AppSettings(sponsorBlockEnabled = false)
+
     private val controller = PlayerController(
         context = context,
         videoSource = source,
         mediaSources = YouTubeMediaSourceFactory(context, OkHttpClient()),
-        settings = { AppSettings(sponsorBlockEnabled = false) },
+        settings = { appSettings },
         sponsorBlock = SponsorBlockRepository(fetcher = { emptyList() }, dao = db.sponsorSegments(), now = { NOW_MS }),
         library = LibraryRepository(db.history(), db.watchLater(), db.progress()) { NOW_MS },
         scope = scope,
@@ -214,5 +217,60 @@ class PlayerControllerShortsTest {
 
         assertThat(controller.mode).isEqualTo(PlaybackMode.VIDEO)
         assertThat(asked.toList()).containsExactly("a", "a").inOrder()
+    }
+
+    @Test
+    fun aShortIsUprightFromTheStart_aVideoIsWide() {
+        controller.playShort(short("a"))
+        assertThat(controller.state.value.aspectRatio).isEqualTo(PlayerUiState.SHORT_ASPECT)
+
+        controller.play("b")
+        assertThat(controller.state.value.aspectRatio).isEqualTo(PlayerUiState.DEFAULT_ASPECT)
+    }
+
+    @Test
+    fun aShortStartsTheMediaSessionLikeAVideo_forTheNotificationAndTheBackground() {
+        val app = shadowOf(context as Application)
+        while (app.nextStartedService != null) Unit // what came before
+
+        controller.playShort(short("a"))
+
+        assertThat(app.nextStartedService?.component?.className).isEqualTo(PlaybackService::class.java.name)
+    }
+
+    @Test
+    fun aShortPlaysOnWhenTheAppIsLeft_likeAVideo() {
+        controller.playShort(short("a"))
+        controller.player.playWhenReady = true
+
+        controller.onAppStopped()
+
+        assertThat(controller.player.playWhenReady).isTrue()
+    }
+
+    @Test
+    fun withoutBackgroundPlaybackAShortPausesAndPlaysOnWhenTheViewerComesBack() {
+        appSettings = appSettings.copy(backgroundPlayback = false)
+        controller.playShort(short("a"))
+        controller.player.playWhenReady = true
+
+        controller.onAppStopped()
+        assertThat(controller.player.playWhenReady).isFalse()
+
+        controller.onAppStarted()
+        assertThat(controller.player.playWhenReady).isTrue()
+    }
+
+    @Test
+    fun theShortsStartAtTheNormalSpeed_andKeepTheSpeedChosenInThemFromOneToTheNext() {
+        controller.play("v")
+        controller.setSpeed(2f)
+
+        controller.playShort(short("a"))
+        assertThat(controller.state.value.speed).isEqualTo(1f)
+
+        controller.setSpeed(1.5f)
+        controller.playShort(short("b"))
+        assertThat(controller.state.value.speed).isEqualTo(1.5f)
     }
 }

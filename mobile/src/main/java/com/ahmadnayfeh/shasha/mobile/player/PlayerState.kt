@@ -69,9 +69,9 @@ data class PlayerUiState(
     /** The SponsorBlock segments in force (the selected categories). */
     val segments: List<SponsorSegment> = emptyList(),
     val skipNotice: SkipNotice? = null,
-    /** Width / height of the picture. */
+    /** Width / height of the picture: the player's own once it has seen it, else [DEFAULT_ASPECT] for a video, [SHORT_ASPECT] for a Short. */
     val aspectRatio: Float = DEFAULT_ASPECT,
-    /** The captions the video offers, one per language ([com.ahmadnayfeh.shasha.youtube.perLanguage]); none for a Short, a file or a live stream. */
+    /** The captions the video offers, one per language ([com.ahmadnayfeh.shasha.youtube.perLanguage]); none for a file or a live stream. */
     val subtitles: List<SubtitleTrack> = emptyList(),
     /** The language of the captions shown ([SubtitleTrack.languageCode]); null: off. */
     val subtitleLanguage: String? = null,
@@ -83,6 +83,9 @@ data class PlayerUiState(
 
     companion object {
         const val DEFAULT_ASPECT = 16f / 9f
+
+        /** A Short's shape until its picture says otherwise: upright, 9:16. */
+        const val SHORT_ASPECT = 9f / 16f
     }
 }
 

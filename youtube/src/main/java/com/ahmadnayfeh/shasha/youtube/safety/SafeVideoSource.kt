@@ -5,6 +5,8 @@ import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.ChannelSort
 import com.ahmadnayfeh.shasha.youtube.ChannelTab
 import com.ahmadnayfeh.shasha.youtube.ChannelTabPage
+import com.ahmadnayfeh.shasha.youtube.CommentSort
+import com.ahmadnayfeh.shasha.youtube.CommentsPage
 import com.ahmadnayfeh.shasha.youtube.ItemsPage
 import com.ahmadnayfeh.shasha.youtube.PageKey
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
@@ -39,6 +41,8 @@ import java.util.Collections
  * - [channel], [playlist]: a channel or a playlist whose name (or the channel's description) is explicit is refused.
  * - [stream]: a video whose title or channel is explicit is refused, so it cannot be played or downloaded by any path (a link, a
  *   queue, a remembered id). Its description is left out when that is explicit.
+ * - [comments], [commentReplies]: passed through as YouTube gives them (the owner's choice: comments are shown as they are, not
+ *   filtered or held back).
  * - [parseLink], [resolveChannelId], [extractorVersion]: not content.
  *
  * A refusal is a [SourceException] of kind [SourceErrorKind.CONTENT_UNAVAILABLE], technical name "ContentFiltered": the screens'
@@ -75,6 +79,10 @@ class SafeVideoSource internal constructor(
         if (this.filter.isExplicit(query)) return ShortsPage(emptyList(), null)
         return delegate.searchShorts(query, page).let { it.copy(shorts = it.shorts.safe()) }
     }
+
+    override suspend fun comments(videoId: String, sort: CommentSort, page: PageKey?): CommentsPage = delegate.comments(videoId, sort, page)
+
+    override suspend fun commentReplies(videoId: String, page: PageKey): CommentsPage = delegate.commentReplies(videoId, page)
 
     override suspend fun suggestions(query: String, language: String): List<String> {
         if (filter.isExplicit(query)) return emptyList()
