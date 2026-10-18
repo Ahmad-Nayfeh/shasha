@@ -54,3 +54,22 @@ interface WatchLaterDao {
     @Query("DELETE FROM watch_later WHERE profileId = :profileId AND videoId = :videoId")
     suspend fun delete(profileId: String, videoId: String)
 }
+
+@Dao
+interface SavedPlaylistDao {
+    @Query("SELECT * FROM saved_playlists WHERE profileId = :profileId ORDER BY savedAtMs DESC, playlistId")
+    fun observe(profileId: String): Flow<List<SavedPlaylistEntity>>
+
+    @Query("SELECT playlistId FROM saved_playlists WHERE profileId = :profileId")
+    fun observeIds(profileId: String): Flow<List<String>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM saved_playlists WHERE profileId = :profileId AND playlistId = :playlistId)")
+    suspend fun contains(profileId: String, playlistId: String): Boolean
+
+    /** Saving a saved playlist again refreshes what is shown of it and moves it to the top. */
+    @Upsert
+    suspend fun upsert(entry: SavedPlaylistEntity)
+
+    @Query("DELETE FROM saved_playlists WHERE profileId = :profileId AND playlistId = :playlistId")
+    suspend fun delete(profileId: String, playlistId: String)
+}

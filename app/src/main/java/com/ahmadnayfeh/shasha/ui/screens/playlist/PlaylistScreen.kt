@@ -1,6 +1,10 @@
 package com.ahmadnayfeh.shasha.ui.screens.playlist
 
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +24,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -30,6 +35,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -47,6 +53,7 @@ import com.ahmadnayfeh.shasha.ui.components.CardShape
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
 import com.ahmadnayfeh.shasha.ui.components.LiveThumbnailBadge
+import com.ahmadnayfeh.shasha.ui.components.LocalAppMessages
 import com.ahmadnayfeh.shasha.ui.components.LocalCollectionMenu
 import com.ahmadnayfeh.shasha.ui.components.LocalVideoMenu
 import com.ahmadnayfeh.shasha.ui.components.MenuTarget
@@ -95,7 +102,10 @@ fun PlaylistRoute(
     val access by vm.access.collectAsStateWithLifecycle()
     val details by vm.details.collectAsStateWithLifecycle()
     val videos by vm.videos.collectAsStateWithLifecycle()
+    val saved by vm.saved.collectAsStateWithLifecycle()
     val openMenu = LocalCollectionMenu.current
+    val messages = LocalAppMessages.current
+    val resources = LocalResources.current
     when (val decision = access) {
         null -> return // the profile's rules are a moment away
         is Decision.Deny -> {
@@ -116,8 +126,23 @@ fun PlaylistRoute(
         onBack = onBack,
         onCheckUpdates = onCheckUpdates,
         onParental = if (adult) ({ details?.let { openMenu(MenuTarget.Playlist(it)) } }) else null,
+        // A child's profile has no library (SPEC §3: nothing to manage there): the adult's page only.
+        save = if (adult) {
+            SaveToggle(saved) {
+                vm.toggleSaved { nowSaved, title ->
+                    val quoted = resources.getString(R.string.quoted_name, title)
+                    messages?.show(resources.getString(if (nowSaved) R.string.message_playlist_saved else R.string.message_playlist_removed, quoted))
+                }
+            }
+        } else {
+            null
+        },
     )
 }
+
+/** «حفظ القائمة» / «محفوظة» on a playlist's page: [saved] now, [onToggle] saves it or takes it out of the library. */
+@Immutable
+class SaveToggle(val saved: Boolean, val onToggle: () -> Unit)
 
 /**
  * A playlist: its picture, title and «تشغيل الكل» on the right, its videos in order on the left.
@@ -137,6 +162,7 @@ fun PlaylistScreen(
     onCheckUpdates: () -> Unit,
     modifier: Modifier = Modifier,
     onParental: (() -> Unit)? = null,
+    save: SaveToggle? = null,
 ) {
     val error = videos.error
     if (error != null) {
@@ -155,7 +181,7 @@ fun PlaylistScreen(
             .focusGroup()
             .testTag("playlist_screen"),
     ) {
-        Info(details, videos, formats, onPlayAll = { onPlayFrom(0) }, playAll = playAll, onParental = onParental)
+        Info(details, videos, formats, onPlayAll = { onPlayFrom(0) }, playAll = playAll, onParental = onParental, save = save)
         Spacer(Modifier.width(36.dp))
         Box(Modifier.weight(1f).fillMaxHeight()) {
             when {
@@ -172,6 +198,7 @@ fun PlaylistScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Info(
     details: PlaylistItem?,
@@ -180,8 +207,9 @@ private fun Info(
     onPlayAll: () -> Unit,
     playAll: FocusRequester,
     onParental: (() -> Unit)?,
+    save: SaveToggle?,
 ) {
-    Column(Modifier.width(300.dp).fillMaxHeight().padding(vertical = ShashaDimens.ScreenVertical)) {
+    Column(Modifier.width(300.dp).fillMaxHeight().verticalScroll(rememberScrollState()).padding(vertical = ShashaDimens.ScreenVertical)) {
         val cover = details?.thumbnailUrl ?: videos.items.firstOrNull()?.let { Thumbnails.video(it.video.videoId) }
         Thumbnail(cover, Modifier.fillMaxWidth().aspectRatio(16f / 9f), RoundedCornerShape(20.dp), logoSize = 64.dp)
         Spacer(Modifier.height(18.dp))
@@ -222,14 +250,31 @@ private fun Info(
                 modifier = Modifier.focusRequester(playAll).testTag("playlist_play_all"),
             )
         }
-        if (onParental != null && details != null) {
+        // «حفظ القائمة» and «الرقابة» (the adult's) side by side under «تشغيل الكل»; a longer language's labels wrap, and the
+        // column scrolls to the focused one.
+        val secondary = save != null || onParental != null
+        if (secondary && details != null) {
             Spacer(Modifier.height(14.dp))
-            ShashaButton(
-                stringResource(R.string.channel_parental),
-                onParental,
-                icon = ShashaIcons.Shield,
-                modifier = Modifier.testTag("playlist_parental"),
-            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (save != null) {
+                    ShashaButton(
+                        stringResource(if (save.saved) R.string.playlist_saved else R.string.playlist_save),
+                        save.onToggle,
+                        icon = if (save.saved) ShashaIcons.CheckCircle else ShashaIcons.Add,
+                        compact = true,
+                        modifier = Modifier.testTag("playlist_save"),
+                    )
+                }
+                if (onParental != null) {
+                    ShashaButton(
+                        stringResource(R.string.channel_parental),
+                        onParental,
+                        icon = ShashaIcons.Shield,
+                        compact = true,
+                        modifier = Modifier.testTag("playlist_parental"),
+                    )
+                }
+            }
         }
     }
 }

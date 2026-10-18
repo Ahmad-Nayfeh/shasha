@@ -1,5 +1,7 @@
 package com.ahmadnayfeh.shasha.ui.screens.settings
 
+import android.util.Log
+
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -34,11 +36,22 @@ import java.time.ZoneId
 class ProfilesViewModel(private val profiles: ProfileRepository) : ViewModel() {
     val all: StateFlow<List<Profile>?> = profiles.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    /** A child profile with the default rules (1 hour a day, 07:00–22:00, shorts hidden) and the household's blocks. */
-    suspend fun createChild(name: String, avatar: String): Profile {
-        val child = Profile.newChild(name.trim(), avatar = avatar).copy(blocklist = ParentalLists.householdBlocklist(profiles.all()))
-        profiles.upsert(child)
-        return child
+    /**
+     * A child profile with the default rules (1 hour a day, 07:00–22:00, shorts hidden) and the household's blocks; null when
+     * the name is blank or it could not be stored (the dialog says so instead of the app closing).
+     */
+    suspend fun createChild(name: String, avatar: String): Profile? {
+        val clean = name.trim().takeIf { it.isNotEmpty() } ?: return null
+        return try {
+            val child = Profile.newChild(clean, avatar = avatar).copy(blocklist = ParentalLists.householdBlocklist(profiles.all()))
+            profiles.upsert(child)
+            child
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e("ProfilesViewModel", "Could not create a child profile", e)
+            null
+        }
     }
 }
 

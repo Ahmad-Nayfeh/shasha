@@ -224,6 +224,14 @@
     <string name="playlist_empty">قائمة التشغيل فارغة.</string>
 
     <!-- Watch later, history, subscriptions -->
+    <string name="playlist_save">حفظ القائمة</string>
+    <string name="playlist_saved">محفوظة</string>
+    <string name="menu_playlist_save">حفظ القائمة</string>
+    <string name="menu_playlist_unsave">إزالة من القوائم المحفوظة</string>
+    <string name="message_playlist_saved">حُفظت %1$s، وتجدها في «شاهد لاحقاً»</string>
+    <string name="message_playlist_removed">أُزيلت %1$s من القوائم المحفوظة</string>
+    <string name="library_saved_playlists">القوائم المحفوظة</string>
+    <string name="library_saved_videos">الفيديوهات</string>
     <string name="watch_later_title">شاهد لاحقاً</string>
     <string name="watch_later_empty_title">لا شيء محفوظ بعد</string>
     <string name="watch_later_empty_body">اضغط مطوّلاً على OK فوق أي فيديو، أو اضغط زر القائمة، ثم اختر «شاهد لاحقاً». ويمكنك الحفظ من المشغّل أيضاً.</string>
@@ -439,6 +447,8 @@
     <string name="profiles_title">الملفات</string>
     <string name="profiles_add_child">إضافة ملف طفل</string>
     <string name="profiles_new_child_title">ملف طفل جديد</string>
+    <string name="profiles_name_missing">اكتب اسماً للملف أولاً.</string>
+    <string name="profiles_create_failed">تعذّر حفظ الملف الجديد. حاول مرة أخرى.</string>
     <string name="profiles_new_child_body">يبدأ بساعة يومياً بين 7 صباحاً و10 مساءً، بلا مقاطع قصيرة، وبقائمة سماح فارغة تملؤها أنت.</string>
     <string name="profiles_create">إنشاء</string>
     <string name="profile_kind_child">ملف طفل</string>

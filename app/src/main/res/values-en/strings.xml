@@ -214,6 +214,14 @@
     <string name="playlist_empty">The playlist is empty.</string>
 
     <!-- Watch later, history, subscriptions -->
+    <string name="playlist_save">Save playlist</string>
+    <string name="playlist_saved">Saved</string>
+    <string name="menu_playlist_save">Save playlist</string>
+    <string name="menu_playlist_unsave">Remove from saved playlists</string>
+    <string name="message_playlist_saved">%1$s saved: find it in Watch later</string>
+    <string name="message_playlist_removed">%1$s removed from saved playlists</string>
+    <string name="library_saved_playlists">Saved playlists</string>
+    <string name="library_saved_videos">Videos</string>
     <string name="watch_later_title">Watch later</string>
     <string name="watch_later_empty_title">Nothing saved yet</string>
     <string name="watch_later_empty_body">Hold OK on any video, or press the menu button, then choose “Watch later”. You can also save from the player.</string>
@@ -421,6 +429,8 @@
     <string name="profiles_title">Profiles</string>
     <string name="profiles_add_child">Add a kid\'s profile</string>
     <string name="profiles_new_child_title">New kid\'s profile</string>
+    <string name="profiles_name_missing">Type a name for the profile first.</string>
+    <string name="profiles_create_failed">The new profile couldn\'t be saved. Try again.</string>
     <string name="profiles_new_child_body">It starts with one hour a day between 7 AM and 10 PM, no Shorts, and an empty allowlist for you to fill.</string>
     <string name="profiles_create">Create</string>
     <string name="profile_kind_child">Kid\'s profile</string>

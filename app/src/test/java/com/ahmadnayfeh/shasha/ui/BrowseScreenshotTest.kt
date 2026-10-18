@@ -54,6 +54,7 @@ import com.ahmadnayfeh.shasha.ui.screens.home.HomeSync
 import com.ahmadnayfeh.shasha.ui.screens.library.HistoryScreen
 import com.ahmadnayfeh.shasha.ui.screens.library.SubscriptionsScreen
 import com.ahmadnayfeh.shasha.ui.screens.library.WatchLaterScreen
+import com.ahmadnayfeh.shasha.ui.screens.playlist.SaveToggle
 import com.ahmadnayfeh.shasha.ui.screens.player.EndCard
 import com.ahmadnayfeh.shasha.ui.screens.player.PlaybackEnd
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerOsd
@@ -258,6 +259,25 @@ class BrowseScreenshotTest {
         )
     }
 
+    /** The adult's page: «محفوظة» (the playlist is in the library) and the parental menu under «تشغيل الكل». */
+    @Test
+    fun playlistSaved() = snap("playlist_saved") {
+        PlaylistScreen(
+            details = UiFixtures.playlist,
+            videos = PagedState(items = UiFixtures.playlistVideos, loadingFirst = false),
+            watched = stateOf(UiFixtures.playlistWatched),
+            focus = remember { ContentFocus() },
+            extractorVersion = "v0.26.5",
+            onPlayFrom = {},
+            onLoadMore = {},
+            onRetryMore = {},
+            onBack = {},
+            onCheckUpdates = {},
+            onParental = {},
+            save = SaveToggle(saved = true) {},
+        )
+    }
+
     @Test
     fun playlistMoreFailed() = snap("playlist_more_failed") {
         // A later page failed: the unified error's title, name and extractor version, in the narrow list.
@@ -282,7 +302,22 @@ class BrowseScreenshotTest {
     @Test
     fun watchLater() = snap("watch_later") {
         Shell(Tab.WATCH_LATER) {
-            WatchLaterScreen(UiFixtures.watchLater, stateOf(mapOf(UiFixtures.videos[6].videoId to 0.72f)), NOW, remember { ContentFocus() }) {}
+            WatchLaterScreen(UiFixtures.watchLater, stateOf(mapOf(UiFixtures.videos[6].videoId to 0.72f)), NOW, remember { ContentFocus() }, onPlay = {})
+        }
+    }
+
+    /** «القوائم المحفوظة» above the saved videos: the playlists saved from a playlist's page or its card's menu. */
+    @Test
+    fun watchLaterWithSavedPlaylists() = snap("watch_later_playlists") {
+        Shell(Tab.WATCH_LATER) {
+            WatchLaterScreen(
+                UiFixtures.watchLater,
+                stateOf(mapOf(UiFixtures.videos[6].videoId to 0.72f)),
+                NOW,
+                remember { ContentFocus() },
+                onPlay = {},
+                playlists = UiFixtures.channelPlaylists.take(2),
+            )
         }
     }
 

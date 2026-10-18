@@ -6,6 +6,7 @@ import com.ahmadnayfeh.shasha.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.data.WatchRepository
 import com.ahmadnayfeh.shasha.policy.ContentFilter
 import com.ahmadnayfeh.shasha.ui.model.ChannelUi
+import com.ahmadnayfeh.shasha.ui.model.PlaylistUi
 import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.ui.model.toUi
 import com.ahmadnayfeh.shasha.ui.screens.watchedFractions
@@ -39,9 +40,19 @@ abstract class VideoListViewModel(watch: WatchRepository, source: Flow<List<Vide
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 }
 
-/** شاهد لاحقاً: most recently added first. */
+/**
+ * شاهد لاحقاً: most recently added first, and above the videos the playlists the profile saved («القوائم المحفوظة», the
+ * newest first; null until known). A playlist the profile's rules refuse now (a blocked keyword in its title) is not shown.
+ */
 class WatchLaterViewModel(watch: WatchRepository, filter: StateFlow<ContentFilter>) :
-    VideoListViewModel(watch, watch.observeWatchLater().map { rows -> rows.map { it.toUi() } }, filter)
+    VideoListViewModel(watch, watch.observeWatchLater().map { rows -> rows.map { it.toUi() } }, filter) {
+    val playlists: StateFlow<List<PlaylistUi>?> = combine(watch.observeSavedPlaylists(), filter) { saved, rules ->
+        if (rules.profile == null) return@combine null
+        saved.filter { rules.playlist(it.playlistId, ownerChannelId = null, title = it.title).isAllowed }.map(::PlaylistUi)
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+}
 
 /** السجل: most recently watched first; «مسح السجل» empties it. */
 class HistoryViewModel(private val watch: WatchRepository, filter: StateFlow<ContentFilter>) :

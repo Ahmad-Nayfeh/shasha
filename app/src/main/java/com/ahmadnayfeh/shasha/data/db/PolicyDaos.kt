@@ -43,6 +43,9 @@ interface ProfileDao {
     @Query("DELETE FROM watch_progress WHERE profileId = :profileId")
     suspend fun deleteProgress(profileId: String)
 
+    @Query("DELETE FROM saved_playlists WHERE profileId = :profileId")
+    suspend fun deleteSavedPlaylists(profileId: String)
+
     @Query("DELETE FROM usage_records WHERE profileId = :profileId")
     suspend fun deleteUsage(profileId: String)
 

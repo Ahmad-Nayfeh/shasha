@@ -1,9 +1,11 @@
 package com.ahmadnayfeh.shasha.data
 
 import com.ahmadnayfeh.shasha.data.db.HistoryEntity
+import com.ahmadnayfeh.shasha.data.db.SavedPlaylistEntity
 import com.ahmadnayfeh.shasha.data.db.ShashaDatabase
 import com.ahmadnayfeh.shasha.data.db.WatchLaterEntity
 import com.ahmadnayfeh.shasha.data.db.WatchProgressEntity
+import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.safety.ExplicitFilter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -13,8 +15,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 /**
- * What the current profile watched: resume positions, history and "watch later" (SPEC §1), each kept
- * per profile. Flows follow profile switches. Main-safe: Room runs the queries on its own threads.
+ * What the current profile watched: resume positions, history, "watch later" (SPEC §1) and the YouTube
+ * playlists it saved to its library, each kept per profile. Flows follow profile switches. Main-safe: Room runs the queries on its own threads.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class WatchRepository(
@@ -25,6 +27,7 @@ class WatchRepository(
     private val progressDao = db.progress()
     private val historyDao = db.history()
     private val watchLaterDao = db.watchLater()
+    private val savedPlaylistDao = db.savedPlaylists()
 
     private val profileId: String get() = profile.id.value
 
@@ -110,8 +113,54 @@ class WatchRepository(
 
     fun isSaved(videoId: String): Flow<Boolean> = profile.id.flatMapLatest { watchLaterDao.observeIsSaved(it, videoId) }
 
+    // ---- Saved playlists ---------------------------------------------------------------------
+
+    /** The playlists the profile saved, the newest first, without what the built-in filter holds back. */
+    fun observeSavedPlaylists(): Flow<List<PlaylistItem>> =
+        profile.id.flatMapLatest { savedPlaylistDao.observe(it) }
+            .map { rows -> rows.filterNot { ExplicitFilter.default.isExplicit(it.title, it.channelName) }.map { it.toPlaylistItem() } }
+
+    /** The ids of the profile's saved playlists: «محفوظة» on a playlist's page and in its menu. */
+    fun observeSavedPlaylistIds(): Flow<Set<String>> = profile.id.flatMapLatest { savedPlaylistDao.observeIds(it) }.map { it.toSet() }
+
+    /** Saves [playlist] to the library; saving it again refreshes it and moves it to the top. */
+    suspend fun savePlaylist(playlist: PlaylistItem) {
+        savedPlaylistDao.upsert(
+            SavedPlaylistEntity(
+                profileId = profileId,
+                playlistId = playlist.playlistId,
+                title = playlist.title,
+                channelName = playlist.channelName,
+                thumbnailUrl = playlist.thumbnailUrl,
+                videoCount = playlist.videoCount,
+                savedAtMs = clock(),
+            ),
+        )
+    }
+
+    suspend fun removeSavedPlaylist(playlistId: String) = savedPlaylistDao.delete(profileId, playlistId)
+
+    /** Saves [playlist], or takes it out of the library when it is there; true when it is saved afterwards. */
+    suspend fun toggleSavedPlaylist(playlist: PlaylistItem): Boolean {
+        val id = profileId
+        if (savedPlaylistDao.contains(id, playlist.playlistId)) {
+            savedPlaylistDao.delete(id, playlist.playlistId)
+            return false
+        }
+        savePlaylist(playlist)
+        return true
+    }
+
     companion object {
         const val HISTORY_LIMIT = 500
         const val MAX_OBSERVED_IDS = 900
     }
 }
+
+fun SavedPlaylistEntity.toPlaylistItem() = PlaylistItem(
+    playlistId = playlistId,
+    title = title,
+    channelName = channelName,
+    thumbnailUrl = thumbnailUrl,
+    videoCount = videoCount,
+)

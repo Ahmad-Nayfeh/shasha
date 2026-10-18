@@ -91,7 +91,7 @@ class ParentalActions(val profiles: Flow<List<Profile>>, val lists: ParentalList
 
 /**
  * Hosts the context menus of the cards inside [content]. Videos: «شاهد لاحقاً» (add or remove) and «اذهب
- * إلى القناة». With [parental] (the adult profile), also, for the video's channel or a channel or playlist
+ * إلى القناة». Playlists: «حفظ القائمة» (add or remove, the library in «شاهد لاحقاً»). With [parental] (the adult profile), also, for the video's channel or a channel or playlist
  * card: «أضف إلى قائمة سماح <الطفل>» for each child profile, and «حظر القناة»; these ask for the parent PIN
  * first unless it was given in the last few minutes. No recommendations, nothing else.
  */
@@ -122,6 +122,9 @@ fun CardMenuHost(
     val profiles by profilesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val children = profiles.filter { it.isChild }
     val blocked = remember(profiles) { ParentalLists.householdBlocklist(profiles).channels.mapTo(HashSet()) { it.channelId } }
+    // Followed all along (not when a menu opens): a playlist's menu has its «حفظ القائمة» row from its first frame.
+    val savedPlaylistsFlow = remember(watch) { watch.observeSavedPlaylistIds() }
+    val savedPlaylists by savedPlaylistsFlow.collectAsStateWithLifecycle(initialValue = null)
     // Read when a menu opens: a lock on the parental rows says the PIN comes first.
     val locked = parental?.unlock?.isUnlocked != true
 
@@ -205,7 +208,22 @@ fun CardMenuHost(
         is MenuTarget.Playlist -> {
             val playlist = shown.playlist
             val quoted = resources.getString(R.string.quoted_name, playlist.title)
-            val rows = children.map { child ->
+            // «حفظ القائمة» first: the profile's own library, no PIN (once it is known whether the playlist is saved).
+            val save = savedPlaylists?.let { ids ->
+                val saved = playlist.playlistId in ids
+                MenuItem(
+                    icon = if (saved) ShashaIcons.CheckCircle else ShashaIcons.Add,
+                    label = resources.getString(if (saved) R.string.menu_playlist_unsave else R.string.menu_playlist_save),
+                    tag = "menu_playlist_save",
+                ) {
+                    target = null
+                    scope.launch {
+                        val nowSaved = watch.toggleSavedPlaylist(playlist)
+                        messages?.show(resources.getString(if (nowSaved) R.string.message_playlist_saved else R.string.message_playlist_removed, quoted))
+                    }
+                }
+            }
+            val rows = listOfNotNull(save) + children.map { child ->
                 if (child.allowlist.hasPlaylist(playlist.playlistId)) {
                     parentalRow(ShashaIcons.CheckCircle, resources.getString(R.string.menu_allowlist_remove, child.name), "menu_allow_${child.id}") {
                         act(resources.getString(R.string.message_allowlist_removed, quoted, child.name)) { disallow(child.id, playlist.playlistId) }
@@ -347,7 +365,10 @@ internal class HeldSelectGuard {
 fun CardMenuPanel(title: String, subtitle: String?, items: List<MenuItem>, modifier: Modifier = Modifier, emptyHint: String? = null) {
     val first = remember { FocusRequester() }
     val guard = remember { HeldSelectGuard() }
-    LaunchedEffect(Unit) {
+    // Once there is a first row (a row may come a moment after the menu, read from the database).
+    val hasRows = items.isNotEmpty()
+    LaunchedEffect(hasRows) {
+        if (!hasRows) return@LaunchedEffect
         withFrameNanos { }
         runCatching { first.requestFocus() }
     }

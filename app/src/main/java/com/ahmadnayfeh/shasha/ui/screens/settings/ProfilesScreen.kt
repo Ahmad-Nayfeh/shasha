@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -46,6 +47,7 @@ import com.ahmadnayfeh.shasha.policy.Profile
 import com.ahmadnayfeh.shasha.ui.components.AvatarChooser
 import com.ahmadnayfeh.shasha.ui.components.Avatars
 import com.ahmadnayfeh.shasha.ui.components.ContentFocus
+import com.ahmadnayfeh.shasha.ui.components.LocalAppMessages
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
 import com.ahmadnayfeh.shasha.ui.components.GridDefaults
 import com.ahmadnayfeh.shasha.ui.components.ProfileAvatar
@@ -70,15 +72,39 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProfilesRoute(onOpenProfile: (String) -> Unit) {
     val vm = containerViewModel { ProfilesViewModel(it.profiles) }
+    ProfilesContent(vm, onOpenProfile)
+}
+
+/**
+ * The profiles with «إضافة ملف طفل»'s dialog: the new child is stored, then its page opens (where its rules are set). A
+ * profile that could not be stored says so and the dialog stays, with what was typed.
+ */
+@Composable
+internal fun ProfilesContent(vm: ProfilesViewModel, onOpenProfile: (String) -> Unit) {
     val all by vm.all.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val messages = LocalAppMessages.current
+    val resources = LocalResources.current
     var creating by rememberSaveable { mutableStateOf(false) }
+    var saving by remember { mutableStateOf(false) }
     ProfilesScreen(all, focus = remember { ContentFocus() }, onOpenProfile = onOpenProfile, onAddChild = { creating = true })
     if (creating) {
         NewChildDialog(
             onCreate = { name, avatar ->
-                creating = false
-                scope.launch { onOpenProfile(vm.createChild(name, avatar).id) }
+                // One profile per press: a second OK while it is being stored adds no twin.
+                if (!saving) {
+                    saving = true
+                    scope.launch {
+                        val child = vm.createChild(name, avatar)
+                        saving = false
+                        if (child != null) {
+                            creating = false
+                            onOpenProfile(child.id)
+                        } else {
+                            messages?.show(resources.getString(R.string.profiles_create_failed))
+                        }
+                    }
+                }
             },
             onDismiss = { creating = false },
         )
@@ -189,12 +215,18 @@ private fun Fact(icon: ImageVector, text: String) {
     }
 }
 
-/** A new child profile: a name (the TV's keyboard: this is the parent's settings) and a picture. */
+/**
+ * A new child profile: a name (the TV's keyboard: this is the parent's settings) and a picture. The focus starts on the name's
+ * box, which opens the keyboard only on OK; the keyboard's action key goes on to «إنشاء». «إنشاء» without a name says so under
+ * the box and goes back to it.
+ */
 @Composable
 fun NewChildDialog(onCreate: (name: String, avatar: String) -> Unit, onDismiss: () -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
     var avatar by rememberSaveable { mutableStateOf(Profile.DEFAULT_CHILD_AVATAR) }
+    var missingName by rememberSaveable { mutableStateOf(false) }
     val field = remember { FocusRequester() }
+    val create = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         withFrameNanos { }
         runCatching { field.requestFocus() }
@@ -212,24 +244,45 @@ fun NewChildDialog(onCreate: (name: String, avatar: String) -> Unit, onDismiss: 
                 Spacer(Modifier.height(18.dp))
                 ShashaTextField(
                     value = name,
-                    onValueChange = { name = it },
+                    onValueChange = {
+                        name = it
+                        missingName = false
+                    },
                     hint = stringResource(R.string.setup_child_hint),
                     icon = ShashaIcons.Edit,
                     maxLength = PROFILE_NAME_MAX,
-                    modifier = Modifier.width(420.dp).focusRequester(field),
+                    onDone = { runCatching { create.requestFocus() } },
+                    modifier = Modifier.width(420.dp).focusRequester(field).testTag("new_child_name"),
                 )
+                if (missingName) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        stringResource(R.string.profiles_name_missing),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = ShashaColors.Error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().testTag("new_child_name_missing"),
+                    )
+                }
                 Spacer(Modifier.height(18.dp))
                 AvatarChooser(Avatars.childKeys, avatar, { avatar = it }, name, size = 54.dp)
                 Spacer(Modifier.height(22.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     ShashaButton(
                         stringResource(R.string.profiles_create),
-                        { if (name.isNotBlank()) onCreate(name, avatar) else runCatching { field.requestFocus() } },
+                        {
+                            if (name.isNotBlank()) {
+                                onCreate(name.trim(), avatar)
+                            } else {
+                                missingName = true
+                                runCatching { field.requestFocus() }
+                            }
+                        },
                         icon = ShashaIcons.Check,
                         primary = true,
-                        modifier = Modifier.testTag("new_child_create"),
+                        modifier = Modifier.focusRequester(create).testTag("new_child_create"),
                     )
-                    ShashaButton(stringResource(R.string.action_cancel), onDismiss)
+                    ShashaButton(stringResource(R.string.action_cancel), onDismiss, modifier = Modifier.testTag("new_child_cancel"))
                 }
             }
         }

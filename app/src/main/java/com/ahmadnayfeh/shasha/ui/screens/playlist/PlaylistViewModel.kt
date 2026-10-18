@@ -7,6 +7,7 @@ import com.ahmadnayfeh.shasha.player.PlayQueue
 import com.ahmadnayfeh.shasha.player.PlayQueues
 import com.ahmadnayfeh.shasha.policy.ContentFilter
 import com.ahmadnayfeh.shasha.policy.Decision
+import com.ahmadnayfeh.shasha.ui.format.Thumbnails
 import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.ui.model.toUi
 import com.ahmadnayfeh.shasha.ui.paging.Page
@@ -39,7 +40,7 @@ import kotlinx.coroutines.launch
 class PlaylistViewModel(
     private val playlistId: String,
     source: VideoSource,
-    watch: WatchRepository,
+    private val watch: WatchRepository,
     private val queues: PlayQueues,
     filter: StateFlow<ContentFilter>,
     private val ownerChannelId: String? = null,
@@ -68,10 +69,24 @@ class PlaylistViewModel(
         watchedFractions(watch, videos.map { s -> s.items.map { it.video.videoId } })
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
+    /** Whether the profile saved this playlist to its library («حفظ القائمة»; the adult's page shows it). */
+    val saved: StateFlow<Boolean> = watch.observeSavedPlaylistIds().map { playlistId in it }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     init {
         viewModelScope.launch {
             if (access.filterNotNull().first().isAllowed) loader.start()
         }
+    }
+
+    /**
+     * Saves the playlist to the profile's library, or takes it out; [onDone] hears whether it is saved afterwards. Nothing
+     * before its details are in. A playlist YouTube gives no picture for keeps its first video's.
+     */
+    fun toggleSaved(onDone: (saved: Boolean, title: String) -> Unit = { _, _ -> }) {
+        val details = _details.value ?: return
+        val cover = details.thumbnailUrl ?: videos.value.items.firstOrNull()?.let { Thumbnails.video(it.video.videoId) }
+        viewModelScope.launch { onDone(watch.toggleSavedPlaylist(details.copy(thumbnailUrl = cover)), details.title) }
     }
 
     fun loadMore() = loader.loadMore()

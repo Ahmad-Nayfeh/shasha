@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -76,7 +77,8 @@ internal fun TextEntryDialog(
     onReset: (() -> Unit)? = null,
     tag: String = "text_entry",
 ) {
-    Dialog(onDismissRequest = onDismiss) {
+    // The whole window, as «ملف طفل جديد»: a text box in a dialog of the platform's width never let the UI tests go idle.
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         TextEntryPanel(title, initial, hint, check, onSave, onDismiss, maxLength, keyboardType, note, resetLabel, onReset, tag)
     }
 }
