@@ -78,11 +78,14 @@
         android:usesCleartextTraffic="false"
         tools:targetApi="31">
         <!-- configChanges: connecting a remote, keyboard or gamepad must not recreate the activity
-             (that would restart the video); Compose handles these changes itself. -->
+             (that would restart the video); Compose handles these changes itself.
+             windowSoftInputMode: the TV's keyboard opens only when OK is pressed on a text box (TvTextField), never by itself
+             when the window gains focus (a TV is a "large" screen, where the system would otherwise show it on its own). -->
         <activity
             android:name=".MainActivity"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|density|fontScale|layoutDirection|locale"
             android:exported="true"
+            android:windowSoftInputMode="stateAlwaysHidden"
             android:screenOrientation="landscape"
             android:theme="@style/Theme.Shasha.Starting">
             <intent-filter>

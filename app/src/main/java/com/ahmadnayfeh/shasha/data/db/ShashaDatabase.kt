@@ -15,6 +15,7 @@ import com.ahmadnayfeh.shasha.backup.BackupDao
  * - 1: subscriptions, feed, progress, history, watch later (phase 2).
  * - 2: profiles, usage records, surrender events (phase 3): new tables only, so Room migrates by itself.
  * - 3: sponsor_segments (phase 6), the SponsorBlock cache: a new table only.
+ * - 4: saved_playlists, the YouTube playlists each profile saved to its library: a new table only.
  */
 @Database(
     entities = [
@@ -27,10 +28,11 @@ import com.ahmadnayfeh.shasha.backup.BackupDao
         UsageRecordEntity::class,
         SurrenderEventEntity::class,
         SponsorSegmentsEntity::class,
+        SavedPlaylistEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
-    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
 )
 abstract class ShashaDatabase : RoomDatabase() {
     abstract fun subscriptions(): SubscriptionDao
@@ -42,6 +44,9 @@ abstract class ShashaDatabase : RoomDatabase() {
     abstract fun history(): HistoryDao
 
     abstract fun watchLater(): WatchLaterDao
+
+    /** The YouTube playlists each profile saved to its library. */
+    abstract fun savedPlaylists(): SavedPlaylistDao
 
     abstract fun profiles(): ProfileDao
 

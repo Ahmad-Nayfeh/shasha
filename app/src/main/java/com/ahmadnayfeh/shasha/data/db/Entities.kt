@@ -102,3 +102,19 @@ data class WatchLaterEntity(
     val durationSeconds: Long?,
     val addedAtMs: Long,
 )
+
+/**
+ * A YouTube playlist a profile saved to its library («حفظ في المكتبة» on the playlist's page or in a playlist card's menu):
+ * what the library shows of it, as YouTube described it when it was saved. Its videos are not kept: the playlist's page reads
+ * them from YouTube, so it stays the owner's list as it changes. One row per profile and playlist (version 4).
+ */
+@Entity(tableName = "saved_playlists", primaryKeys = ["profileId", "playlistId"], indices = [Index("profileId", "savedAtMs")])
+data class SavedPlaylistEntity(
+    val profileId: String,
+    val playlistId: String,
+    val title: String,
+    val channelName: String?,
+    val thumbnailUrl: String?,
+    val videoCount: Long?,
+    val savedAtMs: Long,
+)

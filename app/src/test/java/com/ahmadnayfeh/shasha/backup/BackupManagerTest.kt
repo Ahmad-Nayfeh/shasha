@@ -45,6 +45,7 @@ import com.ahmadnayfeh.shasha.policy.owner
 import com.ahmadnayfeh.shasha.remote.RemoteFakeSource
 import com.ahmadnayfeh.shasha.remote.RemoteSettings
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
+import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -140,6 +141,7 @@ class BackupManagerTest {
             addToWatchLater(clip("later000001", channelId = "UCdocs000000000000000000", title = "For later"))
             addToHistory(clip("seen0000001", channelId = "UCdocs000000000000000000", title = "Seen"))
             saveProgress("seen0000001", positionMs = 120_000, durationMs = 600_000)
+            savePlaylist(PlaylistItem("PLsaved0001", "وثائقيات", "Docs", "https://i.ytimg.com/vi/x/hqdefault.jpg", 12))
         }
         watch("kid").apply {
             addToHistory(clip("kidseen0001", title = "Cartoon"))
@@ -205,6 +207,9 @@ class BackupManagerTest {
         assertThat(second.usage.foregroundSeconds("kid", engine.today())).isEqualTo(1_800)
         assertThat(second.usage.surrenders("adult", 0)).hasSize(1)
         assertThat(second.watch("adult").observeWatchLater().first().map { it.videoId }).containsExactly("later000001")
+        assertThat(second.watch("adult").observeSavedPlaylists().first())
+            .containsExactly(PlaylistItem("PLsaved0001", "وثائقيات", "Docs", "https://i.ytimg.com/vi/x/hqdefault.jpg", 12))
+        assertThat(second.watch("kid").observeSavedPlaylists().first()).isEmpty()
         assertThat(second.watch("kid").resumePositionMs("kidseen0001")).isEqualTo(30_000)
         assertThat(second.remoteSettings.enabled.first()).isFalse()
         assertThat(second.remoteSettings.preferredPort()).isEqualTo(8766)
@@ -220,6 +225,25 @@ class BackupManagerTest {
         assertThat(restoredBehavior.appearance).isEqualTo(Appearance(AppLanguage.ENGLISH, AppTheme.LIGHT))
         // The second TV keeps its own pairing: its phones are paired again from its QR code.
         assertThat(second.remoteSettings.token()).isNotEqualTo(token)
+    }
+
+    /**
+     * A file from before the saved playlists has none: the TV's own stay for the profiles the file brings back (they
+     * are not part of what the file replaces), and those of a profile it does not bring back go with that profile.
+     */
+    @Test
+    fun aBackupFromBeforeSavedPlaylists_keepsTheTvsOwn_forTheProfilesItBrings() = runBlocking<Unit> {
+        val first = tv("first").apply { fill() }
+        val file = first.backup.export().json()
+        val old = JsonObject(file - "savedPlaylists")
+
+        val second = tv("second")
+        second.profiles.ensureOwner("أنا")
+        second.watch("adult").savePlaylist(PlaylistItem("PLmine00001", "قائمتي", null, null, 3))
+        second.watch("gone").savePlaylist(PlaylistItem("PLgone00001", "قائمة", null, null, 3))
+        second.backup.import(old.toString().toByteArray())
+        assertThat(second.watch("adult").observeSavedPlaylists().first().map { it.playlistId }).containsExactly("PLmine00001")
+        assertThat(second.watch("gone").observeSavedPlaylists().first()).isEmpty()
     }
 
     /** v1.1.1: each profile's «إظهار الفيديوهات المقترحة» and «إظهار مقاطع Shorts» go out with it and come back as they were. */

@@ -227,12 +227,16 @@ class LongPressMenuTest {
         }
         holdOkOnTheCard("card_menu")
         compose.onNodeWithTag("card_menu").assertExists()
-        compose.onNodeWithTag("pin_pad").assertDoesNotExist()
+        assertThat(playlistSaved()).isFalse() // «حفظ القائمة», its first row, did not act
 
+        // A fresh press chooses the first row: the playlist is saved (the profile's own library: no PIN), the menu closes.
         pressOkIn("card_menu")
+        compose.waitUntil(5_000) { playlistSaved() }
         compose.onNodeWithTag("card_menu").assertDoesNotExist()
-        compose.onNodeWithTag("pin_pad").assertExists()
+        compose.onNodeWithTag("pin_pad").assertDoesNotExist()
     }
+
+    private fun playlistSaved(): Boolean = runBlocking { "PLlongpress0000000000001" in watch.observeSavedPlaylistIds().first() }
 
     @Test
     fun aMenuOpenedWithMenu_actsOnTheFirstPressOfOk() {

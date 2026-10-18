@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.ahmadnayfeh.shasha.data.db.HistoryEntity
 import com.ahmadnayfeh.shasha.data.db.ProfileEntity
+import com.ahmadnayfeh.shasha.data.db.SavedPlaylistEntity
 import com.ahmadnayfeh.shasha.data.db.SubscriptionEntity
 import com.ahmadnayfeh.shasha.data.db.SurrenderEventEntity
 import com.ahmadnayfeh.shasha.data.db.UsageRecordEntity
@@ -28,6 +29,9 @@ interface BackupDao {
     @Query("SELECT * FROM watch_later ORDER BY profileId, addedAtMs DESC, videoId")
     suspend fun watchLater(): List<WatchLaterEntity>
 
+    @Query("SELECT * FROM saved_playlists ORDER BY profileId, savedAtMs DESC, playlistId")
+    suspend fun savedPlaylists(): List<SavedPlaylistEntity>
+
     @Query("SELECT * FROM history ORDER BY profileId, watchedAtMs DESC, videoId")
     suspend fun history(): List<HistoryEntity>
 
@@ -48,6 +52,13 @@ interface BackupDao {
 
     @Query("DELETE FROM watch_later")
     suspend fun deleteWatchLater()
+
+    @Query("DELETE FROM saved_playlists")
+    suspend fun deleteSavedPlaylists()
+
+    /** A file from before the saved playlists: those of the profiles it brings back stay, the others go with their profile. */
+    @Query("DELETE FROM saved_playlists WHERE profileId NOT IN (SELECT id FROM profiles)")
+    suspend fun deleteSavedPlaylistsOfOtherProfiles()
 
     @Query("DELETE FROM history")
     suspend fun deleteHistory()
@@ -72,6 +83,9 @@ interface BackupDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWatchLater(rows: List<WatchLaterEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSavedPlaylists(rows: List<SavedPlaylistEntity>)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHistory(rows: List<HistoryEntity>)

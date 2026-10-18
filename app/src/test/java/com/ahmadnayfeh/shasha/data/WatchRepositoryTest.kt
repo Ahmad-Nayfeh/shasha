@@ -3,6 +3,7 @@ package com.ahmadnayfeh.shasha.data
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.data.db.ShashaDatabase
+import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -123,5 +124,51 @@ class WatchRepositoryTest {
         profile.id.value = "kid"
         assertThat(watch.observeWatchLater().first()).isEmpty()
         assertThat(watch.isSaved("v2").first()).isFalse()
+    }
+
+    @Test
+    fun savedPlaylists_newestFirst_perProfile_andToggled() = runBlocking<Unit> {
+        val travel = PlaylistItem("PLtravel", "رحلات", "قناة", null, 12)
+        val cooking = PlaylistItem("PLcooking", "طبخ", null, "https://i.ytimg.com/vi/x/hqdefault.jpg", null)
+        watch.savePlaylist(travel)
+        now += 1_000
+        assertThat(watch.toggleSavedPlaylist(cooking)).isTrue()
+        assertThat(watch.observeSavedPlaylists().first()).containsExactly(cooking, travel).inOrder()
+        assertThat(watch.observeSavedPlaylistIds().first()).containsExactly("PLtravel", "PLcooking")
+
+        // Saving again refreshes it and moves it to the top.
+        now += 1_000
+        watch.savePlaylist(travel.copy(videoCount = 13))
+        assertThat(watch.observeSavedPlaylists().first().map { it.playlistId to it.videoCount })
+            .containsExactly("PLtravel" to 13L, "PLcooking" to null).inOrder()
+
+        // Another profile has its own library.
+        profile.id.value = "kid"
+        assertThat(watch.observeSavedPlaylists().first()).isEmpty()
+        assertThat(watch.observeSavedPlaylistIds().first()).isEmpty()
+        profile.id.value = ADULT_PROFILE_ID
+
+        assertThat(watch.toggleSavedPlaylist(cooking)).isFalse()
+        assertThat(watch.observeSavedPlaylists().first().map { it.playlistId }).containsExactly("PLtravel")
+        watch.removeSavedPlaylist("PLtravel")
+        assertThat(watch.observeSavedPlaylists().first()).isEmpty()
+    }
+
+    @Test
+    fun savedPlaylists_goWithTheirProfile() = runBlocking<Unit> {
+        val profiles = ProfileRepository(db)
+        profiles.ensureOwner("الكبار")
+        val kid = com.ahmadnayfeh.shasha.policy.Profile.newChild("سارة", id = "kid")
+        profiles.upsert(kid)
+        profile.id.value = "kid"
+        watch.savePlaylist(PlaylistItem("PLkid", "أناشيد", null, null, 3))
+        profile.id.value = ADULT_PROFILE_ID
+        watch.savePlaylist(PlaylistItem("PLadult", "وثائقي", null, null, 3))
+
+        assertThat(profiles.delete("kid")).isEqualTo(DeleteProfileResult.Deleted)
+        profile.id.value = "kid"
+        assertThat(watch.observeSavedPlaylists().first()).isEmpty()
+        profile.id.value = ADULT_PROFILE_ID
+        assertThat(watch.observeSavedPlaylists().first().map { it.playlistId }).containsExactly("PLadult")
     }
 }

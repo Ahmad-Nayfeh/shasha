@@ -1,6 +1,7 @@
 package com.ahmadnayfeh.shasha.backup
 
 import com.ahmadnayfeh.shasha.data.db.HistoryEntity
+import com.ahmadnayfeh.shasha.data.db.SavedPlaylistEntity
 import com.ahmadnayfeh.shasha.data.db.SubscriptionEntity
 import com.ahmadnayfeh.shasha.data.db.SurrenderEventEntity
 import com.ahmadnayfeh.shasha.data.db.UsageRecordEntity
@@ -46,6 +47,26 @@ internal data class SavedVideoRow(
         fun of(e: WatchLaterEntity) = SavedVideoRow(e.profileId, e.videoId, e.title, e.channelId, e.channelName, e.thumbnailUrl, e.durationSeconds, e.addedAtMs)
 
         fun of(e: HistoryEntity) = SavedVideoRow(e.profileId, e.videoId, e.title, e.channelId, e.channelName, e.thumbnailUrl, e.durationSeconds, e.watchedAtMs)
+    }
+}
+
+/** A YouTube playlist a profile saved to its library ([atMs]: when it was saved). Older files have none. */
+@Serializable
+internal data class SavedPlaylistRow(
+    val profileId: String,
+    val playlistId: String,
+    val title: String,
+    val channelName: String? = null,
+    val thumbnailUrl: String? = null,
+    val videoCount: Long? = null,
+    val atMs: Long,
+) {
+    val valid: Boolean get() = profileId.isNotBlank() && playlistId.isNotBlank() && atMs >= 0 && (videoCount ?: 0) >= 0
+
+    fun toEntity() = SavedPlaylistEntity(profileId, playlistId, title, channelName, thumbnailUrl, videoCount, atMs)
+
+    companion object {
+        fun of(e: SavedPlaylistEntity) = SavedPlaylistRow(e.profileId, e.playlistId, e.title, e.channelName, e.thumbnailUrl, e.videoCount, e.savedAtMs)
     }
 }
 

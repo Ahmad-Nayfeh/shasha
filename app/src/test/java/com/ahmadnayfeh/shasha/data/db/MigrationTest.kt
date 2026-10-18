@@ -45,8 +45,9 @@ class MigrationTest {
             UsageRepository(db).addForeground(owner.id, 1, 15)
             assertThat(UsageRepository(db).foregroundSeconds(owner.id, 1)).isEqualTo(15)
             db.surrenders().insert(SurrenderEventEntity(profileId = owner.id, epochMs = 1, videoId = "v"))
-            // Through version 2 to the current one (3 added the SponsorBlock cache: SponsorSegmentsMigrationTest).
-            assertThat(db.openHelper.readableDatabase.version).isEqualTo(3)
+            // Through version 2 to the current one (3 added the SponsorBlock cache: SponsorSegmentsMigrationTest; 4 the saved
+            // playlists: SavedPlaylistsMigrationTest).
+            assertThat(db.openHelper.readableDatabase.version).isEqualTo(4)
         } finally {
             db.close()
         }

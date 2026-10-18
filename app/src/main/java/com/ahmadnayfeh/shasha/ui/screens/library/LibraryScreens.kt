@@ -17,6 +17,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.ui.components.ConfirmDialog
@@ -31,16 +34,20 @@ import com.ahmadnayfeh.shasha.ui.components.TakeFocusWhenReady
 import com.ahmadnayfeh.shasha.ui.components.containerViewModel
 import com.ahmadnayfeh.shasha.ui.components.fullWidthItem
 import com.ahmadnayfeh.shasha.ui.components.rememberNow
+import com.ahmadnayfeh.shasha.ui.components.playlistCards
 import com.ahmadnayfeh.shasha.ui.components.videoCards
 import com.ahmadnayfeh.shasha.ui.format.rememberFormats
+import com.ahmadnayfeh.shasha.ui.model.PlaylistUi
 import com.ahmadnayfeh.shasha.ui.model.VideoUi
+import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 
 @Composable
-fun WatchLaterRoute(focus: ContentFocus, onPlay: (VideoItem) -> Unit) {
+fun WatchLaterRoute(focus: ContentFocus, onPlay: (VideoItem) -> Unit, onOpenPlaylist: (String) -> Unit = {}) {
     val vm = containerViewModel { WatchLaterViewModel(it.watch, it.policy.filter) }
     val items by vm.items.collectAsStateWithLifecycle()
-    WatchLaterScreen(items, vm.watched.collectAsStateWithLifecycle(), rememberNow(), focus, onPlay)
+    val playlists by vm.playlists.collectAsStateWithLifecycle()
+    WatchLaterScreen(items, vm.watched.collectAsStateWithLifecycle(), rememberNow(), focus, onPlay, playlists = playlists, onOpenPlaylist = onOpenPlaylist)
 }
 
 @Composable
@@ -50,11 +57,22 @@ fun HistoryRoute(focus: ContentFocus, onPlay: (VideoItem) -> Unit) {
     HistoryScreen(items, vm.watched.collectAsStateWithLifecycle(), rememberNow(), focus, onPlay, onClear = vm::clear)
 }
 
-/** شاهد لاحقاً: videos saved from any card's menu or from the player. */
+/**
+ * شاهد لاحقاً: videos saved from any card's menu or from the player, and above them «القوائم المحفوظة», the YouTube playlists
+ * saved from a playlist's page or its card's menu (OK opens one; its menu takes it out). [playlists] null: not known yet.
+ */
 @Composable
-fun WatchLaterScreen(items: List<VideoUi>?, watched: State<Map<String, Float>>, nowMs: Long, focus: ContentFocus, onPlay: (VideoItem) -> Unit) {
+fun WatchLaterScreen(
+    items: List<VideoUi>?,
+    watched: State<Map<String, Float>>,
+    nowMs: Long,
+    focus: ContentFocus,
+    onPlay: (VideoItem) -> Unit,
+    playlists: List<PlaylistUi>? = emptyList(),
+    onOpenPlaylist: (String) -> Unit = {},
+) {
     VideoListScreen(
-        items = items,
+        items = items?.takeIf { playlists != null },
         watched = watched,
         nowMs = nowMs,
         focus = focus,
@@ -64,6 +82,8 @@ fun WatchLaterScreen(items: List<VideoUi>?, watched: State<Map<String, Float>>, 
         emptyBody = stringResource(R.string.watch_later_empty_body),
         onPlay = onPlay,
         modifier = Modifier.testTag("watch_later"),
+        playlists = playlists.orEmpty(),
+        onOpenPlaylist = onOpenPlaylist,
     )
 }
 
@@ -119,24 +139,41 @@ private fun VideoListScreen(
     emptyBody: String,
     onPlay: (VideoItem) -> Unit,
     modifier: Modifier = Modifier,
+    playlists: List<PlaylistUi> = emptyList(),
+    onOpenPlaylist: (String) -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val formats = rememberFormats()
-    TakeFocusWhenReady(focus, ready = !items.isNullOrEmpty())
+    TakeFocusWhenReady(focus, ready = !items.isNullOrEmpty() || (items != null && playlists.isNotEmpty()))
     when {
         items == null -> Box(modifier.fillMaxSize())
-        items.isEmpty() -> Box(modifier.fillMaxSize().padding(GridDefaults.ContentPadding), contentAlignment = Alignment.Center) {
+        items.isEmpty() && playlists.isEmpty() -> Box(modifier.fillMaxSize().padding(GridDefaults.ContentPadding), contentAlignment = Alignment.Center) {
             EmptyState(emptyIcon, emptyTitle, emptyBody)
         }
         else -> {
             val gridState = rememberLazyGridState()
             val firstCard = remember { FocusRequester() }
+            val subtitle = listOfNotNull(
+                formats.count(R.array.count_videos, items.size.toLong()).takeIf { items.isNotEmpty() || playlists.isEmpty() },
+                playlists.size.takeIf { it > 0 }?.let { formats.count(R.array.count_playlists, it.toLong()) },
+            ).joinToString("  ·  ")
             ShashaGrid(gridState, focus, firstCard, modifier.fillMaxSize()) {
                 fullWidthItem("header") {
-                    ScreenHeader(title, formats.count(R.array.count_videos, items.size.toLong()), actions = actions)
+                    ScreenHeader(title, subtitle, actions = actions)
                 }
-                videoCards(items, watched, formats, nowMs, firstCard) { onPlay(it.video) }
+                if (playlists.isNotEmpty()) {
+                    fullWidthItem("playlists_label") { SectionTitle(stringResource(R.string.library_saved_playlists), Modifier.testTag("saved_playlists")) }
+                    playlistCards(playlists, formats, firstCard) { onOpenPlaylist(it.playlist.playlistId) }
+                    if (items.isNotEmpty()) fullWidthItem("videos_label") { SectionTitle(stringResource(R.string.library_saved_videos)) }
+                }
+                videoCards(items, watched, formats, nowMs, firstCard.takeIf { playlists.isEmpty() }) { onPlay(it.video) }
             }
         }
     }
+}
+
+/** A section's name inside a list («القوائم المحفوظة», «الفيديوهات»). */
+@Composable
+private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
+    Text(text, style = MaterialTheme.typography.titleMedium, color = ShashaColors.Muted, modifier = modifier.padding(top = 8.dp))
 }

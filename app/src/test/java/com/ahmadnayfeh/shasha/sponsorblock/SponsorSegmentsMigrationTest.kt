@@ -41,7 +41,8 @@ class SponsorSegmentsMigrationTest {
             assertThat(dao.get("lC3h3Lm3q54")).isNull()
             dao.put(SponsorSegmentsEntity("lC3h3Lm3q54", 1, "[]"))
             assertThat(dao.get("lC3h3Lm3q54")?.segments).isEqualTo("[]")
-            assertThat(db.openHelper.readableDatabase.version).isEqualTo(3)
+            // Through version 3 to the current one (4 added the saved playlists: SavedPlaylistsMigrationTest).
+            assertThat(db.openHelper.readableDatabase.version).isEqualTo(4)
         } finally {
             db.close()
         }

@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.tv.material3.Icon
 import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
@@ -252,7 +253,8 @@ fun NameDialog(title: String, initial: String, hint: String, onSave: (String) ->
         withFrameNanos { }
         runCatching { field.requestFocus() }
     }
-    Dialog(onDismissRequest = onDismiss) {
+    // The whole window, as «ملف طفل جديد»: a text box in a dialog of the platform's width never let the UI tests go idle.
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         DialogCard(title, Modifier.testTag("name_dialog"), width = 520.dp) {
             ShashaTextField(
                 value = name,

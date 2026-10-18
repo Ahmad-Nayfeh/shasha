@@ -86,6 +86,7 @@ class BackupManager(
                 profiles = dao.profiles(),
                 subscriptions = dao.subscriptions().map(SubscriptionRow::of),
                 watchLater = dao.watchLater().map(SavedVideoRow::of),
+                savedPlaylists = dao.savedPlaylists().map(SavedPlaylistRow::of),
                 history = dao.history().map(SavedVideoRow::of),
                 progress = dao.progress().map(ProgressRow::of),
                 usage = dao.usage().map(UsageRow::of),
@@ -106,6 +107,7 @@ class BackupManager(
             put(KEY_OVERRIDES, encode(Overrides.serializer(), overrides))
             put(KEY_SUBSCRIPTIONS, list(SubscriptionRow.serializer(), tables.subscriptions))
             put(KEY_WATCH_LATER, list(SavedVideoRow.serializer(), tables.watchLater))
+            put(KEY_SAVED_PLAYLISTS, list(SavedPlaylistRow.serializer(), tables.savedPlaylists))
             put(KEY_HISTORY, list(SavedVideoRow.serializer(), tables.history))
             put(KEY_PROGRESS, list(ProgressRow.serializer(), tables.progress))
             put(KEY_USAGE, list(UsageRow.serializer(), tables.usage))
@@ -136,6 +138,13 @@ class BackupManager(
                 dao.insertSubscriptions(backup.subscriptions.map { it.toEntity() })
                 dao.deleteFeedOfOtherChannels()
                 dao.insertWatchLater(backup.watchLater.map { it.toWatchLater() })
+                val saved = backup.savedPlaylists
+                if (saved == null) {
+                    dao.deleteSavedPlaylistsOfOtherProfiles()
+                } else {
+                    dao.deleteSavedPlaylists()
+                    dao.insertSavedPlaylists(saved.map { it.toEntity() })
+                }
                 dao.insertHistory(backup.history.map { it.toHistory() })
                 dao.insertProgress(backup.progress.map { it.toEntity() })
                 dao.insertUsage(backup.usage.map { it.toEntity() })
@@ -217,6 +226,7 @@ class BackupManager(
         val profiles: List<ProfileEntity>,
         val subscriptions: List<SubscriptionRow>,
         val watchLater: List<SavedVideoRow>,
+        val savedPlaylists: List<SavedPlaylistRow>,
         val history: List<SavedVideoRow>,
         val progress: List<ProgressRow>,
         val usage: List<UsageRow>,
@@ -230,6 +240,8 @@ class BackupManager(
         val overrides: Overrides,
         val subscriptions: List<SubscriptionRow>,
         val watchLater: List<SavedVideoRow>,
+        /** Null for a file from before the saved playlists (the TV's stay, see [BackupDao.deleteSavedPlaylistsOfOtherProfiles]). */
+        val savedPlaylists: List<SavedPlaylistRow>?,
         val history: List<SavedVideoRow>,
         val progress: List<ProgressRow>,
         val usage: List<UsageRow>,
@@ -292,6 +304,11 @@ class BackupManager(
             overrides = Overrides(overrides.quota.filter { it.profileId in ids }, overrides.schedule.filter { it.profileId in ids }),
             subscriptions = items(KEY_SUBSCRIPTIONS, SubscriptionRow.serializer()) { it.valid }.distinctBy { it.channelId },
             watchLater = items(KEY_WATCH_LATER, SavedVideoRow.serializer()) { it.valid && it.profileId in ids },
+            savedPlaylists = if (root[KEY_SAVED_PLAYLISTS] is JsonArray) {
+                items(KEY_SAVED_PLAYLISTS, SavedPlaylistRow.serializer()) { it.valid && it.profileId in ids }.distinctBy { it.profileId to it.playlistId }
+            } else {
+                null
+            },
             history = items(KEY_HISTORY, SavedVideoRow.serializer()) { it.valid && it.profileId in ids },
             progress = items(KEY_PROGRESS, ProgressRow.serializer()) { it.valid && it.profileId in ids },
             usage = items(KEY_USAGE, UsageRow.serializer()) { it.valid && it.profileId in ids },
@@ -342,6 +359,7 @@ class BackupManager(
         private const val KEY_OVERRIDES = "overrides"
         private const val KEY_SUBSCRIPTIONS = "subscriptions"
         private const val KEY_WATCH_LATER = "watchLater"
+        private const val KEY_SAVED_PLAYLISTS = "savedPlaylists"
         private const val KEY_HISTORY = "history"
         private const val KEY_PROGRESS = "progress"
         private const val KEY_USAGE = "usage"

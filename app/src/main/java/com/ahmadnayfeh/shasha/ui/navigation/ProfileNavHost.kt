@@ -352,7 +352,7 @@ private fun AdultTabContent(tab: Tab, focus: ContentFocus, actions: BrowseAction
         )
         Tab.SEARCH -> SearchRoute(focus, actions)
         Tab.SUBSCRIPTIONS -> SubscriptionsRoute(focus, actions.openChannel, actions.openImport, onSearch = { select(Tab.SEARCH) })
-        Tab.WATCH_LATER -> WatchLaterRoute(focus, actions.play)
+        Tab.WATCH_LATER -> WatchLaterRoute(focus, actions.play, actions.openPlaylist)
         Tab.HISTORY -> HistoryRoute(focus, actions.play)
         Tab.SETTINGS -> SettingsRoute(focus, settings)
         Tab.ALLOWED_CHANNELS -> Unit // a child's tab

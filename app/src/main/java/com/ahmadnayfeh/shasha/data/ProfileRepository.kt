@@ -61,8 +61,8 @@ class ProfileRepository(private val db: ShashaDatabase) {
     }
 
     /**
-     * Deletes a profile with everything that belongs to it (history, progress, watch later, usage,
-     * surrenders). The last adult is never deleted.
+     * Deletes a profile with everything that belongs to it (history, progress, watch later, saved playlists,
+     * usage, surrenders). The last adult is never deleted.
      */
     suspend fun delete(id: String): DeleteProfileResult = db.withTransaction {
         val all = all()
@@ -72,6 +72,7 @@ class ProfileRepository(private val db: ShashaDatabase) {
         dao.deleteHistory(id)
         dao.deleteWatchLater(id)
         dao.deleteProgress(id)
+        dao.deleteSavedPlaylists(id)
         dao.deleteUsage(id)
         dao.deleteSurrenders(id)
         DeleteProfileResult.Deleted
