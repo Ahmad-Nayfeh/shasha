@@ -11,7 +11,7 @@ import com.ahmadnayfeh.shasha.ui.screens.updates.UpdatesActions
 import com.ahmadnayfeh.shasha.ui.screens.updates.UpdatesScreen
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.update.InstalledVersion
-import com.ahmadnayfeh.shasha.update.ReleaseAsset
+import com.ahmadnayfeh.shasha.update.ReleaseApk
 import com.ahmadnayfeh.shasha.update.ReleaseInfo
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
@@ -47,7 +47,7 @@ class WesternDigitsTest {
 
     @Test
     fun updaterProgressAndVersions() {
-        val release = ReleaseInfo("v1.2.0-1070", "1.2.0", 1070, ReleaseAsset(7, "shasha-1.2.0-1070.apk", 18_874_368, "https://example.test/assets/7"))
+        val release = ReleaseInfo("1.2.0", 1070, ReleaseApk("https://example.test/shasha-tv.apk", 18_874_368, "abababababababababababababababababababababababababababababababab"))
         compose.setContent {
             ShashaTheme {
                 UpdatesScreen(UpdateUiState.Downloading(release, bytes = 7_340_032, total = 18_874_368), InstalledVersion("1.1.1", 1057), UpdatesActions(onBack = {}))

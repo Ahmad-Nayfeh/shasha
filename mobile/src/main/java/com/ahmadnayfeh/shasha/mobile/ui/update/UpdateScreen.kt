@@ -40,8 +40,8 @@ import com.ahmadnayfeh.shasha.mobile.update.UpdateErrorKind
 /** The text for a failed update (never names where the updates come from). */
 internal fun updateErrorText(kind: UpdateErrorKind): Int = when (kind) {
     UpdateErrorKind.NETWORK -> R.string.update_err_network
-    UpdateErrorKind.TOKEN_REJECTED, UpdateErrorKind.FORBIDDEN, UpdateErrorKind.NOT_FOUND -> R.string.update_err_unavailable
-    UpdateErrorKind.NO_APK, UpdateErrorKind.BAD_TAG, UpdateErrorKind.BAD_ANSWER -> R.string.update_err_server
+    UpdateErrorKind.FORBIDDEN, UpdateErrorKind.NOT_FOUND -> R.string.update_err_unavailable
+    UpdateErrorKind.NO_APK, UpdateErrorKind.BAD_ANSWER -> R.string.update_err_server
     UpdateErrorKind.DOWNLOAD_FAILED -> R.string.update_err_download
     UpdateErrorKind.BAD_APK, UpdateErrorKind.WRONG_PACKAGE, UpdateErrorKind.NOT_NEWER -> R.string.update_err_file
     UpdateErrorKind.SIGNATURE_MISMATCH -> R.string.update_err_signature
@@ -68,11 +68,6 @@ fun UpdateScreen(container: AppContainer, onBack: () -> Unit) {
             verticalArrangement = Arrangement.Center,
         ) {
             when (val s = state) {
-                UpdateUi.Unavailable -> {
-                    Icon(Icons.Filled.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(12.dp))
-                    Text(stringResource(R.string.update_unavailable), textAlign = TextAlign.Center)
-                }
                 UpdateUi.Checking -> {
                     LinearProgressIndicator(Modifier.fillMaxWidth())
                     Spacer(Modifier.height(12.dp))

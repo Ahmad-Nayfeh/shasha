@@ -27,8 +27,6 @@
     <string name="updates_not_allowed_title">التثبيت غير مسموح بعد</string>
     <string name="updates_not_allowed_body">لم تُمنح «شاشة» إذن تثبيت التحديثات. شغّل المثبّت من حقيبة التثبيت على الحاسوب مرة أخرى، فهو يمنحها هذا الإذن، ثم اضغط «إعادة المحاولة».</string>
     <!-- A copy built without the key that reads releases (a local build). -->
-    <string name="updates_token_title">التحديث غير متاح في هذه النسخة</string>
-    <string name="updates_token_body">هذه النسخة لا تستطيع فحص التحديثات. ثبّت أحدث نسخة من «شاشة» بالمثبّت من حقيبة التثبيت على الحاسوب، وبعدها تتحدّث بضغطة واحدة.</string>
     <string name="updates_installed_version">المثبّت</string>
     <string name="updates_latest_version">الأحدث</string>
     <!-- %1$s versionName, %2$s versionCode. -->
@@ -37,16 +35,12 @@
 
     <string name="updates_error_network_title">تعذّر الاتصال بالإنترنت</string>
     <string name="updates_error_network_body">تأكّد من اتصال الشاشة بالإنترنت ثم اضغط «إعادة المحاولة».</string>
-    <string name="updates_error_token_title">تعذّر فحص التحديثات</string>
-    <string name="updates_error_token_body">لم تعد هذه النسخة قادرة على قراءة التحديثات. ثبّت أحدث نسخة من «شاشة» بالمثبّت من حقيبة التثبيت على الحاسوب، وبعدها تتحدّث بضغطة واحدة.</string>
     <string name="updates_error_forbidden_title">الخدمة مشغولة الآن</string>
     <string name="updates_error_forbidden_body">تعذّر فحص التحديثات الآن. انتظر قليلاً ثم اضغط «إعادة المحاولة».</string>
     <string name="updates_error_not_found_title">لم نجد تحديثاً منشوراً</string>
     <string name="updates_error_not_found_body">لا يوجد إصدار منشور بعد، أو تعذّر الوصول إليه. حاول لاحقاً.</string>
     <string name="updates_error_no_apk_title">الإصدار الجديد لم يكتمل نشره</string>
     <string name="updates_error_no_apk_body">ما زال آخر إصدار قيد التجهيز. حاول بعد قليل.</string>
-    <string name="updates_error_bad_tag_title">تعذّر فهم معلومات الإصدار</string>
-    <string name="updates_error_bad_tag_body">وصلتنا معلومات غير مفهومة عن آخر إصدار. حاول لاحقاً.</string>
     <string name="updates_error_bad_answer_title">ردّ غير متوقع</string>
     <string name="updates_error_bad_answer_body">وصلنا ردّ لم نفهمه. اضغط «إعادة المحاولة» بعد قليل.</string>
     <string name="updates_error_download_title">انقطع التنزيل</string>

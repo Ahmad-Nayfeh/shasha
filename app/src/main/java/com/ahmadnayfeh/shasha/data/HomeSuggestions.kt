@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -54,7 +55,16 @@ class HomeSuggestions(
     private val lowPriority: suspend (suspend () -> List<VideoItem>) -> List<VideoItem> = { block -> BackgroundThreads.lowPriorityIo { block() } },
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val pauseMs: Long = PAUSE_MS,
+    /**
+     * What the home screens show of [suggested]: the same list for as long as the app runs, whatever the rounds bring
+     * meanwhile (they only add at the end); a new list after a video was played, on «تحديث», and in a new profile session.
+     */
+    val stable: StableSuggestions = StableSuggestions(),
 ) {
+    init {
+        stable.requestRound = ::requestRound
+    }
+
     /** One list (the suggestions beside a watched video, or a channel's newest Shorts), and when it was fetched. */
     data class Kept(val videos: List<VideoItem>, val atMs: Long)
 
@@ -65,7 +75,15 @@ class HomeSuggestions(
      * What the home shows before the profile's rules: the suggested [videos] and [shorts], best first. [working]: lists are being
      * fetched now (an empty row may still fill).
      */
-    data class Suggested(val videos: List<VideoItem> = emptyList(), val shorts: List<VideoItem> = emptyList(), val working: Boolean = false)
+    data class Suggested(
+        val videos: List<VideoItem> = emptyList(),
+        val shorts: List<VideoItem> = emptyList(),
+        val working: Boolean = false,
+        /** The newest round asked for ([requestRound]) whose newest watched video's suggestions are in (fetched, or failed). */
+        val settled: Long = 0,
+        /** The newest viewing the ranking is beside (`id@time`), null without a history: a new one means a video was played. */
+        val head: String? = null,
+    )
 
     private val _kept = MutableStateFlow<Map<String, Kept>>(emptyMap())
 
@@ -85,14 +103,27 @@ class HomeSuggestions(
     private val lock = Mutex()
     private var loaded = false
 
+    /** A round asked for by [requestRound]: its number, and the age from which a list is asked for again. */
+    private data class Ask(val id: Long, val maxAgeMs: Long)
+
+    private val asks = MutableStateFlow(Ask(0, FRESH_MS))
+    private val _settled = MutableStateFlow(0L)
+
+    /**
+     * Asks [keepFresh] for one more round (now, or as soon as a home collects it): lists older than [maxAgeMs] are asked for
+     * again. Returns the round's number: [Suggested.settled] reaches it once its newest watched video's list is in.
+     */
+    fun requestRound(maxAgeMs: Long = FRESH_MS): Long = asks.updateAndGet { Ask(it.id + 1, maxAgeMs) }.id
+
     /**
      * The ranking of what is known now, again whenever the history, a list or [showsShorts] changes. [history]: everything the
      * profile watched, newest first (none where suggestions are off): the first [SEEDS] are what the suggestions are beside, and
      * none of it is suggested again.
      */
     fun suggested(history: Flow<List<Watched>>, showsShorts: Flow<Boolean>): Flow<Suggested> =
-        combine(history, _kept, _shorts, showsShorts, _working) { watched, kept, shorts, withShorts, working ->
-            rank(watched, kept, shorts, clock(), withShorts).copy(working = working)
+        combine(history, _kept, _shorts, showsShorts, combine(_working, _settled, ::Pair)) { watched, kept, shorts, withShorts, (working, settled) ->
+            val head = watched.firstOrNull()?.let { "${it.videoId}@${it.watchedAtMs}" }
+            rank(watched, kept, shorts, clock(), withShorts).copy(working = working, settled = settled, head = head)
         }
 
     /**
@@ -100,30 +131,43 @@ class HomeSuggestions(
      * the newest watched videos change. A run for videos that are no longer the newest is dropped for the new one.
      */
     suspend fun keepFresh(history: Flow<List<Watched>>, showsShorts: Flow<Boolean>) {
-        combine(history, showsShorts) { watched, withShorts ->
+        combine(history, showsShorts, asks) { watched, withShorts, ask ->
             val newest = watched.take(SEEDS)
-            Wanted(newest.map { it.videoId }, if (withShorts) newest.mapNotNull { it.channelId }.distinct().take(SHORTS_CHANNELS) else emptyList())
+            Wanted(newest.map { it.videoId }, if (withShorts) newest.mapNotNull { it.channelId }.distinct().take(SHORTS_CHANNELS) else emptyList(), ask)
         }
             .distinctUntilChanged()
-            .collectLatest { refresh(it.seeds, it.shortsOf) }
+            .collectLatest { wanted ->
+                refresh(wanted.seeds, wanted.shortsOf, wanted.ask.maxAgeMs) { _settled.update { maxOf(it, wanted.ask.id) } }
+            }
     }
 
-    private data class Wanted(val seeds: List<String>, val shortsOf: List<String>)
+    private data class Wanted(val seeds: List<String>, val shortsOf: List<String>, val ask: Ask)
 
     /**
      * Asks for the suggestions of each of [seeds] (watched videos, newest first), and for the newest Shorts of each channel of
      * [shortsOf], that has none kept or only a list older than [FRESH_MS]. Reads [file] first (once). Each request waits while a
      * video plays; a failure keeps what was there (the next visit tries again); an answer that means "slower, please" (a rate limit,
      * a check, a 403) ends the round without asking for the rest.
+     *
+     * [settled] is called once the newest of [seeds] has its list (it was fresh, or its request ended either way), or the round
+     * ended: what [StableSuggestions] waits for after a video was played. Not when the round is cancelled.
      */
-    suspend fun refresh(seeds: List<String>, shortsOf: List<String> = emptyList()) = lock.withLock {
+    suspend fun refresh(
+        seeds: List<String>,
+        shortsOf: List<String> = emptyList(),
+        maxAgeMs: Long = FRESH_MS,
+        settled: () -> Unit = {},
+    ) = lock.withLock {
         load()
-        val wanted = seeds.distinct().filterNot { isFresh(_kept.value[it]) }.map { Ask(it, shorts = false) } +
-            shortsOf.distinct().filterNot { isFresh(_shorts.value[it]) }.map { Ask(it, shorts = true) }
+        val wanted = seeds.distinct().filterNot { isFresh(_kept.value[it], maxAgeMs) }.map { Request(it, shorts = false) } +
+            shortsOf.distinct().filterNot { isFresh(_shorts.value[it], maxAgeMs) }.map { Request(it, shorts = true) }
+        val newest = seeds.firstOrNull()?.let { Request(it, shorts = false) }
+        if (newest == null || newest !in wanted) settled()
         if (wanted.isEmpty()) return@withLock
         _working.value = true
         try {
             for ((i, ask) in wanted.withIndex()) {
+                if (i > 0 && wanted[i - 1] == newest) settled()
                 if (i > 0) delay(pauseMs)
                 playing.first { !it }
                 val videos = try {
@@ -140,15 +184,16 @@ class HomeSuggestions(
                 if (ask.shorts) _shorts.update { trimmed(it + (ask.id to list), MAX_KEPT_SHORTS) } else _kept.update { trimmed(it + (ask.id to list), MAX_KEPT) }
                 save()
             }
+            settled()
         } finally {
             _working.value = false
         }
     }
 
     /** One request of a round: the suggestions beside the watched video [id], or the Shorts of the channel [id]. */
-    private data class Ask(val id: String, val shorts: Boolean)
+    private data class Request(val id: String, val shorts: Boolean)
 
-    private fun isFresh(list: Kept?): Boolean = list?.let { clock() - it.atMs in 0 until FRESH_MS } == true
+    private fun isFresh(list: Kept?, maxAgeMs: Long = FRESH_MS): Boolean = list?.let { clock() - it.atMs in 0 until maxAgeMs } == true
 
     private suspend fun load() {
         if (loaded) return
@@ -223,7 +268,10 @@ class HomeSuggestions(
         const val SHORTS_ROW_LIMIT = 24
 
         /** What [Recommendations.rank] keeps before the profile's rules take their share. */
-        private const val RANK_LIMIT = 60
+        const val RANK_LIMIT = 60
+
+        /** «تحديث» asks again for the lists older than this (not all of them: a burst is what makes YouTube answer 403). */
+        const val REFRESH_MAX_AGE_MS = 30L * 60 * 1000
 
         /** A Short row is the Shorts player's list, so one channel may bring more of its Shorts than it brings videos to the other row. */
         private const val SHORTS_PER_CHANNEL = 5

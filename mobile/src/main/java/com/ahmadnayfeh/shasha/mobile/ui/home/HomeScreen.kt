@@ -17,10 +17,13 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -28,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +39,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.currentStateAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ahmadnayfeh.shasha.mobile.AppContainer
 import com.ahmadnayfeh.shasha.mobile.R
@@ -62,13 +69,28 @@ fun HomeScreen(
     /** The Shorts viewer, on the Shorts row (the list) at the tapped one (its place in it). */
     onOpenShorts: (List<VideoItem>, Int) -> Unit,
     onSearch: () -> Unit,
+    /** The watch page is over the Home: the viewer does not see it. */
+    covered: Boolean = false,
 ) {
     val vm: HomeViewModel = viewModel(factory = HomeViewModel.factory(container))
     val state by vm.state.collectAsStateWithLifecycle()
+    // In front of the viewer (its page on top, nothing over it): after a video played, the suggestions may change now.
+    val lifecycle by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val shown = !covered && lifecycle.isAtLeast(Lifecycle.State.RESUMED)
+    LaunchedEffect(shown) { if (shown) vm.onShown() }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                actions = {
+                    IconButton(onClick = { vm.refresh(force = true) }, enabled = !state.refreshing) {
+                        Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.action_refresh))
+                    }
+                },
+            )
+        },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             // Nobody followed and nothing suggested (nothing watched yet, or its suggestions not known): a short friendly hint, not an empty page.
@@ -123,7 +145,7 @@ private fun FeedGrid(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (state.subscriptions.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
+            item(key = "channels", span = { GridItemSpan(maxLineSpan) }) {
                 LazyRow(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     items(state.subscriptions, key = { it.channelId }) { channel ->
                         Column(
@@ -161,7 +183,7 @@ private fun FeedGrid(
         if (state.videos.isNotEmpty()) {
             // The channels' uploads need a title only when something else is above them.
             if (state.hasMore) item(key = "uploads-title", span = { GridItemSpan(maxLineSpan) }) { SectionTitle(stringResource(R.string.home_from_channels)) }
-            items(state.videos, key = { it.videoId }) { video ->
+            items(state.videos, key = { it.videoId }, contentType = { "video" }) { video ->
                 VideoCard(video, onClick = { onOpenVideo(video) })
             }
         }

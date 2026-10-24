@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -232,6 +233,15 @@ fun DurationBadge(video: VideoItem, modifier: Modifier = Modifier) {
     )
 }
 
+/** The thin bar under a thumbnail showing how much of [videoId] was watched ([LocalWatchProgress]). */
+@Composable
+fun WatchedBar(videoId: String, modifier: Modifier = Modifier) {
+    val progress = LocalWatchProgress.current
+    // Recomposed only when this video's share changes, not whenever any video's does.
+    val fraction by remember(progress, videoId) { derivedStateOf { progress.fractionOf(videoId) } }
+    WatchedBar(fraction, modifier)
+}
+
 /** The thin bar under a thumbnail showing how much was watched. */
 @Composable
 fun WatchedBar(fraction: Float?, modifier: Modifier = Modifier) {
@@ -305,7 +315,7 @@ fun VideoCard(video: VideoItem, onClick: () -> Unit, modifier: Modifier = Modifi
         Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
             Thumbnail(video.thumbnailUrl, Modifier.fillMaxSize())
             DurationBadge(video, Modifier.align(Alignment.BottomEnd).padding(6.dp))
-            WatchedBar(LocalWatchProgress.current[video.videoId], Modifier.align(Alignment.BottomCenter))
+            WatchedBar(video.videoId, Modifier.align(Alignment.BottomCenter))
         }
         Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f).padding(end = 4.dp)) {
@@ -347,7 +357,7 @@ fun VideoListItem(
         Box(Modifier.width(150.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(8.dp))) {
             Thumbnail(video.thumbnailUrl, Modifier.fillMaxSize())
             DurationBadge(video, Modifier.align(Alignment.BottomEnd).padding(4.dp))
-            WatchedBar(LocalWatchProgress.current[video.videoId], Modifier.align(Alignment.BottomCenter))
+            WatchedBar(video.videoId, Modifier.align(Alignment.BottomCenter))
         }
         Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
             Text(video.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -373,7 +383,7 @@ fun VideoTile(video: VideoItem, onClick: () -> Unit, modifier: Modifier = Modifi
         Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp))) {
             Thumbnail(video.thumbnailUrl, Modifier.fillMaxSize())
             DurationBadge(video, Modifier.align(Alignment.BottomEnd).padding(6.dp))
-            WatchedBar(LocalWatchProgress.current[video.videoId], Modifier.align(Alignment.BottomCenter))
+            WatchedBar(video.videoId, Modifier.align(Alignment.BottomCenter))
         }
         Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {

@@ -129,6 +129,13 @@ class SearchViewModel(
         _editing.value = true
     }
 
+    /** Back while editing over earlier results: the results again, under the query they belong to. */
+    fun stopEditing() {
+        val shown = _submitted.value ?: return
+        _query.value = shown
+        _editing.value = false
+    }
+
     fun submit(text: String = _query.value) {
         val q = text.trim()
         if (q.isEmpty()) return

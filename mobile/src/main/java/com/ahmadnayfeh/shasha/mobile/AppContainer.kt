@@ -11,6 +11,7 @@ import com.ahmadnayfeh.shasha.mobile.data.LibraryRepository
 import com.ahmadnayfeh.shasha.mobile.data.SavedPlaylistRepository
 import com.ahmadnayfeh.shasha.mobile.data.SearchHistoryRepository
 import com.ahmadnayfeh.shasha.mobile.data.SettingsRepository
+import com.ahmadnayfeh.shasha.mobile.data.StableSuggestions
 import com.ahmadnayfeh.shasha.mobile.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.mobile.data.UserPlaylistRepository
 import com.ahmadnayfeh.shasha.mobile.data.db.ShashaDatabase
@@ -26,9 +27,9 @@ import com.ahmadnayfeh.shasha.mobile.player.VideoFit
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorBlockClient
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorBlockRepository
 import com.ahmadnayfeh.shasha.mobile.update.ApkInspector
-import com.ahmadnayfeh.shasha.mobile.update.GitHubReleases
 import com.ahmadnayfeh.shasha.mobile.update.InstallEvents
 import com.ahmadnayfeh.shasha.mobile.update.InstalledVersion
+import com.ahmadnayfeh.shasha.mobile.update.UpdateFeed
 import com.ahmadnayfeh.shasha.mobile.update.UpdateInstaller
 import com.ahmadnayfeh.shasha.mobile.update.UpdateSteps
 import com.ahmadnayfeh.shasha.mobile.update.Updater
@@ -48,6 +49,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -132,6 +134,9 @@ open class AppContainer(private val app: Application) {
         )
     }
 
+    /** What the Home's suggestion rows show, held still for the run of the app (see [StableSuggestions]). */
+    val stableSuggestions = StableSuggestions()
+
     /** The lists the Shorts viewer was opened from, by the number its route carries. */
     val shortsQueues = ShortsQueues()
 
@@ -181,7 +186,7 @@ open class AppContainer(private val app: Application) {
 
     val updater: UpdateSteps by lazy {
         Updater(
-            releases = GitHubReleases(okHttp, BuildConfig.UPDATE_REPO, BuildConfig.UPDATE_TOKEN),
+            feed = UpdateFeed(okHttp, BuildConfig.UPDATE_MANIFEST_URL.toHttpUrl()),
             inspector = ApkInspector(app),
             installer = UpdateInstaller(app),
             installed = InstalledVersion(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE.toLong()),

@@ -1,4 +1,6 @@
-# Shasha CI: unit tests -> signed release APK -> GitHub Release (read by the in-app updater).
+# Shasha CI: unit tests -> signed release APKs -> GitHub Release. The in-app updaters do NOT read it: they read the
+# public manifest on the download site (https://ahmad-nayfeh.github.io/shasha/latest.json), updated from this
+# release with tools/publish-site.sh (docs/dev/MAINTENANCE.md). No credential of any kind goes into the APKs.
 #
 # ─── Contract with app/build.gradle.kts ──────────────────────────────────────────────────────
 # `./gradlew :app:assembleRelease` runs with these environment variables:
@@ -12,19 +14,14 @@
 #   SHASHA_VERSION_CODE       integer = 1000 + github.run_number, so it always increases. The release
 #                             APK's versionCode MUST equal it (checked below). Unset locally -> default.
 #                             If this file is ever renamed, run_number restarts at 1: raise the 1000.
-#   SHASHA_UPDATE_TOKEN       optional fine-grained GitHub token (this repository only, Contents: read)
-#                             for the in-app updater, because Releases of a private repo need auth.
-#                             Empty when the secret is not set. It ends up inside the APK: never give
-#                             it any write permission. When it expires, "check for updates" fails:
-#                             renew it, update the secret, install the next build with the Shasha-Setup installer.
 # versionName stays in app/build.gradle.kts; CI reads it back from the APK (aapt2 dump badging).
 # Published as: tag v<versionName>-<versionCode>, asset shasha-<versionName>-<versionCode>.apk.
 #
 # ─── The phone app (:mobile) ─────────────────────────────────────────────────────────────────
-# Built from the same commit with the same variables (same signing key, same versionCode, same update token), tested
+# Built from the same commit with the same variables (same signing key, same versionCode), tested
 # with the others, and attached to the SAME Release as a second asset: shasha-mobile-<versionName>-<versionCode>.apk
-# (versionName stays in mobile/build.gradle.kts and is read back from the APK like the TV's). The phone's updater
-# reads the latest Release and picks that asset. The TV's tag and asset name do not change.
+# (versionName stays in mobile/build.gradle.kts and is read back from the APK like the TV's). The TV's tag and asset
+# name do not change.
 # NO FILE NAME may pass between jobs as a job output: the key alias secret is "shasha", and GitHub drops an output
 # that contains a secret's value. Only the version name travels; the release job rebuilds both names.
 #
@@ -34,7 +31,6 @@
 #                                macOS:   base64 -i shasha-release.jks
 #                                Windows: [Convert]::ToBase64String([IO.File]::ReadAllBytes("shasha-release.jks"))
 #   SIGNING_KEYSTORE_PASSWORD, SIGNING_KEY_ALIAS, SIGNING_KEY_PASSWORD
-#   UPDATE_TOKEN               optional, see SHASHA_UPDATE_TOKEN
 # Builds of main (push, weekly schedule, manual run) FAIL without the four SIGNING_* secrets: an
 # APK signed with another key cannot be installed over the previous one. Other branches and PRs
 # without them upload a debug APK and say so loudly.
@@ -221,7 +217,6 @@ jobs:
           SHASHA_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SHASHA_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SHASHA_VERSION_CODE: ${{ steps.prep.outputs.version_code }}
-          SHASHA_UPDATE_TOKEN: ${{ secrets.UPDATE_TOKEN }}
         run: |
           if [ -n "$SHASHA_KEYSTORE_FILE" ]; then
             ./gradlew --stacktrace :app:assembleRelease
@@ -238,7 +233,6 @@ jobs:
           SHASHA_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SHASHA_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SHASHA_VERSION_CODE: ${{ steps.prep.outputs.version_code }}
-          SHASHA_UPDATE_TOKEN: ${{ secrets.UPDATE_TOKEN }}
         run: |
           if [ -n "$SHASHA_KEYSTORE_FILE" ]; then
             ./gradlew --stacktrace :mobile:assembleRelease

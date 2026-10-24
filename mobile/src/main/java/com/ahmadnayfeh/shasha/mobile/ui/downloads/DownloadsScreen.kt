@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AudioFile
@@ -138,7 +140,13 @@ private fun DownloadItem(row: DownloadRow, onPlay: () -> Unit, onCancel: () -> U
             Thumbnail(entity.thumbnailUrl, Modifier.fillMaxSize())
             if (entity.kind == DownloadKind.AUDIO) {
                 Box(Modifier.fillMaxSize().padding(0.dp), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Filled.AudioFile, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                    // On a dark round backdrop: without a picture the placeholder is light in the light theme.
+                    Icon(
+                        Icons.Filled.AudioFile,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.clip(CircleShape).background(Color(0x66000000)).padding(6.dp).size(28.dp),
+                    )
                 }
             }
         }

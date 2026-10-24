@@ -34,6 +34,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,6 +73,7 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.LocalVideoActions
 import com.ahmadnayfeh.shasha.mobile.ui.components.LocalWatchLaterIds
 import com.ahmadnayfeh.shasha.mobile.ui.components.LocalWatchProgress
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoActions
+import com.ahmadnayfeh.shasha.mobile.ui.components.WatchProgress
 import com.ahmadnayfeh.shasha.mobile.ui.downloads.DownloadSheet
 import com.ahmadnayfeh.shasha.mobile.ui.downloads.DownloadsScreen
 import com.ahmadnayfeh.shasha.mobile.ui.home.HomeScreen
@@ -157,7 +159,10 @@ fun ShashaRoot(container: AppContainer) {
         val resources by rememberUpdatedState(LocalResources.current)
         val scope = rememberCoroutineScope()
         val snackbar = remember { SnackbarHostState() }
-        val progress by container.library.watchedFractions.collectAsStateWithLifecycle(initialValue = emptyMap())
+        // Read through the bars under the thumbnails only (WatchedBar): its updates, every few seconds while a video plays, do not
+        // recompose this screen.
+        val progressState = container.library.watchedFractions.collectAsStateWithLifecycle(initialValue = emptyMap())
+        val progress = remember(progressState) { WatchProgress { progressState.value[it] } }
         val savedIds by remember { container.library.watchLaterItems.map { list -> list.mapTo(HashSet<String>()) { it.videoId } as Set<String> } }
             .collectAsStateWithLifecycle(initialValue = emptySet())
         val savedPlaylistIds by container.savedPlaylists.savedIds.collectAsStateWithLifecycle(initialValue = emptySet())
@@ -175,7 +180,12 @@ fun ShashaRoot(container: AppContainer) {
         val session = nowPlaying.session
         val bridge = LocalActivityBridge.current
         val inPip by bridge.inPictureInPicture.collectAsStateWithLifecycle()
-        val playerState by container.player.state.collectAsStateWithLifecycle()
+        // The player's state changes often (captions, buffering): this screen reads only the few things it needs of it (derived
+        // below, each recomposing it only when it changes); the mini player reads the rest in its own scope.
+        val playerStateHolder = container.player.state.collectAsStateWithLifecycle()
+        val playerPlaying by remember { derivedStateOf { playerStateHolder.value.isPlaying } }
+        val playerAspect by remember { derivedStateOf { playerStateHolder.value.aspectRatio } }
+        val pipWanted by remember { derivedStateOf { pictureInPictureOnLeave(playerStateHolder.value, setting = true) } }
         // Where the video is in the window (the watch page's picture, or the mini player's): picture-in-picture grows out of it.
         var videoBounds by remember { mutableStateOf<Rect?>(null) }
         // The floating window shows the watch page's picture, and the page is what the viewer comes back to from it.
@@ -185,6 +195,9 @@ fun ShashaRoot(container: AppContainer) {
         val onShorts = destination?.hasRoute(ShortsRoute::class) == true
         // The Shorts viewer takes the player for itself (also when the viewer comes back to it from a detour): the video goes.
         LaunchedEffect(onShorts) { if (onShorts) nowPlaying.dismiss() }
+        // A video that really played lets the Home's suggestions change when the viewer comes back to it (and only then).
+        val playingId by remember { derivedStateOf { playerStateHolder.value.let { s -> s.video?.videoId?.takeIf { s.isPlaying } } } }
+        LaunchedEffect(playingId) { playingId?.let(container.stableSuggestions::markPlayed) }
 
         /**
          * The Shorts viewer, on [videos] (the list the viewer opens from: a channel's Shorts, the Home's row, the search results'),
@@ -333,17 +346,17 @@ fun ShashaRoot(container: AppContainer) {
                 // Leaving the app while the video plays (on the watch page or in the mini player) turns it into a floating window. The
                 // window's parameters are kept current all along (not set when the viewer leaves, which is too late for Android 12's
                 // automatic entry); the video's going takes them back.
-                val autoEnterPip = pictureInPictureOnLeave(playerState, settings.pictureInPicture)
-                LaunchedEffect(autoEnterPip, playerState.aspectRatio, videoBounds) {
-                    bridge.setPictureInPicture(autoEnter = autoEnterPip, aspect = playerState.aspectRatio, sourceRect = videoBounds)
+                val autoEnterPip = pipWanted && settings.pictureInPicture
+                LaunchedEffect(autoEnterPip, playerAspect, videoBounds) {
+                    bridge.setPictureInPicture(autoEnter = autoEnterPip, aspect = playerAspect, sourceRect = videoBounds)
                 }
                 DisposableEffect(Unit) {
                     onDispose { bridge.setPictureInPicture(autoEnter = false, aspect = PlayerUiState.DEFAULT_ASPECT, sourceRect = null) }
                 }
                 // The screen stays on while the video plays.
                 val view = LocalView.current
-                DisposableEffect(playerState.isPlaying) {
-                    view.keepScreenOn = playerState.isPlaying
+                DisposableEffect(playerPlaying) {
+                    view.keepScreenOn = playerPlaying
                     onDispose { view.keepScreenOn = false }
                 }
             }
@@ -358,7 +371,7 @@ fun ShashaRoot(container: AppContainer) {
                         if (!watchShown && !onShorts) Column {
                             if (miniShown && session != null) {
                                 MiniPlayer(
-                                    state = playerState,
+                                    state = playerStateHolder.value,
                                     player = container.player.player,
                                     videoId = session.request.videoId,
                                     onExpand = nowPlaying::expand,
@@ -399,6 +412,7 @@ fun ShashaRoot(container: AppContainer) {
                                 onOpenChannel = { openChannelPage(it) },
                                 onOpenShorts = { videos, index -> openShorts(videos, index) },
                                 onSearch = { openTab(SearchRoute()) },
+                                covered = watchShown,
                             )
                         }
                         composable<SearchRoute> { entry ->

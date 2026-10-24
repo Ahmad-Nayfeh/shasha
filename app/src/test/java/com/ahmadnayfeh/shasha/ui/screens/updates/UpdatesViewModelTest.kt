@@ -5,7 +5,7 @@ import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.update.InstallEvent
 import com.ahmadnayfeh.shasha.update.InstalledVersion
-import com.ahmadnayfeh.shasha.update.ReleaseAsset
+import com.ahmadnayfeh.shasha.update.ReleaseApk
 import com.ahmadnayfeh.shasha.update.ReleaseInfo
 import com.ahmadnayfeh.shasha.update.UpdateErrorKind
 import com.ahmadnayfeh.shasha.update.UpdateException
@@ -46,21 +46,8 @@ class UpdatesViewModelTest {
     private fun viewModel(handoverPauseMs: Long = 0) = UpdatesViewModel(steps, handoverPauseMs)
 
     @Test
-    fun withoutAToken_nothingIsAsked() {
-        steps.token = false
-        val vm = viewModel()
-        assertThat(vm.state.value).isEqualTo(UpdateUiState.TokenMissing)
-        vm.check()
-        vm.retry()
-        assertThat(vm.state.value).isEqualTo(UpdateUiState.TokenMissing)
-        assertThat(steps.asked).isEqualTo(0)
-    }
-
-    @Test
     fun nothingNewer_isUpToDate_andNothingIsDownloaded() {
-        steps.latest = { RELEASE.copy(versionCode = 1057, tag = "v1.1.1-1057", versionName = "1.1.1") }
-        assertThat(viewModel().state.value).isEqualTo(UpdateUiState.UpToDate)
-        steps.latest = { null }
+        steps.latest = { RELEASE.copy(versionCode = 1057, versionName = "1.1.1") }
         assertThat(viewModel().state.value).isEqualTo(UpdateUiState.UpToDate)
         // Never a downgrade.
         steps.latest = { RELEASE.copy(versionCode = 1000) }
@@ -71,7 +58,7 @@ class UpdatesViewModelTest {
 
     @Test
     fun checkingAgain_comparesAgain() {
-        steps.latest = { null }
+        steps.latest = { RELEASE.copy(versionCode = 1057, versionName = "1.1.1") }
         val vm = viewModel()
         assertThat(steps.asked).isEqualTo(1)
         vm.check()
@@ -248,11 +235,10 @@ class UpdatesViewModelTest {
     }
 
     private class FakeSteps : UpdateSteps {
-        var token = true
         var asked = 0
         var allowed = true
         var hold: CompletableDeferred<Unit>? = null
-        var latest: () -> ReleaseInfo? = { RELEASE }
+        var latest: () -> ReleaseInfo = { RELEASE }
         val apk = File("shasha-1.2.0-1070.apk")
         var download: () -> File = { apk }
         var downloadGate: CompletableDeferred<Unit>? = null
@@ -267,10 +253,9 @@ class UpdatesViewModelTest {
         val events = MutableSharedFlow<InstallEvent>(extraBufferCapacity = 8)
 
         override val installed = InstalledVersion("1.1.1", 1057)
-        override val hasToken: Boolean get() = token
         override val installEvents = events
 
-        override suspend fun latest(): ReleaseInfo? {
+        override suspend fun latest(): ReleaseInfo {
             asked++
             hold?.await()
             return latest.invoke()
@@ -310,10 +295,9 @@ class UpdatesViewModelTest {
     private companion object {
         const val APK_SIZE = 18_874_368L
         val RELEASE = ReleaseInfo(
-            tag = "v1.2.0-1070",
             versionName = "1.2.0",
             versionCode = 1070,
-            apk = ReleaseAsset(7, "shasha-1.2.0-1070.apk", APK_SIZE, "https://api.example.test/repos/owner/app/releases/assets/7"),
+            apk = ReleaseApk("https://downloads.example.test/shasha-tv.apk?v=1070", APK_SIZE, "abababababababababababababababababababababababababababababababab"),
         )
     }
 }

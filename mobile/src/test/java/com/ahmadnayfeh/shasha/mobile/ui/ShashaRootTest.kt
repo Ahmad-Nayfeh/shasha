@@ -200,11 +200,10 @@ class ShashaRootEnglishTest {
 
         // The page has its own back arrow (the settings page does not).
         compose.onNodeWithContentDescription("Back").assertIsDisplayed()
-        // A build without the read-only key (local builds, the test job) says so.
-        if (BuildConfig.UPDATE_TOKEN.isBlank()) {
-            compose.awaitText("Updates are not available in this version of the app.")
-            compose.onNodeWithText("Updates are not available in this version of the app.").assertIsDisplayed()
-        }
+        // Whatever the check answers (it reads the public manifest), the page never names where updates come from.
+        compose.waitForIdle()
+        assertThat(compose.onAllNodesWithText("GitHub", substring = true, ignoreCase = true).fetchSemanticsNodes()).isEmpty()
+        assertThat(BuildConfig.UPDATE_MANIFEST_URL).startsWith("https://")
     }
 }
 

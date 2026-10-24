@@ -22,7 +22,7 @@ import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.TV_1080P
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.update.InstalledVersion
-import com.ahmadnayfeh.shasha.update.ReleaseAsset
+import com.ahmadnayfeh.shasha.update.ReleaseApk
 import com.ahmadnayfeh.shasha.update.ReleaseInfo
 import com.ahmadnayfeh.shasha.update.UpdateErrorKind
 import com.google.common.truth.Truth.assertThat
@@ -82,7 +82,6 @@ class UpdatesScreenTest {
     fun eachState_hasOnlyTheButtonsItNeeds_andNeverASecondInstallButton() {
         val table = listOf(
             UpdateUiState.Checking to listOf("updates_back"),
-            UpdateUiState.TokenMissing to listOf("updates_back"),
             UpdateUiState.UpToDate to listOf("updates_back", "updates_check"),
             UpdateUiState.Downloading(RELEASE, 7_340_032, 18_874_368) to listOf("updates_cancel"),
             UpdateUiState.Installing(RELEASE) to listOf("updates_back"),
@@ -147,6 +146,27 @@ class UpdatesScreenTest {
     }
 
     @Test
+    fun theSitesAnswers_areSaidInArabic() {
+        // UpdateFeed: 404 → NOT_FOUND, 403/429 → FORBIDDEN, 5xx or a broken manifest → BAD_ANSWER, no "tv" entry → NO_APK,
+        // a short download or another file's SHA-256 → DOWNLOAD_FAILED.
+        val expected = mapOf(
+            UpdateErrorKind.NOT_FOUND to "لم نجد تحديثاً منشوراً",
+            UpdateErrorKind.FORBIDDEN to "الخدمة مشغولة الآن",
+            UpdateErrorKind.BAD_ANSWER to "ردّ غير متوقع",
+            UpdateErrorKind.NO_APK to "الإصدار الجديد لم يكتمل نشره",
+            UpdateErrorKind.DOWNLOAD_FAILED to "انقطع التنزيل",
+            UpdateErrorKind.NETWORK to "تعذّر الاتصال بالإنترنت",
+        )
+        show(UpdateUiState.Checking)
+        for ((kind, title) in expected) {
+            state = UpdateUiState.Failed(kind, release = null)
+            compose.waitForIdle()
+            assertThat(textOf("updates_title")).isEqualTo(title)
+            assertThat(textOf("updates_body")).isNotEmpty()
+        }
+    }
+
+    @Test
     fun theFocusMovesToTheNewStatesFirstButton() {
         show(UpdateUiState.Downloading(RELEASE, 0, 18_874_368))
         compose.onNodeWithTag("updates_cancel").assertIsFocused()
@@ -163,14 +183,6 @@ class UpdatesScreenTest {
     }
 
     @Test
-    fun aCopyWithoutTheKey_saysUpdatesAreNotAvailable_andSendsToTheInstallerKit() {
-        show(UpdateUiState.TokenMissing)
-        assertThat(textOf("updates_title")).isEqualTo(context.getString(R.string.updates_token_title))
-        assertThat(textOf("updates_body")).contains("حقيبة التثبيت")
-        assertThat(buttons()).containsExactly("updates_back")
-    }
-
-    @Test
     fun aMissingPermission_isSaidInPlainWords() {
         show(UpdateUiState.InstallNotAllowed(RELEASE))
         assertThat(textOf("updates_title")).isEqualTo(context.getString(R.string.updates_not_allowed_title))
@@ -184,10 +196,9 @@ class UpdatesScreenTest {
         val BUTTONS = listOf("updates_back", "updates_check", "updates_retry", "updates_cancel")
         val INSTALLED = InstalledVersion("1.1.1", 1057)
         val RELEASE = ReleaseInfo(
-            tag = "v1.2.0-1070",
             versionName = "1.2.0",
             versionCode = 1070,
-            apk = ReleaseAsset(7, "shasha-1.2.0-1070.apk", 18_874_368, "https://api.example.test/repos/owner/app/releases/assets/7"),
+            apk = ReleaseApk("https://downloads.example.test/shasha-tv.apk?v=1070", 18_874_368, "abababababababababababababababababababababababababababababababab"),
         )
     }
 }

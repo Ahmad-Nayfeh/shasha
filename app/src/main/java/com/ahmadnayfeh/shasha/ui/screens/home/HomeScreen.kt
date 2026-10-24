@@ -161,8 +161,12 @@ fun HomeScreen(
                             if (state.subscriptionCount > 0 || state.hasFeed) {
                                 SyncStatus(sync, nowMs, formats)
                                 ShashaButton(stringResource(R.string.home_refresh), onRefresh, icon = ShashaIcons.Refresh, modifier = Modifier.testTag("home_refresh"))
-                            } else if (state.suggesting) {
-                                SuggestingStatus()
+                            } else {
+                                if (state.suggesting) SuggestingStatus()
+                                // «تحديث» is also the only way to new suggestions (they never change on their own while the home is on screen).
+                                if (state.suggested.isNotEmpty() || state.suggestedShorts.isNotEmpty()) {
+                                    ShashaButton(stringResource(R.string.home_refresh), onRefresh, icon = ShashaIcons.Refresh, modifier = Modifier.testTag("home_refresh"))
+                                }
                             }
                         }
                     }

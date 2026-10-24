@@ -68,12 +68,14 @@ class HomeSuggestions(
     /**
      * What the Home shows: the suggested [videos] and [shorts], best first ([shorts] is empty when the viewer turned Shorts off).
      * [pending]: nothing to show yet, but lists are being fetched (a Home with no subscriptions waits for them instead of saying
-     * it has nothing).
+     * it has nothing). [working]: a round of lookups is running (more may come). [withShorts]: ranked with Shorts shown.
      */
     data class Suggested(
         val videos: List<VideoItem> = emptyList(),
         val shorts: List<VideoItem> = emptyList(),
         val pending: Boolean = false,
+        val working: Boolean = false,
+        val withShorts: Boolean = true,
     ) {
         val isEmpty: Boolean get() = videos.isEmpty() && shorts.isEmpty()
     }
@@ -99,7 +101,13 @@ class HomeSuggestions(
     fun suggested(showShorts: Flow<Boolean>): Flow<Suggested> =
         combine(library.watched, _kept, _shorts, showShorts, _working) { watched, kept, ofChannels, shorts, working ->
             val (videos, shortRow) = rank(watched, kept, ofChannels, clock(), shorts)
-            Suggested(videos, shortRow, pending = working && watched.seeds.isNotEmpty() && videos.isEmpty() && shortRow.isEmpty())
+            Suggested(
+                videos,
+                shortRow,
+                pending = working && watched.seeds.isNotEmpty() && videos.isEmpty() && shortRow.isEmpty(),
+                working = working,
+                withShorts = shorts,
+            )
         }
 
     /**
@@ -114,12 +122,13 @@ class HomeSuggestions(
     }
 
     /**
-     * The pull-down: asks again for the watched videos (and, with [showShorts], their channels' Shorts) that have no fresh list
-     * (a failed or missed one), not for the fresh ones.
+     * Asks again for the watched videos (and, with [showShorts], their channels' Shorts) that have no fresh list (a failed or
+     * missed one), not for the fresh ones. [force] (the viewer pulled down or pressed refresh: they want new suggestions): every
+     * list older than [REFETCH_AFTER_MS] is asked for again, not only the stale ones.
      */
-    suspend fun refreshNow(showShorts: Boolean = true) {
+    suspend fun refreshNow(showShorts: Boolean = true, force: Boolean = false) {
         val wanted = wanted(library.watched.first(), showShorts)
-        refresh(wanted.seeds, wanted.shortsOf)
+        refresh(wanted.seeds, wanted.shortsOf, if (force) REFETCH_AFTER_MS else FRESH_MS)
     }
 
     private data class Wanted(val seeds: List<String>, val shortsOf: List<String>)
@@ -136,11 +145,21 @@ class HomeSuggestions(
      * written at the end (also when cancelled, so the next start has what came). A failure keeps what was there and the next visit
      * tries again; a rate limit or a check from YouTube ends this round without asking for the rest.
      */
-    private suspend fun refresh(seeds: List<String>, shortsOf: List<String> = emptyList()) = lock.withLock {
-        load()
-        val stale = seeds.distinct().filterNot { isFresh(_kept.value[it]) }.map { Ask(it, shorts = false) } +
-            shortsOf.distinct().filterNot { isFresh(_shorts.value[it]) }.map { Ask(it, shorts = true) }
-        if (stale.isEmpty()) return@withLock
+    private suspend fun refresh(seeds: List<String>, shortsOf: List<String> = emptyList(), freshFor: Long = FRESH_MS) = lock.withLock {
+        // The file's lists arrive as part of the first round: what shows the Home's rows (StableSuggestions) waits for the round's end.
+        if (!loaded) _working.value = true
+        try {
+            load()
+        } catch (e: Throwable) {
+            _working.value = false
+            throw e
+        }
+        val stale = seeds.distinct().filterNot { isFresh(_kept.value[it], freshFor) }.map { Ask(it, shorts = false) } +
+            shortsOf.distinct().filterNot { isFresh(_shorts.value[it], freshFor) }.map { Ask(it, shorts = true) }
+        if (stale.isEmpty()) {
+            _working.value = false
+            return@withLock
+        }
         _working.value = true
         try {
             val gate = Semaphore(concurrency)
@@ -176,7 +195,7 @@ class HomeSuggestions(
     /** One request of a round: the suggestions beside the watched video [id], or the Shorts of the channel [id]. */
     private data class Ask(val id: String, val shorts: Boolean)
 
-    private fun isFresh(kept: Kept?): Boolean = kept?.let { clock() - it.atMs in 0 until FRESH_MS } == true
+    private fun isFresh(kept: Kept?, freshFor: Long = FRESH_MS): Boolean = kept?.let { clock() - it.atMs in 0 until freshFor } == true
 
     private suspend fun load() {
         if (loaded) return
@@ -235,6 +254,9 @@ class HomeSuggestions(
 
         /** How long one video's suggestions are kept before they are asked for again: a few hours. */
         const val FRESH_MS = 4L * 60 * 60 * 1000
+
+        /** A refresh the viewer asks for asks again for every list older than this (not for one fetched a moment ago). */
+        const val REFETCH_AFTER_MS = 5L * 60 * 1000
 
         /** Older lists still show (until the new answer arrives, or when there is no network), up to this age. */
         const val SHOWN_FOR_MS = 2L * 24 * 60 * 60 * 1000

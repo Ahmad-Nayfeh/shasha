@@ -20,8 +20,6 @@
     <string name="updates_cancelled_body">Nothing changed in Shasha. Press “Try again” whenever you want to update.</string>
     <string name="updates_not_allowed_title">Installing isn\'t allowed yet</string>
     <string name="updates_not_allowed_body">Shasha hasn\'t been given permission to install updates. Run the installer from the installer kit on the computer again (it grants this permission), then press “Try again”.</string>
-    <string name="updates_token_title">Updates aren\'t available in this copy</string>
-    <string name="updates_token_body">This copy of Shasha can\'t check for updates. Install the latest copy with the installer kit on the computer, and from then on it updates with one press.</string>
     <string name="updates_installed_version">Installed</string>
     <string name="updates_latest_version">Latest</string>
     <string name="updates_version_value">%1$s (%2$s)</string>
@@ -29,16 +27,12 @@
 
     <string name="updates_error_network_title">Couldn\'t connect to the internet</string>
     <string name="updates_error_network_body">Make sure the TV is connected to the internet, then press “Try again”.</string>
-    <string name="updates_error_token_title">Couldn\'t check for updates</string>
-    <string name="updates_error_token_body">This copy can no longer read updates. Install the latest copy of Shasha with the installer kit on the computer, and from then on it updates with one press.</string>
     <string name="updates_error_forbidden_title">The service is busy right now</string>
     <string name="updates_error_forbidden_body">Updates couldn\'t be checked just now. Wait a little, then press “Try again”.</string>
     <string name="updates_error_not_found_title">No published update found</string>
     <string name="updates_error_not_found_body">No version has been published yet, or it couldn\'t be reached. Try again later.</string>
     <string name="updates_error_no_apk_title">The new version isn\'t finished yet</string>
     <string name="updates_error_no_apk_body">The latest version is still being prepared. Try again in a little while.</string>
-    <string name="updates_error_bad_tag_title">The version information isn\'t understood</string>
-    <string name="updates_error_bad_tag_body">We received information about the latest version that we couldn\'t understand. Try again later.</string>
     <string name="updates_error_bad_answer_title">An unexpected answer</string>
     <string name="updates_error_bad_answer_body">We got an answer we couldn\'t understand. Press “Try again” in a little while.</string>
     <string name="updates_error_download_title">The download stopped</string>

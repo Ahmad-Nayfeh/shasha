@@ -14,6 +14,7 @@ import com.ahmadnayfeh.shasha.mobile.data.FeedRepository
 import com.ahmadnayfeh.shasha.mobile.data.HomeSuggestions
 import com.ahmadnayfeh.shasha.mobile.data.LibraryRepository
 import com.ahmadnayfeh.shasha.mobile.data.NOW_MS
+import com.ahmadnayfeh.shasha.mobile.data.StableSuggestions
 import com.ahmadnayfeh.shasha.mobile.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.mobile.data.toFeedEntity
 import com.ahmadnayfeh.shasha.mobile.data.toHistoryEntity
@@ -65,15 +66,19 @@ class HomeSuggestionsViewModelTest {
     @After
     fun tearDown() = storeScope.cancel()
 
-    private fun viewModel(): HomeViewModel {
-        val library = LibraryRepository(historyDao, FakeWatchLaterDao(), FakeProgressDao()) { now }
-        return HomeViewModel(
-            SubscriptionRepository(subsDao, feedDao) { now },
-            FeedRepository(source, subsDao, feedDao, settings, now = { now }),
-            HomeSuggestions(library, source, file = null, clock = { now }),
-            showShorts,
-        )
-    }
+    private val library by lazy { LibraryRepository(historyDao, FakeWatchLaterDao(), FakeProgressDao()) { now } }
+
+    /** One for the run of the app, as the app's container has them: the view models come and go. */
+    private val suggestions by lazy { HomeSuggestions(library, source, file = null, clock = { now }) }
+    private val board = StableSuggestions()
+
+    private fun viewModel(): HomeViewModel = HomeViewModel(
+        SubscriptionRepository(subsDao, feedDao) { now },
+        FeedRepository(source, subsDao, feedDao, settings, now = { now }),
+        suggestions,
+        showShorts,
+        board,
+    )
 
     private fun short(id: String, channelId: String? = null) = video(id).copy(isShortForm = true, channelId = channelId ?: video(id).channelId)
 
@@ -248,14 +253,60 @@ class HomeSuggestionsViewModelTest {
     }
 
     @Test
-    fun watchingSomethingNewChangesTheSuggestionsWhileTheHomeIsOpen() = runTest(main.dispatcher) {
+    fun watchingSomethingNewChangesTheSuggestionsOnlyWhenTheViewerComesBackToTheHome() = runTest(main.dispatcher) {
         watch("a", daysAgo = 1.0)
-        source.onRelated = { id -> listOf(video("from-$id")) }
+        val asked = java.util.concurrent.ConcurrentLinkedQueue<String>()
+        source.onRelated = { id -> asked += id; listOf(video("from-$id")) }
         val vm = open()
         vm.awaitSuggestions()
         assertThat(vm.state.value.suggestions.map { it.videoId }).containsExactly("from-a")
 
+        // A video plays (the Home is under the watch page): its suggestions are fetched, the Home's rows stay as they were.
+        board.markPlayed("b")
         watch("b")
+        awaitReal { asked.toList() == listOf("a", "b") }
+        kotlinx.coroutines.withContext(Dispatchers.Default) { kotlinx.coroutines.delay(200) } // time for anything that would change them
+        assertThat(vm.state.value.suggestions.map { it.videoId }).containsExactly("from-a")
+
+        // Back on the Home: the new suggestions show.
+        vm.onShown()
         awaitReal { vm.state.value.suggestions.map { it.videoId } == listOf("from-b", "from-a") }
+    }
+
+    @Test
+    fun theSuggestionsDoNotChangeWhenTheHomeIsLeftAndOpenedAgain_orItsViewModelIsRecreated() = runTest(main.dispatcher) {
+        watch("a", daysAgo = 1.0)
+        var answer = "x"
+        source.onRelated = { listOf(video(answer)) }
+        val vm = open()
+        vm.awaitSuggestions()
+        assertThat(vm.state.value.suggestions.map { it.videoId }).containsExactly("x")
+
+        // The lists change while the viewer is elsewhere (a round asked for by something else, hours later).
+        answer = "y"
+        now += HomeSuggestions.FRESH_MS + 1
+        suggestions.refreshNow()
+        vm.onShown() // no video played meanwhile
+        kotlinx.coroutines.withContext(Dispatchers.Default) { kotlinx.coroutines.delay(200) } // time for anything that would change them
+        assertThat(vm.state.value.suggestions.map { it.videoId }).containsExactly("x")
+
+        // A new screen (its view model recreated) shows the same rows: they belong to the app's run, not to the screen.
+        val again = open()
+        assertThat(again.state.value.suggestions.map { it.videoId }).containsExactly("x")
+    }
+
+    @Test
+    fun theRefreshButtonOrThePullDownBringsNewSuggestions() = runTest(main.dispatcher) {
+        watch("a", daysAgo = 1.0)
+        var answer = "x"
+        source.onRelated = { listOf(video(answer)) }
+        val vm = open()
+        vm.awaitSuggestions()
+
+        answer = "y"
+        // Asked again even though the list is only minutes old: the viewer wants new suggestions.
+        now += HomeSuggestions.REFETCH_AFTER_MS + 1
+        vm.refresh(force = true)
+        awaitReal { vm.state.value.suggestions.map { it.videoId } == listOf("y") }
     }
 }

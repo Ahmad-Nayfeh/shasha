@@ -10,7 +10,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 /**
  * What the updater says, in both languages: plain words for people, never the name of the service the releases come from,
  * never a command, a key or a file type; and it says what is about to happen (the app closes for a moment, then opens
- * again). The repository is private and read with a key built into the app, so nobody is ever sent there.
+ * again). Nobody is ever sent to where the files are kept: the app fetches them itself.
  */
 class UpdaterTextsTest {
     private fun texts(folder: String): Map<String, String> {
@@ -62,11 +62,9 @@ class UpdaterTextsTest {
     }
 
     @Test
-    fun theTokenlessCopy_andTheMissingPermission_sendToTheInstallerKit_inPlainWords() {
-        for (key in listOf("updates_token_body", "updates_not_allowed_body")) {
-            assertThat(arabic.getValue(key)).contains("حقيبة التثبيت")
-            assertThat(english.getValue(key)).contains("installer kit")
-        }
+    fun theMissingPermission_sendsToTheInstallerKit_inPlainWords() {
+        assertThat(arabic.getValue("updates_not_allowed_body")).contains("حقيبة التثبيت")
+        assertThat(english.getValue("updates_not_allowed_body")).contains("installer kit")
         assertThat(arabic.getValue("updates_up_to_date_title")).isEqualTo("لديك أحدث إصدار")
     }
 
@@ -74,8 +72,8 @@ class UpdaterTextsTest {
     fun everyErrorHasItsRetryInThePlainTexts_andNoneIsEmpty() {
         val kinds = UpdateErrorKind.entries.map { it.name.lowercase() }
         val keyOf = mapOf(
-            "network" to "network", "token_rejected" to "token", "forbidden" to "forbidden", "not_found" to "not_found",
-            "no_apk" to "no_apk", "bad_tag" to "bad_tag", "bad_answer" to "bad_answer", "download_failed" to "download",
+            "network" to "network", "forbidden" to "forbidden", "not_found" to "not_found",
+            "no_apk" to "no_apk", "bad_answer" to "bad_answer", "download_failed" to "download",
             "bad_apk" to "bad_apk", "wrong_package" to "wrong_package", "not_newer" to "not_newer",
             "signature_mismatch" to "signature", "install_failed" to "install",
         )

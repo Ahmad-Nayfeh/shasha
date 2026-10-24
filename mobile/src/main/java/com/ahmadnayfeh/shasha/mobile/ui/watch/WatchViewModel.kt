@@ -212,7 +212,9 @@ class WatchViewModel(
                 throw e
             } catch (e: Exception) {
                 Log.w(TAG, "$id: the channel's page failed: ${e.logLine()}")
-                channelRequested = false // asked again when the viewer taps subscribe
+                // Not asked again by itself: a tap on «Subscribe» asks for the page again when no picture of the channel is known
+                // yet ([channelToSubscribe]); with one known (the video's own page gave it), the subscription needs no page at all.
+                channelRequested = false
             }
         }
     }
@@ -241,8 +243,15 @@ class WatchViewModel(
 
     private suspend fun playNext() {
         if (playlistId == null) return
-        val items = queue.state.value.items
+        var items = queue.state.value.items
         val index = items.indexOfFirst { it.videoId == videoId }
+        // The video that ended is the last one loaded of a playlist that has more pages: the next page first, then its first video.
+        while (index >= 0 && index == items.lastIndex && !queue.state.value.endReached) {
+            queue.loadMoreAndWait()
+            val now = queue.state.value.items
+            if (now.size == items.size) return // a failure, or nothing more: the playlist stops here (its footer offers «Try again»)
+            items = now
+        }
         val next = items.getOrNull(index + 1) ?: return
         events.send(WatchEvent.PlayNext(next))
     }

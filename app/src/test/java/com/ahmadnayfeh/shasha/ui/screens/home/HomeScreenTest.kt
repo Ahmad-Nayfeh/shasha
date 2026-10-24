@@ -117,9 +117,11 @@ class HomeScreenTest {
         show(state, mutableStateOf(HomeSync(health = SyncHealth())))
 
         compose.onNodeWithTag("home_welcome").assertDoesNotExist()
-        // The first shelf has the focus, and no channels means no sync status or refresh in the header.
+        // The first shelf has the focus. No channels means no sync status in the header, but «تحديث» is there: it is how
+        // the viewer gets new suggestions (they never change by themselves while the home is on screen).
         compose.onNode(isFocused() and hasAnyAncestor(hasTestTag("home_suggested"))).assertExists()
-        compose.onNodeWithTag("home_refresh").assertDoesNotExist()
+        compose.onNodeWithTag("home_sync_status").assertDoesNotExist()
+        compose.onNodeWithTag("home_refresh").assertIsDisplayed()
         compose.onNodeWithText("مختارة لك من مشاهداتك").assertIsDisplayed()
     }
 

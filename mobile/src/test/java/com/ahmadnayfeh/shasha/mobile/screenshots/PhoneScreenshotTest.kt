@@ -1,12 +1,9 @@
 package com.ahmadnayfeh.shasha.mobile.screenshots
 
 import android.content.Context
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -123,35 +120,39 @@ abstract class ScreenshotCases(private val suffix: String) {
     }
 
     @Test
-    fun player() {
+    fun player() = showPlayer(FakeDetails(), "player")
+
+    /** The watch page of a video played from a playlist: the playlist under it, in place of the related videos. */
+    @Test
+    fun playerPlaylist() = showPlayer(FakeDetails(playlistId = "PLscience", queue = listOf(Samples.blackHoles) + Samples.related), "player_playlist")
+
+    private fun showPlayer(details: FakeDetails, name: String) {
         // The controls stay up: the clock of the test does not run, so nothing fades them out.
         compose.mainClock.autoAdvance = false
         val player = FakePlayer()
         show {
-            // The theme setting is left as it is ("as the phone"): the qualifiers of the class say light or dark.
+            // The theme setting is left as it is ("as the phone"): the qualifiers of the class say light or dark. As in the app, the page
+            // is not inside any Surface (it is drawn over the root Scaffold): its text must take the theme's colour by itself.
             ShashaTheme(AppTheme.SYSTEM) {
-                // In the app this screen sits inside the root Scaffold, which gives its text the right colour.
-                Surface(Modifier.fillMaxSize()) {
-                    WatchContent(
-                        state = Samples.playerState,
-                        player = player,
-                        controller = container.player,
-                        details = FakeDetails(),
-                        isFullscreen = false,
-                        inPip = false,
-                        onRetry = {},
-                        onBack = {},
-                        onToggleFullscreen = {},
-                        onEnterPictureInPicture = {},
-                        onVideoBounds = {},
-                        onOpenVideo = {},
-                        onOpenChannel = {},
-                    )
-                }
+                WatchContent(
+                    state = Samples.playerState,
+                    player = player,
+                    controller = container.player,
+                    details = details,
+                    isFullscreen = false,
+                    inPip = false,
+                    onRetry = {},
+                    onBack = {},
+                    onToggleFullscreen = {},
+                    onEnterPictureInPicture = {},
+                    onVideoBounds = {},
+                    onOpenVideo = {},
+                    onOpenChannel = {},
+                )
             }
         }
         repeat(5) { compose.mainClock.advanceTimeByFrame() }
-        capture("player")
+        capture(name)
     }
 
     @Test
