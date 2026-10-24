@@ -446,7 +446,7 @@ python3 branding/tools/logo_reveal.py
 
 1. انتظر حتى تنشر مهمة «Android» الإصدار `v<versionName>-<versionCode>` على GitHub.
 2. نزّل ملفيه: `shasha-<versionName>-<versionCode>.apk` و`shasha-mobile-<versionName>-<versionCode>.apk` (من صفحة الإصدار، أو `gh release download v<versionName>-<versionCode> --repo Ahmad-Nayfeh/shasha`). ضع ملف التلفاز في `Shasha-Setup/` وأعد بناء `Shasha-Setup.zip` كالمعتاد إن تغيّر المثبّت أو أردت الحقيبة بأحدث ملف.
-3. انشر على الموقع بالأداة (تنسخ الملفات بأسمائها الثابتة، وتحسب الحجم وSHA-256، وتعيد كتابة `latest.json` وقيم الإصدار والحجم والبصمة في الصفحة بين علاماتها `<!--@name-->…<!--/@name-->`):
+3. انشر على الموقع بالأداة (تنسخ الملفات بأسمائها الثابتة، وتحسب الحجم وSHA-256، وتعيد كتابة `latest.json` وقيم الإصدار والحجم والتاريخ في الصفحة؛ والصفحة لا تعرض بصمات ولا أرقام بناء بين علاماتها `<!--@name-->…<!--/@name-->`):
 
    ```sh
    tools/publish-site.sh \

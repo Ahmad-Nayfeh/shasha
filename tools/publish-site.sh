@@ -13,7 +13,8 @@
 # - copies the files under fixed names: shasha-tv.apk, shasha-mobile.apk, shasha-setup.zip;
 # - writes latest.json (format in MAINTENANCE.md): one entry per app ("tv", "mobile") with versionCode, versionName,
 #   url (with ?v=<versionCode>, so the site's cache never hands out an older file), sha256, size and notes, plus "kit";
-# - rewrites the values between the markers <!--@name-->…<!--/@name--> in index.html (versions, sizes, SHA-256) and the
+# - rewrites the values between the markers <!--@name-->…<!--/@name--> in index.html (versions, sizes, date; the page
+#   shows no hashes or build numbers, those live in latest.json only) and the
 #   ?v=<code> of every link to the three files. Each marker must be there, or nothing is written.
 # - when aapt2 is found ($ANDROID_HOME/build-tools/*/aapt2 or PATH), checks each APK's package and versionCode first.
 # It never commits or pushes: review `git diff` in the site repository, then commit and push there.
@@ -120,10 +121,9 @@ for key, (source, target) in files.items():
     facts[key] = {"size": os.path.getsize(source), "sha256": sha256(source), "file": target}
 
 values = {
-    "tv-version": name, "tv-code": code, "tv-size": megabytes(facts["tv"]["size"]), "tv-sha": facts["tv"]["sha256"],
-    "mobile-version": mobile_name, "mobile-code": code, "mobile-size": megabytes(facts["mobile"]["size"]),
-    "mobile-sha": facts["mobile"]["sha256"],
-    "kit-size": megabytes(facts["kit"]["size"]), "kit-sha": facts["kit"]["sha256"],
+    "tv-version": name, "tv-size": megabytes(facts["tv"]["size"]),
+    "mobile-version": mobile_name, "mobile-size": megabytes(facts["mobile"]["size"]),
+    "kit-size": megabytes(facts["kit"]["size"]),
     "published": date,
 }
 
