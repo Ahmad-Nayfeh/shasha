@@ -9,6 +9,7 @@ import com.ahmadnayfeh.shasha.mobile.AppContainer
 import com.ahmadnayfeh.shasha.mobile.common.UiError
 import com.ahmadnayfeh.shasha.mobile.data.FeedRepository
 import com.ahmadnayfeh.shasha.mobile.data.HomeSuggestions
+import com.ahmadnayfeh.shasha.mobile.data.StableSuggestions
 import com.ahmadnayfeh.shasha.mobile.data.SubscriptionRepository
 import com.ahmadnayfeh.shasha.mobile.data.db.SubscriptionEntity
 import com.ahmadnayfeh.shasha.mobile.data.logLine
@@ -55,13 +56,15 @@ data class HomeState(
  *
  * «مقترحة لك» and the suggested Shorts come from [HomeSuggestions], which fetches beside the screen and keeps what it found for
  * hours: they appear when they are known and never hold the feed back. [showShorts] off takes the Shorts away everywhere on the
- * home, the channels' own included.
+ * home, the channels' own included. What the rows show is held still by [board] (one for the app's process): it changes only at
+ * a start of the app, a refresh the viewer asks for, and a return to the Home after a video played ([onShown]).
  */
 class HomeViewModel(
     subscriptions: SubscriptionRepository,
     private val feed: FeedRepository,
     private val suggestions: HomeSuggestions,
     private val showShorts: Flow<Boolean> = flowOf(true),
+    private val board: StableSuggestions = StableSuggestions(),
 ) : ViewModel() {
 
     private val refreshing = MutableStateFlow(false)
@@ -75,7 +78,7 @@ class HomeViewModel(
     val state: StateFlow<HomeState> = combine(
         subscriptions.subscriptions,
         uploads,
-        suggestions.suggested(showShorts),
+        board.present(suggestions.suggested(showShorts)),
         refreshing,
         error,
     ) { subs, own, suggested, isRefreshing, failure ->
@@ -115,9 +118,16 @@ class HomeViewModel(
                 refreshing.value = false
             }
         }
-        // The pull-down also asks again for the suggestions that are missing (a failed lookup); it does not wait for them.
-        if (force) viewModelScope.launch { guarded("refreshing the suggestions") { suggestions.refreshNow(showShorts.first()) } }
+        // The pull-down (or the refresh button) also asks again for the suggestions, and lets the rows change; it does not wait for them.
+        if (force) {
+            viewModelScope.launch {
+                board.hold { guarded("refreshing the suggestions") { suggestions.refreshNow(showShorts.first(), force = true) } }
+            }
+        }
     }
+
+    /** The Home is in front of the viewer: after a video played meanwhile, its suggestions may change ([StableSuggestions]). */
+    fun onShown() = board.onHomeShown()
 
     /** A failure of the suggestions is not the home's: it is logged, and the home keeps what it shows. */
     private suspend fun guarded(what: String, block: suspend () -> Unit) {
@@ -154,7 +164,9 @@ class HomeViewModel(
         }
 
         fun factory(container: AppContainer) = viewModelFactory {
-            initializer { HomeViewModel(container.subscriptions, container.feed, container.suggestions, container.showShorts) }
+            initializer {
+                HomeViewModel(container.subscriptions, container.feed, container.suggestions, container.showShorts, container.stableSuggestions)
+            }
         }
     }
 }

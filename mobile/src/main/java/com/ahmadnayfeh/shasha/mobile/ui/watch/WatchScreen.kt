@@ -47,6 +47,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -54,6 +55,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -105,6 +107,7 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.ErrorState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LocalVideoActions
 import com.ahmadnayfeh.shasha.mobile.ui.components.PagedFooter
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
+import com.ahmadnayfeh.shasha.mobile.ui.theme.OnDarkBackdrop
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.SubtitleTrack
 import com.ahmadnayfeh.shasha.youtube.VideoItem
@@ -262,107 +265,114 @@ internal fun WatchContent(
         else -> Modifier.fillMaxWidth().statusBarsPadding().aspectRatio(state.aspectRatio.coerceIn(0.8f, 16f / 9f))
     }
 
-    Column(
-        Modifier.fillMaxSize().offset { IntOffset(0, dragged.roundToInt()) }
-            .background(if (isFullscreen || inPip) Color.Black else MaterialTheme.colorScheme.surface),
-    ) {
-        Box(Modifier.then(if (isFullscreen || inPip) Modifier.fillMaxSize() else Modifier.fillMaxWidth().background(Color.Black))) {
-            Box(
-                playerModifier.background(Color.Black)
-                    .testTag(WATCH_VIDEO_TAG)
-                    .onGloballyPositioned { coordinates ->
-                        val bounds = coordinates.boundsInWindow()
-                        onVideoBounds(Rect(bounds.left.roundToInt(), bounds.top.roundToInt(), bounds.right.roundToInt(), bounds.bottom.roundToInt()))
+    // The page is drawn over the app's Scaffold, not in it: its text takes the colour of what it is drawn on, set here.
+    val pageColor = if (isFullscreen || inPip) Color.Black else MaterialTheme.colorScheme.surface
+    val onPageColor = if (isFullscreen || inPip) Color.White else MaterialTheme.colorScheme.onSurface
+    CompositionLocalProvider(LocalContentColor provides onPageColor) {
+        Column(
+            Modifier.fillMaxSize().offset { IntOffset(0, dragged.roundToInt()) }.background(pageColor),
+        ) {
+            Box(Modifier.then(if (isFullscreen || inPip) Modifier.fillMaxSize() else Modifier.fillMaxWidth().background(Color.Black))) {
+                Box(
+                    playerModifier.background(Color.Black)
+                        .testTag(WATCH_VIDEO_TAG)
+                        .onGloballyPositioned { coordinates ->
+                            val bounds = coordinates.boundsInWindow()
+                            onVideoBounds(Rect(bounds.left.roundToInt(), bounds.top.roundToInt(), bounds.right.roundToInt(), bounds.bottom.roundToInt()))
+                        }
+                        .then(dragToCollapse)
+                        // A picture of a file that has no video (audio only) has nothing to zoom; in the floating window the system owns the touches.
+                        .then(if (state.isAudioOnly || inPip) Modifier else Modifier.pinchToFit(fit) { next -> onFitChange(next); zoomHint = next }),
+                ) {
+                    if (state.isAudioOnly) {
+                        AsyncImage(
+                            model = state.video?.thumbnailUrl,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit,
+                        )
+                    } else {
+                        ContentFrame(
+                            player = player,
+                            // Filling the frame overflows it: what is cropped must not be drawn outside.
+                            modifier = Modifier.fillMaxSize().clipToBounds(),
+                            surfaceType = SURFACE_TYPE_SURFACE_VIEW,
+                            contentScale = fit.contentScale,
+                            // Until the first frame is drawn the video's own picture stands in for it, not a black one.
+                            shutter = {
+                                AsyncImage(
+                                    model = state.video?.thumbnailUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = fit.contentScale,
+                                )
+                            },
+                        )
                     }
-                    .then(dragToCollapse)
-                    // A picture of a file that has no video (audio only) has nothing to zoom; in the floating window the system owns the touches.
-                    .then(if (state.isAudioOnly || inPip) Modifier else Modifier.pinchToFit(fit) { next -> onFitChange(next); zoomHint = next }),
-            ) {
-                if (state.isAudioOnly) {
-                    AsyncImage(
-                        model = state.video?.thumbnailUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit,
-                    )
-                } else {
-                    ContentFrame(
-                        player = player,
-                        // Filling the frame overflows it: what is cropped must not be drawn outside.
-                        modifier = Modifier.fillMaxSize().clipToBounds(),
-                        surfaceType = SURFACE_TYPE_SURFACE_VIEW,
-                        contentScale = fit.contentScale,
-                        // Until the first frame is drawn the video's own picture stands in for it, not a black one.
-                        shutter = {
-                            AsyncImage(
-                                model = state.video?.thumbnailUrl,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = fit.contentScale,
-                            )
-                        },
-                    )
-                }
-                if (state.phase == PlayerPhase.LOADING && !state.isOffline) {
-                    AsyncImage(
-                        model = state.video?.thumbnailUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = fit.contentScale,
-                    )
-                }
-                if (state.phase == PlayerPhase.ERROR && state.error != null) {
-                    Box(Modifier.fillMaxSize().background(Color(0xE6000000)), contentAlignment = Alignment.Center) {
-                        ErrorState(state.error!!, onRetry = onRetry)
+                    if (state.phase == PlayerPhase.LOADING && !state.isOffline) {
+                        AsyncImage(
+                            model = state.video?.thumbnailUrl,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = fit.contentScale,
+                        )
                     }
-                    // The way out stays where the controls have it: collapse into the mini player (upright), or upright (full screen).
-                    if (!inPip) {
-                        IconButton(onClick = onBack, Modifier.align(Alignment.TopStart).padding(horizontal = 4.dp)) {
-                            if (isFullscreen) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = Color.White)
-                            } else {
-                                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.player_minimize), tint = Color.White)
+                    if (state.phase == PlayerPhase.ERROR && state.error != null) {
+                        Box(Modifier.fillMaxSize().background(Color(0xE6000000)), contentAlignment = Alignment.Center) {
+                            OnDarkBackdrop { ErrorState(state.error!!, onRetry = onRetry) }
+                        }
+                        // The way out stays where the controls have it: collapse into the mini player (upright), or upright (full screen).
+                        if (!inPip) {
+                            IconButton(onClick = onBack, Modifier.align(Alignment.TopStart).padding(horizontal = 4.dp)) {
+                                if (isFullscreen) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back), tint = Color.White)
+                                } else {
+                                    Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.player_minimize), tint = Color.White)
+                                }
                             }
                         }
+                    } else if (inPip) {
+                        // The floating window has no controls, only the picture and what is said.
+                        state.cueText?.let { CaptionText(it, small = true, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 6.dp)) }
+                    } else {
+                        PlayerOverlay(
+                            state = state,
+                            player = player,
+                            controller = controller,
+                            title = state.video?.title.orEmpty(),
+                            isFullscreen = isFullscreen,
+                            onBack = onBack,
+                            onToggleFullscreen = onToggleFullscreen,
+                            onPictureInPicture = onEnterPictureInPicture,
+                            onOpenSettings = { showSettings = true },
+                        )
                     }
-                } else if (inPip) {
-                    // The floating window has no controls, only the picture and what is said.
-                    state.cueText?.let { CaptionText(it, small = true, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 6.dp)) }
-                } else {
-                    PlayerOverlay(
-                        state = state,
-                        player = player,
-                        controller = controller,
-                        title = state.video?.title.orEmpty(),
-                        isFullscreen = isFullscreen,
-                        onBack = onBack,
-                        onToggleFullscreen = onToggleFullscreen,
-                        onPictureInPicture = onEnterPictureInPicture,
-                        onOpenSettings = { showSettings = true },
-                    )
-                }
-                zoomHint?.let { shown ->
-                    Text(
-                        stringResource(if (shown == VideoFit.FILL) R.string.player_zoom_fill else R.string.player_zoom_fit),
-                        // Between the row of buttons at the top and the play button in the middle.
-                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 50.dp)
-                            .clip(RoundedCornerShape(16.dp)).background(Color(0xB3000000)).padding(horizontal = 14.dp, vertical = 4.dp),
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelLarge,
-                    )
+                    zoomHint?.let { shown ->
+                        Text(
+                            stringResource(if (shown == VideoFit.FILL) R.string.player_zoom_fill else R.string.player_zoom_fit),
+                            // Between the row of buttons at the top and the play button in the middle.
+                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 50.dp)
+                                .clip(RoundedCornerShape(16.dp)).background(Color(0xB3000000)).padding(horizontal = 14.dp, vertical = 4.dp),
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
                 }
             }
-        }
-        if (!isFullscreen && !inPip) {
-            Details(
-                details,
-                state,
-                onOpenVideo = onOpenVideo,
-                onOpenChannel = onOpenChannel,
-                comments = comments,
-                onOpenComments = { showComments = true },
-                modifier = Modifier.weight(1f),
-            )
+            if (!isFullscreen && !inPip) {
+                Details(
+                    details,
+                    video = state.video,
+                    description = state.description,
+                    lowQualityHeight = state.lowQualityHeight,
+                    isOffline = state.isOffline,
+                    onOpenVideo = onOpenVideo,
+                    onOpenChannel = onOpenChannel,
+                    comments = comments,
+                    onOpenComments = { showComments = true },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 
@@ -380,11 +390,17 @@ internal fun WatchContent(
     }
 }
 
-/** Title, actions, channel, description and the related videos (or the playlist) under the player. */
+/**
+ * Title, actions, channel, description and the related videos (or the playlist) under the player. It takes only the parts of the
+ * player's state it shows: the rest changes often (captions, buffering) and must not recompose the list.
+ */
 @Composable
 private fun Details(
     vm: WatchDetailsSource,
-    state: PlayerUiState,
+    video: VideoItem?,
+    description: String?,
+    lowQualityHeight: Int?,
+    isOffline: Boolean,
     onOpenVideo: (VideoItem) -> Unit,
     onOpenChannel: (ChannelItem) -> Unit,
     comments: CommentsViewModel?,
@@ -399,7 +415,6 @@ private fun Details(
     val saved by vm.savedForLater.collectAsStateWithLifecycle()
     val channel by vm.channel.collectAsStateWithLifecycle()
     var expanded by remember { mutableStateOf(false) }
-    val video = state.video
     val listState: LazyListState = rememberLazyListState()
 
     LazyColumn(modifier.navigationBarsPadding(), state = listState, contentPadding = PaddingValues(bottom = 16.dp)) {
@@ -420,7 +435,7 @@ private fun Details(
                         Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                state.lowQualityHeight?.let {
+                lowQualityHeight?.let {
                     Text(
                         stringResource(R.string.player_low_quality, it.toString()),
                         style = MaterialTheme.typography.bodySmall,
@@ -429,7 +444,7 @@ private fun Details(
                     )
                 }
                 if (expanded) {
-                    state.description?.takeIf { it.isNotBlank() }?.let {
+                    description?.takeIf { it.isNotBlank() }?.let {
                         Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 12.dp))
                     }
                 }
@@ -445,14 +460,14 @@ private fun Details(
                         onClick = { actions.toggleWatchLater(video) },
                     )
                     ActionButton(Icons.AutoMirrored.Filled.PlaylistAdd, stringResource(R.string.action_save_to_playlist)) { actions.addToPlaylist(video) }
-                    if (!state.isOffline && !video.isLive) {
+                    if (!isOffline && !video.isLive) {
                         ActionButton(Icons.Filled.Download, stringResource(R.string.menu_download)) { actions.download(video) }
                     }
                     ActionButton(Icons.Filled.Share, stringResource(R.string.menu_share)) { actions.share(video) }
                 }
             }
             val channelId = video.channelId
-            if (channelId != null && !state.isOffline) {
+            if (channelId != null && !isOffline) {
                 item(key = "channel") {
                     val channelName = video.channelName ?: channel?.name.orEmpty()
                     Row(
@@ -477,7 +492,7 @@ private fun Details(
                 }
             }
         }
-        if (comments != null && !state.isOffline) {
+        if (comments != null && !isOffline) {
             item(key = "comments") { CommentsTeaser(comments, onOpen = onOpenComments, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) }
         }
         item(key = "divider") { HorizontalDivider(Modifier.padding(vertical = 4.dp)) }
@@ -485,7 +500,7 @@ private fun Details(
             item(key = "queue-title") {
                 Text(stringResource(R.string.watch_playlist), Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.titleSmall)
             }
-            items(queue.items, key = { "q:${it.videoId}" }) { item ->
+            items(queue.items, key = { "q:${it.videoId}" }, contentType = { VIDEO_ROW }) { item ->
                 val current = item.videoId == vm.videoId
                 VideoListItem(
                     item,
@@ -494,7 +509,7 @@ private fun Details(
                 )
             }
             item(key = "queue-footer") { PagedFooter(queue.loading, queue.error, onRetry = vm::loadMoreQueue) }
-        } else if (!state.isOffline) {
+        } else if (!isOffline) {
             item(key = "related-title") {
                 Text(stringResource(R.string.watch_related), Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.titleSmall)
             }
@@ -507,7 +522,7 @@ private fun Details(
                         TextButton(onClick = vm::retryRelated) { Text(stringResource(R.string.action_retry)) }
                     }
                 }
-                is Loadable.Loaded -> items(loaded.value, key = { "r:${it.videoId}" }) { item -> VideoListItem(item, onClick = { onOpenVideo(item) }) }
+                is Loadable.Loaded -> items(loaded.value, key = { "r:${it.videoId}" }, contentType = { VIDEO_ROW }) { item -> VideoListItem(item, onClick = { onOpenVideo(item) }) }
             }
         }
     }
@@ -631,6 +646,9 @@ internal fun CaptionText(text: String, modifier: Modifier = Modifier, small: Boo
         textAlign = TextAlign.Center,
     )
 }
+
+/** The kind of the video rows of the list under the player (Compose reuses one row's layout for the next). */
+private const val VIDEO_ROW = "video-row"
 
 /** The watch page's picture, for the tests. */
 internal const val WATCH_VIDEO_TAG = "watch_video"

@@ -12,6 +12,7 @@ import com.ahmadnayfeh.shasha.data.AppearanceState
 import com.ahmadnayfeh.shasha.data.BehaviorSettings
 import com.ahmadnayfeh.shasha.data.FeedRepository
 import com.ahmadnayfeh.shasha.data.HomeSuggestions
+import com.ahmadnayfeh.shasha.data.StableSuggestions
 import com.ahmadnayfeh.shasha.data.NetworkStatus
 import com.ahmadnayfeh.shasha.data.OverridesRepository
 import com.ahmadnayfeh.shasha.data.ParentPinRepository
@@ -67,9 +68,9 @@ import com.ahmadnayfeh.shasha.ui.parental.ParentalLists
 import com.ahmadnayfeh.shasha.ui.screens.kids.KidsFeed
 import com.ahmadnayfeh.shasha.ui.theme.AppLocale
 import com.ahmadnayfeh.shasha.update.ApkInspector
-import com.ahmadnayfeh.shasha.update.GitHubReleases
 import com.ahmadnayfeh.shasha.update.InstallEvents
 import com.ahmadnayfeh.shasha.update.InstalledVersion
+import com.ahmadnayfeh.shasha.update.UpdateFeed
 import com.ahmadnayfeh.shasha.update.UpdateInstaller
 import com.ahmadnayfeh.shasha.update.Updater
 import com.ahmadnayfeh.shasha.youtube.VideoSource
@@ -86,6 +87,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import java.io.File
 import java.time.Clock
@@ -99,7 +101,7 @@ class AppContainer(context: Context) {
     private val appContext = context.applicationContext
 
     /**
-     * The one HTTP client of the app (thumbnails, SponsorBlock and GitHub Releases). The YouTube module
+     * The one HTTP client of the app (thumbnails, SponsorBlock and the updater). The YouTube module
      * reuses its connection pool but applies its own per-client headers.
      */
     val okHttpClient: OkHttpClient by lazy {
@@ -162,7 +164,12 @@ class AppContainer(context: Context) {
      * «مقترحة لك» on the home screens: suggestions beside the profile's last videos, each video's kept a few hours in the
      * cache folder (a cache: not in the backup).
      */
-    val homeSuggestions: HomeSuggestions by lazy { HomeSuggestions(videoSource, File(appContext.cacheDir, HomeSuggestions.FILE_NAME)) }
+    val homeSuggestions: HomeSuggestions by lazy {
+        HomeSuggestions(videoSource, File(appContext.cacheDir, HomeSuggestions.FILE_NAME), stable = stableSuggestions)
+    }
+
+    /** What the homes show of [homeSuggestions], kept for the app's run (the activity starts it over when the app is opened again). */
+    val stableSuggestions: StableSuggestions = StableSuggestions()
 
     // ---- Policy (SPEC §3): profiles, PIN, quota and schedule, usage. Every rule is the engine's. ----------
 
@@ -453,12 +460,13 @@ class AppContainer(context: Context) {
     val installEvents: InstallEvents = InstallEvents()
 
     /**
-     * The latest GitHub Release of this (private) repository, read with the build's read-only token, downloaded into
-     * cacheDir/updates, checked against the installed app and handed to the system installer. Adult profile only.
+     * The latest version, read from the public update manifest (BuildConfig.UPDATE_MANIFEST_URL), downloaded into
+     * cacheDir/updates, checked against the manifest's SHA-256 and the installed app, and handed to the system
+     * installer. Adult profile only.
      */
     val updater: Updater by lazy {
         Updater(
-            releases = GitHubReleases(okHttpClient, BuildConfig.UPDATE_REPO, BuildConfig.UPDATE_TOKEN),
+            feed = UpdateFeed(okHttpClient, BuildConfig.UPDATE_MANIFEST_URL.toHttpUrl()),
             inspector = ApkInspector(appContext),
             installer = UpdateInstaller(appContext),
             installed = InstalledVersion(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE.toLong()),

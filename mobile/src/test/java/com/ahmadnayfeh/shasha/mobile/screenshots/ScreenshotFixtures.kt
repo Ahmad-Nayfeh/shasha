@@ -330,12 +330,14 @@ object Samples {
     }
 }
 
-/** What the player screen shows under the video, over the fake data. */
-class FakeDetails : WatchDetailsSource {
+/** What the player screen shows under the video, over the fake data: the related videos, or (with a [playlistId]) the playlist [queue]. */
+class FakeDetails(
+    override val playlistId: String? = null,
+    queue: List<VideoItem> = emptyList(),
+) : WatchDetailsSource {
     override val videoId: String = Samples.blackHoles.videoId
-    override val playlistId: String? = null
     override val related: StateFlow<Loadable<List<VideoItem>>> = MutableStateFlow(Loadable.Loaded(Samples.related))
-    override val queueState: StateFlow<PagedState<VideoItem>> = MutableStateFlow(PagedState())
+    override val queueState: StateFlow<PagedState<VideoItem>> = MutableStateFlow(PagedState(items = queue, started = true, endReached = true))
     override val subscribed: StateFlow<Boolean> = MutableStateFlow(false)
     override val savedForLater: StateFlow<Boolean> = MutableStateFlow(false)
     override val channel: StateFlow<ChannelItem?> = MutableStateFlow(Samples.academy)

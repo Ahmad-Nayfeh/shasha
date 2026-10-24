@@ -24,9 +24,6 @@ import java.io.File
 
 /** Where the update page is. The page has one button: what it does depends on this. */
 sealed interface UpdateUi {
-    /** This build has no way to look for updates (no access key was built in). */
-    data object Unavailable : UpdateUi
-
     data object Checking : UpdateUi
 
     data class UpToDate(val installed: InstalledVersion) : UpdateUi
@@ -51,7 +48,7 @@ sealed interface UpdateUi {
  */
 class UpdateViewModel(private val steps: UpdateSteps) : ViewModel() {
 
-    private val _state = MutableStateFlow<UpdateUi>(if (steps.hasToken) UpdateUi.Checking else UpdateUi.Unavailable)
+    private val _state = MutableStateFlow<UpdateUi>(UpdateUi.Checking)
     val state: StateFlow<UpdateUi> = _state
 
     private val confirmationChannel = Channel<Intent>(Channel.BUFFERED)
@@ -64,7 +61,7 @@ class UpdateViewModel(private val steps: UpdateSteps) : ViewModel() {
     private var session: Int? = null
 
     init {
-        if (steps.hasToken) check()
+        check()
         viewModelScope.launch {
             steps.installEvents.collect { event ->
                 if (event.sessionId != session && session != null) return@collect
@@ -80,16 +77,12 @@ class UpdateViewModel(private val steps: UpdateSteps) : ViewModel() {
 
     /** Looks for a newer release. */
     fun check() {
-        if (!steps.hasToken) {
-            _state.value = UpdateUi.Unavailable
-            return
-        }
         work?.cancel()
         _state.value = UpdateUi.Checking
         work = viewModelScope.launch {
             try {
                 val release = steps.latest()
-                _state.value = if (release != null && release.isNewerThan(steps.installed.code)) {
+                _state.value = if (release.isNewerThan(steps.installed.code)) {
                     UpdateUi.Available(steps.installed, release)
                 } else {
                     UpdateUi.UpToDate(steps.installed)

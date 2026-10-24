@@ -6,9 +6,8 @@ plugins {
     alias(libs.plugins.roborazzi)
 }
 
-// Release signing, versionCode and the updater's token come from CI (contract documented at the top of
-// .github/workflows/android.yml). Without them (local builds, Dependabot PRs) the release build still succeeds,
-// unsigned, and the in-app updater explains that it has no token.
+// Release signing and versionCode come from CI (contract documented at the top of .github/workflows/android.yml).
+// Without them (local builds, Dependabot PRs) the release build still succeeds, unsigned.
 fun ciEnv(name: String): String? = providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
 
 /** All four signing values, or none of them: a half-configured key would only fail deep inside packaging. */
@@ -32,11 +31,9 @@ android {
         versionCode = ciEnv("SHASHA_VERSION_CODE")
             ?.let { it.toIntOrNull() ?: error("SHASHA_VERSION_CODE must be an integer, got '$it'") }
             ?: 1
-        versionName = "1.7.0"
-        // SPEC §6's updater reads this repository's GitHub Releases. The repository is private, so it needs a
-        // read-only token (CI's SHASHA_UPDATE_TOKEN); empty = the updater explains that it has none.
-        buildConfigField("String", "UPDATE_REPO", javaString("Ahmad-Nayfeh/shasha"))
-        buildConfigField("String", "UPDATE_TOKEN", javaString(ciEnv("SHASHA_UPDATE_TOKEN")?.trim() ?: ""))
+        versionName = "1.8.0"
+        // SPEC §6's updater reads the public update manifest on the download site (no credentials: docs/dev/MAINTENANCE.md).
+        buildConfigField("String", "UPDATE_MANIFEST_URL", javaString("https://ahmad-nayfeh.github.io/shasha/latest.json"))
     }
 
     signingConfigs {

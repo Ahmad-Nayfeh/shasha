@@ -19,6 +19,7 @@
     <string name="action_ok">حسناً</string>
     <string name="action_remove">إزالة</string>
     <string name="action_reset">إرجاع الأصل</string>
+    <string name="action_refresh">تحديث</string>
     <string name="action_retry">حاول مرة أخرى</string>
     <string name="action_saved">تم الحفظ</string>
     <string name="action_save_to_playlist">حفظ</string>
@@ -313,7 +314,6 @@
     <string name="update_needs_permission">اسمح لشاشة بتثبيت التطبيقات مرة واحدة، ثم ارجع إلى هنا.</string>
     <string name="update_allow_install">السماح بالتثبيت</string>
     <string name="update_installing">جارٍ التثبيت… قد يطلب النظام تأكيدك.</string>
-    <string name="update_unavailable">التحديثات غير متاحة في هذا الإصدار من التطبيق.</string>
     <string name="update_err_network">تعذّر الوصول إلى خادم التحديثات. تحقق من الإنترنت.</string>
     <string name="update_err_unavailable">تعذّرت قراءة التحديثات الآن.</string>
     <string name="update_err_server">لم يُفهم ردّ خادم التحديثات.</string>

@@ -93,7 +93,9 @@ fun ChannelScreen(
     val tabs = if (settings.showShorts) ChannelTab.entries else ChannelTab.entries - ChannelTab.SHORTS
     var chosen by rememberSaveable { mutableIntStateOf(ChannelTab.VIDEOS.ordinal) }
     val tab = ChannelTab.entries[chosen].takeIf { it in tabs } ?: ChannelTab.VIDEOS
-    val listState = rememberLazyListState()
+    // Each tab keeps its own place in the list: back to Videos from Shorts is where the viewer left Videos, not the Shorts' scroll.
+    val listStates = ChannelTab.entries.associateWith { rememberLazyListState() }
+    val listState = listStates.getValue(tab)
 
     LaunchedEffect(tab) {
         when (tab) {
@@ -128,13 +130,22 @@ fun ChannelScreen(
                     stickyHeader(key = "tabs") {
                         PrimaryTabRow(selectedTabIndex = tabs.indexOf(tab), containerColor = MaterialTheme.colorScheme.surface) {
                             tabs.forEach { option ->
-                                Tab(selected = tab == option, onClick = { chosen = option.ordinal }, text = { Text(stringResource(option.label)) })
+                                Tab(
+                                    selected = tab == option,
+                                    onClick = {
+                                        // Opened for the first time with the header scrolled away: it opens under the tabs, where the finger is.
+                                        val next = listStates.getValue(option)
+                                        if (option != tab && listState.firstVisibleItemIndex >= 1 && next.firstVisibleItemIndex == 0) next.requestScrollToItem(1)
+                                        chosen = option.ordinal
+                                    },
+                                    text = { Text(stringResource(option.label)) },
+                                )
                             }
                         }
                     }
                     when (tab) {
                         ChannelTab.VIDEOS -> {
-                            items(videos.items, key = { "v:${it.videoId}" }) { video -> VideoListItem(video, onClick = { onOpenVideo(video) }, showChannel = false) }
+                            items(videos.items, key = { "v:${it.videoId}" }, contentType = { "video" }) { video -> VideoListItem(video, onClick = { onOpenVideo(video) }, showChannel = false) }
                             item(key = "videos-footer") {
                                 if (videos.started && videos.items.isEmpty() && videos.error == null) {
                                     Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Text(stringResource(R.string.channel_no_videos)) }

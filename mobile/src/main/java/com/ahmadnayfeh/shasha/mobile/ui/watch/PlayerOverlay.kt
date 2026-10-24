@@ -195,7 +195,8 @@ fun PlayerOverlay(
     var interactions by remember { mutableIntStateOf(0) }
     var feedback by remember { mutableStateOf<SeekFeedback?>(null) }
     var lastSeekAt by remember { mutableLongStateOf(0L) }
-    val progress by rememberProgress(player)
+    // Read only by the parts that show it (the clock, the bar, the hairline): the position's ticks redraw them, not the controls.
+    val progress = rememberProgress(player)
     // Where the finger is on the seek bar while it drags (0..1), for the frame shown above it.
     var scrub by remember { mutableStateOf<Float?>(null) }
     val storyboard = remember(state.details) { state.details?.storyboards?.forPreview(PREVIEW_MAX_FRAME_WIDTH) }
@@ -330,11 +331,11 @@ fun PlayerOverlay(
                     Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 12.dp)) {
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    if (state.isLive) stringResource(R.string.badge_live) else "${Formatters.clock(progress.positionMs)} / ${Formatters.clock(progress.durationMs)}",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.weight(1f),
-                                )
+                                if (state.isLive) {
+                                    Text(stringResource(R.string.badge_live), style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                                } else {
+                                    ClockText(progress, Modifier.weight(1f))
+                                }
                                 TextButton(onClick = onOpenSettings) {
                                     Text(PlaybackSpeeds.label(state.speed), color = Color.White, style = MaterialTheme.typography.labelLarge)
                                 }
@@ -346,24 +347,23 @@ fun PlayerOverlay(
                                 }
                             }
                         }
-                        SeekBar(
-                            positionMs = progress.positionMs,
-                            bufferedMs = progress.bufferedMs,
-                            durationMs = progress.durationMs,
+                        ProgressSeekBar(
+                            progress = progress,
                             segments = state.segments,
                             onSeek = { controller.seekTo(it); interactions++ },
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = !state.isLive && progress.durationMs > 0,
+                            isLive = state.isLive,
                             onScrub = { scrub = it },
                         )
                     }
 
                     // While the bar is dragged: the frame at the finger, with its time, just above the bar.
                     scrub?.let { fraction ->
+                        val durationMs = progress.value.durationMs
                         SeekPreview(
                             storyboard = storyboard,
-                            positionMs = (fraction * progress.durationMs).toLong(),
-                            durationMs = progress.durationMs,
+                            positionMs = (fraction * durationMs).toLong(),
+                            durationMs = durationMs,
                             modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(bottom = SEEK_PREVIEW_ABOVE_BAR)
                                 .aboveThumb(fraction, barInset = 12.dp),
                         )
@@ -372,11 +372,7 @@ fun PlayerOverlay(
             }
 
             // With the controls hidden, a hairline still shows how far the video is.
-            if (!visible && progress.durationMs > 0 && !state.isLive) {
-                Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(2.dp).background(Color(0x4DFFFFFF))) {
-                    Box(Modifier.fillMaxWidth((progress.positionMs.toFloat() / progress.durationMs).coerceIn(0f, 1f)).height(2.dp).background(MaterialTheme.colorScheme.primary))
-                }
-            }
+            if (!visible && !state.isLive) ProgressHairline(progress, Modifier.align(Alignment.BottomStart))
 
             // What is said, above the controls when they show.
             state.cueText?.let { text ->
@@ -399,6 +395,48 @@ fun PlayerOverlay(
                 }
             }
         }
+    }
+}
+
+/** «7:15 / 18:42»: the only text that changes with every tick of the position, so it reads the position by itself. */
+@Composable
+private fun ClockText(progress: State<Progress>, modifier: Modifier = Modifier) {
+    val now = progress.value
+    Text("${Formatters.clock(now.positionMs)} / ${Formatters.clock(now.durationMs)}", style = MaterialTheme.typography.labelMedium, modifier = modifier)
+}
+
+/** [SeekBar] at the player's position, read here, so that its ticks recompose only the bar. */
+@Composable
+private fun ProgressSeekBar(
+    progress: State<Progress>,
+    segments: List<SponsorSegment>,
+    onSeek: (Long) -> Unit,
+    isLive: Boolean,
+    onScrub: (Float?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val now = progress.value
+    SeekBar(
+        positionMs = now.positionMs,
+        bufferedMs = now.bufferedMs,
+        durationMs = now.durationMs,
+        segments = segments,
+        onSeek = onSeek,
+        modifier = modifier,
+        enabled = !isLive && now.durationMs > 0,
+        onScrub = onScrub,
+    )
+}
+
+/** With the controls hidden, a hairline along the bottom still shows how far the video is (drawn, not laid out, at each tick). */
+@Composable
+private fun ProgressHairline(progress: State<Progress>, modifier: Modifier = Modifier) {
+    val primary = MaterialTheme.colorScheme.primary
+    Canvas(modifier.fillMaxWidth().height(2.dp)) {
+        val now = progress.value
+        if (now.durationMs <= 0) return@Canvas
+        drawRect(Color(0x4DFFFFFF))
+        drawRect(primary, size = Size(size.width * (now.positionMs.toFloat() / now.durationMs).coerceIn(0f, 1f), size.height))
     }
 }
 

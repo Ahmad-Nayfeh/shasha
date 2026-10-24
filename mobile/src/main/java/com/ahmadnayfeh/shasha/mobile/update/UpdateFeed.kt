@@ -8,7 +8,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -16,31 +15,26 @@ import okhttp3.Response
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.security.MessageDigest
 
 /** Why the updater stopped. The update screen explains each. */
 enum class UpdateErrorKind {
-    /** No connection, DNS, a timeout: not GitHub's fault. */
+    /** No connection, DNS, a timeout. */
     NETWORK,
 
-    /** 401: the read-only token in this build is wrong, expired or revoked. */
-    TOKEN_REJECTED,
-
-    /** 403/429: GitHub's rate limit, or a token without read access to the repository. */
+    /** 403/429: the download site refuses or limits us for now. */
     FORBIDDEN,
 
-    /** 404: no release published yet, or the token cannot see the (private) repository. */
+    /** 404: no manifest published (yet). */
     NOT_FOUND,
 
-    /** The latest release has no .apk to install. */
+    /** The manifest has no entry for this app. */
     NO_APK,
 
-    /** The latest release's tag is not `v<versionName>-<versionCode>`. */
-    BAD_TAG,
-
-    /** An answer that is not what GitHub sends (5xx, broken JSON, an asset outside the API host). */
+    /** An answer that is not a usable manifest (5xx, broken JSON, an entry without a version, an address or a SHA-256). */
     BAD_ANSWER,
 
-    /** The download broke off or came back short. */
+    /** The download broke off, came back short, or is not the file the manifest describes (its SHA-256). */
     DOWNLOAD_FAILED,
 
     /** The system cannot read the downloaded file as an app. */
@@ -63,82 +57,47 @@ class UpdateException(val kind: UpdateErrorKind, val detail: String? = null, cau
     Exception("$kind${detail?.let { ": $it" }.orEmpty()}", cause)
 
 /**
- * The latest release of [repo] and its APK, read with a read-only [token] (the repository is
- * private). Every request to the API carries the token; the APK's download is redirected by the API to GitHub's
- * storage host with a signed address, and that request is made WITHOUT the token: it never leaves [apiBase]'s host.
+ * The latest version, read from the public update manifest at [manifestUrl] ([UpdateManifest]), and its APK.
+ * Nothing here is secret: no request carries credentials, and an https address is never followed to plain http. The
+ * APK must match the manifest's SHA-256 before it is kept; [ApkVerifier] then checks it against the installed app.
  *
- * [client] is the app's shared one (it sends a User-Agent: the server requires one). Suspends on Dispatchers.IO; cancelling
- * cancels the HTTP call.
+ * [client] is the app's shared one. Suspends on Dispatchers.IO; cancelling cancels the HTTP call.
  */
-class GitHubReleases(
-    private val client: OkHttpClient,
-    private val repo: String,
-    private val token: String,
-    private val apiBase: HttpUrl = "https://api.github.com/".toHttpUrl(),
-) {
-    /** A private repository's releases cannot be read without it: the screen explains how to add one. */
-    val hasToken: Boolean get() = token.isNotBlank()
-
-    private val withoutRedirects: OkHttpClient by lazy { client.newBuilder().followRedirects(false).followSslRedirects(false).build() }
+class UpdateFeed(client: OkHttpClient, private val manifestUrl: HttpUrl) {
+    private val client: OkHttpClient = client.newBuilder().followSslRedirects(false).build()
 
     /**
-     * The latest release, or null when it must not be offered (a draft or prerelease).
+     * This app's entry in the manifest. Always asked afresh (the site's cache may otherwise hand back an older one).
      * @throws UpdateException
      */
-    suspend fun latest(): ReleaseInfo? {
-        val url = apiBase.newBuilder().addPathSegments("repos/$repo/releases/latest").build()
-        return execute(client.newCall(apiRequest(url, accept = "application/vnd.github+json"))) { response ->
+    suspend fun latest(): ReleaseInfo {
+        val request = Request.Builder()
+            .url(manifestUrl)
+            .header("Accept", "application/json")
+            .header("Cache-Control", "no-cache")
+            .build()
+        return execute(client.newCall(request)) { response ->
             if (!response.isSuccessful) throw httpError(response.code)
-            ReleaseParser.parse(response.body.string())
+            UpdateManifest.parse(response.body.string(), manifestUrl)
         }
     }
 
     /**
-     * Saves [asset] as [target] (through a `.part` file: [target] only ever holds a whole download), reporting
-     * [onProgress] (bytes so far, total when known) from the IO thread.
+     * Saves [apk] as [target] (through a `.part` file: [target] only ever holds a whole download whose SHA-256 is the
+     * manifest's), reporting [onProgress] (bytes so far, total when known) from the IO thread.
      * @throws UpdateException
      */
-    suspend fun download(asset: ReleaseAsset, target: File, onProgress: (Long, Long?) -> Unit) {
-        val url = asset.apiUrl.toHttpUrlOrNull()
-        // The token only ever goes to the API host: an asset address anywhere else is not the server's answer. (The detail
-        // is shown on the update screen, so it never carries the address.)
-        if (url == null || url.host != apiBase.host || url.port != apiBase.port || url.scheme != apiBase.scheme) {
-            throw UpdateException(UpdateErrorKind.BAD_ANSWER, "asset address on another host")
-        }
-        val storage: HttpUrl? = execute(withoutRedirects.newCall(apiRequest(url, accept = "application/octet-stream"))) { response ->
-            when {
-                response.isRedirect -> {
-                    val location = response.header("Location")?.let { response.request.url.resolve(it) }
-                        ?: throw UpdateException(UpdateErrorKind.BAD_ANSWER, "redirect without a location")
-                    if (apiBase.isHttps && !location.isHttps) throw UpdateException(UpdateErrorKind.BAD_ANSWER, "insecure redirect")
-                    location
-                }
-                response.isSuccessful -> {
-                    save(response, target, asset.size, onProgress)
-                    null
-                }
-                else -> throw httpError(response.code)
-            }
-        }
-        if (storage == null) return
-        // A new request, built from nothing: no Authorization header can come along to the storage host.
-        val request = Request.Builder().url(storage).header("Accept", "application/octet-stream").build()
+    suspend fun download(apk: ReleaseApk, target: File, onProgress: (Long, Long?) -> Unit) {
+        val url = apk.url.toHttpUrlOrNull() ?: throw UpdateException(UpdateErrorKind.BAD_ANSWER, "apk url")
+        val request = Request.Builder().url(url).build()
         execute(client.newCall(request)) { response ->
             if (!response.isSuccessful) throw UpdateException(UpdateErrorKind.DOWNLOAD_FAILED, "HTTP ${response.code}")
-            save(response, target, asset.size, onProgress)
+            save(response, target, apk, onProgress)
         }
     }
-
-    private fun apiRequest(url: HttpUrl, accept: String) = Request.Builder()
-        .url(url)
-        .header("Authorization", "Bearer $token")
-        .header("Accept", accept)
-        .header("X-GitHub-Api-Version", API_VERSION)
-        .build()
 
     private fun httpError(code: Int) = UpdateException(
         when (code) {
-            401 -> UpdateErrorKind.TOKEN_REJECTED
             403, 429 -> UpdateErrorKind.FORBIDDEN
             404 -> UpdateErrorKind.NOT_FOUND
             else -> UpdateErrorKind.BAD_ANSWER
@@ -146,11 +105,13 @@ class GitHubReleases(
         "HTTP $code",
     )
 
-    private fun save(response: Response, target: File, expectedSize: Long, onProgress: (Long, Long?) -> Unit) {
+    private fun save(response: Response, target: File, apk: ReleaseApk, onProgress: (Long, Long?) -> Unit) {
+        val expectedSize = apk.size
         val total = response.body.contentLength().takeIf { it > 0 } ?: expectedSize.takeIf { it > 0 }
         target.parentFile?.mkdirs()
         val part = File(target.path + ".part")
         try {
+            val digest = MessageDigest.getInstance("SHA-256")
             var done = 0L
             var reported = 0L
             response.body.byteStream().use { input ->
@@ -161,6 +122,7 @@ class GitHubReleases(
                         val read = input.read(buffer)
                         if (read < 0) break
                         output.write(buffer, 0, read)
+                        digest.update(buffer, 0, read)
                         done += read
                         if (done - reported >= PROGRESS_STEP_BYTES) {
                             reported = done
@@ -174,6 +136,7 @@ class GitHubReleases(
             if (expectedSize > 0 && done != expectedSize) {
                 throw UpdateException(UpdateErrorKind.DOWNLOAD_FAILED, "$done of $expectedSize bytes")
             }
+            if (digest.digest().toHex() != apk.sha256) throw UpdateException(UpdateErrorKind.DOWNLOAD_FAILED, "sha256 mismatch")
             target.delete()
             if (!part.renameTo(target)) throw UpdateException(UpdateErrorKind.DOWNLOAD_FAILED, "cannot write ${target.name}")
         } catch (e: IOException) {
@@ -210,8 +173,23 @@ class GitHubReleases(
     }
 
     companion object {
-        const val API_VERSION = "2022-11-28"
         private const val BUFFER_BYTES = 64 * 1024
         private const val PROGRESS_STEP_BYTES = 256 * 1024L
+
+        /** [file]'s SHA-256 as 64 lowercase hex digits (an earlier download is only reused when it still matches). */
+        fun sha256(file: File): String {
+            val digest = MessageDigest.getInstance("SHA-256")
+            file.inputStream().use { input ->
+                val buffer = ByteArray(BUFFER_BYTES)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    digest.update(buffer, 0, read)
+                }
+            }
+            return digest.digest().toHex()
+        }
+
+        private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
     }
 }

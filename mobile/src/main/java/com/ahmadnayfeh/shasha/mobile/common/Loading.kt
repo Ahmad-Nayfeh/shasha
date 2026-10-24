@@ -96,6 +96,12 @@ class PagedLoader<T, K>(
         }
     }
 
+    /** [loadMore], and waits until it is over (or until the load already running is): the items are in [state] then. */
+    suspend fun loadMoreAndWait() {
+        if (!_state.value.loading) loadMore()
+        job?.join()
+    }
+
     /** Forgets everything and loads the first page of [newFetch] (or of the same source). */
     fun restart(newFetch: (suspend (PageKey?) -> Pair<List<T>, PageKey?>)? = null) {
         job?.cancel()

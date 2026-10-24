@@ -51,14 +51,15 @@ class ShashaApp : Application(), SingletonImageLoader.Factory {
     }
 
     /**
-     * Thumbnails go through the shared OkHttp client. Fixed cache sizes suit a TV: 64 MB of decoded
-     * pictures (a few screens of cards, so scrolling back does not decode again) and 150 MB on disk (the
-     * same thumbnails come back in the feed, search and history, always under the same URL).
+     * Thumbnails go through the shared OkHttp client. Up to 64 MB of decoded pictures (a few screens of cards, so
+     * scrolling back does not decode again), but never more than a quarter of the heap: a weak TV's 128 MB heap would
+     * otherwise give half of itself to thumbnails and run out of memory in the player. 150 MB on disk (the same thumbnails
+     * come back in the feed, search and history, always under the same URL).
      */
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader.Builder(context)
             .components { add(OkHttpNetworkFetcherFactory(callFactory = { container.okHttpClient })) }
-            .memoryCache { MemoryCache.Builder().maxSizeBytes(MEMORY_CACHE_BYTES).build() }
+            .memoryCache { MemoryCache.Builder().maxSizeBytes(minOf(MEMORY_CACHE_BYTES, Runtime.getRuntime().maxMemory() / 4)).build() }
             .diskCache { DiskCache.Builder().directory(cacheDir.resolve("thumbnails").toOkioPath()).maxSizeBytes(DISK_CACHE_BYTES).build() }
             .crossfade(250)
             .build()

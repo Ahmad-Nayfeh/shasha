@@ -89,6 +89,7 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.ErrorState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LocalVideoActions
 import com.ahmadnayfeh.shasha.mobile.ui.components.LocalWatchLaterIds
 import com.ahmadnayfeh.shasha.mobile.ui.nav.ShortsRoute
+import com.ahmadnayfeh.shasha.mobile.ui.theme.OnDarkBackdrop
 import com.ahmadnayfeh.shasha.mobile.ui.watch.CaptionText
 import com.ahmadnayfeh.shasha.mobile.ui.watch.PREVIEW_MAX_FRAME_WIDTH
 import com.ahmadnayfeh.shasha.mobile.ui.watch.PlayerSettingsSheet
@@ -342,7 +343,7 @@ private fun ShortPage(
         }
         if (own && state.phase == PlayerPhase.ERROR && state.error != null) {
             Box(Modifier.fillMaxSize().background(Color(0xE6000000)), contentAlignment = Alignment.Center) {
-                ErrorState(state.error, onRetry = onRetry)
+                OnDarkBackdrop { ErrorState(state.error, onRetry = onRetry) }
             }
         }
 

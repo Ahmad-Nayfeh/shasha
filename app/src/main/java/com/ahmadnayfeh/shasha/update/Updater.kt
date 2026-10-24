@@ -12,13 +12,10 @@ data class InstalledVersion(val name: String, val code: Long)
 interface UpdateSteps {
     val installed: InstalledVersion
 
-    /** False: this build has no read token, so it cannot read the private repository's releases at all. */
-    val hasToken: Boolean
-
     val installEvents: Flow<InstallEvent>
 
     /** @throws UpdateException */
-    suspend fun latest(): ReleaseInfo?
+    suspend fun latest(): ReleaseInfo
 
     /** Downloads [release]'s APK (or finds it already downloaded) and checks it ([ApkVerifier]). @throws UpdateException */
     suspend fun download(release: ReleaseInfo, onProgress: (Long, Long?) -> Unit): File
@@ -33,22 +30,22 @@ interface UpdateSteps {
 }
 
 /**
- * SPEC §6 «فحص التحديثات»: the latest release ([releases]), its APK downloaded into [downloads] (cacheDir/updates)
- * and checked against the installed app ([inspector], [ApkVerifier]: the same app, newer, the same signing key), then
+ * SPEC §6 «فحص التحديثات»: the latest version ([feed]), its APK downloaded into [downloads] (cacheDir/updates), its
+ * SHA-256 matched against the manifest's and checked against the installed app ([inspector], [ApkVerifier]: the same
+ * app, newer, the same signing key), then
  * the system installer ([installer]: silent where Android allows it, else with the system's own confirmation).
  */
 class Updater(
-    private val releases: GitHubReleases,
+    private val feed: UpdateFeed,
     private val inspector: ApkInspector,
     private val installer: UpdateInstaller,
     override val installed: InstalledVersion,
     private val downloads: File,
     events: InstallEvents,
 ) : UpdateSteps {
-    override val hasToken: Boolean get() = releases.hasToken
     override val installEvents: Flow<InstallEvent> = events.events
 
-    override suspend fun latest(): ReleaseInfo? = releases.latest()
+    override suspend fun latest(): ReleaseInfo = feed.latest()
 
     override suspend fun download(release: ReleaseInfo, onProgress: (Long, Long?) -> Unit): File {
         val target = File(downloads, "shasha-${release.versionName}-${release.versionCode}.apk")
@@ -56,9 +53,9 @@ class Updater(
             // Only this release's file is kept (a TV's storage is small).
             downloads.listFiles()?.filter { it.name != target.name }?.forEach { it.delete() }
         }
-        val ready = withContext(Dispatchers.IO) { target.isFile && target.length() == release.apk.size && verify(target) == null }
+        val ready = withContext(Dispatchers.IO) { target.isFile && UpdateFeed.sha256(target) == release.apk.sha256 && verify(target) == null }
         if (!ready) {
-            releases.download(release.apk, target, onProgress)
+            feed.download(release.apk, target, onProgress)
             val refusal = withContext(Dispatchers.IO) { verify(target) }
             if (refusal != null) {
                 target.delete()

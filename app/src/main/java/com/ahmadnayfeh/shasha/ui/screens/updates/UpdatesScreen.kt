@@ -168,7 +168,7 @@ private fun UpdatesLayout(
 @Composable
 private fun Buttons(state: UpdateUiState, actions: UpdatesActions, first: FocusRequester) {
     when (state) {
-        UpdateUiState.Checking, UpdateUiState.TokenMissing, is UpdateUiState.Installed -> BackButton(actions, first)
+        UpdateUiState.Checking, is UpdateUiState.Installed -> BackButton(actions, first)
         UpdateUiState.UpToDate -> {
             BackButton(actions, first)
             ShashaButton(stringResource(R.string.updates_action_check_again), actions.onCheck, icon = ShashaIcons.Refresh, modifier = Modifier.testTag("updates_check"))
@@ -286,7 +286,6 @@ private fun DownloadProgress(bytes: Long, total: Long?) {
 @Composable
 private fun texts(state: UpdateUiState): Pair<String, String> = when (state) {
     UpdateUiState.Checking -> stringResource(R.string.updates_checking_title) to stringResource(R.string.updates_checking_body)
-    UpdateUiState.TokenMissing -> stringResource(R.string.updates_token_title) to stringResource(R.string.updates_token_body)
     UpdateUiState.UpToDate -> stringResource(R.string.updates_up_to_date_title) to stringResource(R.string.updates_up_to_date_body)
     is UpdateUiState.Downloading -> stringResource(R.string.updates_downloading_title) to stringResource(R.string.updates_downloading_body)
     is UpdateUiState.Installing -> when {
@@ -318,11 +317,9 @@ private fun UpdateUiState.focusKey(): Any = if (this is UpdateUiState.Installing
 @StringRes
 internal fun errorTitle(kind: UpdateErrorKind): Int = when (kind) {
     UpdateErrorKind.NETWORK -> R.string.updates_error_network_title
-    UpdateErrorKind.TOKEN_REJECTED -> R.string.updates_error_token_title
     UpdateErrorKind.FORBIDDEN -> R.string.updates_error_forbidden_title
     UpdateErrorKind.NOT_FOUND -> R.string.updates_error_not_found_title
     UpdateErrorKind.NO_APK -> R.string.updates_error_no_apk_title
-    UpdateErrorKind.BAD_TAG -> R.string.updates_error_bad_tag_title
     UpdateErrorKind.BAD_ANSWER -> R.string.updates_error_bad_answer_title
     UpdateErrorKind.DOWNLOAD_FAILED -> R.string.updates_error_download_title
     UpdateErrorKind.BAD_APK -> R.string.updates_error_bad_apk_title
@@ -335,11 +332,9 @@ internal fun errorTitle(kind: UpdateErrorKind): Int = when (kind) {
 @StringRes
 internal fun errorBody(kind: UpdateErrorKind): Int = when (kind) {
     UpdateErrorKind.NETWORK -> R.string.updates_error_network_body
-    UpdateErrorKind.TOKEN_REJECTED -> R.string.updates_error_token_body
     UpdateErrorKind.FORBIDDEN -> R.string.updates_error_forbidden_body
     UpdateErrorKind.NOT_FOUND -> R.string.updates_error_not_found_body
     UpdateErrorKind.NO_APK -> R.string.updates_error_no_apk_body
-    UpdateErrorKind.BAD_TAG -> R.string.updates_error_bad_tag_body
     UpdateErrorKind.BAD_ANSWER -> R.string.updates_error_bad_answer_body
     UpdateErrorKind.DOWNLOAD_FAILED -> R.string.updates_error_download_body
     UpdateErrorKind.BAD_APK -> R.string.updates_error_bad_apk_body

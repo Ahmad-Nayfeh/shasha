@@ -19,6 +19,7 @@
     <string name="action_ok">OK</string>
     <string name="action_remove">Remove</string>
     <string name="action_reset">Reset</string>
+    <string name="action_refresh">Refresh</string>
     <string name="action_retry">Try again</string>
     <string name="action_saved">Saved</string>
     <string name="action_save_to_playlist">Save</string>
@@ -289,7 +290,6 @@
     <string name="update_needs_permission">Allow Shasha to install apps once, then come back here.</string>
     <string name="update_allow_install">Allow installing</string>
     <string name="update_installing">Installing… the system may ask you to confirm.</string>
-    <string name="update_unavailable">Updates are not available in this version of the app.</string>
     <string name="update_err_network">Could not reach the update server. Check the internet.</string>
     <string name="update_err_unavailable">The updates cannot be read right now.</string>
     <string name="update_err_server">The update server\'s answer was not understood.</string>

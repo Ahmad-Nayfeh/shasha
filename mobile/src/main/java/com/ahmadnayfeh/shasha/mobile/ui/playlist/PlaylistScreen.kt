@@ -115,7 +115,7 @@ fun PlaylistScreen(
                             }
                         }
                     }
-                    items(videos.items, key = { it.videoId }) { video -> VideoListItem(video, onClick = { onOpenVideo(video, playlistId) }) }
+                    items(videos.items, key = { it.videoId }, contentType = { "video" }) { video -> VideoListItem(video, onClick = { onOpenVideo(video, playlistId) }) }
                     item(key = "footer") { PagedFooter(videos.loading, videos.error, onRetry = vm::retry) }
                 }
             }

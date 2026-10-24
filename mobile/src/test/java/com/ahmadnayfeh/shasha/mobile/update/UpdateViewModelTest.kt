@@ -2,10 +2,12 @@ package com.ahmadnayfeh.shasha.mobile.update
 
 import android.app.Application
 import android.content.Intent
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ahmadnayfeh.shasha.mobile.MainDispatcherRule
 import com.ahmadnayfeh.shasha.mobile.ui.update.UpdateUi
 import com.ahmadnayfeh.shasha.mobile.ui.update.UpdateViewModel
+import com.ahmadnayfeh.shasha.mobile.ui.update.updateErrorText
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -27,15 +29,12 @@ class UpdateViewModelTest {
     @get:Rule
     val main = MainDispatcherRule()
 
-    private val release = ReleaseInfo(
-        tag = "v1.1.1-1042", versionName = "1.2.0", versionCode = 1042, notes = "",
-        apk = ReleaseAsset(2, "shasha-mobile-1.2.0-1042.apk", 5_000, "https://api.example/assets/2"),
-    )
+    private val release = RELEASE
 
-    private class FakeSteps(override val installed: InstalledVersion, override val hasToken: Boolean = true) : UpdateSteps {
+    private class FakeSteps(override val installed: InstalledVersion) : UpdateSteps {
         val events = MutableSharedFlow<InstallEvent>(extraBufferCapacity = 8)
         override val installEvents: Flow<InstallEvent> = events
-        var latest: suspend () -> ReleaseInfo? = { null }
+        var latest: suspend () -> ReleaseInfo = { RELEASE.copy(versionCode = installed.code) }
         var download: suspend (ReleaseInfo, (Long, Long?) -> Unit) -> File = { _, _ -> File("update.apk") }
         var allowed = true
         var installSession = 11
@@ -44,7 +43,7 @@ class UpdateViewModelTest {
         val abandoned = ArrayList<Int>()
         val permissionIntent = Intent("settings")
 
-        override suspend fun latest(): ReleaseInfo? = latest.invoke()
+        override suspend fun latest(): ReleaseInfo = latest.invoke()
         override suspend fun download(release: ReleaseInfo, onProgress: (Long, Long?) -> Unit): File = download.invoke(release, onProgress)
         override fun installAllowed(): Boolean = allowed
         override fun permissionSettings(): Intent = permissionIntent
@@ -62,18 +61,11 @@ class UpdateViewModelTest {
     private val steps = FakeSteps(InstalledVersion("1.2.0", 1000))
 
     @Test
-    fun aBuildWithoutTheKeyCannotLookForUpdates() {
-        val vm = UpdateViewModel(FakeSteps(InstalledVersion("1.2.0", 1000), hasToken = false))
-
-        assertThat(vm.state.value).isEqualTo(UpdateUi.Unavailable)
-    }
-
-    @Test
     fun theSameOrAnOlderReleaseMeansUpToDate() {
         steps.latest = { release.copy(versionCode = 1000) }
         assertThat(UpdateViewModel(steps).state.value).isEqualTo(UpdateUi.UpToDate(steps.installed))
 
-        steps.latest = { null } // no phone APK in the latest release
+        steps.latest = { release.copy(versionCode = 999) }
         assertThat(UpdateViewModel(steps).state.value).isEqualTo(UpdateUi.UpToDate(steps.installed))
     }
 
@@ -88,7 +80,7 @@ class UpdateViewModelTest {
 
     @Test
     fun checkingShowsItselfWhileTheServerAnswers() {
-        val answer = CompletableDeferred<ReleaseInfo?>()
+        val answer = CompletableDeferred<ReleaseInfo>()
         steps.latest = { answer.await() }
 
         val vm = UpdateViewModel(steps)
@@ -113,7 +105,7 @@ class UpdateViewModelTest {
     @Test
     fun theDetailUnderAnErrorNeverCarriesAnAddressOrWhereUpdatesAreKept() {
         for (detail in listOf(
-            "asset url https://api.github.com/repos/someone/app/assets/2",
+            "url \"https://example.org/shasha-mobile.apk\"",
             "Unexpected JSON token: <html>GitHub is down</html>",
             "see https://example.org/x",
         )) {
@@ -123,6 +115,28 @@ class UpdateViewModelTest {
 
             assertThat(state.kind).isEqualTo(UpdateErrorKind.BAD_ANSWER)
             assertThat(state.detail).isNull()
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "ar")
+    fun theSitesAnswers_areSaidInArabic() {
+        // UpdateFeed: 403/429 and 404 → FORBIDDEN / NOT_FOUND, 5xx or a broken manifest or no "mobile" entry → BAD_ANSWER /
+        // NO_APK, a short download or another file's SHA-256 → DOWNLOAD_FAILED.
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val expected = mapOf(
+            UpdateErrorKind.NETWORK to "تعذّر الوصول إلى خادم التحديثات. تحقق من الإنترنت.",
+            UpdateErrorKind.FORBIDDEN to "تعذّرت قراءة التحديثات الآن.",
+            UpdateErrorKind.NOT_FOUND to "تعذّرت قراءة التحديثات الآن.",
+            UpdateErrorKind.BAD_ANSWER to "لم يُفهم ردّ خادم التحديثات.",
+            UpdateErrorKind.NO_APK to "لم يُفهم ردّ خادم التحديثات.",
+            UpdateErrorKind.DOWNLOAD_FAILED to "انقطع التنزيل. حاول مرة أخرى.",
+        )
+        for ((kind, text) in expected) {
+            assertThat(context.getString(updateErrorText(kind))).isEqualTo(text)
+        }
+        for (kind in UpdateErrorKind.entries) {
+            assertThat(context.getString(updateErrorText(kind))).containsMatch("\\p{InArabic}")
         }
     }
 
@@ -261,3 +275,8 @@ class UpdateViewModelTest {
         assertThat(vm.state.value).isEqualTo(UpdateUi.Failed(UpdateErrorKind.INSTALL_FAILED, "no session", release))
     }
 }
+
+private val RELEASE = ReleaseInfo(
+    versionName = "1.2.0", versionCode = 1042, notes = "",
+    apk = ReleaseApk("https://downloads.example/shasha-mobile.apk?v=1042", 5_000, "ab".repeat(32)),
+)

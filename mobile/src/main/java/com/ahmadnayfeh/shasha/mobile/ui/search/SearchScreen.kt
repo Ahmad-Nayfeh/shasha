@@ -30,7 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -85,6 +87,12 @@ fun SearchScreen(
     val rows by vm.rows.collectAsStateWithLifecycle()
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    // Back while typing over results goes back to those results, not out of the tab (which used to lose them).
+    BackHandler(enabled = editing && submitted != null) {
+        focusManager.clearFocus()
+        vm.stopEditing()
+    }
 
     // Opening the tab does not focus the field (and so does not pop the keyboard up over the recent searches): the keyboard
     // comes when the viewer taps the field. Only «Clear» puts the focus back in it, since the viewer is typing then.
@@ -226,7 +234,7 @@ private fun Results(
         else -> LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)) {
             // The Shorts come as a row after the first few results (at the end of a short list), where the results already shown stay put.
             val rowAt = minOf(SHORTS_ROW_AFTER, rows.items.size)
-            itemsIndexed(rows.items, key = { _, item -> item.key() }) { index, item ->
+            itemsIndexed(rows.items, key = { _, item -> item.key() }, contentType = { index, item -> if (index == rowAt) "with-shorts" else item::class.simpleName }) { index, item ->
                 Column {
                     if (index == rowAt && rows.shorts.isNotEmpty()) ShortsSection(rows.shorts, onOpenShorts)
                     when (item) {

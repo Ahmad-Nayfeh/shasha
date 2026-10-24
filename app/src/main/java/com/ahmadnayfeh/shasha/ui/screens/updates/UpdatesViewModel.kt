@@ -26,9 +26,6 @@ sealed interface UpdateUiState {
     /** Comparing the installed version with the latest release. */
     data object Checking : UpdateUiState
 
-    /** This build has no read token (a local build): it cannot read releases, so it cannot update itself. */
-    data object TokenMissing : UpdateUiState
-
     /** The installed version is the latest. */
     data object UpToDate : UpdateUiState
 
@@ -72,7 +69,7 @@ class UpdatesViewModel(
     private val steps: UpdateSteps,
     private val handoverPauseMs: Long = HANDOVER_PAUSE_MS,
 ) : ViewModel() {
-    private val _state = MutableStateFlow<UpdateUiState>(if (steps.hasToken) UpdateUiState.Checking else UpdateUiState.TokenMissing)
+    private val _state = MutableStateFlow<UpdateUiState>(UpdateUiState.Checking)
     val state: StateFlow<UpdateUiState> = _state.asStateFlow()
 
     private var work: Job? = null
@@ -90,10 +87,6 @@ class UpdatesViewModel(
     /** Compares the installed version with the latest release (again: «إعادة الفحص»); a newer one is installed at once. */
     fun check() {
         work?.cancel()
-        if (!steps.hasToken) {
-            _state.value = UpdateUiState.TokenMissing
-            return
-        }
         _state.value = UpdateUiState.Checking
         work = viewModelScope.launch {
             val latest = try {
@@ -103,7 +96,7 @@ class UpdatesViewModel(
                 fail(e, release = null)
                 return@launch
             }
-            if (latest != null && latest.isNewerThan(steps.installed.code)) {
+            if (latest.isNewerThan(steps.installed.code)) {
                 update(latest)
             } else {
                 _state.value = UpdateUiState.UpToDate

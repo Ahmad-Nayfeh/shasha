@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.ahmadnayfeh.shasha.ui.screens.home
 
 import androidx.compose.runtime.Immutable
@@ -15,12 +17,14 @@ import com.ahmadnayfeh.shasha.ui.screens.watchedFractions
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -112,7 +116,7 @@ class HomeViewModel(
     online: Flow<Boolean>,
     private val syncNow: () -> Unit,
     filter: StateFlow<ContentFilter>,
-    suggestions: HomeSuggestions? = null,
+    private val suggestions: HomeSuggestions? = null,
 ) : ViewModel() {
 
     /** What the rows are made of, before the profile's rules (none without [suggestions]). */
@@ -160,7 +164,11 @@ class HomeViewModel(
         combine(feed.isSyncing, online, feed.observeSyncHealth()) { running, isOnline, health -> HomeSync(running, isOnline, health) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), HomeSync())
 
-    fun refresh() = syncNow()
+    /** «تحديث»: the feed's sync, and a new «مقترحة لك» (StableSuggestions.refresh). */
+    fun refresh() {
+        syncNow()
+        suggestions?.stable?.refresh()
+    }
 
     private companion object {
         const val STOP_TIMEOUT_MS = 5_000L
@@ -194,10 +202,13 @@ internal fun suggestedVideos(
     val history = combine(watch.observeHistory(WATCHED_KEPT_OUT), on) { rows, show ->
         if (show) rows.map { HomeSuggestions.Watched(it.videoId, it.watchedAtMs, it.channelId) } else emptyList()
     }
+    val profileId = filter.map { it.profile?.id }.distinctUntilChanged()
     return channelFlow {
         val watched = history.stateIn(this)
         launch { suggestions.keepFresh(watched, shorts) }
-        suggestions.suggested(watched, shorts).collect { send(it) }
+        val ranked = suggestions.suggested(watched, shorts)
+        // What the home shows stays put while the viewer moves along it (StableSuggestions): per profile, for the app's run.
+        profileId.flatMapLatest { id -> if (id == null) ranked else suggestions.stable.stable(id, ranked) }.collect { send(it) }
     }
 }
 

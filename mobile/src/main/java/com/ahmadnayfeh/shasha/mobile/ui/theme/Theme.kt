@@ -2,11 +2,14 @@ package com.ahmadnayfeh.shasha.mobile.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -128,11 +131,26 @@ fun AppTheme.isDark(): Boolean = when (this) {
     AppTheme.DARK -> true
 }
 
+/**
+ * The app's theme. Text and icons take the theme's colour for the page ([ColorScheme.onBackground]) also where no [Surface] is
+ * around them: without it, what is drawn outside the root Scaffold (the watch page is over it, not in it) took Compose's default
+ * content colour, black, and the watch page's title, channel and playlist were black on the dark theme's background.
+ */
 @Composable
 fun ShashaTheme(theme: AppTheme, content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = if (theme.isDark()) DarkScheme else LightScheme,
-        typography = ShashaTypography,
-        content = content,
-    )
+    val scheme = if (theme.isDark()) DarkScheme else LightScheme
+    MaterialTheme(colorScheme = scheme, typography = ShashaTypography) {
+        CompositionLocalProvider(LocalContentColor provides scheme.onBackground, content = content)
+    }
+}
+
+/**
+ * [content] over a picture or a black backdrop (the player's error, the Shorts viewer): the dark scheme whatever the app's theme,
+ * so that its text, icons and buttons stay readable on black in the light theme too.
+ */
+@Composable
+fun OnDarkBackdrop(content: @Composable () -> Unit) {
+    MaterialTheme(colorScheme = DarkScheme, typography = MaterialTheme.typography) {
+        CompositionLocalProvider(LocalContentColor provides DarkScheme.onSurface, content = content)
+    }
 }

@@ -10,7 +10,7 @@ import com.ahmadnayfeh.shasha.TV_1080P_EN
 import com.ahmadnayfeh.shasha.data.AppLanguage
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.update.InstalledVersion
-import com.ahmadnayfeh.shasha.update.ReleaseAsset
+import com.ahmadnayfeh.shasha.update.ReleaseApk
 import com.ahmadnayfeh.shasha.update.ReleaseInfo
 import com.ahmadnayfeh.shasha.update.UpdateErrorKind
 import org.junit.Rule
@@ -74,18 +74,14 @@ class UpdatesScreenshotTest {
     fun installNotAllowed() = screen("updates_not_allowed", UpdateUiState.InstallNotAllowed(RELEASE))
 
     @Test
-    fun tokenMissing() = screen("updates_token_missing", UpdateUiState.TokenMissing)
-
-    @Test
     fun child() = snap("updates_child") { UpdatesChildNotice("1.0.0", onBack = {}) }
 
     private companion object {
         val INSTALLED = InstalledVersion("1.1.1", 1057)
         val RELEASE = ReleaseInfo(
-            tag = "v1.2.0-1070",
             versionName = "1.2.0",
             versionCode = 1070,
-            apk = ReleaseAsset(7, "shasha-1.2.0-1070.apk", 18_874_368, "https://api.example.test/repos/owner/app/releases/assets/7"),
+            apk = ReleaseApk("https://downloads.example.test/shasha-tv.apk?v=1070", 18_874_368, "abababababababababababababababababababababababababababababababab"),
         )
     }
 }

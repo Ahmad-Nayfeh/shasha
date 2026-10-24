@@ -159,6 +159,32 @@ class WatchViewModelPlaylistTest {
     }
 
     @Test
+    fun whenTheLastLoadedVideoEndsTheNextPageIsLoadedAndItsFirstVideoOpened() = runTest(main.dispatcher) {
+        // A YouTube playlist whose first loaded page ends with the video that plays; its next page could not be read at first.
+        val asked = ArrayList<String?>()
+        source.onPlaylist = { id, page ->
+            asked += page?.id
+            if (page == null) {
+                PlaylistPage(com.ahmadnayfeh.shasha.mobile.playlist(id), listOf(video("p1"), video("p2")), com.ahmadnayfeh.shasha.youtube.PageKey("2"))
+            } else if (asked.count { it == "2" } == 1) {
+                throw com.ahmadnayfeh.shasha.mobile.failure() // the first load stops after the first page (as a long playlist's does)
+            } else {
+                PlaylistPage(com.ahmadnayfeh.shasha.mobile.playlist(id), listOf(video("p3"), video("p4")), null)
+            }
+        }
+        val state = MutableStateFlow(PlayerUiState(phase = PlayerPhase.READY, video = video("p2")))
+        val vm = viewModel("p2", "PLabcdefghijklmnop", state)
+        assertThat(vm.queueState.value.items.map { it.videoId }).containsExactly("p1", "p2").inOrder()
+        assertThat(vm.queueState.value.endReached).isFalse()
+
+        state.value = state.value.copy(phase = PlayerPhase.ENDED)
+
+        val event = vm.eventFlow.first()
+        assertThat((event as WatchEvent.PlayNext).video.videoId).isEqualTo("p3")
+        assertThat(vm.queueState.value.items.map { it.videoId }).containsExactly("p1", "p2", "p3", "p4").inOrder()
+    }
+
+    @Test
     fun aYouTubePlaylistStillComesFromYouTube() = runTest(main.dispatcher) {
         source.onPlaylist = { id, _ -> PlaylistPage(com.ahmadnayfeh.shasha.mobile.playlist(id), listOf(video("y1"), video("y2")), null) }
         var localAsked = false

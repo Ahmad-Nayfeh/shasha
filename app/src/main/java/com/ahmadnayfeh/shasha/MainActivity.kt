@@ -35,6 +35,9 @@ class MainActivity : ComponentActivity() {
     /** An activity this one opened for an answer (the import's document picker) is in front. */
     private var awaitingResult = false
 
+    /** The activity went out of sight (HOME, another app, standby), not for a configuration change. */
+    private var hidden = false
+
     /** «اللغة» this activity was created in: its resources and its layout direction (a change recreates it). */
     private var language = AppLanguage.DEFAULT
 
@@ -49,6 +52,8 @@ class MainActivity : ComponentActivity() {
         // Brand splash (animated logo on API 31+), then the app theme.
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
+        // A new launch (BACK left the app, the process stayed): a new «مقترحة لك», as after a cold start.
+        if (savedInstanceState == null) appContainer.stableSuggestions.reset()
         val root = ViewModelProvider(this, RootViewModel.factory(appContainer))[RootViewModel::class.java]
         val visibility = appContainer.appVisibility
         // Back from HOME or the TV's standby, the adult profile asks for the PIN again (RootViewModel.onAppShown).
@@ -58,6 +63,9 @@ class MainActivity : ComponentActivity() {
             LifecycleEventObserver { _, event ->
                 when (event) {
                     Lifecycle.Event.ON_START -> {
+                        // The app opened again (not the import's picker answering): «مقترحة لك» starts over, like at a cold start.
+                        if (hidden && !awaitingResult) appContainer.stableSuggestions.reset()
+                        hidden = false
                         root.onAppShown(ownRequest = awaitingResult)
                         awaitingResult = false
                         GuardService.start(this)
@@ -66,7 +74,10 @@ class MainActivity : ComponentActivity() {
                     }
                     Lifecycle.Event.ON_RESUME -> visibility.onResumed()
                     Lifecycle.Event.ON_PAUSE -> visibility.onPaused()
-                    Lifecycle.Event.ON_STOP -> if (!isChangingConfigurations) root.onAppHidden()
+                    Lifecycle.Event.ON_STOP -> if (!isChangingConfigurations) {
+                        hidden = true
+                        root.onAppHidden()
+                    }
                     else -> Unit
                 }
             },

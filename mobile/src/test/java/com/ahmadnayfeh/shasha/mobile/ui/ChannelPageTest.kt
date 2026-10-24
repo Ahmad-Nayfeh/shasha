@@ -34,6 +34,9 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performScrollToNode
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
@@ -105,6 +108,24 @@ class ChannelPageTest {
         compose.tab("Playlists").performClick()
         compose.awaitText("Playlists can't be shown right now.")
         assertThat(compose.onAllNodesWithText("This content is not available.").fetchSemanticsNodes()).isEmpty()
+    }
+
+    @Test
+    fun eachTabKeepsItsOwnPlaceInTheList() {
+        source.tabFails(channel)
+        source.playlist(longForm, (1..40).map { v("vid%08d".format(it), "Video number $it") })
+        container.launch.value = LaunchRequest.Channel(channel)
+        start()
+        compose.awaitText("Video number 1")
+
+        // Down the Videos, to the Playlists (a short tab), and back: the Videos are where the viewer left them.
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Video number 30"))
+        compose.onNodeWithText("Video number 30").assertIsDisplayed()
+        compose.tab("Playlists").performClick()
+        compose.awaitText("Playlists can't be shown right now.")
+        compose.tab("Videos").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Video number 30").assertIsDisplayed()
     }
 
     @Test
