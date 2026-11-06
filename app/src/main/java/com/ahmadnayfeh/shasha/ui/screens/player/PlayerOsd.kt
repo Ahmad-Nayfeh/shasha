@@ -84,6 +84,8 @@ import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.player.PlaybackProgress
 import com.ahmadnayfeh.shasha.player.PlayerAction
+import com.ahmadnayfeh.shasha.player.SleepChoice
+import com.ahmadnayfeh.shasha.player.SleepState
 import com.ahmadnayfeh.shasha.player.PlayerUiState
 import com.ahmadnayfeh.shasha.player.QualityChoice
 import com.ahmadnayfeh.shasha.player.SeekAccelerator
@@ -150,6 +152,10 @@ fun PlayerOsd(
     suggestions: List<VideoItem> = emptyList(),
     suggestionsWatched: Map<String, Float> = emptyMap(),
     onPlaySuggestion: (VideoItem) -> Unit = {},
+    sleep: SleepState = SleepState.Off,
+    blackedOut: Boolean = false,
+    onSleepChoice: ((SleepChoice) -> Unit)? = null,
+    onScreenOff: (() -> Unit)? = null,
 ) {
     var visible by remember { mutableStateOf(initiallyVisible || initialMenu != null) }
     var menu by remember { mutableStateOf(initialMenu) }
@@ -304,6 +310,18 @@ fun PlayerOsd(
         DisposableEffect(clearance) { onDispose { clearance.bottom = 0.dp } }
     }
 
+    // «إطفاء الشاشة» / the sleep screen cover everything: the controls fold away, and come back when the picture does.
+    var wasBlack by remember { mutableStateOf(false) }
+    LaunchedEffect(blackedOut) {
+        if (blackedOut) {
+            hide()
+            wasBlack = true
+        } else if (wasBlack) {
+            wasBlack = false
+            show()
+        }
+    }
+
     LaunchedEffect(visible) {
         if (visible) {
             if (menu == null) runCatching { seekFocus.requestFocus() }
@@ -448,6 +466,9 @@ fun PlayerOsd(
                                 interactions++
                                 onToggleWatchLater()
                             },
+                            sleep = sleep,
+                            showSleep = onSleepChoice != null,
+                            onScreenOff = onScreenOff,
                             down = suggestionsFocus.takeIf { hasSuggestions },
                         )
                     }
@@ -514,8 +535,10 @@ fun PlayerOsd(
                     menu = current,
                     state = state,
                     trapFocus = menu != null,
-                    onSelect = { action ->
-                        onAction(action)
+                    sleep = sleep,
+                    onSelect = { option ->
+                        option.action?.let(onAction)
+                        option.sleep?.let { onSleepChoice?.invoke(it) }
                         closeMenu()
                     },
                     modifier = Modifier.padding(
@@ -580,6 +603,9 @@ private fun ControlsRow(
     savedForLater: Boolean?,
     onToggleWatchLater: () -> Unit,
     down: FocusRequester? = null,
+    sleep: SleepState = SleepState.Off,
+    showSleep: Boolean = false,
+    onScreenOff: (() -> Unit)? = null,
 ) {
     // UP goes back to the bar; DOWN, when «مقترحة» is under the controls, opens it.
     val upToBar = Modifier.focusProperties {
@@ -632,6 +658,15 @@ private fun ControlsRow(
                 modifier = Modifier.testTag("osd_time"),
             )
         }
+        if (showSleep && (sleep is SleepState.Counting || sleep == SleepState.EndOfVideo)) {
+            Spacer(Modifier.width(12.dp))
+            Text(
+                sleepValue(sleep),
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.White.copy(alpha = 0.75f),
+                modifier = Modifier.testTag("osd_sleep_left"),
+            )
+        }
         // Owner decision: a "made for kids" video that only has its 360p file plays it, and says so.
         state.lowQualityHeight?.let { height ->
             Spacer(Modifier.width(16.dp))
@@ -662,6 +697,24 @@ private fun ControlsRow(
                 onClick = { onOpenMenu(OsdMenu.SPEED) },
                 modifier = upToBar.focusRequester(chipFocus.getValue(OsdMenu.SPEED)).testTag("osd_chip_speed"),
             )
+            if (showSleep) {
+                // Icon buttons, not chips: the row has no room for two more labelled chips; the timer's
+                // remaining time shows beside the clock instead.
+                OsdIconButton(
+                    icon = ShashaIcons.Bedtime,
+                    contentDescription = stringResource(R.string.player_sleep_timer),
+                    onClick = { onOpenMenu(OsdMenu.SLEEP) },
+                    modifier = upToBar.focusRequester(chipFocus.getValue(OsdMenu.SLEEP)).testTag("osd_chip_sleep"),
+                )
+            }
+            if (onScreenOff != null) {
+                OsdIconButton(
+                    icon = ShashaIcons.VisibilityOff,
+                    contentDescription = stringResource(R.string.player_screen_off),
+                    onClick = onScreenOff,
+                    modifier = upToBar.testTag("osd_chip_screen_off"),
+                )
+            }
             OsdChip(
                 icon = ShashaIcons.Tune,
                 label = stringResource(R.string.player_quality),
@@ -671,6 +724,13 @@ private fun ControlsRow(
             )
         }
     }
+}
+
+@Composable
+private fun sleepValue(sleep: SleepState): String = when (sleep) {
+    SleepState.Off, SleepState.Fired -> stringResource(R.string.player_sleep_off)
+    SleepState.EndOfVideo -> stringResource(R.string.player_sleep_end_short)
+    is SleepState.Counting -> formatDuration((sleep.remainingMs + 999) / 1000 * 1000)
 }
 
 @Composable

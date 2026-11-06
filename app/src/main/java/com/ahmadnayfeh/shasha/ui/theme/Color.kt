@@ -89,13 +89,13 @@ class Palette(
 }
 
 object Palettes {
-    /** The brand's own (branding/README.md): the default. */
+    /** The default: dark neutral greys (TV-style) with the brand's teal. */
     val Dark = Palette(
         isLight = false,
-        background = Color(0xFF0B0F14),
-        surface = Color(0xFF151B24),
-        surfaceVariant = Color(0xFF1E2632),
-        surfaceHigh = Color(0xFF28323F),
+        background = Color(0xFF0F0F0F),
+        surface = Color(0xFF212121),
+        surfaceVariant = Color(0xFF272727),
+        surfaceHigh = Color(0xFF303030),
         primary = Color(0xFF2EC4B6),
         primaryBright = Color(0xFF48DCCD),
         onPrimary = Color(0xFF04201D),
@@ -104,11 +104,11 @@ object Palettes {
         error = Color(0xFFFF6B6B),
         onError = Color(0xFF3A0707),
         kidsAccent = Color(0xFFFFD166),
-        text = Color(0xFFEAF0F6),
-        muted = Color(0xFF8A97A8),
-        outline = Color(0xFF2E3947),
+        text = Color(0xFFF1F1F1),
+        muted = Color(0xFFAAAAAA),
+        outline = Color(0xFF3A3A3A),
         scrim = Color(0xFF000000),
-        code = Color(0xFF070A0E),
+        code = Color(0xFF0A0A0A),
     )
 
     /**

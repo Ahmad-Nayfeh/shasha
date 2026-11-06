@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
  *
  * [prefetch] gets the Short after the one on screen ready (its stream extracted, kept by
  * [com.ahmadnayfeh.shasha.data.StreamRepository]) so that DOWN starts it at once: [prefetchAhead], when the Short on screen
- * plays. One at a time, only the next, and a failure is nothing: the Short then loads when it is reached, as any other.
+ * plays. One at a time, the next two, and a failure is nothing: the Short then loads when it is reached, as any other.
  */
 class ShortsViewModel(
     queue: List<VideoItem>,
@@ -46,28 +46,37 @@ class ShortsViewModel(
     private fun moveTo(target: Int): Boolean {
         if (target !in shorts.indices) return false
         _index.value = target
-        prefetching?.cancel()
+        // Do not wait for the new Short to play: its successors start resolving the moment it is on screen.
+        prefetchAhead()
         return true
     }
 
     private var prefetching: Job? = null
 
-    /** Gets the Short after this one ready (none at the last). */
+    /** The Shorts to get ready while this one plays: the next [AHEAD] after it (fewer near the end). */
+    fun prefetchWindow(): List<VideoItem> = shorts.drop(_index.value + 1).take(AHEAD)
+
+    /** Gets the Shorts after this one ready, nearest first (none at the last). Starting again drops the earlier run. */
     fun prefetchAhead() {
-        val ahead = shorts.getOrNull(_index.value + 1) ?: return
+        val window = prefetchWindow()
         prefetching?.cancel()
+        if (window.isEmpty()) return
         prefetching = viewModelScope.launch {
-            try {
-                prefetch(ahead)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                // Only a head start: the Short loads when it is reached.
+            for (ahead in window) {
+                try {
+                    prefetch(ahead)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // Only a head start: the Short loads when it is reached.
+                }
             }
         }
     }
 
     private companion object {
+        const val AHEAD = 2
+
         /** A Short that came without its list (a link from the phone, a list that is gone): all that is known of it is its id. */
         fun stub(videoId: String) = VideoItem(
             videoId = videoId,

@@ -131,7 +131,9 @@ fun ProfileNavHost(
     } else {
         { tab, focus, select -> AdultTabContent(tab, focus, actions, settings, select) }
     }
+    val prefetcher = (LocalContext.current.applicationContext as? ShashaApp)?.container?.streamPrefetcher
     val graph: @Composable () -> Unit = {
+      androidx.compose.runtime.CompositionLocalProvider(com.ahmadnayfeh.shasha.ui.components.LocalStreamPrefetch provides prefetcher) {
         NavHost(
             navController = nav,
             startDestination = Screen.Main,
@@ -156,6 +158,7 @@ fun ProfileNavHost(
         AskAboutPhoneLinks(profile.id)
         // The remote's SEARCH key: the search tab, listening (profiles with search only; never over a locked video).
         if (!kids) FollowVoiceSearchKey(nav, lock)
+      }
     }
     if (kids) {
         graph()

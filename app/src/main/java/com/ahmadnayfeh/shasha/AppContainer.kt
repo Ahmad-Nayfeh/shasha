@@ -126,6 +126,11 @@ class AppContainer(context: Context) {
 
     val streams: StreamRepository by lazy { StreamRepository(videoSource) }
 
+    /** Resolves the stream of the card in focus / clicked ahead of the player (same cache as the policy's look-up). */
+    val streamPrefetcher: com.ahmadnayfeh.shasha.data.StreamPrefetcher by lazy {
+        com.ahmadnayfeh.shasha.data.StreamPrefetcher(appScope) { id -> streams.stream(id, allowLowQuality = true) }
+    }
+
     val database: ShashaDatabase by lazy { ShashaDatabase.create(appContext) }
 
     val feedSyncScheduler: FeedSyncScheduler by lazy { FeedSyncScheduler(WorkManager.getInstance(appContext)) }
@@ -349,6 +354,10 @@ class AppContainer(context: Context) {
      * asks; the phone answers through [remote]).
      */
     val phoneConfirmations: PhoneConfirmations = PhoneConfirmations()
+
+    /** «مؤقت النوم»: app-wide, so it keeps counting from one video to the next. */
+    val sleepTimer: com.ahmadnayfeh.shasha.player.SleepTimer =
+        com.ahmadnayfeh.shasha.player.SleepTimer(appScope, android.os.SystemClock::elapsedRealtime)
 
     /**
      * v1.1.1: links from the phone wait here for «قبول» on the TV (the profile's screens show the question); one allowed

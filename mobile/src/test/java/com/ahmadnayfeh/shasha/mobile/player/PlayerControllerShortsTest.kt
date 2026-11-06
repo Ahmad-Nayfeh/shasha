@@ -9,6 +9,7 @@ import com.ahmadnayfeh.shasha.mobile.TestStreams
 import com.ahmadnayfeh.shasha.mobile.data.AppSettings
 import com.ahmadnayfeh.shasha.mobile.data.LibraryRepository
 import com.ahmadnayfeh.shasha.mobile.data.NOW_MS
+import com.ahmadnayfeh.shasha.mobile.data.StreamCache
 import com.ahmadnayfeh.shasha.mobile.data.inMemoryDatabase
 import com.ahmadnayfeh.shasha.mobile.failure
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorBlockRepository
@@ -150,14 +151,14 @@ class PlayerControllerShortsTest {
     }
 
     @Test
-    fun aLookupIsUsedOnce_theSecondPlayOfTheSameShortAsksAgain() {
+    fun aLookupIsKept_laterPlaysOfTheSameShortDoNotAskAgain() {
         controller.prefetch("b")
         controller.playShort(short("b"))
         controller.playShort(short("c"))
 
         controller.playShort(short("b"))
 
-        assertThat(asked.toList()).containsExactly("b", "c", "b").inOrder()
+        assertThat(asked.toList()).containsExactly("b", "c").inOrder()
     }
 
     @Test
@@ -182,7 +183,7 @@ class PlayerControllerShortsTest {
     @Test
     fun aLookupThatIsTooOldIsNotUsed_theStreamsAddressesMayHaveExpired() {
         controller.prefetch("b")
-        elapsed += PlayerController.PREFETCH_MAX_AGE_MS + 1
+        elapsed += StreamCache.DEFAULT_TTL_MS + 1
 
         controller.playShort(short("b"))
 
@@ -190,33 +191,33 @@ class PlayerControllerShortsTest {
     }
 
     @Test
-    fun aNewerLookupReplacesTheOlderOne() {
+    fun severalLookupsAheadAreAllKept() {
         controller.prefetch("b")
         controller.prefetch("c")
 
-        controller.playShort(short("b")) // b's lookup was dropped when c's was made
+        controller.playShort(short("b"))
 
-        assertThat(asked.toList()).containsExactly("b", "c", "b").inOrder()
+        assertThat(asked.toList()).containsExactly("b", "c").inOrder()
     }
 
     @Test
-    fun leavingForgetsTheLookup() {
+    fun leavingKeepsTheLookup_theStreamsAreStillGood() {
         controller.prefetch("b")
         controller.stop()
 
         controller.playShort(short("b"))
 
-        assertThat(asked.toList()).containsExactly("b", "b").inOrder()
+        assertThat(asked.toList()).containsExactly("b").inOrder()
     }
 
     @Test
     fun aVideoOnThePlayerScreenIsPlayedInVideoModeWhateverThePlayerDidBefore() {
         controller.playShort(short("a"))
 
-        controller.play("a") // the same id, but as a video now: the player screen starts it afresh
+        controller.play("a") // the same id, but as a video now: the player screen starts it afresh (from the cached streams)
 
         assertThat(controller.mode).isEqualTo(PlaybackMode.VIDEO)
-        assertThat(asked.toList()).containsExactly("a", "a").inOrder()
+        assertThat(asked.toList()).containsExactly("a").inOrder()
     }
 
     @Test

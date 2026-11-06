@@ -50,7 +50,6 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.ahmadnayfeh.shasha.R
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
-import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import androidx.compose.ui.unit.LayoutDirection
 
@@ -221,7 +220,6 @@ private fun RailItem(
     icon: @Composable (Modifier) -> Unit,
 ) {
     val shape = RoundedCornerShape(percent = 50)
-    val accent = LocalAccent.current
     Surface(
         onClick = onClick,
         modifier = modifier
@@ -230,19 +228,19 @@ private fun RailItem(
             .semantics { this.selected = selected },
         shape = ClickableSurfaceDefaults.shape(shape),
         colors = ClickableSurfaceDefaults.colors(
-            containerColor = if (selected) accent.tint(0.16f) else Color.Transparent,
+            // TV-style: the selected tab is a quiet grey pill, the focused one a solid light pill with dark content.
+            containerColor = if (selected) ShashaColors.Text.copy(alpha = 0.14f) else Color.Transparent,
             contentColor = when {
-                selected -> accent.bright
+                selected -> ShashaColors.Text
                 expanded -> ShashaColors.Text
                 else -> ShashaColors.Muted
             },
-            focusedContainerColor = accent.main,
-            focusedContentColor = accent.onMain,
-            pressedContainerColor = accent.bright,
-            pressedContentColor = accent.onMain,
+            focusedContainerColor = ShashaColors.Text,
+            focusedContentColor = ShashaColors.Background,
+            pressedContainerColor = ShashaColors.Text.copy(alpha = 0.85f),
+            pressedContentColor = ShashaColors.Background,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.04f),
-        glow = ClickableSurfaceDefaults.glow(focusedGlow = accent.buttonGlow),
     ) {
         Row(Modifier.fillMaxHeight().padding(start = 16.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             icon(Modifier.size(24.dp))

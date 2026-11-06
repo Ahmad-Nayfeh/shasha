@@ -32,6 +32,7 @@ import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorBlockRepository
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorSegment
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.SourceException
+import com.ahmadnayfeh.shasha.mobile.data.StreamCache
 import com.ahmadnayfeh.shasha.youtube.StreamDetails
 import com.ahmadnayfeh.shasha.youtube.VideoItem
 import com.ahmadnayfeh.shasha.youtube.VideoSource
@@ -79,6 +80,8 @@ class PlayerController(
     private val elapsedClock: () -> Long = SystemClock::elapsedRealtime,
     /** Keeps the captions the viewer chose ([selectSubtitles]) for the next videos (the settings' [AppSettings.subtitleLanguage]). */
     private val saveSubtitleLanguage: (String?) -> Unit = {},
+    /** Resolved streams, shared app-wide (the container passes its own); a controller on its own keeps a private one. */
+    private val streams: StreamCache = StreamCache(scope, elapsedClock) { videoSource.stream(it, allowLowQuality = true) },
 ) : ShortsPlayer {
     private var created = false
 
@@ -138,11 +141,6 @@ class PlayerController(
      */
     private var resumeShortOnStart = false
 
-    /** The streams of the Short after the current one, being looked up ahead ([prefetch]). */
-    private var prefetched: Prefetched? = null
-
-    private class Prefetched(val videoId: String, val atMs: Long, val details: Deferred<StreamDetails>)
-
     private fun createPlayer(): ExoPlayer = ExoPlayer.Builder(context)
         .setAudioAttributes(
             AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
@@ -177,40 +175,21 @@ class PlayerController(
     override fun playShort(video: VideoItem) = play(video.videoId, preview = video, startMs = 0, mode = PlaybackMode.SHORT)
 
     /**
-     * Looks up [videoId]'s streams now and keeps the answer for the next [play] of it, which then starts without asking again:
-     * the Shorts viewer asks for the Short after the one on screen while that one plays. One lookup is kept, the newest; a
-     * failure is not kept (the play asks again and reports what it finds); an answer older than [PREFETCH_MAX_AGE_MS] is not used.
+     * Looks up [videoId]'s streams now and keeps the answer in the app-wide [streams] cache, so the next [play] of it starts
+     * without asking again: the Shorts viewer asks for the Shorts after the one on screen, a pressed card asks before it navigates.
      */
-    override fun prefetch(videoId: String) {
-        if (prefetched?.videoId == videoId) return
-        prefetched?.details?.cancel()
-        prefetched = Prefetched(videoId, elapsedClock(), scope.async { videoSource.stream(videoId, allowLowQuality = true) })
-    }
+    override fun prefetch(videoId: String) = streams.prefetch(videoId)
 
-    /** [videoId]'s streams: the lookup [prefetch] made when it is still good, else a new one. */
+    /** [videoId]'s streams: the cached or running lookup, else a new one. A reload (addresses expired, or the decoder failed) never gets the old answer. */
     private suspend fun streamDetails(videoId: String, reload: Boolean): StreamDetails {
-        val ready = prefetched?.takeIf { it.videoId == videoId }
-        if (ready != null) {
-            prefetched = null
-            // A reload (the streams' addresses expired, or the decoder failed on this plan) must not be answered by the old lookup.
-            if (!reload && elapsedClock() - ready.atMs <= PREFETCH_MAX_AGE_MS) {
-                try {
-                    return ready.details.await()
-                } catch (e: CancellationException) {
-                    currentCoroutineContext().ensureActive() // our own cancellation ends here; a dropped lookup is just asked again
-                } catch (e: Exception) {
-                    // The plain lookup below answers, and reports the failure when it is real.
-                }
-            } else {
-                ready.details.cancel()
-            }
-        }
-        return videoSource.stream(videoId, allowLowQuality = true)
+        if (reload) streams.invalidate(videoId)
+        return streams.get(videoId)
     }
 
     /** Tries the current video again (the error screen's button), from where it was. */
     override fun retry() {
         val video = _state.value.video ?: return
+        streams.invalidate(video.videoId) // «Try again» looks the streams up afresh
         val position = if (created) player.currentPosition.takeIf { it > 0 } else null
         startLoad(video.videoId, video, position, isReload = false)
     }
@@ -368,8 +347,6 @@ class PlayerController(
         stopTickers()
         noticeJob?.cancel()
         saveProgressNow()
-        prefetched?.details?.cancel()
-        prefetched = null
         skip = null
         if (created) {
             player.stop()
@@ -730,8 +707,6 @@ class PlayerController(
         /** A Short enters the history after playing this long. */
         const val SHORT_WATCHED_MS = 3_000L
 
-        /** A lookup made ahead is used for this long: the Short after the current one is a few seconds away, not minutes. */
-        const val PREFETCH_MAX_AGE_MS = 5 * 60_000L
 
         /** One option per picture height from the player's video tracks, best first. */
         fun qualitiesOf(tracks: Tracks): List<QualityOption> {

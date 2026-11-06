@@ -144,8 +144,21 @@ class ShortsViewModelTest {
         vm.next()
         // The Short that was being got ready is on screen now: its stream is the player's to get, not the prefetch's.
         assertThat(cancelled).containsExactly("bbbbbbbbbbb")
-        vm.prefetchAhead()
+        // ...and moving on already starts getting the one after it ready (no wait for the new Short to play).
         assertThat(prefetched).containsExactly("bbbbbbbbbbb", "ccccccccccc").inOrder()
+    }
+
+    @Test
+    fun theNextTwoAreGotReady_nearestFirst() {
+        val vm = vm("aaaaaaaaaaa")
+        assertThat(vm.prefetchWindow().map { it.videoId }).containsExactly("bbbbbbbbbbb", "ccccccccccc").inOrder()
+        vm.prefetchAhead()
+        assertThat(prefetched).containsExactly("bbbbbbbbbbb")
+        gates.getValue("bbbbbbbbbbb").complete(Unit)
+        assertThat(prefetched).containsExactly("bbbbbbbbbbb", "ccccccccccc").inOrder()
+        // Near the end the window is shorter.
+        assertThat(vm("bbbbbbbbbbb").prefetchWindow().map { it.videoId }).containsExactly("ccccccccccc")
+        assertThat(vm("ccccccccccc").prefetchWindow()).isEmpty()
     }
 
     @Test

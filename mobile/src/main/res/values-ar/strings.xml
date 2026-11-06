@@ -349,4 +349,6 @@
     <string name="license_role_helpers">مكتبات مساعدة تعتمد عليها المكتبات أعلاه</string>
     <string name="license_role_desugar">ميزات جافا الحديثة على إصدارات أندرويد الأقدم</string>
     <string name="license_role_plex">خط الواجهة العربي</string>
+    <string name="home_chip_all">الكل</string>
+    <string name="home_chip_channels">الاشتراكات</string>
 </resources>

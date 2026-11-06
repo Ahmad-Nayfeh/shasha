@@ -25,6 +25,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -121,7 +129,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 
-private class Tab(val route: Any, val routeClass: KClass<*>, val label: Int, val icon: ImageVector)
+private class Tab(val route: Any, val routeClass: KClass<*>, val label: Int, val icon: ImageVector, val selectedIcon: ImageVector = icon)
 
 /** The tab whose first page [destination] is; null for every other page. */
 private fun tabOf(destination: NavDestination): Tab? = tabs.firstOrNull { destination.hasRoute(it.routeClass) }
@@ -130,10 +138,10 @@ private const val NAV_FADE_IN_MS = 180
 private const val NAV_FADE_OUT_MS = 120
 
 private val tabs = listOf(
-    Tab(HomeRoute, HomeRoute::class, R.string.nav_home, Icons.Filled.Home),
-    Tab(SearchRoute(), SearchRoute::class, R.string.nav_search, Icons.Filled.Search),
-    Tab(LibraryRoute, LibraryRoute::class, R.string.nav_library, Icons.Filled.VideoLibrary),
-    Tab(SettingsRoute, SettingsRoute::class, R.string.nav_settings, Icons.Filled.Settings),
+    Tab(HomeRoute, HomeRoute::class, R.string.nav_home, Icons.Outlined.Home, Icons.Filled.Home),
+    Tab(SearchRoute(), SearchRoute::class, R.string.nav_search, Icons.Outlined.Search, Icons.Filled.Search),
+    Tab(LibraryRoute, LibraryRoute::class, R.string.nav_library, Icons.Outlined.VideoLibrary, Icons.Filled.VideoLibrary),
+    Tab(SettingsRoute, SettingsRoute::class, R.string.nav_settings, Icons.Outlined.Settings, Icons.Filled.Settings),
 )
 
 /** The app: the theme, the four tabs along the bottom, every screen, and the things all of them share (menus, sheets). */
@@ -226,6 +234,7 @@ fun ShashaRoot(container: AppContainer) {
                 return
             }
             container.player.remember(video)
+            container.player.prefetch(video.videoId) // the streams are looked up while the screen opens
             play(WatchRequest(video.videoId, playlistId), expand)
         }
 
@@ -381,13 +390,20 @@ fun ShashaRoot(container: AppContainer) {
                                     onVideoBounds = { videoBounds = it },
                                 )
                             }
-                            NavigationBar {
+                            NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
                                 for (tab in tabs) {
                                     NavigationBarItem(
                                         selected = currentTab === tab,
                                         onClick = { onTabTapped(tab) },
-                                        icon = { Icon(tab.icon, contentDescription = null) },
-                                        label = { Text(stringResource(tab.label)) },
+                                        icon = { Icon(if (currentTab === tab) tab.selectedIcon else tab.icon, contentDescription = null) },
+                                        label = { Text(stringResource(tab.label), style = MaterialTheme.typography.labelSmall) },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            indicatorColor = Color.Transparent,
+                                            selectedIconColor = MaterialTheme.colorScheme.onBackground,
+                                            selectedTextColor = MaterialTheme.colorScheme.onBackground,
+                                            unselectedIconColor = MaterialTheme.colorScheme.onBackground,
+                                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        ),
                                     )
                                 }
                             }

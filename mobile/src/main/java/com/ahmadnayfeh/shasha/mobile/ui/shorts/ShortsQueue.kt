@@ -17,6 +17,10 @@ class ShortsQueue private constructor(val items: List<VideoItem>, val startIndex
     /** The Short after the one at [index]: the one whose streams are looked up ahead. Null at the last one (and outside the queue). */
     fun next(index: Int): VideoItem? = if (index < 0) null else items.getOrNull(index + 1)
 
+    /** The [count] Shorts after the one at [index]: the window whose streams are looked up while that one plays. */
+    fun ahead(index: Int, count: Int = PREFETCH_AHEAD): List<VideoItem> =
+        if (index < 0) emptyList() else (1..count).mapNotNull { items.getOrNull(index + it) }
+
     fun hasNext(index: Int): Boolean = next(index) != null
 
     fun hasPrevious(index: Int): Boolean = index in 1 until size
@@ -25,6 +29,8 @@ class ShortsQueue private constructor(val items: List<VideoItem>, val startIndex
     fun clamp(index: Int): Int = index.coerceIn(0, items.lastIndex)
 
     companion object {
+        const val PREFETCH_AHEAD = 2
+
         /**
          * The queue of [videos] opened at the Short [startId]. A Short listed twice stays where it first is. A list that does not hold
          * [startId] (the list is gone: a route restored after the process died has only the id) becomes the one Short, which plays

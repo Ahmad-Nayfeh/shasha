@@ -47,6 +47,13 @@
     <!-- %1$s: the quality cap of Settings → «الجودة الافتراضية», e.g. 1080. -->
     <string name="player_quality_auto_detail">تلقائي (حتى %1$sp)</string>
     <string name="player_quality_auto_playing">تلقائي · %1$sp</string>
+    <string name="player_sleep_timer">مؤقت النوم</string>
+    <string name="player_sleep_off">إيقاف</string>
+    <string name="player_sleep_minutes">%1$d دقيقة</string>
+    <string name="player_sleep_end_of_video">نهاية الفيديو</string>
+    <string name="player_sleep_end_short">آخر الفيديو</string>
+    <string name="player_screen_off">إطفاء الشاشة</string>
+    <string name="player_sleep_goodnight">تصبح على خير</string>
     <string name="player_speed_normal">عادية</string>
     <string name="player_subtitles_off">إيقاف</string>
     <string name="player_subtitles_auto">%1$s (تلقائية)</string>

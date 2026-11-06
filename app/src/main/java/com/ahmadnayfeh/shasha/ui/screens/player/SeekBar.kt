@@ -85,7 +85,7 @@ fun SeekBar(
             drawRoundRect(Color.White.copy(alpha = 0.22f), Offset(start, y - h / 2), Size(w, h), r)
             drawRoundRect(Color.White.copy(alpha = 0.40f), Offset(start, y - h / 2), Size(w * bufferedFraction, h), r)
             drawRoundRect(
-                if (focused) accent.bright else accent.main,
+                SeekRed,
                 Offset(start, y - h / 2),
                 Size(w * fraction, h),
                 r,
@@ -93,7 +93,7 @@ fun SeekBar(
             val thumb = thumbRadius.toPx()
             if (thumb > 0f) {
                 val c = Offset(start + w * fraction, y)
-                drawCircle(accent.tint(0.35f * glow), radius = thumb * 2.1f, center = c)
+                drawCircle(SeekRed.copy(alpha = 0.35f * glow), radius = thumb * 2.1f, center = c)
                 drawCircle(Color.White, radius = thumb, center = c)
             }
         }
@@ -114,3 +114,6 @@ private fun Modifier.centeredAt(fraction: Float, inset: Dp): Modifier = layout {
 }
 
 private val THUMB_RADIUS = 10.dp
+
+/** The played part of the bar: the TV-style red, with the white thumb. */
+private val SeekRed = Color(0xFFFF0033)

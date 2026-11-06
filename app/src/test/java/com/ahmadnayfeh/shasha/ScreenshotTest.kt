@@ -22,6 +22,7 @@ import com.ahmadnayfeh.shasha.ui.screens.error.ErrorScreen
 import com.ahmadnayfeh.shasha.ui.screens.player.OsdMenu
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerErrorScreen
 import com.ahmadnayfeh.shasha.ui.screens.player.PlayerOsd
+import com.ahmadnayfeh.shasha.player.SleepState
 import com.ahmadnayfeh.shasha.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import org.junit.Rule
@@ -64,6 +65,27 @@ class ScreenshotTest {
     fun playerOsdQualityMenu() = snap("player_osd_quality_menu") {
         OverFakeVideo {
             PlayerOsd(Fixtures.osd, { Fixtures.progress }, {}, {}, initialMenu = OsdMenu.QUALITY, autoHideMs = NEVER)
+        }
+    }
+
+    @Test
+    fun playerOsdSleepMenu() = snap("player_osd_sleep_menu") {
+        OverFakeVideo {
+            PlayerOsd(
+                Fixtures.osd, { Fixtures.progress }, {}, {},
+                initialMenu = OsdMenu.SLEEP, autoHideMs = NEVER,
+                sleep = SleepState.Counting(19 * 60_000L), onSleepChoice = {}, onScreenOff = {},
+            )
+        }
+    }
+
+    @Test
+    fun playerOsdWithSleepChips() = snap("player_osd_sleep_chips") {
+        OverFakeVideo {
+            PlayerOsd(
+                Fixtures.osd, { Fixtures.progress }, {}, {}, autoHideMs = NEVER,
+                sleep = SleepState.Counting(19 * 60_000L), onSleepChoice = {}, onScreenOff = {},
+            )
         }
     }
 

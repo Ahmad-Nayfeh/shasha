@@ -50,8 +50,8 @@ class ShortsViewModel(
         played = index
         val short = queue.at(index) ?: return
         player.playShort(short)
-        // One Short ahead: the swipe that comes next finds its streams already known. Nothing past the last one.
-        queue.next(index)?.let { player.prefetch(it.videoId) }
+        // Two Shorts ahead: the swipes that come next find their streams already known. Nothing past the last one.
+        queue.ahead(index).forEach { player.prefetch(it.videoId) }
     }
 
     fun togglePlay() = player.togglePlay()

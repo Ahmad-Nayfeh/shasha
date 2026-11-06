@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -118,7 +119,7 @@ class ShortsViewerUiTest {
         compose.startAppOffline(container)
 
         compose.awaitText("A long video")
-        compose.onNodeWithText("Shorts").assertIsDisplayed()
+        compose.onAllNodesWithText("Shorts").onFirst().assertIsDisplayed()
         for (title in listOf("Short one", "Short two", "Short three")) compose.onNodeWithText(title).assertIsDisplayed()
     }
 
@@ -263,7 +264,7 @@ class ShortsViewerUiTest {
 
         compose.awaitText("Suggested for you")
         compose.awaitText("Suggested video")
-        compose.onNodeWithText("Shorts").assertIsDisplayed()
+        compose.onAllNodesWithText("Shorts").onFirst().assertIsDisplayed()
         compose.onNodeWithText("Suggested short").performClick()
 
         waitForPlayerOn("sho00000001")
@@ -285,7 +286,7 @@ class ShortsViewerUiTest {
         compose.awaitText("A search result")
         compose.awaitText("Found short two")
         // The row has a title of its own, and the Shorts are not in the list above it.
-        compose.onNodeWithText("Shorts").assertIsDisplayed()
+        compose.onAllNodesWithText("Shorts").onFirst().assertIsDisplayed()
         compose.onNodeWithText("Found short two").performClick()
 
         // The viewer opens on the row (the first Short before it is not looked up: the row's order is the viewer's).
@@ -306,7 +307,7 @@ class ShortsViewerUiTest {
 
         compose.awaitText("A search result")
         compose.awaitText("Found short two")
-        compose.onNodeWithText("Shorts").assertIsDisplayed()
+        compose.onAllNodesWithText("Shorts").onFirst().assertIsDisplayed()
         compose.onNodeWithText("Found short two").performClick()
 
         waitForPlayerOn("sho00000002")

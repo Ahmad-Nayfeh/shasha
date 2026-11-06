@@ -71,6 +71,12 @@ class PlaybackController(
     val player: ExoPlayer = ExoPlayer.Builder(context)
         .setRenderersFactory(DefaultRenderersFactory(context).setEnableDecoderFallback(true))
         .setTrackSelector(trackSelector)
+        // Starts after 1 s of media (default 2.5 s) and resumes after a stall at 2 s (default 5 s): the first picture comes sooner.
+        .setLoadControl(
+            androidx.media3.exoplayer.DefaultLoadControl.Builder()
+                .setBufferDurationsMs(15_000, 50_000, 1_000, 2_000)
+                .build(),
+        )
         .setAudioAttributes(
             AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
             /* handleAudioFocus= */ true,
