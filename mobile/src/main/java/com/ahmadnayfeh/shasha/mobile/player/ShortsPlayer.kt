@@ -29,6 +29,12 @@ interface ShortsPlayer {
     /** Looks up [videoId]'s streams now, so that [playShort] of it, a moment later, starts at once. */
     fun prefetch(videoId: String)
 
+    /**
+     * The viewer is on queue position [currentIndex]; [items] are the Shorts around it (position to Short) whose first seconds
+     * are to be prepared and buffered, so a swipe to them starts at once. Does nothing by default (the tests' fakes).
+     */
+    fun preloadShorts(currentIndex: Int, items: Map<Int, VideoItem>) {}
+
     fun togglePlay()
 
     /** Plays on, from where the Short is (a Short that is over starts again). */

@@ -201,6 +201,8 @@ class ChannelPageTest {
         start()
 
         compose.awaitText("A video")
+        // The followed channels are in a row at the top of the Subscriptions tab.
+        compose.tab("Subscriptions").performClick()
         // The picture is missing: the first letter of the name stands in for it, not a person icon (it is decorative: the name is read).
         compose.onNodeWithText("أ", useUnmergedTree = true).assertIsDisplayed()
 

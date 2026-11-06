@@ -60,7 +60,7 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.OnNearEnd
 import com.ahmadnayfeh.shasha.mobile.ui.components.PagedFooter
 import com.ahmadnayfeh.shasha.mobile.ui.components.PlaylistListItem
 import com.ahmadnayfeh.shasha.mobile.ui.components.ShortTile
-import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
+import com.ahmadnayfeh.shasha.mobile.ui.components.VideoCard
 import com.ahmadnayfeh.shasha.mobile.ui.nav.ChannelRoute
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.VideoItem
@@ -145,7 +145,7 @@ fun ChannelScreen(
                     }
                     when (tab) {
                         ChannelTab.VIDEOS -> {
-                            items(videos.items, key = { "v:${it.videoId}" }, contentType = { "video" }) { video -> VideoListItem(video, onClick = { onOpenVideo(video) }, showChannel = false) }
+                            items(videos.items, key = { "v:${it.videoId}" }, contentType = { "video" }) { video -> VideoCard(video, onClick = { onOpenVideo(video) }, showChannel = false) }
                             item(key = "videos-footer") {
                                 if (videos.started && videos.items.isEmpty() && videos.error == null) {
                                     Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Text(stringResource(R.string.channel_no_videos)) }

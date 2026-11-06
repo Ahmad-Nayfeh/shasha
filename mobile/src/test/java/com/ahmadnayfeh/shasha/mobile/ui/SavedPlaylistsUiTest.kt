@@ -56,7 +56,7 @@ class SavedPlaylistsUiTest {
     fun aSavedPlaylistIsInTheLibrary_opensItsPage_andCanBeTakenOutThere() {
         runBlocking { container.savedPlaylists.save(roadTrip) }
         compose.startAppOffline(container)
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
 
         compose.awaitText("Saved playlists")
         compose.onNodeWithText("Road trip songs").performScrollTo().performClick()
@@ -88,7 +88,7 @@ class SavedPlaylistsUiTest {
     @Test
     fun theLibraryHasNoSavedSectionUntilAPlaylistIsSaved_andItsRowButtonRemovesIt() {
         compose.startAppOffline(container)
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
         compose.awaitText("My playlists")
         assertThat(compose.onAllNodesWithText("Saved playlists").fetchSemanticsNodes()).isEmpty()
 

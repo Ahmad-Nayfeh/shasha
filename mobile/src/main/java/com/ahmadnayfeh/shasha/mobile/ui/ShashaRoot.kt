@@ -18,9 +18,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -30,9 +29,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.SmartDisplay
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -55,6 +53,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -99,6 +98,10 @@ import com.ahmadnayfeh.shasha.mobile.ui.nav.PlaylistRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.SearchRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.SettingsRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.ShortsRoute
+import com.ahmadnayfeh.shasha.mobile.ui.nav.ShortsTabRoute
+import com.ahmadnayfeh.shasha.mobile.ui.shorts.ShortsHubScreen
+import com.ahmadnayfeh.shasha.mobile.ui.components.LocalChannelAvatars
+import com.ahmadnayfeh.shasha.mobile.ui.components.LocalStreamPrefetch
 import com.ahmadnayfeh.shasha.mobile.ui.nav.SubscriptionsRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.UpdateRoute
 import com.ahmadnayfeh.shasha.mobile.ui.nav.UserPlaylistRoute
@@ -134,17 +137,19 @@ private class Tab(val route: Any, val routeClass: KClass<*>, val label: Int, val
 /** The tab whose first page [destination] is; null for every other page. */
 private fun tabOf(destination: NavDestination): Tab? = tabs.firstOrNull { destination.hasRoute(it.routeClass) }
 
+/** The bottom bar, for the tests. */
+internal const val NAV_BAR_TAG = "nav_bar"
+
 private const val NAV_FADE_IN_MS = 180
 private const val NAV_FADE_OUT_MS = 120
 
 private val tabs = listOf(
     Tab(HomeRoute, HomeRoute::class, R.string.nav_home, Icons.Outlined.Home, Icons.Filled.Home),
-    Tab(SearchRoute(), SearchRoute::class, R.string.nav_search, Icons.Outlined.Search, Icons.Filled.Search),
-    Tab(LibraryRoute, LibraryRoute::class, R.string.nav_library, Icons.Outlined.VideoLibrary, Icons.Filled.VideoLibrary),
-    Tab(SettingsRoute, SettingsRoute::class, R.string.nav_settings, Icons.Outlined.Settings, Icons.Filled.Settings),
+    Tab(ShortsTabRoute, ShortsTabRoute::class, R.string.nav_shorts, Icons.Outlined.SmartDisplay, Icons.Filled.SmartDisplay),
+    Tab(LibraryRoute, LibraryRoute::class, R.string.nav_library, Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle),
 )
 
-/** The app: the theme, the four tabs along the bottom, every screen, and the things all of them share (menus, sheets). */
+/** The app: the theme, the four tabs along the bottom (Home, Shorts, You; Subscriptions is a tab on the Home; Search and Settings are in the top bars), every screen, and the things all of them share (menus, sheets). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShashaRoot(container: AppContainer) {
@@ -173,6 +178,14 @@ fun ShashaRoot(container: AppContainer) {
         val progress = remember(progressState) { WatchProgress { progressState.value[it] } }
         val savedIds by remember { container.library.watchLaterItems.map { list -> list.mapTo(HashSet<String>()) { it.videoId } as Set<String> } }
             .collectAsStateWithLifecycle(initialValue = emptySet())
+        // The followed channels' pictures, for the circle on a video's card.
+        val channelAvatars by remember {
+            container.subscriptions.subscriptions.map { list -> list.mapNotNull { c -> c.avatarUrl?.let { c.channelId to it } }.toMap() }
+        }.collectAsStateWithLifecycle(initialValue = emptyMap())
+        // The Shorts the Home holds: what the Shorts tab opens the viewer on.
+        val homeVm: com.ahmadnayfeh.shasha.mobile.ui.home.HomeViewModel = viewModel(factory = com.ahmadnayfeh.shasha.mobile.ui.home.HomeViewModel.factory(container))
+        val homeStateHolder = homeVm.state.collectAsStateWithLifecycle()
+        val homeShorts by remember { derivedStateOf { homeStateHolder.value.shorts } }
         val savedPlaylistIds by container.savedPlaylists.savedIds.collectAsStateWithLifecycle(initialValue = emptySet())
         var downloadTarget by remember { mutableStateOf<VideoItem?>(null) }
         var playlistTarget by remember { mutableStateOf<VideoItem?>(null) }
@@ -255,6 +268,11 @@ fun ShashaRoot(container: AppContainer) {
          * first page, and when it is there already its list scrolls back to the top ([LocalTabReselections]).
          */
         fun onTabTapped(tab: Tab) {
+            // The Shorts tab opens the vertical player at once, on the Shorts the Home holds; with none yet, its page says so.
+            if (tab.routeClass == ShortsTabRoute::class && homeShorts.isNotEmpty()) {
+                openShorts(homeShorts, 0)
+                return
+            }
             val stack = navController.currentBackStack.value
             val owner = stack.lastOrNull { entry -> tabOf(entry.destination) != null }
             if (owner == null || !owner.destination.hasRoute(tab.routeClass)) {
@@ -335,6 +353,8 @@ fun ShashaRoot(container: AppContainer) {
             LocalWatchLaterIds provides savedIds,
             LocalSavedPlaylistIds provides savedPlaylistIds,
             LocalTabReselections provides reselections,
+            LocalChannelAvatars provides channelAvatars,
+            LocalStreamPrefetch provides container.player::prefetch,
         ) {
             val watchVm = session?.let { key(it) { rememberWatchViewModel(container, it) } }
             // The video's comments live as long as the video (a downloaded file has none); the setting can take them away.
@@ -390,7 +410,7 @@ fun ShashaRoot(container: AppContainer) {
                                     onVideoBounds = { videoBounds = it },
                                 )
                             }
-                            NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
+                            NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp, modifier = Modifier.testTag(NAV_BAR_TAG)) {
                                 for (tab in tabs) {
                                     NavigationBarItem(
                                         selected = currentTab === tab,
@@ -428,8 +448,12 @@ fun ShashaRoot(container: AppContainer) {
                                 onOpenChannel = { openChannelPage(it) },
                                 onOpenShorts = { videos, index -> openShorts(videos, index) },
                                 onSearch = { openTab(SearchRoute()) },
+                                onManageSubscriptions = { navController.navigate(SubscriptionsRoute) },
                                 covered = watchShown,
                             )
+                        }
+                        composable<ShortsTabRoute> {
+                            ShortsHubScreen(container, onOpenShorts = { videos, index -> openShorts(videos, index) })
                         }
                         composable<SearchRoute> { entry ->
                             SearchScreen(
@@ -439,6 +463,7 @@ fun ShashaRoot(container: AppContainer) {
                                 onOpenChannel = { openChannelPage(it) },
                                 onOpenPlaylist = { navController.navigate(PlaylistRoute(it)) },
                                 onOpenShorts = { videos, index -> openShorts(videos, index) },
+                                onBack = { navController.popBackStack() },
                             )
                         }
                         composable<LibraryRoute> {
@@ -450,10 +475,11 @@ fun ShashaRoot(container: AppContainer) {
                                 onOpenSubscriptions = { navController.navigate(SubscriptionsRoute) },
                                 onOpenPlaylist = { navController.navigate(UserPlaylistRoute(it)) },
                                 onOpenSavedPlaylist = { navController.navigate(PlaylistRoute(it)) },
+                                onOpenSettings = { navController.navigate(SettingsRoute) },
                             )
                         }
                         composable<SettingsRoute> {
-                            SettingsScreen(container, onOpenAbout = { navController.navigate(AboutRoute) }, onOpenUpdate = { navController.navigate(UpdateRoute) })
+                            SettingsScreen(container, onBack = { navController.popBackStack() }, onOpenAbout = { navController.navigate(AboutRoute) }, onOpenUpdate = { navController.navigate(UpdateRoute) })
                         }
                         composable<ChannelRoute> { entry ->
                             ChannelScreen(

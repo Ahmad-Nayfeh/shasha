@@ -50,7 +50,7 @@ class PlaylistsUiTest {
     @Test
     fun theLibraryOffersToMakeAListAndShowsTheListsWithTheirSize() {
         compose.startAppOffline(container)
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
         compose.awaitText("My playlists")
         // The hint follows Room's first answer, and the tab fades in: wait until it is on screen.
         compose.awaitCondition {
@@ -77,7 +77,7 @@ class PlaylistsUiTest {
     fun aListOpensWithItsVideos_aVideoCanBeTakenOut_andTheListDeletedAfterAConfirmation() {
         val id = makeList("Cartoons", "aaaaaaaaaaa", "bbbbbbbbbbb")
         compose.startAppOffline(container)
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
         compose.awaitText("Cartoons")
         compose.onNodeWithText("2 videos").assertIsDisplayed()
 
@@ -108,7 +108,7 @@ class PlaylistsUiTest {
     fun playAllOpensThePlayerScreenWithTheListAsItsQueue() {
         val id = makeList("Cartoons", "aaaaaaaaaaa", "bbbbbbbbbbb")
         compose.startAppOffline(container)
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
         compose.awaitText("Cartoons")
         compose.onNodeWithText("Cartoons").performClick()
         compose.awaitText("Play all")

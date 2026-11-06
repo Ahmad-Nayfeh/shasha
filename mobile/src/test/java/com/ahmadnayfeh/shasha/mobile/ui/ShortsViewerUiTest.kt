@@ -111,6 +111,9 @@ class ShortsViewerUiTest {
         container.database.feed().upsertAll(uploads.map { it.toFeedEntity(channelId) })
     }
 
+    /** The Shorts whose streams were asked for, once each (the lists of the other pages look up their own first videos too). */
+    private fun shortStreams() = source.streams.toSet().filter { it.startsWith("sho") }
+
     private fun waitForPlayerOn(id: String) = compose.awaitCondition { container.player.state.value.video?.videoId == id }
 
     @Test
@@ -120,7 +123,8 @@ class ShortsViewerUiTest {
 
         compose.awaitText("A long video")
         compose.onAllNodesWithText("Shorts").onFirst().assertIsDisplayed()
-        for (title in listOf("Short one", "Short two", "Short three")) compose.onNodeWithText(title).assertIsDisplayed()
+        // The shelf shows the first two (a row of two cards); the viewer, once opened, goes through all of them.
+        for (title in listOf("Short one", "Short two")) compose.onNodeWithText(title).assertIsDisplayed()
     }
 
     @Test
@@ -138,15 +142,16 @@ class ShortsViewerUiTest {
         compose.onNodeWithText("Short two").assertIsDisplayed()
         compose.onNodeWithText("Shorts channel").assertIsDisplayed()
         assertThat(container.player.mode).isEqualTo(PlaybackMode.SHORT)
-        assertThat(source.streams.toList()).containsExactly("sho00000002", "sho00000003").inOrder()
+        // (The Short before it is looked up as well: its media is prepared too, so that a swipe back is as quick.)
+        assertThat(shortStreams()).containsExactly("sho00000001", "sho00000002", "sho00000003")
         // The bottom bar is gone: the viewer is the whole screen.
-        assertThat(compose.onAllNodesWithText("Library").fetchSemanticsNodes()).isEmpty()
+        assertThat(compose.onAllNodesWithText("You").fetchSemanticsNodes()).isEmpty()
 
         // Swipe up: the next Short plays, from the lookup already made (asked for once), and nothing is left to look up after the last.
         compose.onRoot().performTouchInput { swipeUp() }
         waitForPlayerOn("sho00000003")
         compose.waitForIdle()
-        assertThat(source.streams.toList()).containsExactly("sho00000002", "sho00000003").inOrder()
+        assertThat(shortStreams()).containsExactly("sho00000001", "sho00000002", "sho00000003")
         compose.onNodeWithText("Short three").assertIsDisplayed()
 
         // Swipe up again at the last one: it stays. Swipe down twice: the first one is reached and the player follows.
@@ -219,7 +224,7 @@ class ShortsViewerUiTest {
 
         compose.awaitText("A long video")
         for (title in listOf("Shorts", "Short one", "Short two", "Short three")) {
-            assertThat(compose.onAllNodesWithText(title).fetchSemanticsNodes()).isEmpty()
+            assertThat(compose.onAllNodesWithText(title).fetchSemanticsNodes().filter { !it.isInNavBar() }).isEmpty()
         }
     }
 
@@ -249,7 +254,7 @@ class ShortsViewerUiTest {
         // The viewer opens on the channel's Shorts (not the normal player), at the tapped one, with the other as the next.
         waitForPlayerOn("sho00000002")
         assertThat(container.player.mode).isEqualTo(PlaybackMode.SHORT)
-        assertThat(source.streams.toList()).containsExactly("sho00000002") // the last one: nothing ahead
+        assertThat(shortStreams()).containsExactly("sho00000001", "sho00000002") // the last one: nothing ahead, the one before is prepared
     }
 
     @Test
@@ -289,10 +294,10 @@ class ShortsViewerUiTest {
         compose.onAllNodesWithText("Shorts").onFirst().assertIsDisplayed()
         compose.onNodeWithText("Found short two").performClick()
 
-        // The viewer opens on the row (the first Short before it is not looked up: the row's order is the viewer's).
+        // The viewer opens on the row: the tapped Short and its neighbours in the row's order are looked up.
         waitForPlayerOn("sho00000002")
         assertThat(container.player.mode).isEqualTo(PlaybackMode.SHORT)
-        assertThat(source.streams.toList()).containsExactly("sho00000002", "sho00000003").inOrder()
+        assertThat(shortStreams()).containsExactly("sho00000001", "sho00000002", "sho00000003")
     }
 
     @Test
@@ -323,7 +328,7 @@ class ShortsViewerUiTest {
 
         compose.awaitText("A search result")
         assertThat(compose.onAllNodesWithText("Found short one").fetchSemanticsNodes()).isEmpty()
-        assertThat(compose.onAllNodesWithText("Shorts").fetchSemanticsNodes()).isEmpty()
+        assertThat(compose.onAllNodesWithText("Shorts").fetchSemanticsNodes().filter { !it.isInNavBar() }).isEmpty()
         // And YouTube is not even asked for them.
         assertThat(source.shortsSearches).isEmpty()
     }
@@ -367,7 +372,7 @@ class ShortsSettingScreenTest {
     fun theSettingsPageHasTheSwitchAndATapTurnsShortsOffAndOn() {
         assertThat(stored()).isTrue()
         compose.startAppOffline(container)
-        compose.tab("Settings").performClick()
+        compose.openSettings("You", "Settings")
 
         compose.onNodeWithText("Show Shorts").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Short vertical videos", substring = true).performScrollTo().assertIsDisplayed()
@@ -383,7 +388,7 @@ class ShortsSettingScreenTest {
     fun theGroupsOwnResetBringsThemBack() {
         runBlocking { container.settings.setShowShorts(false) }
         compose.startAppOffline(container)
-        compose.tab("Settings").performClick()
+        compose.openSettings("You", "Settings")
         compose.onNodeWithText("Show Shorts").performScrollTo()
 
         // The group's «Reset» sits in the row of its title: the Shorts group is the one whose title is «Shorts».

@@ -175,7 +175,6 @@ class AboutLinksTest {
         val names = Licenses.libraries.map { it.name }
         assertThat(names).contains("NewPipeExtractor")
         assertThat(Licenses.libraries.first { it.name == "NewPipeExtractor" }.license).isEqualTo("GPL-3.0-or-later")
-        assertThat(names).contains("IBM Plex Sans Arabic")
         assertThat(Licenses.libraries.map { it.license }.all { it.isNotBlank() }).isTrue()
     }
 }

@@ -17,7 +17,9 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.VideoSize
 import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.source.MediaSource
 import com.ahmadnayfeh.shasha.mobile.common.UiError
@@ -43,6 +45,8 @@ import com.ahmadnayfeh.shasha.youtube.playback.YouTubeMediaSourceFactory
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.currentCoroutineContext
@@ -82,6 +86,8 @@ class PlayerController(
     private val saveSubtitleLanguage: (String?) -> Unit = {},
     /** Resolved streams, shared app-wide (the container passes its own); a controller on its own keeps a private one. */
     private val streams: StreamCache = StreamCache(scope, elapsedClock) { videoSource.stream(it, allowLowQuality = true) },
+    /** Where the plan of a picture (decoder checks, manifest text) is made: the app passes a background one; inline by default (tests). */
+    private val planDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Unconfined,
 ) : ShortsPlayer {
     private var created = false
 
@@ -141,16 +147,30 @@ class PlayerController(
      */
     private var resumeShortOnStart = false
 
-    private fun createPlayer(): ExoPlayer = ExoPlayer.Builder(context)
-        .setAudioAttributes(
-            AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
-            /* handleAudioFocus= */ true,
-        )
-        .setHandleAudioBecomingNoisy(true)
-        .setWakeMode(C.WAKE_MODE_NETWORK)
-        .setSeekBackIncrementMs(SEEK_STEP_MS)
-        .setSeekForwardIncrementMs(SEEK_STEP_MS)
+    /**
+     * Starts after 0.8 s of media (Media3's default is 2.5 s) and resumes after a stall at 1.5 s (default 5 s): the first picture
+     * comes sooner. Shared with the Shorts preload, which Media3 requires.
+     */
+    private val loadControl = DefaultLoadControl.Builder()
+        .setBufferDurationsMs(MIN_BUFFER_MS, MAX_BUFFER_MS, START_BUFFER_MS, REBUFFER_MS)
         .build()
+
+    /** Starts from a modest guess of the connection (not Media3's optimistic one), so the first quality is quick to load; then it adapts up. */
+    private val bandwidthMeter = DefaultBandwidthMeter.Builder(context).setInitialBitrateEstimate(START_BITRATE_BPS).build()
+
+    private val preloader by lazy(LazyThreadSafetyMode.NONE) { MediaPreloader(context, loadControl, bandwidthMeter) }
+
+    private fun createPlayer(): ExoPlayer = preloader.buildPlayer(
+        ExoPlayer.Builder(context)
+            .setAudioAttributes(
+                AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),
+                /* handleAudioFocus= */ true,
+            )
+            .setHandleAudioBecomingNoisy(true)
+            .setWakeMode(C.WAKE_MODE_NETWORK)
+            .setSeekBackIncrementMs(SEEK_STEP_MS)
+            .setSeekForwardIncrementMs(SEEK_STEP_MS),
+    )
         .also {
             // Exact seeks: a skipped sponsor segment and a ±10 s jump land where they say, not on the keyframe before.
             it.setSeekParameters(SeekParameters.EXACT)
@@ -186,6 +206,42 @@ class PlayerController(
         return streams.get(videoId)
     }
 
+    /**
+     * Prepares and buffers the first seconds of the Shorts around the one on screen ([items]: queue position to Short), so the next
+     * swipe finds its source ready and starts at once. At most [MediaPreloader.MAX_SOURCES] are kept; lookups run beside the playing Short.
+     */
+    override fun preloadShorts(currentIndex: Int, items: Map<Int, VideoItem>) {
+        if (mode != PlaybackMode.SHORT) return
+        val playingId = _state.value.video?.videoId
+        items.forEach { (index, video) ->
+            if (video.videoId == playingId || preloader.has(video.videoId)) return@forEach
+            scope.launch {
+                try {
+                    val details = streams.get(video.videoId)
+                    val captions = if (!details.video.isLive) details.subtitles.perLanguage() else emptyList()
+                    val subtitle = captions.matching(settings().subtitleLanguage)?.languageCode
+                    val source = withContext(planDispatcher) {
+                        mediaSources.create(details, maxHeight = 0, subtitleLanguage = subtitle, safe = false)
+                    }
+                    withArtwork(source, details.video.fillFrom(video))
+                    // The viewer may have moved on, or left the Shorts, while this was looked up.
+                    if (mode == PlaybackMode.SHORT && !preloader.has(video.videoId)) {
+                        preloader.add(video.videoId, index, source)
+                        preloader.moveTo(shortsCurrent, _state.value.video?.videoId)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // A guess that failed: the swipe looks the Short up itself, as before.
+                }
+            }
+        }
+        shortsCurrent = currentIndex
+        preloader.moveTo(currentIndex, playingId)
+    }
+
+    private var shortsCurrent = 0
+
     /** Tries the current video again (the error screen's button), from where it was. */
     override fun retry() {
         val video = _state.value.video ?: return
@@ -212,6 +268,7 @@ class PlayerController(
         val enteringShorts = newMode == PlaybackMode.SHORT && mode != PlaybackMode.SHORT
         mode = newMode
         if (created) {
+            if (newMode != PlaybackMode.SHORT) preloader.clear() // the Shorts viewer was left: its preloaded neighbours go
             player.stop()
             player.clearMediaItems()
             player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
@@ -256,7 +313,12 @@ class PlayerController(
                 // The captions the viewer chose last, when this video (or Short) has them in that language.
                 val captions = if (!details.video.isLive) details.subtitles.perLanguage() else emptyList()
                 val subtitle = captions.matching(settings().subtitleLanguage)?.languageCode
-                val source = mediaSources.create(details, maxHeight = 0, subtitleLanguage = subtitle, safe = decoderRetry.safe)
+                // A Short the viewer swiped to was prepared and buffered beside the previous one: its source starts at once.
+                val ready = if (mode == PlaybackMode.SHORT && !isReload && !decoderRetry.safe) preloader.take(videoId) else null
+                // Planning the picture (decoder checks, manifest text) is not main-thread work.
+                val source = ready ?: withContext(planDispatcher) {
+                    mediaSources.create(details, maxHeight = 0, subtitleLanguage = subtitle, safe = decoderRetry.safe)
+                }
                 sourceSubtitle = subtitle
                 val video = details.video.fillFrom(item)
                 withArtwork(source, video)
@@ -355,6 +417,7 @@ class PlayerController(
         }
         mode = PlaybackMode.VIDEO
         resumeShortOnStart = false
+        if (created) preloader.clear()
         _state.update { PlayerUiState(speed = it.speed) }
         PlaybackService.stop(context)
     }
@@ -701,6 +764,13 @@ class PlayerController(
 
     companion object {
         const val SEEK_STEP_MS = 10_000L
+
+        // Buffer thresholds (ms): keep 15-50 s, start playing after 0.8 s of media, resume after a stall at 1.5 s.
+        private const val MIN_BUFFER_MS = 15_000
+        private const val MAX_BUFFER_MS = 50_000
+        private const val START_BUFFER_MS = 800
+        private const val REBUFFER_MS = 1_500
+        private const val START_BITRATE_BPS = 2_500_000L
         private const val SAVE_EVERY_MS = 5_000L
         private const val MAX_PREVIEWS = 40
 

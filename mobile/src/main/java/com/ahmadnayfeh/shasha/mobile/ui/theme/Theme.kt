@@ -12,11 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.ahmadnayfeh.shasha.mobile.R
 import com.ahmadnayfeh.shasha.mobile.data.AppTheme
 
 /** The progress red (seek bar, watched bars), the one loud colour of the phone UI. */
@@ -101,34 +99,32 @@ private val LightScheme: ColorScheme = lightColorScheme(
     surfaceContainerHighest = Color(0xFFE5E5E5),
 )
 
-/** IBM Plex Sans Arabic (SIL OFL 1.1): Arabic and Latin text in one family, the same as the TV app. */
-private val PlexArabic = FontFamily(
-    Font(R.font.plex_arabic_regular, FontWeight.Normal),
-    Font(R.font.plex_arabic_medium, FontWeight.Medium),
-    Font(R.font.plex_arabic_semibold, FontWeight.SemiBold),
-    Font(R.font.plex_arabic_bold, FontWeight.Bold),
-)
+/**
+ * The phone's own font (Roboto on Android): Latin text looks like the YouTube app, and Arabic takes the system's Arabic font.
+ * Sizes follow YouTube's: titles 16sp medium on 22sp lines, details 12sp, chips and labels 14sp medium.
+ */
+private val SystemFont = FontFamily.Default
 
-private fun TextStyle.plex(): TextStyle = copy(fontFamily = PlexArabic)
+private fun TextStyle.sys(): TextStyle = copy(fontFamily = SystemFont)
 
 private val BaseTypography = Typography()
 
 private val ShashaTypography = Typography(
-    displayLarge = BaseTypography.displayLarge.plex(),
-    displayMedium = BaseTypography.displayMedium.plex(),
-    displaySmall = BaseTypography.displaySmall.plex(),
-    headlineLarge = BaseTypography.headlineLarge.plex(),
-    headlineMedium = BaseTypography.headlineMedium.plex(),
-    headlineSmall = BaseTypography.headlineSmall.plex(),
-    titleLarge = BaseTypography.titleLarge.plex().copy(fontWeight = FontWeight.SemiBold),
-    titleMedium = BaseTypography.titleMedium.plex().copy(fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp, letterSpacing = 0.sp),
-    titleSmall = BaseTypography.titleSmall.plex().copy(fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 22.sp, letterSpacing = 0.sp),
-    bodyLarge = BaseTypography.bodyLarge.plex(),
-    bodyMedium = BaseTypography.bodyMedium.plex(),
-    bodySmall = BaseTypography.bodySmall.plex().copy(fontSize = 12.sp, lineHeight = 16.sp),
-    labelLarge = BaseTypography.labelLarge.plex().copy(fontWeight = FontWeight.Medium),
-    labelMedium = BaseTypography.labelMedium.plex().copy(fontWeight = FontWeight.Medium),
-    labelSmall = BaseTypography.labelSmall.plex().copy(fontWeight = FontWeight.Medium),
+    displayLarge = BaseTypography.displayLarge.sys(),
+    displayMedium = BaseTypography.displayMedium.sys(),
+    displaySmall = BaseTypography.displaySmall.sys(),
+    headlineLarge = BaseTypography.headlineLarge.sys(),
+    headlineMedium = BaseTypography.headlineMedium.sys(),
+    headlineSmall = BaseTypography.headlineSmall.sys(),
+    titleLarge = BaseTypography.titleLarge.sys().copy(fontWeight = FontWeight.Medium, fontSize = 20.sp, lineHeight = 26.sp, letterSpacing = 0.sp),
+    titleMedium = BaseTypography.titleMedium.sys().copy(fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp, letterSpacing = 0.sp),
+    titleSmall = BaseTypography.titleSmall.sys().copy(fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 22.sp, letterSpacing = 0.sp),
+    bodyLarge = BaseTypography.bodyLarge.sys(),
+    bodyMedium = BaseTypography.bodyMedium.sys().copy(fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.sp),
+    bodySmall = BaseTypography.bodySmall.sys().copy(fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.sp),
+    labelLarge = BaseTypography.labelLarge.sys().copy(fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.sp),
+    labelMedium = BaseTypography.labelMedium.sys().copy(fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.sp),
+    labelSmall = BaseTypography.labelSmall.sys().copy(fontWeight = FontWeight.Medium, fontSize = 10.sp, lineHeight = 14.sp, letterSpacing = 0.sp),
 )
 
 /** Whether [theme] is dark, given the phone's own setting for [AppTheme.SYSTEM]. */

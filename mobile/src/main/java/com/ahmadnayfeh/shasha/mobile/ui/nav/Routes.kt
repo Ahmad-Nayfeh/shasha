@@ -11,6 +11,10 @@ data object HomeRoute
 @Serializable
 data class SearchRoute(val query: String? = null)
 
+/** The Shorts tab: a grid of Shorts that opens the Shorts viewer. */
+@Serializable
+data object ShortsTabRoute
+
 @Serializable
 data object LibraryRoute
 
