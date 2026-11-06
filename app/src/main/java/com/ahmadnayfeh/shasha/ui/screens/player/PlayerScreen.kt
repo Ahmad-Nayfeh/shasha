@@ -44,6 +44,9 @@ import com.ahmadnayfeh.shasha.player.MAX_AUTO_HEIGHT
 import com.ahmadnayfeh.shasha.player.NextInPlaylist
 import com.ahmadnayfeh.shasha.player.PlaybackController
 import com.ahmadnayfeh.shasha.player.PlayerAction
+import com.ahmadnayfeh.shasha.player.SleepSink
+import com.ahmadnayfeh.shasha.player.SleepState
+import com.ahmadnayfeh.shasha.player.SleepTimer
 import com.ahmadnayfeh.shasha.player.WatchSession
 import com.ahmadnayfeh.shasha.policy.AdultEscape
 import com.ahmadnayfeh.shasha.policy.PlayOrigin
@@ -401,7 +404,7 @@ internal fun PlayerContent(
         AnimatedContent(
             targetState = load,
             contentKey = { it::class },
-            transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(200)) },
+            transitionSpec = { fadeIn(tween(120)) togetherWith fadeOut(tween(80)) },
             modifier = Modifier.fillMaxSize().background(Color.Black),
             label = "player",
         ) { state ->
@@ -599,6 +602,7 @@ internal fun PlaybackEffects(active: ActivePlayback, ready: PlayerViewModel.Load
     val current = active.controller
     AttachToPlayerHub(current, ready.stream.video, leave = lock::requestExit, covered = { lock.covered })
     val ui by current.state.collectAsStateWithLifecycle()
+    // Stopped by the sleep timer, the player is paused: the screen no longer asks to stay on, and the TV may sleep.
     KeepScreenOn(ui.playWhenReady && !ui.isEnded)
     LaunchedEffect(current) {
         while (true) {
@@ -649,6 +653,35 @@ private fun VideoPlayer(
     val current = active.controller
     PlaybackEffects(active, ready, vm, lock)
     val ui by current.state.collectAsStateWithLifecycle()
+    // The app's timer (a plain Application in tests has none: the player then has a timer of its own).
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val sleepTimer = (LocalContext.current.applicationContext as? com.ahmadnayfeh.shasha.ShashaApp)?.container?.sleepTimer
+        ?: remember { SleepTimer(scope, android.os.SystemClock::elapsedRealtime) }
+    val sleep by sleepTimer.state.collectAsStateWithLifecycle()
+    var screenOff by remember { mutableStateOf(false) }
+    val goodNight = sleep == SleepState.Fired
+    // The timer drives this player: the fade-out on its volume, the stop at the end (the next video attaches its own).
+    DisposableEffect(current, sleepTimer) {
+        sleepTimer.attach(
+            object : SleepSink {
+                override fun setVolume(volume: Float) {
+                    current.player.volume = volume
+                }
+
+                override fun stop() = current.onAction(PlayerAction.Pause)
+            },
+        )
+        onDispose {
+            current.player.volume = 1f
+            sleepTimer.attach(null)
+        }
+    }
+    LaunchedEffect(ui.isEnded) {
+        if (ui.isEnded) {
+            screenOff = false
+            sleepTimer.onVideoEnded()
+        }
+    }
     val end by vm.end.collectAsStateWithLifecycle()
     val skipped by vm.skippedToEnd.collectAsStateWithLifecycle()
     val savedForLater by vm.savedForLater.collectAsStateWithLifecycle()
@@ -702,6 +735,10 @@ private fun VideoPlayer(
                     suggestions = suggestions,
                     suggestionsWatched = suggestionsWatched(),
                     onPlaySuggestion = onPlaySuggestion,
+                    sleep = sleep,
+                    blackedOut = screenOff || goodNight,
+                    onSleepChoice = sleepTimer::choose,
+                    onScreenOff = { screenOff = true },
                 )
             }
             if (skipper != null) {
@@ -712,6 +749,14 @@ private fun VideoPlayer(
                 controls(Modifier)
             }
         }
+        BlackoutLayer(
+            dark = screenOff,
+            goodNight = goodNight,
+            onWake = {
+                screenOff = false
+                sleepTimer.acknowledge()
+            },
+        )
     }
 }
 

@@ -16,8 +16,8 @@ import kotlinx.coroutines.sync.withLock
  * Stream extraction with a short in-memory cache, so opening a video that was just checked (the policy looks a
  * video up before it plays) starts playing without a second extraction.
  *
- * Only successes are cached, only the last [MAX_CACHED], and only for a few minutes: googlevideo URLs
- * expire after some hours, a failure should always be retried for real, and each entry holds a whole
+ * Only successes are cached, only the last [MAX_CACHED] (LRU), and only for 90 minutes: googlevideo URLs
+ * expire after some hours (a refused URL is re-extracted by the player), a failure should always be retried for real, and each entry holds a whole
  * extraction (every stream URL, related items, storyboards) that a TV's small heap should not keep.
  * Concurrent calls for the same video (and the same `allowLowQuality`) share one extraction.
  *
@@ -27,7 +27,7 @@ import kotlinx.coroutines.sync.withLock
 class StreamRepository(
     private val source: VideoSource,
     private val clock: () -> Long = System::currentTimeMillis,
-    maxAgeMs: Long = 10 * 60_000L,
+    maxAgeMs: Long = 90 * 60_000L,
 ) {
     private val scope = CoroutineScope(SupervisorJob())
     private val mutex = Mutex()
@@ -76,7 +76,7 @@ class StreamRepository(
 
     private companion object {
         /** The last few videos looked up, checked and then played. */
-        const val MAX_CACHED = 6
+        const val MAX_CACHED = 16
     }
 }
 

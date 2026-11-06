@@ -10,7 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +35,10 @@ import com.ahmadnayfeh.shasha.ui.model.VideoUi
 import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
 import com.ahmadnayfeh.shasha.ui.theme.StartTextAlign
 
-val CardShape = RoundedCornerShape(14.dp)
+/** Prefetches the stream of the focused / clicked card (null where nothing is to warm: tests, previews). */
+val LocalStreamPrefetch = androidx.compose.runtime.staticCompositionLocalOf<com.ahmadnayfeh.shasha.data.StreamPrefetcher?> { null }
+
+val CardShape = RoundedCornerShape(12.dp)
 
 /**
  * A video in a grid: 16:9 thumbnail (duration or «مباشر» badge, watched bar), title on two lines,
@@ -55,14 +61,28 @@ fun VideoCard(
 ) {
     val video = item.video
     val openMenu = LocalVideoMenu.current
+    val prefetch = LocalStreamPrefetch.current
+    val source = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    if (prefetch != null) {
+        val focused by source.collectIsFocusedAsState()
+        LaunchedEffect(focused, video.videoId) {
+            if (focused) prefetch.onFocus(video.videoId) else prefetch.onBlur()
+        }
+    }
     Column(modifier) {
         FocusSurface(
-            onClick = onClick,
+            onClick = {
+                prefetch?.onClick(video.videoId)
+                onClick()
+            },
+            interactionSource = source,
             onLongClick = { openMenu(video) },
             shape = CardShape,
             containerColor = ShashaColors.Surface,
             focusedContainerColor = ShashaColors.Surface,
-            scale = ShashaFocus.CardScale,
+            scale = ShashaFocus.VideoCardScale,
+            ring = ShashaFocus.VideoCardRing,
+            glow = ShashaFocus.VideoCardGlow,
             modifier = thumbnailModifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)

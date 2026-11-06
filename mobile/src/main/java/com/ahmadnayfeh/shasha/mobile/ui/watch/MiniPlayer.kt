@@ -149,7 +149,7 @@ private fun MiniProgress(player: Player, state: PlayerUiState) {
     val fraction = if (progress.durationMs > 0 && !state.isLive) (progress.positionMs.toFloat() / progress.durationMs).coerceIn(0f, 1f) else 0f
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Box(Modifier.fillMaxWidth().height(2.dp).background(MaterialTheme.colorScheme.surfaceVariant)) {
-            Box(Modifier.fillMaxWidth(fraction).height(2.dp).background(MaterialTheme.colorScheme.primary))
+            Box(Modifier.fillMaxWidth(fraction).height(2.dp).background(com.ahmadnayfeh.shasha.mobile.ui.theme.ProgressRed))
         }
     }
 }

@@ -124,7 +124,7 @@ fun SeekBar(
     val duration = durationMs.coerceAtLeast(1)
     val fraction = dragFraction ?: (positionMs.toFloat() / duration).coerceIn(0f, 1f)
     val buffered = (bufferedMs.toFloat() / duration).coerceIn(0f, 1f)
-    val primary = MaterialTheme.colorScheme.primary
+    val primary = com.ahmadnayfeh.shasha.mobile.ui.theme.ProgressRed
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Box(
             modifier
@@ -431,7 +431,7 @@ private fun ProgressSeekBar(
 /** With the controls hidden, a hairline along the bottom still shows how far the video is (drawn, not laid out, at each tick). */
 @Composable
 private fun ProgressHairline(progress: State<Progress>, modifier: Modifier = Modifier) {
-    val primary = MaterialTheme.colorScheme.primary
+    val primary = com.ahmadnayfeh.shasha.mobile.ui.theme.ProgressRed
     Canvas(modifier.fillMaxWidth().height(2.dp)) {
         val now = progress.value
         if (now.durationMs <= 0) return@Canvas

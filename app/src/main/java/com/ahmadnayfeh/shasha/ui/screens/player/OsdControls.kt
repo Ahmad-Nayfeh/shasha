@@ -56,13 +56,13 @@ internal fun OsdIconButton(
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color.White.copy(alpha = 0.14f),
             contentColor = Color.White,
-            focusedContainerColor = accent.main,
-            focusedContentColor = accent.onMain,
-            pressedContainerColor = accent.bright,
-            pressedContentColor = accent.onMain,
+            // TV-style: the focused control is a solid white pill / disc with dark content.
+            focusedContainerColor = Color.White,
+            focusedContentColor = Color(0xFF0F0F0F),
+            pressedContainerColor = Color(0xFFD9D9D9),
+            pressedContentColor = Color(0xFF0F0F0F),
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.12f),
-        glow = ClickableSurfaceDefaults.glow(focusedGlow = accent.buttonGlow),
         interactionSource = remember { MutableInteractionSource() },
     ) {
         Box(Modifier.align(Alignment.Center)) {
@@ -97,13 +97,13 @@ internal fun OsdChip(
         colors = ClickableSurfaceDefaults.colors(
             containerColor = Color.White.copy(alpha = 0.12f),
             contentColor = Color.White,
-            focusedContainerColor = accent.main,
-            focusedContentColor = accent.onMain,
-            pressedContainerColor = accent.bright,
-            pressedContentColor = accent.onMain,
+            // TV-style: the focused control is a solid white pill / disc with dark content.
+            focusedContainerColor = Color.White,
+            focusedContentColor = Color(0xFF0F0F0F),
+            pressedContainerColor = Color(0xFFD9D9D9),
+            pressedContentColor = Color(0xFF0F0F0F),
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1.08f),
-        glow = ClickableSurfaceDefaults.glow(focusedGlow = accent.buttonGlow),
         interactionSource = remember { MutableInteractionSource() },
     ) {
         Row(

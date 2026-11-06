@@ -27,15 +27,20 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,6 +58,7 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.ErrorState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LoadingBox
 import com.ahmadnayfeh.shasha.mobile.ui.components.OnTabReselected
 import com.ahmadnayfeh.shasha.mobile.ui.components.SectionTitle
+import com.ahmadnayfeh.shasha.mobile.ui.components.FeedChip
 import com.ahmadnayfeh.shasha.mobile.ui.components.ShortsRow
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoCard
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoTile
@@ -83,8 +89,12 @@ fun HomeScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background, scrolledContainerColor = MaterialTheme.colorScheme.background),
+                title = { Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
                 actions = {
+                    IconButton(onClick = onSearch) {
+                        Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.nav_search))
+                    }
                     IconButton(onClick = { vm.refresh(force = true) }, enabled = !state.refreshing) {
                         Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.action_refresh))
                     }
@@ -126,6 +136,8 @@ fun HomeScreen(
     }
 }
 
+private enum class HomeFilter { ALL, CHANNELS, SHORTS }
+
 @Composable
 private fun FeedGrid(
     state: HomeState,
@@ -135,16 +147,33 @@ private fun FeedGrid(
     onSearch: () -> Unit,
 ) {
     val gridState = rememberLazyGridState()
+    var filter by rememberSaveable { mutableStateOf(HomeFilter.ALL) }
     OnTabReselected(HomeRoute::class) { gridState.animateScrollToItem(0) }
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 320.dp),
         state = gridState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (state.subscriptions.isNotEmpty()) {
+        // Chips over what the feed holds (no invented categories): everything, the followed channels' uploads, the Shorts.
+        val kinds = (if (state.videos.isNotEmpty() || state.subscriptions.isNotEmpty()) 1 else 0) + (if (state.shorts.isNotEmpty()) 1 else 0) +
+            (if (state.suggestions.isNotEmpty()) 1 else 0)
+        if (kinds > 1) {
+            item(key = "chips", span = { GridItemSpan(maxLineSpan) }) {
+                LazyRow(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item { FeedChip(stringResource(R.string.home_chip_all), filter == HomeFilter.ALL, { filter = HomeFilter.ALL }) }
+                    if (state.videos.isNotEmpty() || state.subscriptions.isNotEmpty()) {
+                        item { FeedChip(stringResource(R.string.home_chip_channels), filter == HomeFilter.CHANNELS, { filter = HomeFilter.CHANNELS }) }
+                    }
+                    if (state.shorts.isNotEmpty()) {
+                        item { FeedChip(stringResource(R.string.home_shorts), filter == HomeFilter.SHORTS, { filter = HomeFilter.SHORTS }) }
+                    }
+                }
+            }
+        }
+        if (state.subscriptions.isNotEmpty() && filter != HomeFilter.SHORTS) {
             item(key = "channels", span = { GridItemSpan(maxLineSpan) }) {
                 LazyRow(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     items(state.subscriptions, key = { it.channelId }) { channel ->
@@ -166,7 +195,7 @@ private fun FeedGrid(
                 }
             }
         }
-        if (state.suggestions.isNotEmpty()) {
+        if (state.suggestions.isNotEmpty() && filter == HomeFilter.ALL) {
             item(key = "suggested-title", span = { GridItemSpan(maxLineSpan) }) { SectionTitle(stringResource(R.string.home_suggested)) }
             item(key = "suggested", span = { GridItemSpan(maxLineSpan) }) {
                 LazyRow(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -176,11 +205,11 @@ private fun FeedGrid(
                 }
             }
         }
-        if (state.shorts.isNotEmpty()) {
+        if (state.shorts.isNotEmpty() && filter != HomeFilter.CHANNELS) {
             item(key = "shorts-title", span = { GridItemSpan(maxLineSpan) }) { SectionTitle(stringResource(R.string.home_shorts)) }
             item(key = "shorts", span = { GridItemSpan(maxLineSpan) }) { ShortsRow(state.shorts, onOpen = onOpenShorts) }
         }
-        if (state.videos.isNotEmpty()) {
+        if (state.videos.isNotEmpty() && filter != HomeFilter.SHORTS) {
             // The channels' uploads need a title only when something else is above them.
             if (state.hasMore) item(key = "uploads-title", span = { GridItemSpan(maxLineSpan) }) { SectionTitle(stringResource(R.string.home_from_channels)) }
             items(state.videos, key = { it.videoId }, contentType = { "video" }) { video ->

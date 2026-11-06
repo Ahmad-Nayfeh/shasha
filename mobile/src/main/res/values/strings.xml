@@ -328,4 +328,6 @@
     <string name="license_role_helpers">Helper libraries the libraries above depend on</string>
     <string name="license_role_desugar">Modern Java features on older Android versions</string>
     <string name="license_role_plex">The interface\'s Arabic font</string>
+    <string name="home_chip_all">All</string>
+    <string name="home_chip_channels">Subscriptions</string>
 </resources>

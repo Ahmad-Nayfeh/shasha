@@ -42,6 +42,9 @@ import com.ahmadnayfeh.shasha.player.PLAYBACK_SPEEDS
 import com.ahmadnayfeh.shasha.player.PlayerAction
 import com.ahmadnayfeh.shasha.player.PlayerUiState
 import com.ahmadnayfeh.shasha.player.QualityChoice
+import com.ahmadnayfeh.shasha.player.SLEEP_MINUTES
+import com.ahmadnayfeh.shasha.player.SleepChoice
+import com.ahmadnayfeh.shasha.player.SleepState
 import com.ahmadnayfeh.shasha.player.formatSpeed
 import com.ahmadnayfeh.shasha.ui.components.FocusSurface
 import com.ahmadnayfeh.shasha.ui.components.ShashaIcons
@@ -49,9 +52,9 @@ import com.ahmadnayfeh.shasha.ui.theme.LocalAccent
 import com.ahmadnayfeh.shasha.ui.theme.OsdColors
 import com.ahmadnayfeh.shasha.ui.theme.Accents
 
-enum class OsdMenu { QUALITY, SPEED, SUBTITLES }
+enum class OsdMenu { QUALITY, SPEED, SUBTITLES, SLEEP }
 
-internal data class MenuOption(val label: String, val selected: Boolean, val action: PlayerAction)
+internal data class MenuOption(val label: String, val selected: Boolean, val action: PlayerAction? = null, val sleep: SleepChoice? = null)
 
 @Composable
 internal fun menuTitle(menu: OsdMenu): String = stringResource(
@@ -59,6 +62,7 @@ internal fun menuTitle(menu: OsdMenu): String = stringResource(
         OsdMenu.QUALITY -> R.string.player_quality
         OsdMenu.SPEED -> R.string.player_speed
         OsdMenu.SUBTITLES -> R.string.player_subtitles
+        OsdMenu.SLEEP -> R.string.player_sleep_timer
     },
 )
 
@@ -66,10 +70,18 @@ internal fun menuIcon(menu: OsdMenu) = when (menu) {
     OsdMenu.QUALITY -> ShashaIcons.Tune
     OsdMenu.SPEED -> ShashaIcons.Speed
     OsdMenu.SUBTITLES -> ShashaIcons.Subtitles
+    OsdMenu.SLEEP -> ShashaIcons.Bedtime
 }
 
 @Composable
-internal fun menuOptions(menu: OsdMenu, state: PlayerUiState): List<MenuOption> = when (menu) {
+internal fun menuOptions(menu: OsdMenu, state: PlayerUiState, sleep: SleepState = SleepState.Off): List<MenuOption> = when (menu) {
+    OsdMenu.SLEEP -> buildList {
+        add(MenuOption(stringResource(R.string.player_sleep_off), sleep == SleepState.Off, sleep = SleepChoice.Off))
+        SLEEP_MINUTES.forEach { m ->
+            add(MenuOption(stringResource(R.string.player_sleep_minutes, m), false, sleep = SleepChoice.Minutes(m)))
+        }
+        add(MenuOption(stringResource(R.string.player_sleep_end_of_video), sleep == SleepState.EndOfVideo, sleep = SleepChoice.EndOfVideo))
+    }
     OsdMenu.QUALITY -> buildList {
         val auto = stringResource(R.string.player_quality_auto_detail, state.autoQualityCap.toString())
         add(MenuOption(auto, state.quality == QualityChoice.Auto, PlayerAction.SetQuality(QualityChoice.Auto)))
@@ -98,11 +110,12 @@ internal fun menuOptions(menu: OsdMenu, state: PlayerUiState): List<MenuOption> 
 internal fun OsdMenuPanel(
     menu: OsdMenu,
     state: PlayerUiState,
-    onSelect: (PlayerAction) -> Unit,
+    onSelect: (MenuOption) -> Unit,
     modifier: Modifier = Modifier,
     trapFocus: Boolean = true,
+    sleep: SleepState = SleepState.Off,
 ) {
-    val options = menuOptions(menu, state)
+    val options = menuOptions(menu, state, sleep)
     val selectedIndex = options.indexOfFirst { it.selected }.coerceAtLeast(0)
     val requesters = remember(menu, options.size) { List(options.size) { FocusRequester() } }
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = (selectedIndex - 2).coerceAtLeast(0))
@@ -131,12 +144,12 @@ internal fun OsdMenuPanel(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier
-                .heightIn(max = 360.dp)
+                .heightIn(max = 480.dp)
                 .focusProperties { onExit = { if (trapFocus) cancelFocusChange() } }
                 .focusGroup(),
         ) {
             itemsIndexed(options) { index, option ->
-                MenuOptionRow(option, onClick = { onSelect(option.action) }, modifier = Modifier.focusRequester(requesters[index]))
+                MenuOptionRow(option, onClick = { onSelect(option) }, modifier = Modifier.focusRequester(requesters[index]))
             }
         }
     }

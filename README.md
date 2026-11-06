@@ -7,7 +7,7 @@
 
 ### يوتيوب هادئ لتلفاز البيت: بلا إعلانات، وبحماية كاملة للأطفال
 
-![Version](https://img.shields.io/badge/version-1.8.0-0d9488?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-1.9.0-0d9488?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Android_TV_·_Google_TV_·_Fire_TV_·_Phone-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Languages](https://img.shields.io/badge/العربية_·_English-1f2937?style=for-the-badge)
 
@@ -59,6 +59,7 @@
 | 🔎 بحث بلا حدّ: النتائج تتوالى، والمقاطع القصيرة في صف خاص | 📂 في تطبيق الجوال: قوائم حفظ خاصة بك، والتكبير بإصبعين |
 | 📺 الشاشة: حفظ قوائم يوتيوب لكل ملف | ⌨️ الشاشة: لوحة المفاتيح لا تظهر إلا بالضغط على خانة الكتابة |
 | 🧭 «مقترحة لك» ثابتة أثناء التنقل، وتتجدد بزر «تحديث» أو بعد مشاهدة فيديو | 🌐 التنزيل والتحديث من صفحة الموقع، بلا أي مفتاح داخل التطبيق |
+| 🌙 الشاشة: مؤقت النوم، وإطفاء الصورة مع بقاء الصوت | ⚡ فتح الفيديو والتقليب بين Shorts أسرع، بواجهة مألوفة لمن يستخدم يوتيوب |
 
 ## 🖼️ لقطات من التطبيق
 

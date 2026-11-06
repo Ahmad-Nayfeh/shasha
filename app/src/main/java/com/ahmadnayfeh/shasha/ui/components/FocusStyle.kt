@@ -35,6 +35,11 @@ import com.ahmadnayfeh.shasha.ui.theme.ShashaColors
  */
 object ShashaFocus {
     const val CardScale = 1.05f
+
+    /** Video cards: scale 1.08, a white (dark text in the light theme) 3dp ring and a slight lift. */
+    const val VideoCardScale = 1.08f
+    val VideoCardRing: Color get() = if (ShashaColors.isLight) ShashaColors.Text else Color.White
+    val VideoCardGlow = Glow(elevationColor = Color.Black.copy(alpha = 0.6f), elevation = 14.dp)
     const val ButtonScale = 1.08f
     val GlowColor: Color get() = ShashaColors.Primary.copy(alpha = 0.55f)
     val CardGlow = Glow(elevationColor = GlowColor, elevation = 18.dp)
@@ -61,6 +66,8 @@ fun FocusSurface(
     scale: Float = ShashaFocus.CardScale,
     interactionSource: MutableInteractionSource? = null,
     onLongClick: (() -> Unit)? = null,
+    ring: Color? = null,
+    glow: Glow? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val accent = LocalAccent.current
@@ -78,8 +85,8 @@ fun FocusSurface(
             pressedContentColor = focusedContentColor,
         ),
         scale = ClickableSurfaceDefaults.scale(focusedScale = scale, pressedScale = scale * 0.98f),
-        border = ClickableSurfaceDefaults.border(focusedBorder = ShashaFocus.border(shape, accent.main)),
-        glow = ClickableSurfaceDefaults.glow(focusedGlow = accent.cardGlow),
+        border = ClickableSurfaceDefaults.border(focusedBorder = ShashaFocus.border(shape, ring ?: accent.main)),
+        glow = ClickableSurfaceDefaults.glow(focusedGlow = glow ?: accent.cardGlow),
         interactionSource = interactionSource ?: remember { MutableInteractionSource() },
         content = content,
     )

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -70,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.ahmadnayfeh.shasha.mobile.R
+import com.ahmadnayfeh.shasha.mobile.ui.theme.ProgressRed
 import com.ahmadnayfeh.shasha.mobile.common.Formatters
 import com.ahmadnayfeh.shasha.mobile.common.UiError
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
@@ -247,7 +249,7 @@ fun WatchedBar(videoId: String, modifier: Modifier = Modifier) {
 fun WatchedBar(fraction: Float?, modifier: Modifier = Modifier) {
     if (fraction == null || fraction <= 0.02f) return
     Box(modifier.fillMaxWidth().height(3.dp).background(Color(0x66FFFFFF))) {
-        Box(Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).height(3.dp).background(MaterialTheme.colorScheme.primary))
+        Box(Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).height(3.dp).background(ProgressRed))
     }
 }
 
@@ -308,16 +310,20 @@ fun VideoMenuButton(video: VideoItem, modifier: Modifier = Modifier) {
     }
 }
 
-/** A video as a card: the 16:9 picture over its title and details (the home feed, a phone's main list). */
+/**
+ * A video as a feed card: the 16:9 picture the full width, then the channel's circle, the title (two lines), "channel · views · time"
+ * and the video's menu.
+ */
 @Composable
 fun VideoCard(video: VideoItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
             Thumbnail(video.thumbnailUrl, Modifier.fillMaxSize())
-            DurationBadge(video, Modifier.align(Alignment.BottomEnd).padding(6.dp))
+            DurationBadge(video, Modifier.align(Alignment.BottomEnd).padding(8.dp))
             WatchedBar(video.videoId, Modifier.align(Alignment.BottomCenter))
         }
-        Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.Top) {
+        Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.Top) {
+            Avatar(null, Modifier.padding(end = 12.dp), size = 36, name = video.channelName)
             Column(Modifier.weight(1f).padding(end = 4.dp)) {
                 Text(
                     video.title,
@@ -333,10 +339,11 @@ fun VideoCard(video: VideoItem, onClick: () -> Unit, modifier: Modifier = Modifi
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
             }
-            VideoMenuButton(video)
+            VideoMenuButton(video, Modifier.offset(y = (-8).dp))
         }
     }
 }
@@ -354,7 +361,7 @@ fun VideoListItem(
         modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 12.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Box(Modifier.width(150.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(8.dp))) {
+        Box(Modifier.width(160.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(8.dp))) {
             Thumbnail(video.thumbnailUrl, Modifier.fillMaxSize())
             DurationBadge(video, Modifier.align(Alignment.BottomEnd).padding(4.dp))
             WatchedBar(video.videoId, Modifier.align(Alignment.BottomCenter))
@@ -507,7 +514,7 @@ fun PlaylistListItem(playlist: PlaylistItem, onClick: () -> Unit, modifier: Modi
         modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 12.dp, top = 6.dp, bottom = 6.dp, end = 12.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Box(Modifier.width(150.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(8.dp))) {
+        Box(Modifier.width(160.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(8.dp))) {
             Thumbnail(playlist.thumbnailUrl, Modifier.fillMaxSize())
             Row(
                 Modifier.align(Alignment.BottomEnd).padding(4.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xCC000000))
@@ -531,5 +538,20 @@ fun PlaylistListItem(playlist: PlaylistItem, onClick: () -> Unit, modifier: Modi
                 tint = if (saved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+/** A YouTube-style chip: 8dp corners, grey; the selected one is inverted (light on dark, dark on light). */
+@Composable
+fun FeedChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    Box(
+        modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) scheme.onBackground else scheme.surfaceVariant)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelLarge, color = if (selected) scheme.background else scheme.onBackground, maxLines = 1)
     }
 }

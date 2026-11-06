@@ -77,7 +77,7 @@ fun WatchedBar(fraction: () -> Float, modifier: Modifier = Modifier, height: Dp 
 }
 
 /** The watched part of [WatchedBar]: pure red, in both themes (it sits on the picture, not on the theme). */
-val WatchedRed = Color(0xFFFF0000)
+val WatchedRed = Color(0xFFFF0033)
 
 /** What is not watched yet: a dark veil, so the red reads on bright and dark pictures alike. */
 private val WatchedTrack = Color(0xFF0B0F14).copy(alpha = 0.62f)

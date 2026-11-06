@@ -42,6 +42,13 @@
     <string name="player_quality_auto">Auto</string>
     <string name="player_quality_auto_detail">Auto (up to %1$sp)</string>
     <string name="player_quality_auto_playing">Auto · %1$sp</string>
+    <string name="player_sleep_timer">Sleep timer</string>
+    <string name="player_sleep_off">Off</string>
+    <string name="player_sleep_minutes">%1$d min</string>
+    <string name="player_sleep_end_of_video">End of video</string>
+    <string name="player_sleep_end_short">End of video</string>
+    <string name="player_screen_off">Screen off</string>
+    <string name="player_sleep_goodnight">Good night</string>
     <string name="player_speed_normal">Normal</string>
     <string name="player_subtitles_off">Off</string>
     <string name="player_subtitles_auto">%1$s (auto)</string>

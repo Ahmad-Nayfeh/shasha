@@ -88,6 +88,11 @@ open class AppContainer(private val app: Application) {
     open val videoSource: VideoSource by lazy { YouTube.create(app, okHttp) }
     private val mediaSourceFactory: YouTubeMediaSourceFactory by lazy { YouTubeMediaSourceFactory(app, okHttp) }
 
+    /** Resolved streams by video id, 90 minutes each: a pressed card, a Short ahead or a replay starts at once. */
+    val streamCache: com.ahmadnayfeh.shasha.mobile.data.StreamCache by lazy {
+        com.ahmadnayfeh.shasha.mobile.data.StreamCache(appScope, System::currentTimeMillis) { videoSource.stream(it, allowLowQuality = true) }
+    }
+
     val database: ShashaDatabase by lazy { ShashaDatabase.create(app) }
 
     val settings: SettingsRepository by lazy {
@@ -156,6 +161,7 @@ open class AppContainer(private val app: Application) {
             sponsorBlock = sponsorBlock,
             library = library,
             scope = mainScope,
+            streams = streamCache,
             saveSubtitleLanguage = { code -> appScope.launch { settings.setSubtitleLanguage(code) } },
         )
     }
