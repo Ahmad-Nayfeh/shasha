@@ -149,13 +149,13 @@ class ShortsViewModelTest {
     }
 
     @Test
-    fun theNextTwoAreGotReady_nearestFirst() {
+    fun onlyTheNextOneIsGotReady() {
+        // One, not two: more lookups ahead made YouTube ask for a bot check.
         val vm = vm("aaaaaaaaaaa")
-        assertThat(vm.prefetchWindow().map { it.videoId }).containsExactly("bbbbbbbbbbb", "ccccccccccc").inOrder()
+        assertThat(vm.prefetchWindow().map { it.videoId }).containsExactly("bbbbbbbbbbb")
         vm.prefetchAhead()
-        assertThat(prefetched).containsExactly("bbbbbbbbbbb")
         gates.getValue("bbbbbbbbbbb").complete(Unit)
-        assertThat(prefetched).containsExactly("bbbbbbbbbbb", "ccccccccccc").inOrder()
+        assertThat(prefetched).containsExactly("bbbbbbbbbbb")
         // Near the end the window is shorter.
         assertThat(vm("bbbbbbbbbbb").prefetchWindow().map { it.videoId }).containsExactly("ccccccccccc")
         assertThat(vm("ccccccccccc").prefetchWindow()).isEmpty()

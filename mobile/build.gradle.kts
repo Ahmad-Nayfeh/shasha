@@ -31,7 +31,7 @@ android {
         versionCode = ciEnv("SHASHA_VERSION_CODE")
             ?.let { it.toIntOrNull() ?: error("SHASHA_VERSION_CODE must be an integer, got '$it'") }
             ?: 1
-        versionName = "1.10.0"
+        versionName = "1.10.1"
         // The updater reads the public update manifest on the download site (no credentials: docs/dev/MAINTENANCE.md).
         buildConfigField("String", "UPDATE_MANIFEST_URL", javaString("https://ahmad-nayfeh.github.io/shasha/latest.json"))
     }

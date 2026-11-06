@@ -7,7 +7,7 @@
 
 ### يوتيوب هادئ لتلفاز البيت: بلا إعلانات، وبحماية كاملة للأطفال
 
-![Version](https://img.shields.io/badge/version-1.10.0-0d9488?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-1.10.1-0d9488?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Android_TV_·_Google_TV_·_Fire_TV_·_Phone-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Languages](https://img.shields.io/badge/العربية_·_English-1f2937?style=for-the-badge)
 
