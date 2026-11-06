@@ -190,7 +190,7 @@ class CommentsUiTest {
     @Test
     fun theSettingsPageTurnsCommentsOffAndOn() {
         compose.startAppOffline(container)
-        compose.tab("Settings").performClick()
+        compose.openSettings("You", "Settings")
 
         compose.onNodeWithText("Show comments").performScrollTo().performClick()
         compose.awaitCondition { !stored().showComments }

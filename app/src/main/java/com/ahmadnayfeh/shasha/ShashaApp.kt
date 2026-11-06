@@ -34,6 +34,8 @@ class ShashaApp : Application(), SingletonImageLoader.Factory {
         GuardService.start(this)
         // SPEC §5's phone remote, when switched on (the default once the first start is done).
         RemoteService.startIfWanted(this)
+        // The extractor's first request of the process is the slow one (seconds): pay it now, not on the first video.
+        container.appScope.launch(kotlinx.coroutines.Dispatchers.IO) { container.videoSource.warmUp() }
     }
 
     /**

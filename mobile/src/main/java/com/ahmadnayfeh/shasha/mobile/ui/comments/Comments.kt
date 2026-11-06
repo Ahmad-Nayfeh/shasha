@@ -78,7 +78,7 @@ internal fun CommentsTeaser(vm: CommentsViewModel, onOpen: () -> Unit, modifier:
     LaunchedEffect(vm) { vm.start() }
     Column(
         modifier.fillMaxWidth().testTag(COMMENTS_TEASER_TAG).clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(enabled = !ui.disabled, onClickLabel = stringResource(R.string.comments_open), onClick = onOpen)
             .padding(12.dp),
     ) {

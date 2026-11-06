@@ -10,6 +10,8 @@ import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -61,9 +63,10 @@ class ShashaRootEnglishTest {
         compose.awaitText("No subscriptions yet")
         compose.onNodeWithText("Search for a channel and subscribe to see its newest videos here.").assertIsDisplayed()
         assertThat(direction).isEqualTo(LayoutDirection.Ltr)
-        // The four tabs, in this order from the left.
-        for (label in listOf("Home", "Search", "Library", "Settings")) compose.tab(label).assertIsDisplayed()
-        val lefts = listOf("Home", "Search", "Library", "Settings").map { compose.tab(it).getBoundsInRoot().left.value }
+        // The three tabs, in this order from the left (Search and Settings are in the top bars).
+        val labels = listOf("Home", "Shorts", "You")
+        for (label in labels) compose.navTab(label).assertIsDisplayed()
+        val lefts = labels.map { compose.navTab(it).getBoundsInRoot().left.value }
         assertThat(lefts).isInOrder()
     }
 
@@ -85,7 +88,7 @@ class ShashaRootEnglishTest {
         compose.startApp()
         compose.awaitText("No subscriptions yet")
 
-        compose.tab("Search").performClick()
+        compose.openSearch("Search")
 
         // The page is there, and the field waits for the viewer: no focus, so no keyboard over the recent searches.
         compose.awaitText("Search videos and channels")
@@ -94,9 +97,11 @@ class ShashaRootEnglishTest {
         compose.onNodeWithTag(SEARCH_FIELD_TAG).assertIsNotFocused()
 
         // Another tab and back: the Search tab opens unfocused again.
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
         compose.awaitText("Watch later")
-        compose.tab("Search").performClick()
+        compose.navTab("Home").performClick()
+        compose.awaitText("No subscriptions yet")
+        compose.openSearch("Search")
         compose.awaitText("Search videos and channels")
         compose.waitForIdle()
         compose.onNodeWithTag(SEARCH_FIELD_TAG).assertIsNotFocused()
@@ -110,11 +115,12 @@ class ShashaRootEnglishTest {
     fun theLibraryTabLeadsToHistoryWatchLaterAndSubscriptions() {
         compose.startApp()
 
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
         compose.onNodeWithText("Downloads").assertIsDisplayed()
         compose.onNodeWithText("History").assertIsDisplayed()
         compose.onNodeWithText("Watch later").assertIsDisplayed()
         compose.onNodeWithText("Subscriptions").assertIsDisplayed()
+        compose.onNodeWithText("Settings").assertIsDisplayed()
 
         compose.onNodeWithText("History").performClick()
         compose.awaitText("No history yet")
@@ -128,7 +134,7 @@ class ShashaRootEnglishTest {
     fun theSettingsTabShowsEveryGroupWithItsReset() {
         compose.startApp()
 
-        compose.tab("Settings").performClick()
+        compose.openSettings("You", "Settings")
 
         for (title in listOf("Language", "Theme", "Default quality", "Playback", "Download quality", "SponsorBlock")) {
             compose.onNodeWithText(title).performScrollTo().assertIsDisplayed()
@@ -141,7 +147,7 @@ class ShashaRootEnglishTest {
     @Test
     fun aboutShowsTheDeveloperTheOtherAppsAndTheLicences() {
         compose.startApp()
-        compose.tab("Settings").performClick()
+        compose.openSettings("You", "Settings")
 
         compose.onNodeWithText("About").performScrollTo().performClick()
 
@@ -160,13 +166,13 @@ class ShashaRootEnglishTest {
     @Test
     fun aTabAlwaysOpensAtItsFirstPage_notAtThePageTheViewerLeftInIt() {
         compose.startApp()
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
         compose.onNodeWithText("History").performClick()
         compose.awaitText("No history yet")
 
-        compose.tab("Settings").performClick()
+        compose.openSettings("You", "Settings")
         compose.awaitText("Default quality")
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
 
         compose.awaitText("Watch later")
         compose.onNodeWithText("No history yet").assertDoesNotExist()
@@ -176,25 +182,25 @@ class ShashaRootEnglishTest {
     @Test
     fun tappingTheTabTheViewerIsInGoesBackToItsFirstPage() {
         compose.startApp()
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
         compose.onNodeWithText("History").performClick()
         compose.awaitText("No history yet")
         // The page opened from the Library still counts as the Library's.
-        compose.tab("Library").assertIsSelected()
+        compose.navTab("You").assertIsSelected()
 
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
 
         compose.awaitText("Watch later")
         compose.onNodeWithText("No history yet").assertDoesNotExist()
         // Tapped again on its first page: it stays there.
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
         compose.onNodeWithText("Downloads").assertIsDisplayed()
     }
 
     @Test
     fun theUpdatePageIsReachableFromSettingsAndNeverNamesWhereUpdatesComeFrom() {
         compose.startApp()
-        compose.tab("Settings").performClick()
+        compose.openSettings("You", "Settings")
 
         compose.onNodeWithText("Check for updates").performScrollTo().performClick()
 
@@ -223,9 +229,9 @@ class ShashaRootArabicTest {
         compose.onNodeWithText("ابحث عن قناة واشترك فيها لتظهر هنا أحدث فيديوهاتها.").assertIsDisplayed()
         assertThat(direction).isEqualTo(LayoutDirection.Rtl)
         // Right to left: the first tab is the rightmost one.
-        val tabs = listOf("الرئيسية", "بحث", "مكتبتي", "الإعدادات")
-        for (label in tabs) compose.tab(label).assertIsDisplayed()
-        val lefts = tabs.map { compose.tab(it).getBoundsInRoot().left.value }
+        val tabs = listOf("الرئيسية", "Shorts", "أنت")
+        for (label in tabs) compose.navTab(label).assertIsDisplayed()
+        val lefts = tabs.map { compose.navTab(it).getBoundsInRoot().left.value }
         assertThat(lefts).isInStrictOrder(Comparator.reverseOrder<Float>())
     }
 
@@ -233,13 +239,13 @@ class ShashaRootArabicTest {
     fun theLibraryAndTheSettingsGroupsAreArabic() {
         compose.startApp()
 
-        compose.tab("مكتبتي").performClick()
+        compose.navTab("أنت").performClick()
         compose.onNodeWithText("التنزيلات").assertIsDisplayed()
         compose.onNodeWithText("السجل").assertIsDisplayed()
         compose.onNodeWithText("المشاهدة لاحقاً").assertIsDisplayed()
         compose.onNodeWithText("الاشتراكات").assertIsDisplayed()
 
-        compose.tab("الإعدادات").performClick()
+        compose.openSettings("أنت", "الإعدادات")
         for (title in listOf("اللغة", "المظهر", "الجودة الافتراضية", "التشغيل", "جودة التنزيل", "SponsorBlock")) {
             compose.onNodeWithText(title).performScrollTo().assertIsDisplayed()
         }
@@ -249,7 +255,7 @@ class ShashaRootArabicTest {
     @Test
     fun theAboutPageIsArabicWithTheDevelopersCredit() {
         compose.startApp()
-        compose.tab("الإعدادات").performClick()
+        compose.openSettings("أنت", "الإعدادات")
 
         compose.onNodeWithText("حول").performScrollTo().performClick()
 

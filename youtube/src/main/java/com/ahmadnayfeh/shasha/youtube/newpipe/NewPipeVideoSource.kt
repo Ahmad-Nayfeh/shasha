@@ -184,6 +184,16 @@ internal class NewPipeVideoSource(
         }
     }
 
+    override suspend fun warmUp() {
+        try {
+            stream("dQw4w9WgXcQ", allowLowQuality = true) // any public video: the point is the extractor's one-time set-up
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Only a head start: the first real extraction pays the cost then.
+        }
+    }
+
     override suspend fun stream(videoId: String, allowLowQuality: Boolean): StreamDetails {
         requireVideoId(videoId)
         return io { toDetails(videoId, StreamInfo.getInfo(service, watchUrl(videoId)), allowLowQuality) }

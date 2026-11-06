@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -106,6 +107,8 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.Avatar
 import com.ahmadnayfeh.shasha.mobile.ui.components.ErrorState
 import com.ahmadnayfeh.shasha.mobile.ui.components.LocalVideoActions
 import com.ahmadnayfeh.shasha.mobile.ui.components.PagedFooter
+import com.ahmadnayfeh.shasha.mobile.ui.components.PrefetchVisibleStreams
+import com.ahmadnayfeh.shasha.mobile.ui.components.VideoCard
 import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
 import com.ahmadnayfeh.shasha.mobile.ui.theme.OnDarkBackdrop
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
@@ -416,6 +419,7 @@ private fun Details(
     val channel by vm.channel.collectAsStateWithLifecycle()
     var expanded by remember { mutableStateOf(false) }
     val listState: LazyListState = rememberLazyListState()
+    (related as? Loadable.Loaded)?.let { listState.PrefetchVisibleStreams(it.value) }
 
     LazyColumn(modifier.navigationBarsPadding(), state = listState, contentPadding = PaddingValues(bottom = 16.dp)) {
         item(key = "title") {
@@ -431,8 +435,19 @@ private fun Details(
                         video.viewCount?.let { Formatters.views(context, it) },
                         video.publishedAtEpochMs?.let { Formatters.relativeTime(context, it, System.currentTimeMillis()) },
                     ).joinToString(" · ")
-                    if (meta.isNotEmpty()) {
-                        Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (meta.isNotEmpty() || !expanded) {
+                        Text(
+                            buildString {
+                                append(meta)
+                                if (!expanded) {
+                                    if (meta.isNotEmpty()) append(" · ")
+                                    append(stringResource(R.string.watch_more))
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
                     }
                 }
                 lowQualityHeight?.let {
@@ -483,10 +498,21 @@ private fun Details(
                                 Text(Formatters.subscribers(context, it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
-                        if (subscribed) {
-                            OutlinedButton(onClick = vm::toggleSubscribe) { Text(stringResource(R.string.action_unsubscribe)) }
-                        } else {
-                            Button(onClick = vm::toggleSubscribe) { Text(stringResource(R.string.action_subscribe)) }
+                        // A pill: white with black text on the dark page (black with white text on the light one); grey once followed.
+                        val scheme = MaterialTheme.colorScheme
+                        Button(
+                            onClick = vm::toggleSubscribe,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (subscribed) scheme.surfaceVariant else scheme.onBackground,
+                                contentColor = if (subscribed) scheme.onSurface else scheme.background,
+                            ),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                            modifier = Modifier.height(36.dp),
+                        ) {
+                            Text(
+                                stringResource(if (subscribed) R.string.action_unsubscribe else R.string.action_subscribe),
+                                style = MaterialTheme.typography.labelLarge,
+                            )
                         }
                     }
                 }
@@ -522,19 +548,23 @@ private fun Details(
                         TextButton(onClick = vm::retryRelated) { Text(stringResource(R.string.action_retry)) }
                     }
                 }
-                is Loadable.Loaded -> items(loaded.value, key = { "r:${it.videoId}" }, contentType = { VIDEO_ROW }) { item -> VideoListItem(item, onClick = { onOpenVideo(item) }) }
+                is Loadable.Loaded -> items(loaded.value, key = { "r:${it.videoId}" }, contentType = { "video" }) { item -> VideoCard(item, onClick = { onOpenVideo(item) }) }
             }
         }
     }
 }
 
-/** One of the buttons under the player. Snug, so that the four of them (Watch later, Save, Download, Share) fit a phone's width in Arabic too. */
+/** One of the pills under the player: grey (#272727 in the dark theme), snug, so that four of them fit a phone's width in Arabic too. */
 @Composable
 private fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
-    OutlinedButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
+    Row(
+        Modifier.height(36.dp).clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClick = onClick).padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(4.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge)
+        Spacer(Modifier.width(6.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1)
     }
 }
 

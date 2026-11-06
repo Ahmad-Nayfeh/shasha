@@ -5,7 +5,11 @@
     <!-- التنقل -->
     <string name="nav_home">الرئيسية</string>
     <string name="nav_search">بحث</string>
-    <string name="nav_library">مكتبتي</string>
+    <string name="nav_library">أنت</string>
+    <string name="nav_shorts">Shorts</string>
+    <string name="nav_subscriptions">الاشتراكات</string>
+    <string name="shorts_tab_empty_title">لا Shorts بعد</string>
+    <string name="shorts_tab_empty_body">تظهر هنا Shorts قنواتك والمقترحة لك. تأكد أن «إظهار Shorts» مفعّل في الإعدادات.</string>
     <string name="nav_settings">الإعدادات</string>
 
     <!-- أزرار عامة -->
@@ -112,6 +116,8 @@
     <string name="home_from_channels">من قنواتك</string>
 
     <!-- البحث -->
+    <string name="search_voice">بحث صوتي</string>
+    <string name="search_clear_history">مسح سجل البحث</string>
     <string name="search_hint">ابحث عن فيديوهات وقنوات</string>
     <string name="search_recent">عمليات البحث الأخيرة</string>
     <string name="search_shorts">Shorts</string>
@@ -174,6 +180,7 @@
     <string name="mini_player_expand">فتح الفيديو</string>
     <string name="mini_player_close">إغلاق المشغّل</string>
     <string name="shorts_settings">الإعدادات</string>
+    <string name="watch_more">…المزيد</string>
     <string name="watch_related">فيديوهات مقترحة</string>
     <string name="watch_playlist">قائمة التشغيل</string>
 
@@ -189,6 +196,7 @@
     <string name="watch_later_empty">لا شيء محفوظ</string>
     <string name="watch_later_empty_body">احفظ فيديو من قائمته ليظهر هنا.</string>
     <string name="watch_later_clear_title">إفراغ المشاهدة لاحقاً؟</string>
+    <string name="subscriptions_all">الكل</string>
     <string name="subscriptions_empty">لا اشتراكات بعد</string>
 
     <!-- قوائم التشغيل الخاصة بك -->
@@ -348,7 +356,6 @@
     <string name="license_role_protobuf">طلبات يوتيوب الثنائية داخل مكتبة الاستخراج</string>
     <string name="license_role_helpers">مكتبات مساعدة تعتمد عليها المكتبات أعلاه</string>
     <string name="license_role_desugar">ميزات جافا الحديثة على إصدارات أندرويد الأقدم</string>
-    <string name="license_role_plex">خط الواجهة العربي</string>
     <string name="home_chip_all">الكل</string>
-    <string name="home_chip_channels">الاشتراكات</string>
+    <string name="home_chip_channels">الأحدث</string>
 </resources>

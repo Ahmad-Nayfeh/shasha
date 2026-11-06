@@ -26,6 +26,7 @@ import com.ahmadnayfeh.shasha.youtube.VideoSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -183,6 +184,11 @@ class WatchViewModel(
         if (relatedRequested) return
         relatedRequested = true
         viewModelScope.launch {
+            // The extraction brings the related list with it (the source keeps it): asking before it answers would fetch the same
+            // watch page a second time, in parallel, and slow the video down. A failed or very slow extraction does not hold it back.
+            kotlinx.coroutines.withTimeoutOrNull(RELATED_WAIT_MS) {
+                player.first { it.phase != PlayerPhase.LOADING || it.details != null }
+            }
             _related.value = try {
                 Loadable.Loaded(source.related(videoId).filter { showShorts() || !it.isShortForm })
             } catch (e: CancellationException) {
@@ -298,6 +304,8 @@ class WatchViewModel(
     }
 
     companion object {
+        private const val RELATED_WAIT_MS = 8_000L
+
         private const val TAG = "WatchViewModel"
 
         /** The player is idle (stopped meanwhile) or holds a different video than [videoId]. */

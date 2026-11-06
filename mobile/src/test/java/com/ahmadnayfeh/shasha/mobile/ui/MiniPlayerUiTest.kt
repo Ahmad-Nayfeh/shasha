@@ -69,7 +69,7 @@ class MiniPlayerUiTest {
     private fun assertWatchPageUp() {
         compose.onNodeWithTag(WATCH_VIDEO_TAG).assertIsDisplayed()
         compose.onNodeWithTag(MINI_PLAYER_TAG).assertDoesNotExist()
-        compose.tab("Home").assertDoesNotExist() // the page is the whole screen
+        compose.navTab("Home").assertDoesNotExist() // the page is the whole screen
     }
 
     private fun assertMiniPlayerOn(videoId: String) {
@@ -89,7 +89,7 @@ class MiniPlayerUiTest {
         pressBack()
 
         assertMiniPlayerOn("vid00000001")
-        compose.tab("Home").assertIsDisplayed()
+        compose.navTab("Home").assertIsDisplayed()
         compose.onNodeWithContentDescription("Close the player").assertIsDisplayed()
     }
 
@@ -98,18 +98,28 @@ class MiniPlayerUiTest {
         startWith("vid00000001")
         pressBack()
 
-        for ((tab, text) in listOf("Library" to "Watch later", "Settings" to "Default quality", "Search" to "Search videos and channels", "Home" to "No subscriptions yet")) {
-            compose.tab(tab).performClick()
-            compose.awaitText(text)
-            assertMiniPlayerOn("vid00000001")
-        }
+        compose.navTab("You").performClick()
+        compose.awaitText("Watch later")
+        assertMiniPlayerOn("vid00000001")
+        compose.openSettings("You", "Settings")
+        compose.awaitText("Default quality")
+        assertMiniPlayerOn("vid00000001")
+        compose.navTab("Home").performClick()
+        compose.awaitText("No subscriptions yet")
+        assertMiniPlayerOn("vid00000001")
+        compose.tab("Subscriptions").performClick()
+        compose.awaitText("No subscriptions yet")
+        assertMiniPlayerOn("vid00000001")
+        compose.openSearch("Search")
+        compose.awaitText("Search videos and channels")
+        assertMiniPlayerOn("vid00000001")
     }
 
     @Test
     fun aTapOnTheMiniPlayerOpensTheWatchPageAgain_onTheSameVideo() {
         startWith("vid00000001")
         pressBack()
-        compose.tab("Library").performClick()
+        compose.navTab("You").performClick()
         compose.awaitText("Watch later")
 
         compose.onNodeWithTag(MINI_PLAYER_TAG).performClick()
@@ -151,7 +161,7 @@ class MiniPlayerUiTest {
 
         compose.awaitCondition { container.player.state.value.phase == PlayerPhase.IDLE }
         compose.onNodeWithTag(MINI_PLAYER_TAG).assertDoesNotExist()
-        compose.tab("Home").assertIsDisplayed()
+        compose.navTab("Home").assertIsDisplayed()
     }
 
     @Test

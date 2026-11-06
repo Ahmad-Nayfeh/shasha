@@ -162,6 +162,7 @@ open class AppContainer(private val app: Application) {
             library = library,
             scope = mainScope,
             streams = streamCache,
+            planDispatcher = Dispatchers.Default,
             saveSubtitleLanguage = { code -> appScope.launch { settings.setSubtitleLanguage(code) } },
         )
     }
@@ -207,6 +208,9 @@ open class AppContainer(private val app: Application) {
     /** Keeps [latestSettings] in step with the stored settings. Called once, when the app starts. */
     fun start() {
         appScope.launch { settings.settings.collect { settingsState.value = it } }
+        // The extractor's first request of the process is the slow one (seconds): pay it now, beside the home screen, not on the first tap.
+        // (Not under Robolectric: the unit tests never touch the network.)
+        if (android.os.Build.FINGERPRINT != "robolectric") appScope.launch { videoSource.warmUp() }
     }
 }
 

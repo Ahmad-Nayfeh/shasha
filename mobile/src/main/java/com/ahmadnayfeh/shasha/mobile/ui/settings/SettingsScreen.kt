@@ -21,6 +21,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -30,6 +31,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,8 +51,6 @@ import com.ahmadnayfeh.shasha.mobile.data.AppTheme
 import com.ahmadnayfeh.shasha.mobile.data.QualityChoices
 import com.ahmadnayfeh.shasha.mobile.sponsorblock.SponsorCategory
 import com.ahmadnayfeh.shasha.mobile.ui.components.ConfirmDialog
-import com.ahmadnayfeh.shasha.mobile.ui.components.OnTabReselected
-import com.ahmadnayfeh.shasha.mobile.ui.nav.SettingsRoute
 
 /**
  * Settings: language, theme, playback (default quality, background playback, picture-in-picture), Shorts (on/off), comments (on/off), downloads
@@ -58,7 +58,7 @@ import com.ahmadnayfeh.shasha.mobile.ui.nav.SettingsRoute
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(container: AppContainer, onOpenAbout: () -> Unit, onOpenUpdate: () -> Unit) {
+fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onOpenAbout: () -> Unit, onOpenUpdate: () -> Unit) {
     val vm: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(container))
     val settings by vm.settings.collectAsStateWithLifecycle()
     val defaults = remember { AppSettings() }
@@ -66,10 +66,16 @@ fun SettingsScreen(container: AppContainer, onOpenAbout: () -> Unit, onOpenUpdat
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_settings)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.nav_settings)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
+                },
+            )
+        },
     ) { padding ->
         val scroll = rememberScrollState()
-        OnTabReselected(SettingsRoute::class) { scroll.animateScrollTo(0) }
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(scroll).padding(bottom = 24.dp)) {
             Section(stringResource(R.string.settings_language), resettable = settings.language != defaults.language, onReset = vm::resetLanguage) {
                 ChoiceRow(stringResource(R.string.language_system), settings.language == AppLanguage.SYSTEM) { vm.setLanguage(AppLanguage.SYSTEM) }

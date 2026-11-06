@@ -29,6 +29,8 @@ import com.ahmadnayfeh.shasha.mobile.ui.ShashaRoot
 import com.ahmadnayfeh.shasha.mobile.ui.awaitText
 import com.ahmadnayfeh.shasha.mobile.ui.shorts.ShortsContent
 import com.ahmadnayfeh.shasha.mobile.ui.shorts.ShortsQueue
+import com.ahmadnayfeh.shasha.mobile.ui.navTab
+import com.ahmadnayfeh.shasha.mobile.ui.openSettings
 import com.ahmadnayfeh.shasha.mobile.ui.tab
 import com.ahmadnayfeh.shasha.mobile.ui.theme.ShashaTheme
 import com.ahmadnayfeh.shasha.mobile.ui.watch.WatchContent
@@ -120,6 +122,15 @@ abstract class ScreenshotCases(private val suffix: String) {
     }
 
     @Test
+    fun subscriptionsTab() {
+        show { ShashaRoot(container) }
+        compose.awaitText(Samples.blackHoles.title)
+        compose.tab("الاشتراكات").performClick()
+        compose.awaitText(Samples.blackHoles.title)
+        capture("subscriptions")
+    }
+
+    @Test
     fun player() = showPlayer(FakeDetails(), "player")
 
     /** The watch page of a video played from a playlist: the playlist under it, in place of the related videos. */
@@ -206,7 +217,7 @@ abstract class ScreenshotCases(private val suffix: String) {
         seedPlaylists()
         show { ShashaRoot(container) }
         compose.awaitText(Samples.blackHoles.title)
-        compose.tab("مكتبتي").performClick()
+        compose.navTab("أنت").performClick()
         compose.awaitText(Samples.userPlaylists.first().first)
         capture("library")
     }
@@ -216,7 +227,7 @@ abstract class ScreenshotCases(private val suffix: String) {
         seedPlaylists()
         show { ShashaRoot(container) }
         compose.awaitText(Samples.blackHoles.title)
-        compose.tab("مكتبتي").performClick()
+        compose.navTab("أنت").performClick()
         compose.awaitText(Samples.userPlaylists[1].first)
         compose.onNodeWithText(Samples.userPlaylists[1].first).performClick()
         compose.awaitText(Samples.userPlaylists[1].second.last().title)
@@ -250,7 +261,7 @@ abstract class ScreenshotCases(private val suffix: String) {
     fun settings() {
         show { ShashaRoot(container) }
         compose.awaitText(Samples.blackHoles.title)
-        compose.tab("الإعدادات").performClick()
+        compose.openSettings("أنت", "الإعدادات")
         compose.awaitText("اللغة")
         capture("settings")
     }
@@ -259,7 +270,7 @@ abstract class ScreenshotCases(private val suffix: String) {
     fun about() {
         show { ShashaRoot(container) }
         compose.awaitText(Samples.blackHoles.title)
-        compose.tab("الإعدادات").performClick()
+        compose.openSettings("أنت", "الإعدادات")
         compose.awaitText("اللغة")
         compose.onNodeWithText("حول").performScrollTo().performClick()
         compose.awaitText("صُنع بحب لعائلتي")

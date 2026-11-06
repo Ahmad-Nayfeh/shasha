@@ -70,6 +70,8 @@ class SafeVideoSource internal constructor(
 
     override val extractorVersion: String get() = delegate.extractorVersion
 
+    override suspend fun warmUp() = delegate.warmUp()
+
     override suspend fun search(query: String, filter: SearchFilter, page: PageKey?): ItemsPage {
         if (this.filter.isExplicit(query)) return ItemsPage(emptyList(), null)
         return delegate.search(query, filter, page).let { it.copy(items = it.items.safe()) }

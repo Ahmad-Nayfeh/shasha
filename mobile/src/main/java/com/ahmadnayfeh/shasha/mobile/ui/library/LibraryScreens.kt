@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material3.DropdownMenu
@@ -67,7 +68,7 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.PlaylistListItem
 import com.ahmadnayfeh.shasha.mobile.ui.nav.LibraryRoute
 import com.ahmadnayfeh.shasha.mobile.ui.components.SubScreen
 import com.ahmadnayfeh.shasha.mobile.ui.components.Thumbnail
-import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
+import com.ahmadnayfeh.shasha.mobile.ui.components.VideoCard
 import com.ahmadnayfeh.shasha.mobile.ui.playlist.PlaylistNameDialog
 import com.ahmadnayfeh.shasha.mobile.ui.playlist.PlaylistsViewModel
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
@@ -86,6 +87,8 @@ fun LibraryScreen(
     onOpenPlaylist: (Long) -> Unit,
     /** A YouTube playlist saved to the Library: its page, by its id. */
     onOpenSavedPlaylist: (String) -> Unit = {},
+    /** The Settings page: a gear in the top bar and a row of the list. */
+    onOpenSettings: () -> Unit = {},
 ) {
     val vm: LibraryViewModel = viewModel(factory = LibraryViewModel.factory(container))
     val playlistsVm: PlaylistsViewModel = viewModel(factory = PlaylistsViewModel.factory(container))
@@ -102,7 +105,14 @@ fun LibraryScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_library)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.nav_library)) },
+                actions = {
+                    IconButton(onClick = onOpenSettings) { Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.nav_settings)) }
+                },
+            )
+        },
     ) { padding ->
         val listState = rememberLazyListState()
         OnTabReselected(LibraryRoute::class) { listState.animateScrollToItem(0) }
@@ -111,6 +121,7 @@ fun LibraryScreen(
             item { Entry(Icons.Filled.WatchLater, stringResource(R.string.library_watch_later), watchLater?.size, onOpenWatchLater) }
             item { Entry(Icons.Filled.History, stringResource(R.string.library_history), history?.size, onOpenHistory) }
             item { Entry(Icons.Filled.Subscriptions, stringResource(R.string.library_subscriptions), channels?.size, onOpenSubscriptions) }
+            item { Entry(Icons.Filled.Settings, stringResource(R.string.nav_settings), null, onOpenSettings) }
             item(key = "playlists-divider") { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
             item(key = "playlists-title") {
                 Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -288,9 +299,9 @@ private fun VideoList(
         when {
             items == null -> LoadingBox()
             items.isEmpty() -> EmptyState(emptyIcon, emptyTitle, emptyBody)
-            else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
+            else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 8.dp, bottom = 8.dp)) {
                 items(items, key = { it.videoId }) { video ->
-                    VideoListItem(
+                    VideoCard(
                         video,
                         onClick = { onOpenVideo(video) },
                         trailing = {

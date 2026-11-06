@@ -50,6 +50,5 @@ object Licenses {
         LicenseEntry("protobuf-javalite", "BSD-3-Clause", R.string.license_role_protobuf),
         LicenseEntry("Okio · Guava · JSpecify", "Apache-2.0", R.string.license_role_helpers),
         LicenseEntry("desugar_jdk_libs", "GPL-2.0 WITH Classpath-exception-2.0", R.string.license_role_desugar),
-        LicenseEntry("IBM Plex Sans Arabic", "OFL-1.1", R.string.license_role_plex),
     )
 }

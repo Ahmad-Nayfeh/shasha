@@ -10,6 +10,13 @@ interface VideoSource {
     /** Pinned extractor version, shown on the error screen (e.g. "v0.26.5"). */
     val extractorVersion: String
 
+    /**
+     * Pays the one-time cost of the first extraction of the process (the service's first request, the player script and its
+     * signature code) in the background, so the first video the viewer opens is as fast as the second. Never throws; the
+     * default does nothing (tests, fakes).
+     */
+    suspend fun warmUp() {}
+
     suspend fun search(query: String, filter: SearchFilter = SearchFilter.ALL, page: PageKey? = null): ItemsPage
 
     /**

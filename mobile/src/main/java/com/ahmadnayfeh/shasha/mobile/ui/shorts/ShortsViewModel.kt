@@ -52,6 +52,10 @@ class ShortsViewModel(
         player.playShort(short)
         // Two Shorts ahead: the swipes that come next find their streams already known. Nothing past the last one.
         queue.ahead(index).forEach { player.prefetch(it.videoId) }
+        // Media, not only addresses: the first seconds of the next two Shorts and of the previous one are prepared and buffered,
+        // so a swipe in either direction swaps to a source that is ready.
+        val around = (index - 1..index + ShortsQueue.PREFETCH_AHEAD).filter { it != index }.mapNotNull { i -> queue.at(i)?.let { i to it } }.toMap()
+        player.preloadShorts(index, around)
     }
 
     fun togglePlay() = player.togglePlay()

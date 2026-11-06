@@ -1,6 +1,26 @@
 package com.ahmadnayfeh.shasha.mobile.ui.search
 
 import androidx.compose.foundation.clickable
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,7 +42,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -60,7 +79,9 @@ import com.ahmadnayfeh.shasha.mobile.ui.components.PagedFooter
 import com.ahmadnayfeh.shasha.mobile.ui.components.PlaylistListItem
 import com.ahmadnayfeh.shasha.mobile.ui.components.SectionTitle
 import com.ahmadnayfeh.shasha.mobile.ui.components.ShortsRow
-import com.ahmadnayfeh.shasha.mobile.ui.components.VideoListItem
+import com.ahmadnayfeh.shasha.mobile.ui.components.FeedChip
+import com.ahmadnayfeh.shasha.mobile.ui.components.PrefetchVisibleStreams
+import com.ahmadnayfeh.shasha.mobile.ui.components.VideoCard
 import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.SearchFilter
@@ -75,6 +96,8 @@ fun SearchScreen(
     onOpenPlaylist: (String) -> Unit,
     /** The Shorts viewer, on the Shorts row (the list) at the tapped one (its place in it). */
     onOpenShorts: (List<VideoItem>, Int) -> Unit,
+    /** The back arrow of the search bar: out of the search, to the page it was opened from. */
+    onBack: () -> Unit = {},
 ) {
     val vm: SearchViewModel = viewModel(factory = SearchViewModel.factory(container, initialQuery))
     val query by vm.query.collectAsStateWithLifecycle()
@@ -97,40 +120,22 @@ fun SearchScreen(
     // Opening the tab does not focus the field (and so does not pop the keyboard up over the recent searches): the keyboard
     // comes when the viewer taps the field. Only «Clear» puts the focus back in it, since the viewer is typing then.
     Column(Modifier.fillMaxSize()) {
-        TextField(
-            value = query,
-            onValueChange = vm::onQueryChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-                .focusRequester(focus)
-                .testTag(SEARCH_FIELD_TAG)
-                .onFocusChanged { if (it.isFocused) vm.startEditing() },
-            singleLine = true,
-            shape = CircleShape,
-            placeholder = { Text(stringResource(R.string.search_hint)) },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-            trailingIcon = {
-                if (query.isNotEmpty()) {
-                    IconButton(onClick = { vm.clearQuery(); focus.requestFocus() }) {
-                        Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.action_clear))
-                    }
-                }
-            },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { vm.submit(); keyboard?.hide() }),
-            colors = TextFieldDefaults.colors(focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent, unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent),
+        SearchBarRow(
+            query = query,
+            onQueryChange = vm::onQueryChange,
+            onBack = onBack,
+            onSubmit = { vm.submit(); keyboard?.hide() },
+            onClear = { vm.clearQuery(); focus.requestFocus() },
+            onFocused = vm::startEditing,
+            onVoiceResult = { text -> vm.onQueryChange(text); vm.submit(); keyboard?.hide() },
+            onClearHistory = vm::clearRecent,
+            focus = focus,
         )
 
         if (submitted != null) {
-            LazyRow(contentPadding = PaddingValues(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(SearchFilter.entries.toList()) { option ->
-                    FilterChip(
-                        selected = option == filter,
-                        onClick = { vm.selectFilter(option) },
-                        label = { Text(stringResource(filterLabel(option))) },
-                    )
+                    FeedChip(stringResource(filterLabel(option)), selected = option == filter, onClick = { vm.selectFilter(option) })
                 }
             }
         }
@@ -222,6 +227,7 @@ private fun Results(
 ) {
     val listState = rememberLazyListState()
     listState.OnNearEnd { vm.loadMore() }
+    listState.PrefetchVisibleStreams(rows.items.filterIsInstance<VideoItem>())
     OnTabReselected(SearchRoute::class) { listState.animateScrollToItem(0) }
     when {
         !results.started && results.error == null -> LoadingBox()
@@ -238,7 +244,7 @@ private fun Results(
                 Column {
                     if (index == rowAt && rows.shorts.isNotEmpty()) ShortsSection(rows.shorts, onOpenShorts)
                     when (item) {
-                        is VideoItem -> VideoListItem(item, onClick = { onOpenVideo(item) })
+                        is VideoItem -> VideoCard(item, onClick = { onOpenVideo(item) })
                         is ChannelItem -> ChannelListItem(item, onClick = { onOpenChannel(item) })
                         is PlaylistItem -> PlaylistListItem(item, onClick = { onOpenPlaylist(item.playlistId) })
                     }
@@ -251,12 +257,97 @@ private fun Results(
 }
 
 /** The Shorts after this many results of the general search. */
-private const val SHORTS_ROW_AFTER = 4
+private const val SHORTS_ROW_AFTER = 2
 
 @Composable
 private fun ShortsSection(shorts: List<VideoItem>, onOpenShorts: (List<VideoItem>, Int) -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         SectionTitle(stringResource(R.string.search_shorts))
         ShortsRow(shorts, onOpen = onOpenShorts)
+    }
+}
+
+/**
+ * The search bar as the YouTube app has it: the back arrow, a rounded field (grey) with the query and a clear cross, the voice
+ * search button in a grey circle, and a menu.
+ */
+@Composable
+private fun SearchBarRow(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onBack: () -> Unit,
+    onSubmit: () -> Unit,
+    onClear: () -> Unit,
+    onFocused: () -> Unit,
+    onVoiceResult: (String) -> Unit,
+    onClearHistory: () -> Unit,
+    focus: FocusRequester,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val voice = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.takeIf { it.isNotBlank() }?.let(onVoiceResult)
+    }
+    var menu by remember { mutableStateOf(false) }
+    Row(
+        Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+        }
+        Row(
+            Modifier.weight(1f).height(40.dp).clip(RoundedCornerShape(20.dp)).background(scheme.surfaceVariant).padding(start = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focus)
+                    .testTag(SEARCH_FIELD_TAG)
+                    .onFocusChanged { if (it.isFocused) onFocused() },
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = scheme.onSurface, fontSize = 16.sp),
+                cursorBrush = SolidColor(scheme.onSurface),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
+                decorationBox = { inner ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (query.isEmpty()) {
+                            Text(stringResource(R.string.search_hint), style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant, maxLines = 1)
+                        }
+                        inner()
+                    }
+                },
+            )
+            if (query.isNotEmpty()) {
+                IconButton(onClick = onClear, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.action_clear), modifier = Modifier.size(20.dp))
+                }
+            }
+        }
+        Box(Modifier.padding(start = 8.dp)) {
+            IconButton(
+                onClick = {
+                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                        .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    // A phone without a speech recogniser has nothing to open: the button then does nothing.
+                    runCatching { voice.launch(intent) }
+                },
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(scheme.surfaceVariant),
+            ) {
+                Icon(Icons.Filled.Mic, contentDescription = stringResource(R.string.search_voice))
+            }
+        }
+        Box {
+            IconButton(onClick = { menu = true }) {
+                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
+            }
+            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                DropdownMenuItem(text = { Text(stringResource(R.string.search_clear_history)) }, onClick = { menu = false; onClearHistory() })
+            }
+        }
     }
 }

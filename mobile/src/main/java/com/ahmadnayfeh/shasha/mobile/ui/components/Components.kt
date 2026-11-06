@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.LibraryAddCheck
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material.icons.filled.WatchLater
 import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.material.icons.filled.Person
@@ -50,12 +51,14 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -78,6 +81,8 @@ import com.ahmadnayfeh.shasha.youtube.ChannelItem
 import com.ahmadnayfeh.shasha.youtube.PlaylistItem
 import com.ahmadnayfeh.shasha.youtube.SourceErrorKind
 import com.ahmadnayfeh.shasha.youtube.VideoItem
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
@@ -200,6 +205,40 @@ fun LazyListState.OnNearEnd(buffer: Int = 6, onNearEnd: () -> Unit) {
     }
 }
 
+/** Looks up a video's streams ahead of a tap (the app's player cache; a no-op where there is no player, as in previews). */
+val LocalStreamPrefetch = staticCompositionLocalOf<(String) -> Unit> { {} }
+
+/**
+ * When the list has stopped moving, asks for the streams of the first two videos on screen ([LocalStreamPrefetch]: the cache runs at
+ * most two lookups at once and drops the rest), so the tap on one of them starts at once. [videos] are the ones the list may show; an
+ * item is recognised by its key ending in the video's id ("id", "v:id", "r:id").
+ */
+@Composable
+fun LazyListState.PrefetchVisibleStreams(videos: List<VideoItem>) =
+    PrefetchWhenSettled(videos, { layoutInfo.visibleItemsInfo.map { it.key } }, { isScrollInProgress })
+
+/** [PrefetchVisibleStreams] for a grid. */
+@Composable
+fun LazyGridState.PrefetchVisibleStreams(videos: List<VideoItem>) =
+    PrefetchWhenSettled(videos, { layoutInfo.visibleItemsInfo.map { it.key } }, { isScrollInProgress })
+
+@Composable
+private fun PrefetchWhenSettled(videos: List<VideoItem>, visibleKeys: () -> List<Any>, scrolling: () -> Boolean) {
+    val prefetch = LocalStreamPrefetch.current
+    val shown by rememberUpdatedState(videos.mapTo(HashSet()) { it.videoId })
+    LaunchedEffect(Unit) {
+        snapshotFlow { if (scrolling()) null else visibleKeys().map { it.toString().substringAfterLast(':') } }
+            .filter { it != null }
+            .distinctUntilChanged()
+            .collectLatest { ids ->
+                delay(PREFETCH_SETTLE_MS)
+                ids!!.filter { it in shown }.take(2).forEach(prefetch)
+            }
+    }
+}
+
+private const val PREFETCH_SETTLE_MS = 250L
+
 /** [OnNearEnd] for a grid. */
 @Composable
 fun LazyGridState.OnNearEnd(buffer: Int = 6, onNearEnd: () -> Unit) {
@@ -228,9 +267,10 @@ fun DurationBadge(video: VideoItem, modifier: Modifier = Modifier) {
         modifier = modifier
             .clip(RoundedCornerShape(4.dp))
             .background(if (video.isLive) Color(0xFFD32F2F) else Color(0xCC000000))
-            .padding(horizontal = 5.dp, vertical = 1.dp),
+            .padding(horizontal = 4.dp, vertical = 1.dp),
         color = Color.White,
-        fontSize = 11.sp,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Medium,
         maxLines = 1,
     )
 }
@@ -310,40 +350,79 @@ fun VideoMenuButton(video: VideoItem, modifier: Modifier = Modifier) {
     }
 }
 
+/** The Shasha mark (its icon's artwork) in a small rounded square: the one brand touch of the top bars. */
+@Composable
+fun BrandMark(modifier: Modifier = Modifier, size: Int = 28) {
+    Box(modifier.size(size.dp).clip(RoundedCornerShape((size / 4).dp)).semantics { hideFromAccessibility() }) {
+        androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(R.drawable.ic_launcher_background), contentDescription = null, modifier = Modifier.fillMaxSize())
+        androidx.compose.foundation.Image(
+            androidx.compose.ui.res.painterResource(R.drawable.ic_launcher_foreground),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize().scale(1.7f),
+        )
+    }
+}
+
+/** The followed channels' pictures by channel id: a video's card shows its channel's circle when the viewer follows it. */
+val LocalChannelAvatars = staticCompositionLocalOf<Map<String, String>> { emptyMap() }
+
 /**
- * A video as a feed card: the 16:9 picture the full width, then the channel's circle, the title (two lines), "channel · views · time"
- * and the video's menu.
+ * THE video card, used wherever videos are listed (the Home, search results, the channel's videos, related videos, the history and
+ * the saved lists): the 16:9 picture the full width, edge to edge, then 12dp below it the channel's 36dp circle, the title (16sp
+ * medium, two lines), one line of "channel · views · time" (12sp, grey) and the video's menu beside the title; 24dp to the next card.
+ * In a right-to-left language the circle is on the right. [trailing] replaces the menu; [showChannel] false (a channel's own list)
+ * leaves the channel out of the details.
  */
 @Composable
-fun VideoCard(video: VideoItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth().clickable(onClick = onClick)) {
+fun VideoCard(
+    video: VideoItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    showChannel: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    val actions = LocalVideoActions.current
+    Column(modifier.fillMaxWidth().clickable(onClick = onClick).padding(bottom = 24.dp)) {
         Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
             Thumbnail(video.thumbnailUrl, Modifier.fillMaxSize())
             DurationBadge(video, Modifier.align(Alignment.BottomEnd).padding(8.dp))
             WatchedBar(video.videoId, Modifier.align(Alignment.BottomCenter))
         }
-        Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 12.dp, bottom = 12.dp), verticalAlignment = Alignment.Top) {
-            Avatar(null, Modifier.padding(end = 12.dp), size = 36, name = video.channelName)
-            Column(Modifier.weight(1f).padding(end = 4.dp)) {
-                Text(
-                    video.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+        Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 12.dp), verticalAlignment = Alignment.Top) {
+            val channelId = video.channelId
+            // A channel's own list leaves the circle out: it would be the same on every card.
+            if (showChannel) {
+                Avatar(
+                    LocalChannelAvatars.current[channelId],
+                    Modifier.padding(end = 12.dp).then(
+                        if (channelId != null) {
+                            Modifier.clip(CircleShape).clickable {
+                                actions.openChannel(ChannelItem(channelId, video.channelName.orEmpty(), avatarUrl = null, subscriberCount = null))
+                            }
+                        } else {
+                            Modifier
+                        },
+                    ),
+                    size = 36,
+                    name = video.channelName,
                 )
-                val meta = videoMeta(video)
+            }
+            Column(Modifier.weight(1f).padding(end = 4.dp)) {
+                Text(video.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                val meta = videoMeta(video, showChannel)
                 if (meta.isNotEmpty()) {
                     Text(
                         meta,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 2.dp),
+                        modifier = Modifier.padding(top = 4.dp),
                     )
                 }
             }
-            VideoMenuButton(video, Modifier.offset(y = (-8).dp))
+            // 48dp tall, its dots level with the title's first line.
+            Box(Modifier.offset(y = (-13).dp)) { if (trailing != null) trailing() else VideoMenuButton(video) }
         }
     }
 }
@@ -438,6 +517,48 @@ fun ShortsRow(shorts: List<VideoItem>, onOpen: (List<VideoItem>, Int) -> Unit, m
     LazyRow(modifier, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         itemsIndexed(shorts, key = { _, short -> "short:" + short.videoId }) { index, short ->
             ShortTile(short, onClick = { onOpen(shorts, index) }, modifier = Modifier.width(124.dp))
+        }
+    }
+}
+
+/**
+ * The Shorts shelf of the Home: a header with the Shorts icon, then a grid of two columns of tall (9:16) cards with 8dp corners. A card
+ * has its title (two lines) and view count over a dark gradient at the bottom of the picture, and its menu at the top end. A tap
+ * opens the Shorts viewer on [shorts] at the tapped one. [count] cards are shown (4: two rows).
+ */
+@Composable
+fun ShortsShelf(shorts: List<VideoItem>, onOpen: (List<VideoItem>, Int) -> Unit, modifier: Modifier = Modifier, count: Int = 4) {
+    Column(modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Row(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.SmartDisplay, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(24.dp))
+            Text(stringResource(R.string.home_shorts), Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleMedium)
+        }
+        shorts.take(count).chunked(2).forEachIndexed { row, pair ->
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(top = if (row == 0) 0.dp else 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                pair.forEachIndexed { i, short -> ShortCard(short, onClick = { onOpen(shorts, row * 2 + i) }, Modifier.weight(1f)) }
+                if (pair.size == 1) Box(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShortCard(video: VideoItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    Box(modifier.aspectRatio(9f / 16f).clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick)) {
+        Thumbnail(video.thumbnailUrl, Modifier.fillMaxSize())
+        Box(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(110.dp)
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000)))),
+        )
+        Column(Modifier.align(Alignment.BottomStart).padding(start = 8.dp, end = 8.dp, bottom = 8.dp)) {
+            Text(video.title, color = Color.White, fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            video.viewCount?.let {
+                Text(Formatters.views(context, it), color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1, modifier = Modifier.padding(top = 2.dp))
+            }
+        }
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides Color.White) {
+            VideoMenuButton(video, Modifier.align(Alignment.TopEnd))
         }
     }
 }
