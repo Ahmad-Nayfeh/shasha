@@ -164,7 +164,7 @@ class ShortsViewModelTest {
     fun theViewerPlaysTheShortItOpensAtAndLooksUpTheNextOneAhead() {
         viewModel()
 
-        assertThat(player.calls).containsExactly("play:a", "prefetch:b", "prefetch:c").inOrder()
+        assertThat(player.calls).containsExactly("play:a", "prefetch:b").inOrder()
     }
 
     @Test
@@ -181,7 +181,7 @@ class ShortsViewModelTest {
 
         vm.onPageSettled(0) // the pager reports the page it starts on
 
-        assertThat(player.calls).containsExactly("play:a", "prefetch:b", "prefetch:c").inOrder()
+        assertThat(player.calls).containsExactly("play:a", "prefetch:b").inOrder()
     }
 
     @Test
@@ -262,7 +262,7 @@ class ShortsViewModelTest {
         vm.onLeaveForChannel()
         vm.onShown()
 
-        assertThat(player.calls).containsExactly("pause", "play:a", "prefetch:b", "prefetch:c").inOrder()
+        assertThat(player.calls).containsExactly("pause", "play:a", "prefetch:b").inOrder()
     }
 
     @Test

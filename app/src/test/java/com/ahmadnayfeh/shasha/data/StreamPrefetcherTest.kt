@@ -11,18 +11,36 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class StreamPrefetcherTest {
     @Test
-    fun aCardThatKeepsTheFocus_isResolved_aCardPassedOver_isNot() = runTest {
+    fun focusAlone_looksNothingUp() = runTest {
+        // A lookup per focused card made YouTube ask for a bot check; only a click looks up now.
         val done = mutableListOf<String>()
         val p = StreamPrefetcher(backgroundScope) { done += it }
         p.onFocus("a")
-        advanceTimeBy(300)
-        p.onFocus("b") // the focus moved before 400 ms
-        advanceTimeBy(399)
+        advanceTimeBy(5_000)
         runCurrent()
         assertThat(done).isEmpty()
-        advanceTimeBy(2)
+        p.onClick("a")
         runCurrent()
-        assertThat(done).containsExactly("b")
+        assertThat(done).containsExactly("a")
+    }
+
+    @Test
+    fun afterABotCheck_noLookupInAdvanceForAWhile() = runTest {
+        var now = 0L
+        val done = mutableListOf<String>()
+        val p = StreamPrefetcher(backgroundScope, now = { now }) { id ->
+            done += id
+            if (id == "a") throw com.ahmadnayfeh.shasha.youtube.SourceException(com.ahmadnayfeh.shasha.youtube.SourceErrorKind.BOT_CHECK, "test", "bot", null)
+        }
+        p.onClick("a")
+        runCurrent()
+        p.onClick("b")
+        runCurrent()
+        assertThat(done).containsExactly("a")
+        now = StreamPrefetcher.PAUSE_AFTER_THROTTLE_MS + 1
+        p.onClick("b")
+        runCurrent()
+        assertThat(done).containsExactly("a", "b").inOrder()
     }
 
     @Test

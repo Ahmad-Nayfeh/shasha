@@ -75,7 +75,7 @@ class ShortsViewModel(
     }
 
     private companion object {
-        const val AHEAD = 2
+        const val AHEAD = 1
 
         /** A Short that came without its list (a link from the phone, a list that is gone): all that is known of it is its id. */
         fun stub(videoId: String) = VideoItem(

@@ -77,6 +77,7 @@ class StreamCache(
             entries.remove(videoId)
             it.deferred.cancel()
         }
+        if (prefetch && clock() < pausedUntil) return null
         if (prefetch && !gate.tryAcquire()) return null
         val e = Entry(clock(), prefetchOnly = prefetch)
         e.deferred = scope.async(start = CoroutineStart.LAZY) {
@@ -86,6 +87,7 @@ class StreamCache(
                 throw c
             } catch (t: Throwable) {
                 forget(videoId, e)
+                if (isThrottle(t)) pausedUntil = clock() + PAUSE_AFTER_THROTTLE_MS
                 throw t
             } finally {
                 if (prefetch) gate.release()
@@ -96,6 +98,13 @@ class StreamCache(
         e
     }
 
+    // YouTube answers too many lookups from one network with a bot check (or a rate limit): no lookup in advance
+    // for a while after that, so only what the person actually opens asks.
+    @Volatile private var pausedUntil = 0L
+
+    private fun isThrottle(t: Throwable) = t is com.ahmadnayfeh.shasha.youtube.SourceException &&
+        (t.kind == com.ahmadnayfeh.shasha.youtube.SourceErrorKind.BOT_CHECK || t.kind == com.ahmadnayfeh.shasha.youtube.SourceErrorKind.RATE_LIMITED)
+
     private fun forget(videoId: String, e: Entry) {
         synchronized(lock) { if (entries[videoId] === e) entries.remove(videoId) }
     }
@@ -104,5 +113,6 @@ class StreamCache(
         const val DEFAULT_TTL_MS = 90 * 60_000L
         const val DEFAULT_MAX_ENTRIES = 40
         const val DEFAULT_MAX_PREFETCH = 2
+        const val PAUSE_AFTER_THROTTLE_MS = 30 * 60_000L
     }
 }

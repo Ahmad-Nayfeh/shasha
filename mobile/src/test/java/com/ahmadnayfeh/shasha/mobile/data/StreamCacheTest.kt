@@ -104,9 +104,10 @@ class StreamCacheTest {
     }
 
     @Test
-    fun theShortsWindowIsTheTwoAfterTheCurrentOne() {
+    fun theShortsWindowIsTheOneAfterTheCurrentOne() {
+        // One, not two: more lookups ahead made YouTube ask for a bot check.
         val queue = ShortsQueue.of(listOf("a", "b", "c", "d").map { video(it) }, "a")
-        assertThat(queue.ahead(0).map { it.videoId }).containsExactly("b", "c").inOrder()
+        assertThat(queue.ahead(0).map { it.videoId }).containsExactly("b")
         assertThat(queue.ahead(2).map { it.videoId }).containsExactly("d")
         assertThat(queue.ahead(3)).isEmpty()
         assertThat(queue.ahead(-1)).isEmpty()

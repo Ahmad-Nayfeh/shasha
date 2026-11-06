@@ -29,7 +29,7 @@ class ShortsQueue private constructor(val items: List<VideoItem>, val startIndex
     fun clamp(index: Int): Int = index.coerceIn(0, items.lastIndex)
 
     companion object {
-        const val PREFETCH_AHEAD = 2
+        const val PREFETCH_AHEAD = 1
 
         /**
          * The queue of [videos] opened at the Short [startId]. A Short listed twice stays where it first is. A list that does not hold

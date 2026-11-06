@@ -354,7 +354,6 @@ fun ShashaRoot(container: AppContainer) {
             LocalSavedPlaylistIds provides savedPlaylistIds,
             LocalTabReselections provides reselections,
             LocalChannelAvatars provides channelAvatars,
-            LocalStreamPrefetch provides container.player::prefetch,
         ) {
             val watchVm = session?.let { key(it) { rememberWatchViewModel(container, it) } }
             // The video's comments live as long as the video (a downloaded file has none); the setting can take them away.
