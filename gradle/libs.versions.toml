@@ -3,7 +3,7 @@
 # see MAINTENANCE.md before bumping it.
 
 [versions]
-agp = "9.4.1"
+agp = "9.5.1"
 kotlin = "2.4.20"
 ksp = "2.3.12"
 newpipeExtractor = "v0.26.5"
